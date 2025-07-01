@@ -1,7 +1,5 @@
 # docker-compose.yml
 
-version: '3.8'
-
 services:
   ### The FastAPI Backend Service ###
   backend:
@@ -10,9 +8,11 @@ services:
       - "8000:8000"  # Maps port 8000 on your machine to port 8000 in the container
     volumes:
       - ./backend:/app # Mounts your local ./backend folder into the container's /app folder for live-reloading
+    env_file: # <-- ADD THIS SECTION
+      - ./.env
     environment:
       # We'll use this later to connect to the database
-      - DATABASE_URL=postgresql://user:password@db:5432/mydatabase
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
     depends_on:
       - db           # Tells this service to wait until the 'db' service is started
 
@@ -30,13 +30,13 @@ services:
   db:
     image: postgres:15-alpine # Uses the official, lightweight PostgreSQL image
     volumes:
-      - postgres_data:/var/lib/postgresql/data/ # This line is crucial. It persists your database data.
+      - postgres_data:/var/lib/postgresql/data/
     ports:
       - "5432:5432" # Maps the standard Postgres port
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=mydatabase
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
 
 # Defines the named volume for persisting database data
 volumes:
