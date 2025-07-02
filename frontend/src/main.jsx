@@ -1,12 +1,12 @@
 // frontend/src/main.jsx
 
 import React from 'react';
-import ReactDOM from 'react-dom/client'; // <-- This is the missing line
+import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
 import { ClerkProvider } from '@clerk/clerk-react';
+import { BrowserRouter } from 'react-router-dom'; // <-- Import this
 
-// Import your publishable key from the environment
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!PUBLISHABLE_KEY) {
@@ -16,7 +16,9 @@ if (!PUBLISHABLE_KEY) {
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-      <App />
+      <BrowserRouter> {/* <-- Add this wrapper */}
+        <App />
+      </BrowserRouter>
     </ClerkProvider>
   </React.StrictMode>
 );

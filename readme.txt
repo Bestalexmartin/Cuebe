@@ -8,3 +8,5 @@ Tuesday Jul 1, 2025
 
 Wednesday Jul 2, 2025
 1) Early morning commit to remove faulty webhook work and start fresh
+2) Added React Router and some nicer looking Clerk components
+3) Spent some time working on the routing logic... still not done but better
