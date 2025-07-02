@@ -5,3 +5,6 @@ Tuesday Jul 1, 2025
 1) Lots of progress here... got python installed correctly in the virtual environment, set up the database, extracted environment variables into a .env file and confirmed the db is working.
 2) And one more commit to include the fixes to the database schema and show write and read API endpoints.
 3) Afternoon commit to include progress related to including Clerk... got the login loop, still need to add the webhook to create a user record in my own database
+
+Wednesday Jul 2, 2025
+1) Early morning commit to remove faulty webhook work and start fresh

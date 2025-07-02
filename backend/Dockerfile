@@ -1,22 +1,22 @@
-# Use an official Python runtime as a parent image
-FROM python:3.11-slim
+# backend/Dockerfile
 
-# Set the working directory in the container
+FROM python:3.11
+
 WORKDIR /app
 
-# Copy the requirements file into the container at /app
+# --- ADD THIS BLOCK ---
+# Install system-level build dependencies
+RUN apt-get update && apt-get install -y build-essential
+# --- END OF BLOCK ---
+
 COPY ./requirements.txt /app/requirements.txt
 
-# Install any needed packages specified in requirements.txt
-# The --no-cache-dir option is a good practice for keeping image size down
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the backend application code into the container at /app
+RUN pip list
+
 COPY . .
 
-# Expose the port the app runs on
 EXPOSE 8000
 
-# Define the command to run your app using uvicorn
-# This will be run when the container starts
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
