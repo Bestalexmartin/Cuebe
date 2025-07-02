@@ -26,6 +26,8 @@ services:
     working_dir: /app/frontend
     volumes:
       - .:/app # Mounts the entire project directory
+    env_file: # <-- ADD THIS SECTION
+      - ./.env
     command: sh -c "npm install && npm run dev" # Command to install dependencies and start the dev server
 
   ### The PostgreSQL Database Service ###
