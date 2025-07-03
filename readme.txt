@@ -12,3 +12,6 @@ Wednesday Jul 2, 2025
 3) Spent some time working on the routing logic... still not done but better
 4) Finalized the routing for Clerk signup, signin and userpreferences
 5) Completed webhook setup via SVIX, updated Clerk logic and made successful new user account round trip
+
+Thursday Jul 3, 2025
+1) Implemented soft delete of user accounts and tested updates to user data

@@ -1,6 +1,6 @@
 # backend/models.py
 
-from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, func
+from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, func, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -17,6 +17,7 @@ class User(Base):
     fullnameLast = Column(String)
     profileImgURL = Column(String)
     userRole = Column(String, default="admin")
+    isActive = Column(Boolean, default=True)
     dateCreated = Column(DateTime, server_default=func.now())
     dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
