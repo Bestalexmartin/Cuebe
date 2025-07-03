@@ -10,3 +10,5 @@ Wednesday Jul 2, 2025
 1) Early morning commit to remove faulty webhook work and start fresh
 2) Added React Router and some nicer looking Clerk components
 3) Spent some time working on the routing logic... still not done but better
+4) Finalized the routing for Clerk signup, signin and userpreferences
+5) Completed webhook setup via SVIX, updated Clerk logic and made successful new user account round trip
