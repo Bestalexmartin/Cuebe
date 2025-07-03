@@ -11,7 +11,7 @@ const SignInPage = () => {
       width: '100vw',
       height: '100vh'
     }}>
-      <SignIn path="/sign-in" routing="path" />
+      <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" />
     </div>
   );
 };
