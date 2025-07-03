@@ -85,28 +85,64 @@ async def handle_clerk_webhook(request: Request, db: Session = Depends(get_db)):
         event = wh.verify(payload, dict(headers))
 
     except WebhookVerificationError as e:
-        print(f"Svix webhook verification failed: {e}")
         raise HTTPException(status_code=400, detail="Webhook verification failed")
 
     # Get the event type and data
     event_type = event['type']
     user_data = event['data']
-    
-    print(f"Received webhook for event: {event_type}")
 
-    # Your logic for user.created, user.updated, etc. remains the same
     if event_type == 'user.created':
-        # ... your user creation logic ...
-        new_user = models.User(
-            clerk_user_id=user_data.get('id'),
-            emailAddress=user_data.get('email_addresses', [{}])[0].get('email_address'),
-            userName=user_data.get('username'),
-            fullnameFirst=user_data.get('first_name'),
-            fullnameLast=user_data.get('last_name'),
-            profileImgURL=user_data.get('image_url')
-        )
-        db.add(new_user)
+        user_data = event['data']
+        email = user_data.get('email_addresses', [{}])[0].get('email_address')
+        new_clerk_id = user_data.get('id')
+
+        # Find if a user with this email already exists
+        existing_user = db.query(models.User).filter(models.User.emailAddress == email).first()
+
+        if existing_user:
+            if existing_user.isActive is False:
+                # If an inactive user exists, reactivate and update them
+                existing_user.isActive = True    # type: ignore
+                existing_user.clerk_user_id = new_clerk_id
+                existing_user.userName = user_data.get('username')
+                existing_user.fullnameFirst = user_data.get('first_name')
+                existing_user.fullnameLast = user_data.get('last_name')
+                existing_user.profileImgURL = user_data.get('image_url')
+            else:
+                # An active user with this email already exists
+                print(f"User with email {email} already exists and is active. Skipping creation.")
+        else:
+            # If no user with that email exists, create a new one
+            new_user = models.User(
+                clerk_user_id=new_clerk_id,
+                emailAddress=email,
+                userName=user_data.get('username'),
+                fullnameFirst=user_data.get('first_name'),
+                fullnameLast=user_data.get('last_name'),
+                profileImgURL=user_data.get('image_url'),
+                isActive=True
+            )
+            db.add(new_user)
+        
         db.commit()
-        print(f"User {user_data.get('id')} successfully created in local DB.")
+
+    elif event_type == 'user.updated':
+        user_to_update = db.query(models.User).filter(models.User.clerk_user_id == user_data['id']).first()
+        if user_to_update:
+            user_to_update.emailAddress = user_data['email_addresses'][0]['email_address']
+            user_to_update.userName = user_data.get('username')
+            user_to_update.fullnameFirst = user_data.get('first_name')
+            user_to_update.fullnameLast = user_data.get('last_name')
+            user_to_update.profileImgURL = user_data.get('image_url')
+            db.commit()
+
+    elif event_type == 'user.deleted':
+        clerk_id_to_delete = user_data.get('id')
+        if clerk_id_to_delete:
+            user_to_deactivate = db.query(models.User).filter(models.User.clerk_user_id == clerk_id_to_delete).first()
+            if user_to_deactivate:
+                # Instead of deleting, we set the user to inactive
+                user_to_deactivate.isActive = False   # type: ignore
+                db.commit()
 
     return {"status": "ok", "message": f"Received {event_type} event"}
