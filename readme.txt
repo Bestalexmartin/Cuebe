@@ -15,3 +15,4 @@ Wednesday Jul 2, 2025
 
 Thursday Jul 3, 2025
 1) Implemented soft delete of user accounts and tested updates to user data
+2) Secured API endpoints with JWT bearer tokens
