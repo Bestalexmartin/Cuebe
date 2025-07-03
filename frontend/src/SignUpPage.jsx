@@ -1,8 +1,8 @@
-// frontend/src/SignInPage.jsx
+// frontend/src/SignUpPage.jsx
 
-import { SignIn } from "@clerk/clerk-react";
+import { SignUp } from "@clerk/clerk-react";
 
-const SignInPage = () => {
+const SignUpPage = () => {
   return (
     <div style={{
       display: 'flex',
@@ -11,9 +11,9 @@ const SignInPage = () => {
       width: '100vw',
       height: '100vh'
     }}>
-      <SignIn path="/sign-in" routing="path" />
+      <SignUp path="/sign-up" routing="path" />
     </div>
   );
 };
 
-export default SignInPage;
+export default SignUpPage;
