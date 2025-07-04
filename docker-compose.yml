@@ -17,7 +17,6 @@ services:
       db: # <-- CHANGE THIS
         condition: service_healthy # Tells backend to wait for the db healthcheck to pass
 
-
   ### The React Frontend Service ###
   frontend:
     image: node:20-alpine # Uses a pre-built, lightweight Node.js image

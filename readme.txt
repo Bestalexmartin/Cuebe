@@ -16,3 +16,6 @@ Wednesday Jul 2, 2025
 Thursday Jul 3, 2025
 1) Implemented soft delete of user accounts and tested updates to user data
 2) Secured API endpoints with JWT bearer tokens
+
+Friday Jul 4, 2025
+1) Added new data types for scripts, elements, departments, etc, created guest access token interface to retrieve calls and updated show primary key to use UUIDs and 
