@@ -19,3 +19,6 @@ Thursday Jul 3, 2025
 
 Friday Jul 4, 2025
 1) Added new data types for scripts, elements, departments, etc, created guest access token interface to retrieve calls and updated show primary key to use UUIDs and 
+
+Saturday Jul 5, 2025
+1) Thinking about user journeys and fleshing out the main dashboard functionality
