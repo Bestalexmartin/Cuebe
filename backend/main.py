@@ -11,6 +11,7 @@ from fastapi import FastAPI, Depends, Request, HTTPException, Header, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import joinedload
 from jose import jwt
 from svix.webhooks import Webhook, WebhookVerificationError
 
@@ -101,10 +102,11 @@ async def create_show(
 async def read_shows_for_current_user(
     db: Session = Depends(get_db), 
     claims: Dict = Depends(get_current_user_claims),
-    skip: int = 0, 
-    limit: int = 100
-):
-    clerk_user_id = claims.get("sub") # The correct key is "sub"
+    skip: int = 0,  # <-- Add this parameter back
+    limit: int = 100 # <-- And this one
+):  
+    
+    clerk_user_id = claims.get("sub")
     if not clerk_user_id:
         raise HTTPException(status_code=401, detail="User ID not found in token")
 
@@ -112,7 +114,10 @@ async def read_shows_for_current_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    shows = db.query(models.Show).filter(models.Show.ownerID == user.ID).offset(skip).limit(limit).all()
+    shows = db.query(models.Show).options(
+        joinedload(models.Show.scripts).joinedload(models.Script.elements)
+    ).filter(models.Show.ownerID == user.ID).offset(skip).limit(limit).all()
+    
     return shows
 
 @app.post("/api/webhooks/clerk")
@@ -198,7 +203,6 @@ def create_guest_link_for_show(
     db: Session = Depends(get_db),
     claims: Dict = Depends(get_current_user_claims)
 ):
-    # (Add logic here to ensure the current user owns this show)
     
     # Generate a secure, URL-safe token
     token = secrets.token_urlsafe(32)

@@ -25,3 +25,6 @@ Saturday Jul 5, 2025
 
 Sunday Jul 6, 2025
 1) Implemented Chakra UI components, styled dashboard elements and added "dark mode" with system level config support
+
+Monday Jul 7, 2025
+1) Created UI for creating and selecting shows, showing show details and scripts
