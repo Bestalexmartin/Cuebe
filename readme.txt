@@ -22,3 +22,6 @@ Friday Jul 4, 2025
 
 Saturday Jul 5, 2025
 1) Thinking about user journeys and fleshing out the main dashboard functionality
+
+Sunday Jul 6, 2025
+1) Implemented Chakra UI components, styled dashboard elements and added "dark mode" with system level config support
