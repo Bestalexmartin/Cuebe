@@ -1,35 +1,75 @@
 // frontend/src/Header.jsx
 
 import { SignedIn, UserButton } from "@clerk/clerk-react";
+import { Flex, Heading, Box } from "@chakra-ui/react"; // Import Chakra components
+import { useColorMode, IconButton } from '@chakra-ui/react';
+import { SunIcon, MoonIcon } from '@chakra-ui/icons';
+
+function DarkModeSwitch() {
+  const { colorMode, toggleColorMode } = useColorMode();
+  return (
+    <IconButton
+      aria-label="Toggle dark mode"
+      icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+      onClick={toggleColorMode}
+      variant="ghost"
+      isRound={true}
+      _focus={{ boxShadow: 'none' }}
+      _hover={{ color: 'inherit' }} // 'inherit' tells it not to change from the parent's color
+    />
+  );
+}
 
 const Header = () => {
   return (
-    <header style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderBottom: '1px solid #e2e8f0',
-        width: '100vw',
-        padding: '0rem 2rem 0rem 1rem',
-        boxSizing: 'border-box'
-    }}>
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', padding: '1rem 1rem'}}>ShowMaster</h1>
+    <Flex
+      as="header"
+      width="100%"
+      align="center"
+      justify="space-between"
+      borderBottom="1px"
+      borderColor="ui.border"
+      paddingX="8"
+      paddingY="2"
+      boxSizing="border-box"
+    >
+      <Heading as="h1" size="lg">
+        Call•Master
+      </Heading>
+      
       <SignedIn>
-        {/* This div is now a perfect circle that centers the button */}
-        <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            width: '32px',  // Set a fixed width
-            height: '32px', // Set a fixed height to make it a square
-            borderRadius: '50%', // This makes the square a perfect circle
-            padding: '1px', // Adjust padding as needed
-            border: '3px solid #3b82f6', // The blue ring
-        }}>
-          <UserButton />
-        </div>
+        {/* This Flex container holds the two separate icon groups */}
+        <Flex align="center" gap="4">
+          
+          {/* Wrapper for the Dark Mode Switch */}
+          <Flex
+            justify="center"
+            align="center"
+            boxSize="40px"
+            borderRadius="full"
+            border="3px solid"
+            borderColor="blue.400"
+            _hover={{ borderColor: 'orange.400' }}
+          >
+            <DarkModeSwitch />
+          </Flex>
+
+          {/* Wrapper for the User Button */}
+          <Flex
+            justify="center"
+            align="center"
+            boxSize="40px"
+            borderRadius="full"
+            border="3px solid"
+            borderColor="blue.400"
+            _hover={{ borderColor: 'orange.400' }}
+          >
+            <UserButton />
+          </Flex>
+          
+        </Flex>
       </SignedIn>
-    </header>
+    </Flex>
   );
 };
 

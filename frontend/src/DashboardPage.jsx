@@ -1,39 +1,55 @@
 // frontend/src/DashboardPage.jsx
 
+import { Flex, Box, Heading, Button } from "@chakra-ui/react";
+
 const DashboardPage = () => {
   return (
-    <div style={{ display: 'flex', width: '100%', gap: '2rem' }}>
+    // The main container is a <Flex> component with a theme-based gap
+    <Flex width="100%" gap="8">
 
       {/* Main Content Area (70%) */}
-      <div style={{ flex: '0 1 70%' }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>Library</h2>
+      <Box flexBasis="70%">
+        <Heading as="h2" size="md" mb="4">
+          Library
+        </Heading>
         
-        {/* We will add the list of shows here later */}
-        <div style={{ marginTop: '1rem', border: '1px dashed #cbd5e1', padding: '2rem', borderRadius: '0.25rem' }}>
+        {/* Placeholder for the show list */}
+        <Box 
+          mt="4" 
+          border="1px dashed" 
+          borderColor="gray.300" 
+          p="8" 
+          borderRadius="md"
+        >
           Library Cards
-        </div>
-        <button style={{
-          padding: '0.5rem 1rem',
-          backgroundColor: '#3b82f6',
-          color: 'white',
-          border: 'none',
-          borderRadius: '0.25rem',
-          cursor: 'pointer',
-          marginTop: '1rem',
-        }}>
+        </Box>
+        <Button
+          mt="4"
+          bg="blue.400" // Set the background to your specific blue
+          color="white"   // Set the text color to white for contrast
+          _hover={{ bg: 'orange.400' }}
+        >
           Create New Show
-        </button>
-      </div>
+        </Button>
+      </Box>
 
       {/* Quick Access Sidebar (30%) */}
-      <div style={{ flex: '0 1 30%'} }>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem' }}>Quick Access</h2>
-        {/* We will add the pinned/recent items here later */}
-        <div style={{ border: '1px dashed #cbd5e1', padding: '2rem', borderRadius: '0.25rem' }}>
+      <Box flexBasis="30%">
+        <Heading as="h2" size="md" mb="4">
+          QuickStart
+        </Heading>
+        
+        {/* Placeholder for pinned items */}
+        <Box 
+          border="1px dashed" 
+          borderColor="gray.300" 
+          p="8" 
+          borderRadius="md"
+        >
           Quickstart Cards
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Flex>
   );
 };
 
