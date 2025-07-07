@@ -1,21 +1,20 @@
 // frontend/src/Header.jsx
 
 import { SignedIn, UserButton } from "@clerk/clerk-react";
-import { Flex, Heading, Box } from "@chakra-ui/react"; // Import Chakra components
+import { Flex, Heading, Image, Text, Box } from "@chakra-ui/react"; // Import Chakra components
 import { useColorMode, IconButton } from '@chakra-ui/react';
-import { SunIcon, MoonIcon } from '@chakra-ui/icons';
 
 function DarkModeSwitch() {
   const { colorMode, toggleColorMode } = useColorMode();
   return (
     <IconButton
       aria-label="Toggle dark mode"
-      icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+      icon={<Text fontSize="2xl">◐</Text>} 
       onClick={toggleColorMode}
       variant="ghost"
       isRound={true}
       _focus={{ boxShadow: 'none' }}
-      _hover={{ color: 'inherit' }} // 'inherit' tells it not to change from the parent's color
+      _hover={{ bg: "transparent", color: "initial" }}
     />
   );
 }
@@ -33,9 +32,13 @@ const Header = () => {
       paddingY="2"
       boxSizing="border-box"
     >
-      <Heading as="h1" size="lg">
-        Call•Master
-      </Heading>
+
+      <Flex align="center" gap="3">
+        <Image boxSize="50px" src="/callmaster.svg" alt="CallMaster Logo" />
+        <Heading as="h1" size="lg">
+          Call•Master
+        </Heading>
+      </Flex>
       
       <SignedIn>
         {/* This Flex container holds the two separate icon groups */}
@@ -49,7 +52,7 @@ const Header = () => {
             borderRadius="full"
             border="3px solid"
             borderColor="blue.400"
-            _hover={{ borderColor: 'orange.400' }}
+            _hover={{ borderColor: 'orange.400', bg: "transparent", color: "initial" }}
           >
             <DarkModeSwitch />
           </Flex>
