@@ -1,15 +1,15 @@
 // frontend/src/Header.jsx
 
 import { SignedIn, UserButton } from "@clerk/clerk-react";
-import { Flex, Heading, Image, Text, Box } from "@chakra-ui/react"; // Import Chakra components
-import { useColorMode, IconButton } from '@chakra-ui/react';
+import { Flex, Heading, Image, Text, useColorMode, IconButton } from "@chakra-ui/react";
+import { CiMenuBurger } from 'react-icons/ci';
 
 function DarkModeSwitch() {
   const { colorMode, toggleColorMode } = useColorMode();
   return (
     <IconButton
       aria-label="Toggle dark mode"
-      icon={<Text fontSize="2xl">◐</Text>} 
+      icon={<Text fontSize="2xl">◐</Text>}
       onClick={toggleColorMode}
       variant="ghost"
       isRound={true}
@@ -19,7 +19,7 @@ function DarkModeSwitch() {
   );
 }
 
-const Header = () => {
+const Header = ({ onMenuOpen }) => {
   return (
     <Flex
       as="header"
@@ -28,48 +28,60 @@ const Header = () => {
       justify="space-between"
       borderBottom="1px"
       borderColor="ui.border"
-      paddingX="8"
+      paddingX="4"
       paddingY="2"
       boxSizing="border-box"
     >
-
       <Flex align="center" gap="3">
         <Image boxSize="50px" src="/callmaster.svg" alt="CallMaster Logo" />
         <Heading as="h1" size="lg">
           Call•Master
         </Heading>
       </Flex>
-      
+
       <SignedIn>
-        {/* This Flex container holds the two separate icon groups */}
         <Flex align="center" gap="4">
-          
-          {/* Wrapper for the Dark Mode Switch */}
-          <Flex
-            justify="center"
-            align="center"
-            boxSize="40px"
-            borderRadius="full"
-            border="3px solid"
-            borderColor="blue.400"
-            _hover={{ borderColor: 'orange.400', bg: "transparent", color: "initial" }}
-          >
-            <DarkModeSwitch />
+
+          {/* This group is now ALWAYS visible */}
+          <Flex align="center" gap="4">
+            <Flex
+              justify="center"
+              align="center"
+              boxSize="40px"
+              borderRadius="full"
+              border="3px solid"
+              borderColor="blue.400"
+              _hover={{ borderColor: 'orange.400' }}
+            >
+              <DarkModeSwitch />
+            </Flex>
+            <Flex
+              justify="center"
+              align="center"
+              boxSize="40px"
+              borderRadius="full"
+              border="3px solid"
+              borderColor="blue.400"
+              _hover={{ borderColor: 'orange.400' }}
+            >
+              <UserButton />
+            </Flex>
           </Flex>
 
-          {/* Wrapper for the User Button */}
-          <Flex
-            justify="center"
-            align="center"
-            boxSize="40px"
+          {/* This button is visible ONLY on mobile screens */}
+          <IconButton
+            aria-label="Open menu"
+            icon={<CiMenuBurger />}
+            fontSize="20px"
             borderRadius="full"
             border="3px solid"
             borderColor="blue.400"
+            bg="inherit"
             _hover={{ borderColor: 'orange.400' }}
-          >
-            <UserButton />
-          </Flex>
-          
+            display={{ base: 'flex', lg: 'none' }}
+            onClick={onMenuOpen}
+          />
+
         </Flex>
       </SignedIn>
     </Flex>
