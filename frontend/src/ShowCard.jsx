@@ -12,7 +12,6 @@ export const ShowCard = ({
     onShowClick,
     onScriptClick,
     onShowHover,
-    onScriptHover,
     onCreateScriptClick,
     sortBy,
     sortDirection,
@@ -53,8 +52,8 @@ export const ShowCard = ({
                 {isSelected && (
                     <Button
                         bg="blue.400"
-                        color="white"
                         size="xs"
+                        color="white"
                         onClick={(e) => { e.stopPropagation(); onCreateScriptClick(show.showID); }}
                         _hover={{ bg: 'orange.400' }}
                         _focus={{ boxShadow: 'none' }}

@@ -9,6 +9,7 @@ export const useDashboardState = (shows) => {
 
   const handleShowClick = (showId) => {
     setSelectedShowId(selectedShowId === showId ? null : showId);
+    setSelectedScriptId(null);
   };
 
   const handleScriptClick = (scriptId) => {
