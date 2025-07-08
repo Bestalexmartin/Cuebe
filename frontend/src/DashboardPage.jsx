@@ -1,7 +1,7 @@
 // frontend/src/DashboardPage.jsx
 
 import React, { useState, useMemo } from 'react';
-import { Flex, Box, VStack, HStack, Heading, Button, Text, Spinner, Collapse, useDisclosure, IconButton } from "@chakra-ui/react";
+import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Collapse, useDisclosure, IconButton } from "@chakra-ui/react";
 import { AddIcon } from '@chakra-ui/icons';
 import { useShows } from "./useShows";
 import { usePinnedCount } from './usePinnedCount';
@@ -74,13 +74,23 @@ const DashboardPage = () => {
       >
         <Box flexBasis={['100%', '100%', '70%']}>
           <Flex justify="space-between" align="center">
-            <Heading as="h2" size="md">
-              Library
-            </Heading>
+            <Heading as="h2" size="md">Shows</Heading>
             <HStack spacing="2">
-              <Button size="sm" variant={sortBy === 'dateUpdated' ? 'solid' : 'ghost'} onClick={() => handleSortClick('dateUpdated')}>Updated</Button>
-              <Button size="sm" variant={sortBy === 'showDate' ? 'solid' : 'ghost'} onClick={() => handleSortClick('showDate')}>Show Date</Button>
-              <Button size="sm" variant={sortBy === 'showName' ? 'solid' : 'ghost'} onClick={() => handleSortClick('showName')}>Name</Button>
+              <Button size="xs" variant={sortBy === 'showName' ? 'solid' : 'ghost'} onClick={() => handleSortClick('showName')}>Name</Button>
+              <Button size="xs" variant={sortBy === 'showDate' ? 'solid' : 'ghost'} onClick={() => handleSortClick('showDate')}>Show Date</Button>
+              <Button size="xs" variant={sortBy === 'dateUpdated' ? 'solid' : 'ghost'} onClick={() => handleSortClick('dateUpdated')}>Updated</Button>
+              <Divider orientation="vertical" height="20px" borderColor="gray.200" mx="4" />
+
+              <Button
+                bg="blue.400"
+                color="white"
+                size="xs"
+                onClick={onShowModalOpen}
+                _hover={{ bg: 'orange.400' }}
+                _focus={{ boxShadow: 'none' }}
+              >
+                Create Show
+              </Button>
             </HStack>
           </Flex>
 
@@ -141,8 +151,8 @@ const DashboardPage = () => {
                             </Button>
                           )}
                         </Flex>
-                        <Text fontSize="sm" color="gray.500" mt={2}>{show.showVenue || 'No venue set'}</Text>
-                        <HStack mt={2} justify="space-between" fontSize="xs" color="gray.600">
+                        <Text fontSize="sm" color="gray.400" mt={2}>{show.showVenue || 'No venue set'}</Text>
+                        <HStack mt={2} justify="space-between" fontSize="xs" color="gray.400">
                           <Text>Date: {show.showDate ? new Date(show.showDate).toLocaleDateString() : 'N/A'}</Text>
                           <Text>Scripts: {show.scripts ? show.scripts.length : 0}</Text>
                           <Text>Updated: {new Date(show.dateUpdated).toLocaleDateString()}</Text>
@@ -191,34 +201,66 @@ const DashboardPage = () => {
               )
             )}
           </Box>
-          <Flex justify="flex-end" mt="4">
-            <Button
-              bg="blue.400"
-              color="white"
-              onClick={onShowModalOpen}
-              _hover={{ bg: 'orange.400' }}
-              _focus={{ boxShadow: 'none' }}
-            >
-              Create Show
-            </Button>
-          </Flex>
         </Box>
+
+        {/* Quick Access Sidebar (30%) */}
         <Box
           flexBasis={['100%', '100%', '30%']}
           display={pinnedCount === 0 ? ['none', 'none', 'block'] : 'block'}
         >
-          <Heading as="h2" size="md" mb="4">
-            Quick Access
-          </Heading>
+          {/* This Flex container aligns the title and the new button */}
+          <Flex justify="space-between" align="center">
+            <Heading as="h2" size="md"></Heading>
+            <Button
+              bg="blue.400"
+              color="white"
+              size="xs"
+              _hover={{ bg: 'orange.400' }}
+              _focus={{ boxShadow: 'none' }}
+            >
+              Options
+            </Button>
+          </Flex>
+
           <Box
-            border="1px dashed"
+            mt="4"
+            border="1px solid"
             borderColor="gray.300"
-            p="8"
+            p="4"
             borderRadius="md"
           >
-            Quickstart Cards
+            <VStack spacing={4} align="stretch">
+              {/* Placeholder for Recent Script with a DOTTED border */}
+              <Box borderWidth="2px" borderRadius="md" p="4" shadow="sm" borderStyle="dashed" borderColor="gray.600">
+                <Heading size="xs" textTransform="uppercase">Recent Script</Heading>
+                <Text pt="2" fontSize="sm" color="gray.400">
+                  Placeholder for last edited script.
+                </Text>
+              </Box>
+
+              {/* Other cards with a SOLID border */}
+              <Box borderWidth="2px" borderRadius="md" p="4" shadow="sm" cursor="pointer" borderColor="gray.600" _hover={{ borderColor: 'orange.400' }}>
+                <Heading size="xs" textTransform="uppercase">Venues</Heading>
+                <Text pt="2" fontSize="sm" color="gray.400">
+                  Manage your list of venues.
+                </Text>
+              </Box>
+              <Box borderWidth="2px" borderRadius="md" p="4" shadow="sm" cursor="pointer" borderColor="gray.600" _hover={{ borderColor: 'orange.400' }}>
+                <Heading size="xs" textTransform="uppercase">Departments</Heading>
+                <Text pt="2" fontSize="sm" color="gray.400" >
+                  Manage your list of departments.
+                </Text>
+              </Box>
+              <Box borderWidth="2px" borderRadius="md" p="4" shadow="sm" cursor="pointer" borderColor="gray.600" _hover={{ borderColor: 'orange.400' }}>
+                <Heading size="xs" textTransform="uppercase">Crew</Heading>
+                <Text pt="2" fontSize="sm" color="gray.400" >
+                  Manage your crew members.
+                </Text>
+              </Box>
+            </VStack>
           </Box>
         </Box>
+
       </Flex>
       <CreateShowModal
         isOpen={isShowModalOpen}
