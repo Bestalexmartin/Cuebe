@@ -35,3 +35,4 @@ Monday Jul 7, 2025
 Tueday Jul 8, 2025
 1) Extracted state of dashboard into separate file, extracted show & script card functions into separate file
 2) Fixed some issues with passing variables between dashboard and show card files
+3) Added hamburger and popout menu to display right side panel on mobile devices
