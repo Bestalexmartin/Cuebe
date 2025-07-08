@@ -30,3 +30,4 @@ Monday Jul 7, 2025
 1) Created UI for creating and selecting shows, showing show details and scripts
 2) Added modal for creating scripts, sorting and highlighting logic, moved scripts inside of the show card
 3) A few more formatting fixes, added some placeholders for the quickstart menu
+4) A bit of visual fix to prevent elements from moving around
