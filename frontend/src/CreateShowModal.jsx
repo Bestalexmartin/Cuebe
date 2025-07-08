@@ -48,7 +48,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
 
       // This function will be passed from the parent to refresh the show list
       onShowCreated();
-      onClose(); // Close the modal on success
+      onClose();
 
     } catch (error) {
       console.error(error);

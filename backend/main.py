@@ -247,3 +247,80 @@ def get_script_for_guest(access_token: str, db: Session = Depends(get_db)):
     ).order_by(models.ScriptElement.elementOrder).all()
 
     return elements
+
+@app.get("/api/me/pinned-scripts/count")
+async def get_pinned_scripts_count(
+    db: Session = Depends(get_db),
+    claims: Dict = Depends(get_current_user_claims)
+):
+    clerk_user_id = claims.get("sub")
+    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # This query now counts pinned scripts belonging to the user's shows
+    count = db.query(models.Script).join(models.Show).filter(
+        models.Show.ownerID == user.ID,
+        models.Script.isPinned == True
+    ).count()
+    
+    return {"pinnedCount": count}
+
+@app.patch("/api/scripts/{script_id}/toggle-pin", response_model=schemas.Script)
+async def toggle_pin_for_script(
+    script_id: int,
+    db: Session = Depends(get_db),
+    claims: Dict = Depends(get_current_user_claims)
+):
+    clerk_user_id = claims.get("sub")
+    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Find the script to be pinned/unpinned
+    script = db.query(models.Script).filter(models.Script.scriptID == script_id).first()
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
+
+    # Security Check: Make sure the logged-in user owns the show this script belongs to
+    if script.show.ownerID != user.ID:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this script")
+
+    # Toggle the isPinned value
+    script.isPinned = not script.isPinned # type: ignore
+    db.commit()
+    db.refresh(script)
+
+    return script
+
+@app.post("/api/shows/{show_id}/scripts/", response_model=schemas.Script)
+async def create_script_for_show(
+    show_id: UUID,
+    script: schemas.ScriptCreate,
+    db: Session = Depends(get_db),
+    claims: Dict = Depends(get_current_user_claims)
+):
+    clerk_user_id = claims.get("sub")
+    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Find the show this script will belong to
+    show = db.query(models.Show).filter(models.Show.showID == show_id).first()
+    if not show:
+        raise HTTPException(status_code=404, detail="Show not found")
+
+    # Security Check: Make sure the current user owns this show
+    if show.ownerID != user.ID: # type: ignore
+        raise HTTPException(status_code=403, detail="Not authorized to add a script to this show")
+
+    # Create the new script with default values
+    new_script = models.Script(
+        showID=show_id,
+        scriptName=script.scriptName or "New Script" # Use provided name or default
+    )
+    db.add(new_script)
+    db.commit()
+    db.refresh(new_script)
+
+    return new_script

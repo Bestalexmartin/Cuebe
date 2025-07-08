@@ -10,14 +10,14 @@ import DashboardPage from './DashboardPage';
 
 function App() {
   return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        width: '100vw',
-        minHeight: '100vh'
-      }}>
-        {/* Header Page */}
-        <Header />
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      width: '100vw',
+      minHeight: '100vh'
+    }}>
+      {/* Header Page */}
+      <Header />
       <main style={{
         flexGrow: 1,
         display: 'flex',
@@ -29,14 +29,14 @@ function App() {
           {/* Sign-In/Up Elements */}
           <Route path="/sign-in/*" element={<SignInPage />} />
           <Route path="/sign-up/*" element={<SignUpPage />} />
-          
+
           {/* Dashboard Page */}
-          <Route 
+          <Route
             path="/dashboard/*"
             element={
               <>
                 <SignedIn>
-                 <DashboardPage />
+                  <DashboardPage />
                 </SignedIn>
               </>
             }
@@ -55,13 +55,13 @@ function App() {
               </>
             }
           />
-          
+
           <Route
             path="*"
             element={
               <>
                 <SignedIn>
-                  <Navigate to="/user-profile" replace />
+                  <Navigate to="/dashboard" replace />
                 </SignedIn>
                 <SignedOut>
                   <Navigate to="/sign-in" replace />

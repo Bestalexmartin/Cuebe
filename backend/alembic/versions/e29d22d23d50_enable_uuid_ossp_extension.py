@@ -1,8 +1,8 @@
 """Enable uuid-ossp extension
 
-Revision ID: 62833b123460
+Revision ID: e29d22d23d50
 Revises: 
-Create Date: 2025-07-04 10:25:49.186423
+Create Date: 2025-07-07 21:49:25.502700
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '62833b123460'
+revision: str = 'e29d22d23d50'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

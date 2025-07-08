@@ -1,8 +1,8 @@
-"""Create initial tables with UUIDs
+"""Create initial tables
 
-Revision ID: be4fa3492eac
-Revises: 62833b123460
-Create Date: 2025-07-04 10:26:17.757187
+Revision ID: a7697b0d1b10
+Revises: e29d22d23d50
+Create Date: 2025-07-07 21:51:14.274560
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'be4fa3492eac'
-down_revision: Union[str, Sequence[str], None] = '62833b123460'
+revision: str = 'a7697b0d1b10'
+down_revision: Union[str, Sequence[str], None] = 'e29d22d23d50'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -86,6 +86,9 @@ def upgrade() -> None:
     sa.Column('scriptID', sa.Integer(), nullable=False),
     sa.Column('scriptName', sa.String(), nullable=True),
     sa.Column('scriptStatus', sa.String(), nullable=True),
+    sa.Column('intendedStartTime', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('actualStartTime', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('isPinned', sa.Boolean(), nullable=False),
     sa.Column('showID', sa.UUID(), nullable=True),
     sa.ForeignKeyConstraint(['showID'], ['showsTable.showID'], ),
     sa.PrimaryKeyConstraint('scriptID')
@@ -99,7 +102,7 @@ def upgrade() -> None:
     sa.Column('elementOrder', sa.Integer(), nullable=False),
     sa.Column('cueNumber', sa.String(), nullable=True),
     sa.Column('elementDescription', sa.Text(), nullable=True),
-    sa.Column('elementTime', sa.String(), nullable=True),
+    sa.Column('timeOffset', sa.Interval(), nullable=False),
     sa.ForeignKeyConstraint(['departmentID'], ['departmentsTable.departmentID'], ),
     sa.ForeignKeyConstraint(['scriptID'], ['scriptsTable.scriptID'], ),
     sa.PrimaryKeyConstraint('elementID')

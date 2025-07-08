@@ -39,13 +39,18 @@ class ScriptElement(BaseModel):
 class Script(BaseModel):
     scriptID: int
     scriptName: str
+    scriptStatus: str
     showID: UUID
+    dateUpdated: datetime
     
     # This will be a list of ScriptElement schemas
     elements: List[ScriptElement] = []
 
     class Config:
         from_attributes = True
+
+class ScriptCreate(BaseModel):
+    scriptName: str | None = None
 
 class Show(BaseModel):
     showID: UUID
