@@ -146,22 +146,18 @@ const DashboardPage = () => {
                       >
                         <Flex justify="space-between" align="center">
                           <Heading size="sm">{show.showName}</Heading>
-
-                          {/* This button is now always rendered but its visibility is conditional */}
-                          <Button
-                            bg="blue.400"
-                            color="white"
-                            size="xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenCreateScriptModal(show.showID);
-                            }}
-                            _hover={{ bg: 'orange.400' }}
-                            _focus={{ boxShadow: 'none' }}
-                            visibility={selectedShowId === show.showID ? 'visible' : 'hidden'}
-                          >
-                            Create Script
-                          </Button>
+                          {selectedShowId === show.showID && (
+                            <Button
+                              bg="blue.400"
+                              color="white"
+                              size="xs"
+                              onClick={(e) => { e.stopPropagation(); handleOpenCreateScriptModal(show.showID); }}
+                              _hover={{ bg: 'orange.400' }}
+                              _focus={{ boxShadow: 'none' }}
+                            >
+                              Create Script
+                            </Button>
+                          )}
                         </Flex>
                         <Text fontSize="sm" color="gray.400" mt={2}>{show.showVenue || 'No venue set'}</Text>
                         <HStack mt={2} justify="space-between" fontSize="xs" color="gray.400">
