@@ -109,6 +109,8 @@ const DashboardPage = () => {
                       isHovered={hoveredShowId === show.showID}
                       onShowHover={setHoveredShowId}
                       onShowClick={handleShowClick}
+                      selectedScriptId={selectedScriptId}
+                      onScriptClick={handleScriptClick}
                       onCreateScriptClick={handleOpenCreateScriptModal}
                     />
                   ))}
