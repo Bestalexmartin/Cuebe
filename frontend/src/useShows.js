@@ -1,45 +1,42 @@
 // frontend/src/useShows.js
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 
-// The "export" keyword makes this a named export
 export const useShows = () => {
   const { getToken } = useAuth();
   const [shows, setShows] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchShows = async () => {
-      try {
-        const token = await getToken();
-        if (!token) {
-          setIsLoading(false);
-          return;
-        }
-
-        const response = await fetch('/api/me/shows', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error('Something went wrong fetching your shows.');
-        }
-
-        const data = await response.json();
-        setShows(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
+  // We wrap fetchShows in useCallback so it doesn't get recreated on every render
+  const fetchShows = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const token = await getToken();
+      if (!token) {
         setIsLoading(false);
+        return;
       }
-    };
-
-    fetchShows();
+      const response = await fetch('/api/me/shows', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) {
+        throw new Error('Something went wrong fetching your shows.');
+      }
+      const data = await response.json();
+      setShows(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   }, [getToken]);
 
-  return { shows, isLoading, error };
+  useEffect(() => {
+    fetchShows();
+  }, [fetchShows]);
+
+  // Return the fetch function so other components can call it
+  return { shows, isLoading, error, refetchShows: fetchShows };
 };

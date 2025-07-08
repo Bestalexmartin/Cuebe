@@ -28,3 +28,4 @@ Sunday Jul 6, 2025
 
 Monday Jul 7, 2025
 1) Created UI for creating and selecting shows, showing show details and scripts
+2) Added modal for creating scripts, sorting and highlighting logic, moved scripts inside of the show card

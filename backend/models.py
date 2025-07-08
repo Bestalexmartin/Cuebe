@@ -64,11 +64,14 @@ class Department(Base):
 class Script(Base):
     __tablename__ = "scriptsTable"
     scriptID = Column(Integer, primary_key=True, index=True)
-    scriptName = Column(String, default="Live Script")
+    scriptName = Column(String, nullable=False)
     scriptStatus = Column(String, default="live")
     intendedStartTime = Column(DateTime(timezone=True))
     actualStartTime = Column(DateTime(timezone=True), nullable=True)
     scriptStatus = Column(String, default="ready") # e.g., 'ready', 'running', 'paused', 'done'
+    isPinned = Column(Boolean, default=False, nullable=False)
+    dateCreated = Column(DateTime, server_default=func.now())
+    dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # UPDATE THE FOREIGN KEY TO POINT TO THE UUID COLUMN
     showID = Column(UUID(as_uuid=True), ForeignKey("showsTable.showID"))
