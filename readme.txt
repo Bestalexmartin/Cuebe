@@ -31,3 +31,6 @@ Monday Jul 7, 2025
 2) Added modal for creating scripts, sorting and highlighting logic, moved scripts inside of the show card
 3) A few more formatting fixes, added some placeholders for the quickstart menu
 4) A bit of visual fix to prevent elements from moving around
+
+Tueday Jul 8, 2025
+1) Extracted state of dashboard into separate file, extracted show & script card functions into separate file
