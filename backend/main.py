@@ -96,6 +96,14 @@ async def create_show(
     db.add(new_show)
     db.commit()
     db.refresh(new_show)
+
+    first_draft = models.Script(
+        scriptName="First Draft",
+        showID=new_show.showID
+    )
+    db.add(first_draft)
+    db.commit()
+    
     return new_show
 
 @app.get("/api/me/shows", response_model=list[schemas.Show])

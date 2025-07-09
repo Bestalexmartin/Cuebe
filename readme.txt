@@ -36,3 +36,6 @@ Tueday Jul 8, 2025
 1) Extracted state of dashboard into separate file, extracted show & script card functions into separate file
 2) Fixed some issues with passing variables between dashboard and show card files
 3) Added hamburger and popout menu to display right side panel on mobile devices
+
+Wednesday Jul 9, 2025
+1) Added side panel buttons and extracted views for each data type into separate pages, added proper scrolling and boundary management for cards in the main window, added auto-creation of script file when show is created
