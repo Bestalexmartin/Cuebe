@@ -14,11 +14,11 @@ function App() {
   const { isOpen: isMenuOpen, onOpen: onMenuOpen, onClose: onMenuClose } = useDisclosure();
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100vw', minHeight: '100vh' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100vw', height: '100vh' }}>
       {/* The Header receives the function to open the menu */}
       <Header onMenuOpen={onMenuOpen} />
 
-      <main style={{ flexGrow: 1, display: 'flex', padding: '2rem', boxSizing: 'border-box' }}>
+      <main style={{ flex: 1, overflow: 'hidden', display: 'flex', padding: '2rem', boxSizing: 'border-box' }}>
         <Routes>
           <Route path="/sign-in/*" element={<SignInPage />} />
           <Route path="/sign-up/*" element={<SignUpPage />} />
