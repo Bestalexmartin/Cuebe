@@ -57,15 +57,19 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
     <>
       <Flex
         width="100%"
+        height="100%"
         gap="8"
+        p="2rem"
         flexDirection={{ base: 'column', lg: 'row' }}
+        boxSizing="border-box"
       >
         <Box
           flexBasis={{ base: '100%', lg: '80%' }}
           display="flex"
           flexDirection="column"
+          height={{ base: '100vh', lg: 'auto' }}
+          overflowY={{ base: 'auto', lg: 'visible' }}
         >
-
           {activeView === 'pinned' && (
             <PinnedView
               sortedPins={sortedPins}
@@ -120,7 +124,8 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
 
         <Box
           flexBasis={{ base: '0', lg: '20%' }}
-          display={{ base: 'none', lg: 'block' }}
+          display={{ base: 'none', lg: 'flex' }}
+          flexDirection="column"
         >
           <QuickAccessPanel activeView={activeView} setActiveView={setActiveView} />
         </Box>
