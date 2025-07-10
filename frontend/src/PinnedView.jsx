@@ -1,6 +1,7 @@
 // frontend/src/PinnedView.jsx
 
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
+import { AppIcon } from './components/AppIcon';
 
 const sortedPins = []; // Placeholder for sorted pins data, replace with actual data fetching logic
 
