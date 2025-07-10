@@ -1,8 +1,8 @@
 // frontend/src/ShowsView.jsx
 
-import React from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import { ChevronDownIcon } from '@chakra-ui/icons';
+import { BiSolidMoviePlay } from "react-icons/bi";
 import { ShowCard } from "./ShowCard";
 
 export const ShowsView = ({
@@ -26,7 +26,10 @@ export const ShowsView = ({
         <Flex direction="column" height="100%">
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
-                <Heading as="h2" size="md">Shows</Heading>
+                <HStack spacing="2" align="center">
+                    <BiSolidMoviePlay size="25" />
+                    <Heading as="h2" size="md">Shows</Heading>
+                </HStack>
                 <HStack spacing="2">
                     <Menu>
                         <MenuButton as={Button} size="xs" rightIcon={<ChevronDownIcon />}>

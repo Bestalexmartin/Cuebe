@@ -2,7 +2,6 @@
 
 import React, { useMemo } from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Text, Collapse, IconButton } from "@chakra-ui/react";
-import { AddIcon } from '@chakra-ui/icons';
 
 export const ShowCard = ({
     show,

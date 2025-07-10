@@ -1,6 +1,7 @@
 // frontend/src/VenuesView.jsx
 
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
+import { FaMasksTheater } from "react-icons/fa6";
 
 const sortedVenues = []; // Placeholder for sorted venues data, replace with actual data fetching logic
 
@@ -13,7 +14,10 @@ export const VenuesView = ({
         <Flex direction="column" height="100%">
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
-                <Heading as="h2" size="md">Venues</Heading>
+                <HStack spacing="2" align="center">
+                    <FaMasksTheater size="25" />
+                    <Heading as="h2" size="md">Venues</Heading>
+                </HStack>
                 <HStack spacing="2">
                     <Button bg="blue.400" color="white" size="xs" onClick={onVenueModalOpen} _hover={{ bg: 'orange.400' }} _focus={{ boxShadow: 'none' }}>
                         Add Venue
