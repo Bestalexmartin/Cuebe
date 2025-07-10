@@ -1,7 +1,8 @@
 // frontend/src/DepartmentsView.jsx
 
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
-import { BiSolidMegaphone } from "react-icons/bi";
+import { AppIcon } from './components/AppIcon';
+
 const sortedDepartments = []; // Placeholder for sorted venues data, replace with actual data fetching logic
 
 export const DepartmentsView = ({
@@ -14,7 +15,7 @@ export const DepartmentsView = ({
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
                 <HStack spacing="2" align="center">
-                    <BiSolidMegaphone size="25" />
+                    <AppIcon name="department" boxSize="25px" />
                     <Heading as="h2" size="md">Departments</Heading>
                 </HStack>
                 <HStack spacing="2">

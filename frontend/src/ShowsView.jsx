@@ -1,8 +1,7 @@
 // frontend/src/ShowsView.jsx
 
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
-import { ChevronDownIcon } from '@chakra-ui/icons';
-import { BiSolidMoviePlay } from "react-icons/bi";
+import { AppIcon } from './components/AppIcon';
 import { ShowCard } from "./ShowCard";
 
 export const ShowsView = ({
@@ -27,12 +26,12 @@ export const ShowsView = ({
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
                 <HStack spacing="2" align="center">
-                    <BiSolidMoviePlay size="25" />
+                    <AppIcon name="show" boxSize="25px" />
                     <Heading as="h2" size="md">Shows</Heading>
                 </HStack>
                 <HStack spacing="2">
                     <Menu>
-                        <MenuButton as={Button} size="xs" rightIcon={<ChevronDownIcon />}>
+                        <MenuButton as={Button} size="xs" rightIcon={<AppIcon name="openmenu" />}>
                             Sort by: {sortBy === 'showDate' ? 'Show Date' : sortBy === 'showName' ? 'Name' : 'Updated'}
                         </MenuButton>
                         <MenuList>

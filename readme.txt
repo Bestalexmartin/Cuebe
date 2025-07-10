@@ -40,3 +40,4 @@ Tueday Jul 8, 2025
 Wednesday Jul 9, 2025
 1) Added side panel buttons and extracted views for each data type into separate pages, added proper scrolling and boundary management for cards in the main window, added auto-creation of script file when show is created
 2) Added some icons to the quick access menu and screen title areas
+3) Extracted menu imports into separate file to be more DRY
