@@ -1,6 +1,7 @@
 // frontend/src/CrewView.jsx
 
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
+import { IoPeopleSharp } from "react-icons/io5";
 
 const sortedCrew = []; // Placeholder for sorted crew data, replace with actual data fetching logic
 
@@ -13,7 +14,10 @@ export const CrewView = ({
         <Flex direction="column" height="100%">
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
-                <Heading as="h2" size="md">Crew Members</Heading>
+                <HStack spacing="2" align="center">
+                    <IoPeopleSharp size="25" />
+                    <Heading as="h2" size="md">Crew Members</Heading>
+                </HStack>
                 <HStack spacing="2">
                     <Button bg="blue.400" color="white" size="xs" onClick={onCrewModalOpen} _hover={{ bg: 'orange.400' }} _focus={{ boxShadow: 'none' }}>
                         Add Crew Member
