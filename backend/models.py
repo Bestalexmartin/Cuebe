@@ -50,8 +50,8 @@ class Show(Base):
     dateCreated = Column(DateTime, server_default=func.now())
     dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    scripts = relationship("Script", back_populates="show")
-    crew = relationship("CrewAssignment", back_populates="show")
+    scripts = relationship("Script", back_populates="show", cascade="all, delete-orphan")
+    crew = relationship("CrewAssignment", back_populates="show", cascade="all, delete-orphan")
 
 class Department(Base):
     __tablename__ = "departmentsTable"

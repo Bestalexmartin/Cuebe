@@ -44,3 +44,6 @@ Wednesday Jul 9, 2025
 
 Thursday Jul 10, 2025
 1) Fixed issue with left side panel rendering and scrolling on mobile devices
+
+Friday Jul 11, 2025
+1) Added button for editing the show
