@@ -7,7 +7,8 @@ import secrets
 from typing import Dict
 from uuid import UUID
 
-from fastapi import FastAPI, Depends, Request, HTTPException, Header, status
+from fastapi import FastAPI, Depends, Request, HTTPException, Header, Response, status
+
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -127,6 +128,91 @@ async def read_shows_for_current_user(
     ).filter(models.Show.ownerID == user.ID).offset(skip).limit(limit).all()
     
     return shows
+
+#
+# GET A SINGLE SHOW BY ID
+#
+@app.get("/api/shows/{show_id}", response_model=schemas.Show)
+async def read_show(
+    show_id: UUID,
+    db: Session = Depends(get_db),
+    claims: Dict = Depends(get_current_user_claims)
+):
+    clerk_user_id = claims.get("sub")
+    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    show = db.query(models.Show).filter(models.Show.showID == show_id).first()
+    if not show:
+        raise HTTPException(status_code=404, detail="Show not found")
+
+    # Security check: ensure the user owns this show
+    if show.ownerID != user.ID: # type: ignore
+        raise HTTPException(status_code=403, detail="Not authorized to view this show")
+
+    return show
+
+#
+# UPDATE A SHOW
+#
+@app.patch("/api/shows/{show_id}", response_model=schemas.Show)
+async def update_show(
+    show_id: UUID,
+    show_update: schemas.ShowCreate,
+    db: Session = Depends(get_db),
+    claims: Dict = Depends(get_current_user_claims)
+):
+    clerk_user_id = claims.get("sub")
+    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    show_to_update = db.query(models.Show).filter(models.Show.showID == show_id).first()
+    if not show_to_update:
+        raise HTTPException(status_code=404, detail="Show not found")
+
+    # Security check
+    if show_to_update.ownerID != user.ID: # type: ignore
+        raise HTTPException(status_code=403, detail="Not authorized to update this show")
+
+    # Convert the incoming data to a dictionary, excluding any fields that weren't set
+    update_data = show_update.model_dump(exclude_unset=True)
+
+    # Loop through the provided data and update the database object
+    for key, value in update_data.items():
+        setattr(show_to_update, key, value)
+    
+    db.commit()
+    db.refresh(show_to_update)
+    
+    return show_to_update
+
+@app.delete("/api/shows/{show_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_show(
+    show_id: UUID,
+    db: Session = Depends(get_db),
+    claims: Dict = Depends(get_current_user_claims)
+):
+    clerk_user_id = claims.get("sub")
+    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    show_to_delete = db.query(models.Show).filter(models.Show.showID == show_id).first()
+    if not show_to_delete:
+        raise HTTPException(status_code=404, detail="Show not found")
+
+    # Security check: ensure the user owns this show
+    if show_to_delete.ownerID != user.ID: # type: ignore
+        raise HTTPException(status_code=403, detail="Not authorized to delete this show")
+
+    # Delete the show from the database
+    db.delete(show_to_delete)
+    db.commit()
+    
+    # Return a 204 No Content response, which is standard for a successful delete
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @app.post("/api/webhooks/clerk")
 async def handle_clerk_webhook(

@@ -1,7 +1,9 @@
 // frontend/src/ShowCard.jsx
 
 import React, { useMemo } from 'react';
-import { Flex, Box, VStack, HStack, Heading, Button, Text, Collapse, IconButton } from "@chakra-ui/react";
+import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Collapse, IconButton } from "@chakra-ui/react";
+import { AddIcon, EditIcon } from '@chakra-ui/icons';
+import { useNavigate } from 'react-router-dom';
 
 export const ShowCard = ({
     show,
@@ -15,6 +17,7 @@ export const ShowCard = ({
     sortBy,
     sortDirection,
 }) => {
+    const navigate = useNavigate(); // Get the navigate function from the router
 
     const sortedScripts = useMemo(() => {
         if (!show.scripts) return [];
@@ -31,8 +34,13 @@ export const ShowCard = ({
         return scriptsToSort;
     }, [show.scripts, sortBy, sortDirection]);
 
-    const hoverColor = 'orange.400';
     const borderColor = isHovered ? 'orange.400' : isSelected ? 'blue.400' : 'gray.600';
+
+    // Handler for the new edit button
+    const handleEditClick = (e) => {
+        e.stopPropagation(); // Prevent the show card from toggling
+        navigate(`/shows/${show.showID}/edit`);
+    };
 
     return (
         <Box
@@ -49,16 +57,27 @@ export const ShowCard = ({
             <Flex justify="space-between" align="center">
                 <Heading size="sm">{show.showName}</Heading>
                 {isSelected && (
-                    <Button
-                        bg="blue.400"
-                        size="xs"
-                        color="white"
-                        onClick={(e) => { e.stopPropagation(); onCreateScriptClick(show.showID); }}
-                        _hover={{ bg: 'orange.400' }}
-                        _focus={{ boxShadow: 'none' }}
-                    >
-                        Create Script
-                    </Button>
+                    // Use an HStack to group the two buttons together
+                    <HStack>
+                        <Button
+                            leftIcon={<EditIcon />}
+                            size="xs"
+                            onClick={handleEditClick}
+                        >
+                            Edit
+                        </Button>
+                        <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
+                        <Button
+                            bg="blue.400"
+                            size="xs"
+                            color="white"
+                            onClick={(e) => { e.stopPropagation(); onCreateScriptClick(show.showID); }}
+                            _hover={{ bg: 'orange.400' }}
+                            _focus={{ boxShadow: 'none' }}
+                        >
+                            Create Script
+                        </Button>
+                    </HStack>
                 )}
             </Flex>
             <Text fontSize="sm" color="gray.500" mt={2}>{show.showVenue || 'No venue set'}</Text>
