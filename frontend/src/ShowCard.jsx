@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Collapse, IconButton } from "@chakra-ui/react";
-import { AddIcon, EditIcon } from '@chakra-ui/icons';
+import { EditIcon } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 
 export const ShowCard = ({
@@ -38,7 +38,7 @@ export const ShowCard = ({
 
     // Handler for the new edit button
     const handleEditClick = (e) => {
-        e.stopPropagation(); // Prevent the show card from toggling
+        e.stopPropagation();
         navigate(`/shows/${show.showID}/edit`);
     };
 
