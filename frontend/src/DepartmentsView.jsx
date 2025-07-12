@@ -1,6 +1,6 @@
 // frontend/src/DepartmentsView.jsx
 
-import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
+import { Flex, Box, VStack, HStack, Heading, Button, Text, Spinner } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
 
 const sortedDepartments = []; // Placeholder for sorted venues data, replace with actual data fetching logic

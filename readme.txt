@@ -47,3 +47,4 @@ Thursday Jul 10, 2025
 
 Friday Jul 11, 2025
 1) Added button for editing the show
+2) Fixed the formatting of the show edit page and activated the return button
