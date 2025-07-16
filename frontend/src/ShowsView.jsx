@@ -1,26 +1,58 @@
 // frontend/src/ShowsView.jsx
 
+import { useState, useMemo } from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
 import { ShowCard } from "./ShowCard";
 
 export const ShowsView = ({
-    sortedShows,
-    showCardRefs,
+    shows,
     isLoading,
     error,
-    sortBy,
-    handleSortClick,
     onShowModalOpen,
     selectedShowId,
     hoveredShowId,
     setHoveredShowId,
     handleShowClick,
+    showCardRefs,
     selectedScriptId,
     handleScriptClick,
     handleOpenCreateScriptModal,
-    sortDirection
 }) => {
+    // Shows-specific sorting state
+    const [sortBy, setSortBy] = useState('dateUpdated');
+    const [sortDirection, setSortDirection] = useState('desc');
+
+    // Shows-specific sorting logic
+    const handleSortClick = (newSortBy) => {
+        if (sortBy === newSortBy) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortBy(newSortBy);
+            setSortDirection(newSortBy === 'dateUpdated' ? 'desc' : 'asc');
+        }
+    };
+
+    const sortedShows = useMemo(() => {
+        if (!shows || shows.length === 0) return [];
+
+        const showsToSort = [...shows];
+        showsToSort.sort((a, b) => {
+            let comparison = 0;
+            if (sortBy === 'showName') {
+                comparison = a.showName.localeCompare(b.showName);
+            } else if (sortBy === 'showDate') {
+                if (!a.showDate) return 1;
+                if (!b.showDate) return -1;
+                comparison = new Date(a.showDate) - new Date(b.showDate);
+            } else { // 'dateUpdated'
+                comparison = new Date(b.dateUpdated) - new Date(a.dateUpdated);
+            }
+            return sortDirection === 'asc' ? comparison : -comparison;
+        });
+        return showsToSort;
+    }, [shows, sortBy, sortDirection]);
+
     return (
         <Flex direction="column" height="100%">
             {/* Header Section */}
@@ -41,7 +73,7 @@ export const ShowsView = ({
                         </MenuList>
                     </Menu>
                     <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
-                    <Button bg="blue.400" color="white" size="xs" onClick={onShowModalOpen} _hover={{ bg: 'orange.400' }} _focus={{ boxShadow: 'none' }}>
+                    <Button bg="blue.400" color="white" size="xs" onClick={onShowModalOpen} _hover={{ bg: 'orange.400' }}>
                         Create Show
                     </Button>
                 </HStack>
@@ -99,7 +131,6 @@ export const ShowsView = ({
                                 size="sm"
                                 onClick={onShowModalOpen}
                                 _hover={{ bg: 'orange.400' }}
-                                _focus={{ boxShadow: 'none' }}
                             >
                                 Create Your First Show
                             </Button>

@@ -23,28 +23,18 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
   const { shows, isLoading, error, refetchShows } = useShows();
 
   const {
-    sortBy,
-    sortDirection,
     selectedShowId,
     selectedScriptId,
     hoveredShowId,
     setHoveredShowId,
     handleScriptClick,
-    handleSortClick,
     handleShowClick,
     showCardRefs,
-    sortedShows,
-    sortedVenues,
-    sortedDepartments,
-    sortedCrew,
-    sortedPins
+    shows: safeShows,
   } = useDashboardState(shows);
 
   const { isOpen: isShowModalOpen, onOpen: onShowModalOpen, onClose: onShowModalClose } = useDisclosure();
   const { isOpen: isScriptModalOpen, onOpen: onScriptModalOpen, onClose: onScriptModalClose } = useDisclosure();
-  const { isOpen: isVenueModalOpen, onOpen: onVenueModalOpen, onClose: onVenueModalClose } = useDisclosure();
-  const { isOpen: isDepartmentModalOpen, onOpen: onDepartmentModalOpen, onClose: onDepartmentModalClose } = useDisclosure();
-  const { isOpen: isCrewModalOpen, onOpen: onCrewModalOpen, onClose: onCrewModalClose } = useDisclosure();
 
   const [activeShowIdForScript, setActiveShowIdForScript] = useState(null);
   const [activeView, setActiveView] = useState('shows');
@@ -80,12 +70,9 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
           )}
           {activeView === 'shows' && (
             <ShowsView
-              sortedShows={sortedShows}
+              shows={shows}
               isLoading={isLoading}
               error={error}
-              sortBy={sortBy}
-              sortDirection={sortDirection}
-              handleSortClick={handleSortClick}
               onShowModalOpen={onShowModalOpen}
               selectedShowId={selectedShowId}
               hoveredShowId={hoveredShowId}
@@ -98,37 +85,13 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
             />
           )}
           {activeView === 'venues' && (
-            <VenuesView
-              sortedVenues={sortedVenues}
-              isLoading={isLoading}
-              error={error}
-              sortBy={sortBy}
-              sortDirection={sortDirection}
-              handleSortClick={handleSortClick}
-              onVenueModalOpen={onVenueModalOpen}
-            />
+            <VenuesView /> // No props needed
           )}
           {activeView === 'departments' && (
-            <DepartmentsView
-              sortedDepartments={sortedDepartments}
-              isLoading={isLoading}
-              error={error}
-              sortBy={sortBy}
-              sortDirection={sortDirection}
-              handleSortClick={handleSortClick}
-              onDepartmentModalOpen={onDepartmentModalOpen}
-            />
+            <DepartmentsView /> // No props needed
           )}
           {activeView === 'crew' && (
-            <CrewView
-              sortedCrew={sortedCrew}
-              isLoading={isLoading}
-              error={error}
-              sortBy={sortBy}
-              sortDirection={sortDirection}
-              handleSortClick={handleSortClick}
-              onCrewModalOpen={onCrewModalOpen}
-            />
+            <CrewView />
           )}
         </Box>
 
@@ -151,24 +114,6 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
           onScriptCreated={refetchShows}
         />
       )}
-
-      <CreateVenueModal
-        isOpen={isVenueModalOpen}
-        onClose={onVenueModalClose}
-        onVenueCreated={refetchShows}
-      />
-
-      <CreateDepartmentModal
-        isOpen={isDepartmentModalOpen}
-        onClose={onDepartmentModalClose}
-        onDepartmentCreated={refetchShows}
-      />
-
-      <CreateCrewModal
-        isOpen={isCrewModalOpen}
-        onClose={onCrewModalClose}
-        onCrewCreated={refetchShows}
-      />
 
       <Drawer isOpen={isMenuOpen} placement="right" onClose={onMenuClose}>
         <DrawerOverlay />

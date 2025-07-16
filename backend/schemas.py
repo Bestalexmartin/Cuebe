@@ -54,12 +54,27 @@ class ScriptCreate(BaseModel):
 
 class VenueBase(BaseModel):
     venueName: str
+    address: Optional[str] = None
+    capacity: Optional[int] = None
+    venueType: Optional[str] = None
+    contactName: Optional[str] = None
+    contactEmail: Optional[str] = None
+    contactPhone: Optional[str] = None
+    stageWidth: Optional[int] = None
+    stageDepth: Optional[int] = None
+    flyHeight: Optional[int] = None
+    equipment: Optional[List[str]] = None
+    notes: Optional[str] = None
+    rentalRate: Optional[int] = None
+    minimumRental: Optional[int] = None
 
 class VenueCreate(VenueBase):
     pass
 
 class Venue(VenueBase):
     venueID: int
+    dateCreated: datetime
+    dateUpdated: datetime
 
     class Config:
         from_attributes = True
@@ -83,13 +98,6 @@ class ShowCreate(BaseModel):
     venueID: Optional[int] = None  # Changed from showVenue: str
     showDate: Optional[date] = None
     deadline: datetime | None = None
-
-class Department(BaseModel):
-    departmentID: int
-    departmentName: str
-
-    class Config:
-        from_attributes = True
         
 class User(BaseModel):
     ID: int
@@ -102,3 +110,25 @@ class User(BaseModel):
 class GuestLinkCreate(BaseModel):
     departmentID: int
     linkName: Optional[str] = None
+
+class DepartmentCreate(BaseModel):
+    departmentName: str
+    departmentDescription: Optional[str] = None
+    departmentColor: str
+
+class Department(BaseModel):
+    departmentID: int
+    departmentName: str
+    departmentDescription: Optional[str] = None
+    departmentColor: str
+    dateCreated: datetime
+    dateUpdated: datetime
+
+    class Config:
+        from_attributes = True
+
+class CrewMemberCreate(BaseModel):
+    emailAddress: str
+    fullnameFirst: str
+    fullnameLast: str
+    userRole: str

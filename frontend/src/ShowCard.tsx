@@ -1,11 +1,47 @@
-// frontend/src/ShowCard.jsx
+// frontend/src/ShowCard.tsx
 
 import React, { useMemo } from 'react';
-import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Collapse, IconButton } from "@chakra-ui/react";
+import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Collapse } from "@chakra-ui/react";
 import { EditIcon } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 
-export const ShowCard = ({
+// TypeScript interfaces
+interface Venue {
+    venueID: number;
+    venueName: string;
+}
+
+interface Script {
+    scriptID: number;
+    scriptName: string;
+    scriptStatus: string;
+    showID: string;
+    dateUpdated: string;
+}
+
+interface Show {
+    showID: string;
+    showName: string;
+    showDate?: string;
+    dateUpdated: string;
+    venue?: Venue;
+    scripts: Script[];
+}
+
+interface ShowCardProps {
+    show: Show;
+    isSelected: boolean;
+    isHovered: boolean;
+    selectedScriptId: number | null;
+    onShowClick: (showId: string) => void;
+    onScriptClick: (scriptId: number) => void;
+    onShowHover: (showId: string | null) => void;
+    onCreateScriptClick: (showId: string) => void;
+    sortBy: 'showName' | 'showDate' | 'dateUpdated';
+    sortDirection: 'asc' | 'desc';
+}
+
+export const ShowCard: React.FC<ShowCardProps> = ({
     show,
     isSelected,
     isHovered,
@@ -17,7 +53,7 @@ export const ShowCard = ({
     sortBy,
     sortDirection,
 }) => {
-    const navigate = useNavigate(); // Get the navigate function from the router
+    const navigate = useNavigate();
 
     const sortedScripts = useMemo(() => {
         if (!show.scripts) return [];
@@ -27,7 +63,7 @@ export const ShowCard = ({
             if (sortBy === 'showName') {
                 comparison = a.scriptName.localeCompare(b.scriptName);
             } else { // 'dateUpdated'
-                comparison = new Date(b.dateUpdated) - new Date(a.dateUpdated);
+                comparison = new Date(b.dateUpdated).getTime() - new Date(a.dateUpdated).getTime();
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
@@ -37,7 +73,7 @@ export const ShowCard = ({
     const borderColor = isHovered ? 'orange.400' : isSelected ? 'blue.400' : 'gray.600';
 
     // Handler for the new edit button
-    const handleEditClick = (e) => {
+    const handleEditClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         navigate(`/shows/${show.showID}/edit`);
     };
@@ -60,7 +96,6 @@ export const ShowCard = ({
             <Flex justify="space-between" align="center">
                 <Heading size="sm">{show.showName}</Heading>
                 {isSelected && (
-                    // Use an HStack to group the two buttons together
                     <HStack>
                         <Button
                             leftIcon={<EditIcon />}
@@ -74,7 +109,10 @@ export const ShowCard = ({
                             bg="blue.400"
                             size="xs"
                             color="white"
-                            onClick={(e) => { e.stopPropagation(); onCreateScriptClick(show.showID); }}
+                            onClick={(e: React.MouseEvent) => { 
+                                e.stopPropagation(); 
+                                onCreateScriptClick(show.showID); 
+                            }}
                             _hover={{ bg: 'orange.400' }}
                             _focus={{ boxShadow: 'none' }}
                         >
@@ -101,7 +139,10 @@ export const ShowCard = ({
                                     borderRadius="md"
                                     shadow="sm"
                                     cursor="pointer"
-                                    onClick={(e) => { e.stopPropagation(); onScriptClick(script.scriptID); }}
+                                    onClick={(e: React.MouseEvent) => { 
+                                        e.stopPropagation(); 
+                                        onScriptClick(script.scriptID); 
+                                    }}
                                     borderColor={selectedScriptId === script.scriptID ? 'blue.400' : 'gray.600'}
                                     _hover={{ borderColor: 'orange.400' }}
                                     onMouseEnter={() => onShowHover(null)}

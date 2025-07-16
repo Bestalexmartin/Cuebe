@@ -422,3 +422,207 @@ async def create_venue(
     db.commit()
     db.refresh(new_venue)
     return new_venue
+
+# Add these endpoints to your main.py file
+
+# GET ALL DEPARTMENTS
+@app.get("/api/departments/", response_model=list[schemas.Department])
+async def read_departments(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    departments = db.query(models.Department).all()
+    return departments
+
+# CREATE A NEW DEPARTMENT
+@app.post("/api/departments/", response_model=schemas.Department, status_code=status.HTTP_201_CREATED)
+async def create_department(
+    department: schemas.DepartmentCreate,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    new_department = models.Department(
+        departmentName=department.departmentName,
+        departmentDescription=department.departmentDescription,
+        departmentColor=department.departmentColor
+    )
+    db.add(new_department)
+    db.commit()
+    db.refresh(new_department)
+    return new_department
+
+# GET A SPECIFIC DEPARTMENT
+@app.get("/api/departments/{department_id}", response_model=schemas.Department)
+async def read_department(
+    department_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    department = db.query(models.Department).filter(models.Department.departmentID == department_id).first()
+    if not department:
+        raise HTTPException(status_code=404, detail="Department not found")
+    return department
+
+# UPDATE A DEPARTMENT
+@app.patch("/api/departments/{department_id}", response_model=schemas.Department)
+async def update_department(
+    department_id: int,
+    department_update: schemas.DepartmentCreate,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    department_to_update = db.query(models.Department).filter(models.Department.departmentID == department_id).first()
+    if not department_to_update:
+        raise HTTPException(status_code=404, detail="Department not found")
+
+    # Convert the incoming data to a dictionary, excluding any fields that weren't set
+    update_data = department_update.model_dump(exclude_unset=True)
+    logger.info(f"Updating department {department_id} with data: {update_data}")
+
+    # Loop through the provided data and update the database object
+    for key, value in update_data.items():
+        setattr(department_to_update, key, value)
+    
+    db.commit()
+    db.refresh(department_to_update)
+    
+    return department_to_update
+
+# DELETE A DEPARTMENT
+@app.delete("/api/departments/{department_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_department(
+    department_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    department_to_delete = db.query(models.Department).filter(models.Department.departmentID == department_id).first()
+    if not department_to_delete:
+        raise HTTPException(status_code=404, detail="Department not found")
+
+    # TODO: Add check for departments in use by shows/crew
+    # if department_to_delete.crew_assignments:
+    #     raise HTTPException(status_code=400, detail="Cannot delete department with assigned crew members")
+
+    db.delete(department_to_delete)
+    db.commit()
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+# GET ALL CREW MEMBERS
+@app.get("/api/crew/", response_model=list[schemas.User])
+async def read_crew_members(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Get all active users - in the future you might filter by organization or show
+    crew_members = db.query(models.User).filter(models.User.isActive == True).all()
+    return crew_members
+
+# CREATE A NEW CREW MEMBER
+@app.post("/api/crew/", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
+async def create_crew_member(
+    crew_data: schemas.CrewMemberCreate,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Check if user with this email already exists
+    existing_user = db.query(models.User).filter(models.User.emailAddress == crew_data.emailAddress).first()
+    if existing_user:
+        if existing_user.isActive: # type: ignore
+            raise HTTPException(status_code=400, detail="User with this email already exists")
+        else:
+            # Reactivate existing user
+            existing_user.isActive = True # type: ignore
+            existing_user.fullnameFirst = crew_data.fullnameFirst # type: ignore
+            existing_user.fullnameLast = crew_data.fullnameLast # type: ignore
+            existing_user.userRole = crew_data.userRole # type: ignore
+            db.commit()
+            db.refresh(existing_user)
+            return existing_user
+    
+    # Create new crew member (User without Clerk integration for now)
+    new_crew_member = models.User(
+        emailAddress=crew_data.emailAddress,
+        fullnameFirst=crew_data.fullnameFirst,
+        fullnameLast=crew_data.fullnameLast,
+        userRole=crew_data.userRole,
+        userName=None,  # Will be set when they sign up with Clerk
+        clerk_user_id=None,  # Will be set when they sign up with Clerk
+        profileImgURL=None,
+        isActive=True
+    )
+    db.add(new_crew_member)
+    db.commit()
+    db.refresh(new_crew_member)
+    return new_crew_member
+
+# GET A SPECIFIC CREW MEMBER
+@app.get("/api/crew/{crew_id}", response_model=schemas.User)
+async def read_crew_member(
+    crew_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    crew_member = db.query(models.User).filter(models.User.ID == crew_id).first()
+    if not crew_member:
+        raise HTTPException(status_code=404, detail="Crew member not found")
+    return crew_member
+
+# UPDATE A CREW MEMBER
+@app.patch("/api/crew/{crew_id}", response_model=schemas.User)
+async def update_crew_member(
+    crew_id: int,
+    crew_update: schemas.CrewMemberCreate,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    crew_member_to_update = db.query(models.User).filter(models.User.ID == crew_id).first()
+    if not crew_member_to_update:
+        raise HTTPException(status_code=404, detail="Crew member not found")
+
+    # Convert the incoming data to a dictionary, excluding any fields that weren't set
+    update_data = crew_update.model_dump(exclude_unset=True)
+    logger.info(f"Updating crew member {crew_id} with data: {update_data}")
+
+    # Loop through the provided data and update the database object
+    for key, value in update_data.items():
+        setattr(crew_member_to_update, key, value)
+    
+    db.commit()
+    db.refresh(crew_member_to_update)
+    
+    return crew_member_to_update
+
+# DEACTIVATE A CREW MEMBER (soft delete)
+@app.patch("/api/crew/{crew_id}/deactivate", response_model=schemas.User)
+async def deactivate_crew_member(
+    crew_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    crew_member_to_deactivate = db.query(models.User).filter(models.User.ID == crew_id).first()
+    if not crew_member_to_deactivate:
+        raise HTTPException(status_code=404, detail="Crew member not found")
+
+    crew_member_to_deactivate.isActive = False # type: ignore
+    db.commit()
+    db.refresh(crew_member_to_deactivate)
+    
+    return crew_member_to_deactivate
+
+# REACTIVATE A CREW MEMBER
+@app.patch("/api/crew/{crew_id}/reactivate", response_model=schemas.User)
+async def reactivate_crew_member(
+    crew_id: int,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    crew_member_to_reactivate = db.query(models.User).filter(models.User.ID == crew_id).first()
+    if not crew_member_to_reactivate:
+        raise HTTPException(status_code=404, detail="Crew member not found")
+
+    crew_member_to_reactivate.isActive = True # type: ignore
+    db.commit()
+    db.refresh(crew_member_to_reactivate)
+    
+    return crew_member_to_reactivate

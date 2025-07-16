@@ -52,3 +52,4 @@ Friday Jul 11, 2025
 
 Wednesday Jul 16, 2025
 1) Substantial code review and component architecture revisions - reusable patterns, proper state management, clean separation of concerns... plus more consistent styling
+2) Major refactor: distributed sorting, self-contained views and completed CRUD for venues/departments/crew
