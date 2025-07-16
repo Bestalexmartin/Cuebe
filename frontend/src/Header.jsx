@@ -1,7 +1,8 @@
 // frontend/src/Header.jsx
 
 import { SignedIn, UserButton } from "@clerk/clerk-react";
-import { Flex, Heading, Image, Text, useColorMode, IconButton } from "@chakra-ui/react";
+import { Flex, Heading, Image, useColorMode, IconButton } from "@chakra-ui/react";
+import { MoonIcon, SunIcon } from '@chakra-ui/icons';
 import { CiMenuBurger } from 'react-icons/ci';
 
 function DarkModeSwitch() {
@@ -9,7 +10,7 @@ function DarkModeSwitch() {
   return (
     <IconButton
       aria-label="Toggle dark mode"
-      icon={<Text fontSize="2xl">◐</Text>}
+      icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
       onClick={toggleColorMode}
       variant="ghost"
       isRound={true}
@@ -19,7 +20,7 @@ function DarkModeSwitch() {
   );
 }
 
-const Header = ({ onMenuOpen }) => {
+const Header = ({ onMenuOpen, isMenuOpen }) => {
   return (
     <Flex
       as="header"
@@ -71,6 +72,7 @@ const Header = ({ onMenuOpen }) => {
           {/* This button is visible ONLY on mobile screens */}
           <IconButton
             aria-label="Open menu"
+            aria-expanded={isMenuOpen}
             icon={<CiMenuBurger />}
             fontSize="20px"
             borderRadius="full"
@@ -78,6 +80,7 @@ const Header = ({ onMenuOpen }) => {
             borderColor="blue.400"
             bg="inherit"
             _hover={{ borderColor: 'orange.400' }}
+            _focus={{ boxShadow: 'none' }}
             display={{ base: 'flex', lg: 'none' }}
             onClick={onMenuOpen}
           />

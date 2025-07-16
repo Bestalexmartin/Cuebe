@@ -7,8 +7,8 @@ const config = {
 };
 
 const colors = {
-  blue: {400: '#6495ED'},
-  orange: {400: '#e79e40'}
+  blue: { 400: '#6495ED' },
+  orange: { 400: '#e79e40' }
 }
 
 const semanticTokens = {
@@ -22,8 +22,12 @@ const semanticTokens = {
       _dark: 'whiteAlpha.900',
     },
     'ui.border': {
-        _light: 'gray.200',
-        _dark: 'whiteAlpha.300',
+      _light: 'gray.200',
+      _dark: 'whiteAlpha.300',
+    },
+    'container.border': {
+      _light: 'gray.600',
+      _dark: 'gray.300',
     }
   },
 };
@@ -43,6 +47,41 @@ const components = {
       },
     },
   },
+  Alert: {
+    // This styles toast notifications since they use the Alert component
+    baseStyle: {
+      container: {
+        width: '400px',
+        maxWidth: '400px',
+      },
+    },
+    variants: {
+      'left-accent': {
+        container: {
+          bg: 'blue.400',
+          color: 'white',
+          width: '400px',
+          maxWidth: '400px',
+        },
+      },
+      'top-accent': {
+        container: {
+          bg: 'blue.400',
+          color: 'white',
+          width: '400px',
+          maxWidth: '400px',
+        },
+      },
+      'solid': {
+        container: {
+          bg: 'blue.400',
+          color: 'white',
+          width: '400px',
+          maxWidth: '400px',
+        },
+      },
+    },
+  },
 };
 
 const styles = {
@@ -50,7 +89,7 @@ const styles = {
     body: {
       bg: 'page.background',
       color: 'page.text',
-   },   
+    },
   }),
 };
 

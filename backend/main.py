@@ -6,6 +6,7 @@ import time
 import secrets
 from typing import Dict
 from uuid import UUID
+import logging
 
 from fastapi import FastAPI, Depends, Request, HTTPException, Header, Response, status
 
@@ -15,7 +16,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm import joinedload
 from jose import jwt
 from svix.webhooks import Webhook, WebhookVerificationError
+from datetime import datetime
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Import local modules
 import models
@@ -36,7 +40,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- Authentication Dependency ---
+# --- Authentication Dependencies ---
 bearer_scheme = HTTPBearer()
 
 async def get_current_user_claims(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> Dict:
@@ -61,12 +65,25 @@ async def get_current_user_claims(credentials: HTTPAuthorizationCredentials = De
             raise HTTPException(status_code=401, detail="Token not yet valid")
         return decoded_claims
     except Exception as e:
-        print(f"Token verification failed: {e}")
+        logger.error(f"Token verification failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+async def get_current_user(
+    claims: Dict = Depends(get_current_user_claims),
+    db: Session = Depends(get_db)
+) -> models.User:
+    clerk_user_id = claims.get("sub")
+    if not clerk_user_id:
+        raise HTTPException(status_code=401, detail="User ID not found in token")
+    
+    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
 
 # --- API Endpoints ---
 
@@ -78,19 +95,11 @@ def read_root():
 async def create_show(
     show: schemas.ShowCreate, 
     db: Session = Depends(get_db), 
-    claims: Dict = Depends(get_current_user_claims)
+    user: models.User = Depends(get_current_user)
 ):
-    clerk_user_id = claims.get("sub") # The correct key is "sub"
-    if not clerk_user_id:
-        raise HTTPException(status_code=401, detail="User ID not found in token")
-
-    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found in local database")
-
     new_show = models.Show(
         showName=show.showName,
-        showVenue=show.showVenue,
+        venueID=show.venueID,
         showDate=show.showDate,
         ownerID=user.ID
     )
@@ -109,65 +118,49 @@ async def create_show(
 
 @app.get("/api/me/shows", response_model=list[schemas.Show])
 async def read_shows_for_current_user(
+    user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db), 
-    claims: Dict = Depends(get_current_user_claims),
-    skip: int = 0,  # <-- Add this parameter back
-    limit: int = 100 # <-- And this one
+    skip: int = 0,
+    limit: int = 100
 ):  
-    
-    clerk_user_id = claims.get("sub")
-    if not clerk_user_id:
-        raise HTTPException(status_code=401, detail="User ID not found in token")
-
-    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     shows = db.query(models.Show).options(
-        joinedload(models.Show.scripts).joinedload(models.Script.elements)
+        joinedload(models.Show.scripts).joinedload(models.Script.elements),
+        joinedload(models.Show.venue)
     ).filter(models.Show.ownerID == user.ID).offset(skip).limit(limit).all()
     
     return shows
 
-#
-# GET A SINGLE SHOW BY ID
-#
 @app.get("/api/shows/{show_id}", response_model=schemas.Show)
 async def read_show(
     show_id: UUID,
-    db: Session = Depends(get_db),
-    claims: Dict = Depends(get_current_user_claims)
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    clerk_user_id = claims.get("sub")
-    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    show = db.query(models.Show).filter(models.Show.showID == show_id).first()
+    logger.info(f"Looking for show with UUID: {show_id}")
+    show = db.query(models.Show).options(
+        joinedload(models.Show.scripts).joinedload(models.Script.elements),
+        joinedload(models.Show.venue),
+        joinedload(models.Show.crew)
+    ).filter(models.Show.showID == show_id).first()
+    
     if not show:
+        logger.warning(f"Show not found in DB: {show_id}")
         raise HTTPException(status_code=404, detail="Show not found")
-
+    
     # Security check: ensure the user owns this show
-    if show.ownerID != user.ID: # type: ignore
+    if show.ownerID != user.ID:  # type: ignore
+        logger.warning(f"User {user.ID} attempted to access show {show_id} without permission")
         raise HTTPException(status_code=403, detail="Not authorized to view this show")
 
     return show
 
-#
-# UPDATE A SHOW
-#
 @app.patch("/api/shows/{show_id}", response_model=schemas.Show)
 async def update_show(
     show_id: UUID,
     show_update: schemas.ShowCreate,
-    db: Session = Depends(get_db),
-    claims: Dict = Depends(get_current_user_claims)
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    clerk_user_id = claims.get("sub")
-    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     show_to_update = db.query(models.Show).filter(models.Show.showID == show_id).first()
     if not show_to_update:
         raise HTTPException(status_code=404, detail="Show not found")
@@ -178,6 +171,7 @@ async def update_show(
 
     # Convert the incoming data to a dictionary, excluding any fields that weren't set
     update_data = show_update.model_dump(exclude_unset=True)
+    logger.info(f"Updating show {show_id} with data: {update_data}")
 
     # Loop through the provided data and update the database object
     for key, value in update_data.items():
@@ -191,14 +185,9 @@ async def update_show(
 @app.delete("/api/shows/{show_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_show(
     show_id: UUID,
-    db: Session = Depends(get_db),
-    claims: Dict = Depends(get_current_user_claims)
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    clerk_user_id = claims.get("sub")
-    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     show_to_delete = db.query(models.Show).filter(models.Show.showID == show_id).first()
     if not show_to_delete:
         raise HTTPException(status_code=404, detail="Show not found")
@@ -211,7 +200,6 @@ async def delete_show(
     db.delete(show_to_delete)
     db.commit()
     
-    # Return a 204 No Content response, which is standard for a successful delete
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @app.post("/api/webhooks/clerk")
@@ -230,13 +218,13 @@ async def handle_clerk_webhook(
         wh = Webhook(webhook_secret)
         event = wh.verify(payload, dict(headers))
     except WebhookVerificationError as e:
-        print(f"Webhook verification failed: {e}")
+        logger.error(f"Webhook verification failed: {e}")
         raise HTTPException(status_code=400, detail="Webhook verification failed")
 
     event_type = event['type']
     user_data = event['data']
     
-    print(f"Received webhook for event: {event_type}")
+    logger.info(f"Received webhook for event: {event_type}")
 
     if event_type == 'user.created':
         email = user_data.get('email_addresses', [{}])[0].get('email_address')
@@ -245,13 +233,13 @@ async def handle_clerk_webhook(
         existing_user = db.query(models.User).filter(models.User.emailAddress == email).first()
 
         if existing_user and existing_user.isActive is False:
-            print(f"Reactivating user for email: {email}")
+            logger.info(f"Reactivating user for email: {email}")
             existing_user.isActive = True # type: ignore
             existing_user.clerk_user_id = new_clerk_id
             existing_user.userName = user_data.get('username')
             # ... update other fields ...
         elif not existing_user:
-            print(f"Creating new user for email: {email}")
+            logger.info(f"Creating new user for email: {email}")
             new_user = models.User(
                 clerk_user_id=new_clerk_id,
                 emailAddress=email,
@@ -274,29 +262,38 @@ async def handle_clerk_webhook(
             user_to_update.fullnameLast = user_data.get('last_name')
             user_to_update.profileImgURL = user_data.get('image_url')
             db.commit()
-            print(f"User {user_data['id']} updated.")
+            logger.info(f"User {user_data['id']} updated.")
 
     elif event_type == 'user.deleted':
         clerk_id_to_delete = user_data.get('id')
         if clerk_id_to_delete:
             user_to_deactivate = db.query(models.User).filter(models.User.clerk_user_id == clerk_id_to_delete).first()
             if user_to_deactivate:
-                user_to_deactivate.isActive = False  # type: ignore
+                user_to_deactivate.isActive = False # type: ignore
                 db.commit()
-                print(f"User {clerk_id_to_delete} deactivated.")
+                logger.info(f"User {clerk_id_to_delete} deactivated.")
     
     return {"status": "ok"}
 
-#
-# CREATE A GUEST ACCESS LINK (Protected)
-#
-@app.post("/api/shows/{show_id}/guest-links", dependencies=[Depends(get_current_user_claims)])
+@app.post("/api/shows/{show_id}/guest-links")
 def create_guest_link_for_show(
     show_id: UUID,
-    department_id: int,
-    db: Session = Depends(get_db),
-    claims: Dict = Depends(get_current_user_claims)
+    request: schemas.GuestLinkCreate,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
+    # Verify the show exists and user owns it
+    show = db.query(models.Show).filter(models.Show.showID == show_id).first()
+    if not show:
+        raise HTTPException(status_code=404, detail="Show not found")
+    
+    if show.ownerID != user.ID: # type: ignore
+        raise HTTPException(status_code=403, detail="Not authorized to create guest links for this show")
+    
+    # Verify the department exists
+    department = db.query(models.Department).filter(models.Department.departmentID == request.departmentID).first()
+    if not department:
+        raise HTTPException(status_code=404, detail="Department not found")
     
     # Generate a secure, URL-safe token
     token = secrets.token_urlsafe(32)
@@ -304,7 +301,8 @@ def create_guest_link_for_show(
     new_link = models.GuestAccessLink(
         accessToken=token,
         showID=show_id,
-        departmentID=department_id
+        departmentID=request.departmentID,
+        linkName=request.linkName
     )
     db.add(new_link)
     db.commit()
@@ -312,10 +310,6 @@ def create_guest_link_for_show(
     
     return {"guest_access_url": f"/guest/{token}"}
 
-
-#
-# GET SCRIPT ELEMENTS FOR A GUEST (Public)
-#
 @app.get("/api/guest/{access_token}", response_model=list[schemas.ScriptElement])
 def get_script_for_guest(access_token: str, db: Session = Depends(get_db)):
     # Find the link in the database
@@ -324,6 +318,10 @@ def get_script_for_guest(access_token: str, db: Session = Depends(get_db)):
     # Check if link exists and is valid (e.g., not expired)
     if not link:
         raise HTTPException(status_code=404, detail="Access link not found or invalid")
+    
+    # Check if link is expired
+    if link.expiresAt < datetime.now(): # type: ignore
+        raise HTTPException(status_code=403, detail="Access link has expired")
         
     # Find the "live" script for the show this link belongs to
     script = db.query(models.Script).filter(
@@ -334,24 +332,20 @@ def get_script_for_guest(access_token: str, db: Session = Depends(get_db)):
     if not script:
         raise HTTPException(status_code=404, detail="Live script for this show not found")
 
-    # Fetch only the calls for the department associated with this link
+    # Fetch only the active calls for the department associated with this link
     elements = db.query(models.ScriptElement).filter(
         models.ScriptElement.scriptID == script.scriptID,
-        models.ScriptElement.departmentID == link.departmentID
+        models.ScriptElement.departmentID == link.departmentID,
+        models.ScriptElement.isActive == True
     ).order_by(models.ScriptElement.elementOrder).all()
 
     return elements
 
 @app.get("/api/me/pinned-scripts/count")
 async def get_pinned_scripts_count(
-    db: Session = Depends(get_db),
-    claims: Dict = Depends(get_current_user_claims)
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    clerk_user_id = claims.get("sub")
-    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     # This query now counts pinned scripts belonging to the user's shows
     count = db.query(models.Script).join(models.Show).filter(
         models.Show.ownerID == user.ID,
@@ -363,14 +357,9 @@ async def get_pinned_scripts_count(
 @app.patch("/api/scripts/{script_id}/toggle-pin", response_model=schemas.Script)
 async def toggle_pin_for_script(
     script_id: int,
-    db: Session = Depends(get_db),
-    claims: Dict = Depends(get_current_user_claims)
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    clerk_user_id = claims.get("sub")
-    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     # Find the script to be pinned/unpinned
     script = db.query(models.Script).filter(models.Script.scriptID == script_id).first()
     if not script:
@@ -391,14 +380,9 @@ async def toggle_pin_for_script(
 async def create_script_for_show(
     show_id: UUID,
     script: schemas.ScriptCreate,
-    db: Session = Depends(get_db),
-    claims: Dict = Depends(get_current_user_claims)
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
-    clerk_user_id = claims.get("sub")
-    user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
     # Find the show this script will belong to
     show = db.query(models.Show).filter(models.Show.showID == show_id).first()
     if not show:
@@ -411,10 +395,30 @@ async def create_script_for_show(
     # Create the new script with default values
     new_script = models.Script(
         showID=show_id,
-        scriptName=script.scriptName or "New Script" # Use provided name or default
+        scriptName=script.scriptName or "New Script"
     )
     db.add(new_script)
     db.commit()
     db.refresh(new_script)
 
     return new_script
+
+@app.get("/api/venues/", response_model=list[schemas.Venue])
+async def read_venues(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    venues = db.query(models.Venue).all()
+    return venues
+
+@app.post("/api/venues/", response_model=schemas.Venue, status_code=status.HTTP_201_CREATED)
+async def create_venue(
+    venue: schemas.VenueCreate,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    new_venue = models.Venue(**venue.model_dump())
+    db.add(new_venue)
+    db.commit()
+    db.refresh(new_venue)
+    return new_venue

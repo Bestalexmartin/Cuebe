@@ -12,14 +12,15 @@ import { DepartmentsView } from './DepartmentsView';
 import { CrewView } from './CrewView';
 import { QuickAccessPanel } from './QuickAccessPanel';
 import { useShows } from "./useShows";
-import { usePinnedCount } from './usePinnedCount';
 import { useDashboardState } from './useDashboardState';
 import { CreateShowModal } from "./CreateShowModal";
 import { CreateScriptModal } from "./CreateScriptModal";
+import { CreateVenueModal } from './CreateVenueModal';
+import { CreateDepartmentModal } from "./CreateDepartmentModal";
+import { CreateCrewModal } from "./CreateCrewModal";
 
 const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
   const { shows, isLoading, error, refetchShows } = useShows();
-  const { pinnedCount } = usePinnedCount();
 
   const {
     sortBy,
@@ -101,6 +102,9 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
               sortedVenues={sortedVenues}
               isLoading={isLoading}
               error={error}
+              sortBy={sortBy}
+              sortDirection={sortDirection}
+              handleSortClick={handleSortClick}
               onVenueModalOpen={onVenueModalOpen}
             />
           )}
@@ -109,7 +113,10 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
               sortedDepartments={sortedDepartments}
               isLoading={isLoading}
               error={error}
-              onVenueModalOpen={onDepartmentModalOpen}
+              sortBy={sortBy}
+              sortDirection={sortDirection}
+              handleSortClick={handleSortClick}
+              onDepartmentModalOpen={onDepartmentModalOpen}
             />
           )}
           {activeView === 'crew' && (
@@ -117,7 +124,10 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
               sortedCrew={sortedCrew}
               isLoading={isLoading}
               error={error}
-              onVenueModalOpen={onCrewModalOpen}
+              sortBy={sortBy}
+              sortDirection={sortDirection}
+              handleSortClick={handleSortClick}
+              onCrewModalOpen={onCrewModalOpen}
             />
           )}
         </Box>
@@ -132,9 +142,33 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
       </Flex>
 
       <CreateShowModal isOpen={isShowModalOpen} onClose={onShowModalClose} onShowCreated={refetchShows} />
+
       {activeShowIdForScript && (
-        <CreateScriptModal isOpen={isScriptModalOpen} onClose={onScriptModalClose} showId={activeShowIdForScript} onScriptCreated={refetchShows} />
+        <CreateScriptModal
+          isOpen={isScriptModalOpen}
+          onClose={onScriptModalClose}
+          showId={activeShowIdForScript}
+          onScriptCreated={refetchShows}
+        />
       )}
+
+      <CreateVenueModal
+        isOpen={isVenueModalOpen}
+        onClose={onVenueModalClose}
+        onVenueCreated={refetchShows}
+      />
+
+      <CreateDepartmentModal
+        isOpen={isDepartmentModalOpen}
+        onClose={onDepartmentModalClose}
+        onDepartmentCreated={refetchShows}
+      />
+
+      <CreateCrewModal
+        isOpen={isCrewModalOpen}
+        onClose={onCrewModalClose}
+        onCrewCreated={refetchShows}
+      />
 
       <Drawer isOpen={isMenuOpen} placement="right" onClose={onMenuClose}>
         <DrawerOverlay />
@@ -144,8 +178,8 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
             border="3px solid"
             borderColor="blue.400"
             bg="inherit"
-            _hover={{ borderColor: 'orange.400' }} /
-          >
+            _hover={{ borderColor: 'orange.400' }}
+          />
           <DrawerHeader>Quick•Access</DrawerHeader>
           <DrawerBody>
             <QuickAccessPanel activeView={activeView} setActiveView={setActiveView} />

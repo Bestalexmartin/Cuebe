@@ -1,5 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 
+const SCROLL_DELAY = 100; // Configurable scroll delay
+
 export const useDashboardState = (shows) => {
   const [sortBy, setSortBy] = useState('dateUpdated');
   const [sortDirection, setSortDirection] = useState('desc');
@@ -23,7 +25,7 @@ export const useDashboardState = (shows) => {
           block: 'nearest'
         });
       }
-    }, 100);
+    }, SCROLL_DELAY);
 
   };
 
@@ -41,6 +43,8 @@ export const useDashboardState = (shows) => {
   };
 
   const sortedShows = useMemo(() => {
+    if (!shows || shows.length === 0) return [];
+
     const showsToSort = [...shows];
     showsToSort.sort((a, b) => {
       let comparison = 0;
@@ -58,6 +62,12 @@ export const useDashboardState = (shows) => {
     return showsToSort;
   }, [shows, sortBy, sortDirection]);
 
+  // Placeholder sorted arrays for future views
+  const sortedVenues = [];
+  const sortedDepartments = [];
+  const sortedCrew = [];
+  const sortedPins = [];
+
   return {
     sortBy,
     sortDirection,
@@ -67,8 +77,12 @@ export const useDashboardState = (shows) => {
     setHoveredShowId,
     handleScriptClick,
     handleSortClick,
-    sortedShows,
-    showCardRefs,
     handleShowClick,
+    showCardRefs,
+    sortedShows,
+    sortedVenues,
+    sortedDepartments,
+    sortedCrew,
+    sortedPins
   };
 };

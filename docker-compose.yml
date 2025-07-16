@@ -19,15 +19,19 @@ services:
 
   ### The React Frontend Service ###
   frontend:
-    image: node:20-alpine # Uses a pre-built, lightweight Node.js image
+    image: node:20-alpine
     ports:
-      - "5173:5173"  # Maps the Vite port
-    working_dir: /app/frontend
+      - "5173:5173"
+    working_dir: /app
     volumes:
-      - .:/app # Mounts the entire project directory
-    env_file: # <-- ADD THIS SECTION
+      - ./frontend:/app
+    env_file:
       - ./.env
-    command: sh -c "npm install && npm run dev" # Command to install dependencies and start the dev server
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    depends_on:
+      - backend
+    environment:
+      - VITE_HOST=0.0.0.0
 
   ### The PostgreSQL Database Service ###
   db:

@@ -1,20 +1,31 @@
 # backend/models.py
 
-from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, func, Boolean, Text, Interval, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, func, Boolean, Text, Interval, UniqueConstraint, Index, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
+import enum
 
 Base = declarative_base()
+
+# Define the enum for element types
+class ElementType(enum.Enum):
+    CUE = "cue"
+    NOTE = "note"
+    MARKER = "marker"
+    STANDBY = "standby"
+    WARNING = "warning"
 
 # --- MANY-TO-MANY ASSOCIATION TABLE ---
 # This table links a User (as a Crew member) to a Show for a specific Department.
 class CrewAssignment(Base):
     __tablename__ = "crewAssignmentsTable"
+    __table_args__ = (UniqueConstraint('showID', 'userID', 'departmentID'),)
     showID = Column(UUID(as_uuid=True), ForeignKey("showsTable.showID"))
     userID = Column(Integer, ForeignKey("userTable.ID"), primary_key=True)
     departmentID = Column(Integer, ForeignKey("departmentsTable.departmentID"), primary_key=True)
+    
 
     # Relationships to easily access the objects
     user = relationship("User")
@@ -37,19 +48,29 @@ class User(Base):
 
     shows = relationship("Show", back_populates="showOwner")
 
+class Venue(Base):
+    __tablename__ = "venuesTable"
+    venueID = Column(Integer, primary_key=True, index=True)
+    venueName = Column(String, unique=True, nullable=False)
+
+    shows = relationship("Show", back_populates="venue")
+
 class Show(Base):
     __tablename__ = "showsTable"
 
-    showID = Column(UUID(as_uuid=True), primary_key=True, server_default=func.uuid_generate_v4(), default=uuid.uuid4)
+    showID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     showName = Column(String, index=True, nullable=False)
-    showVenue = Column(String)
     showDate = Column(Date)
+    venueID = Column(Integer, ForeignKey("venuesTable.venueID"), nullable=True) # <-- CHANGED
+    showNotes = Column(Text, nullable=True) # <-- NEW
+    deadline = Column(DateTime, nullable=True) # <-- NEW
     ownerID = Column(Integer, ForeignKey("userTable.ID"))
-    showOwner = relationship("User", back_populates="shows", foreign_keys=[ownerID])
     dateCreated = Column(DateTime, server_default=func.now())
     dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
+    showOwner = relationship("User", back_populates="shows", foreign_keys=[ownerID])
+    venue = relationship("Venue", back_populates="shows")
     scripts = relationship("Script", back_populates="show", cascade="all, delete-orphan")
     crew = relationship("CrewAssignment", back_populates="show", cascade="all, delete-orphan")
 
@@ -65,10 +86,9 @@ class Script(Base):
     __tablename__ = "scriptsTable"
     scriptID = Column(Integer, primary_key=True, index=True)
     scriptName = Column(String, nullable=False)
-    scriptStatus = Column(String, default="live")
+    scriptStatus = Column(String, default="ready") # e.g., 'ready', 'running', 'paused', 'done'
     intendedStartTime = Column(DateTime(timezone=True))
     actualStartTime = Column(DateTime(timezone=True), nullable=True)
-    scriptStatus = Column(String, default="ready") # e.g., 'ready', 'running', 'paused', 'done'
     isPinned = Column(Boolean, default=False, nullable=False)
     dateCreated = Column(DateTime, server_default=func.now())
     dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
@@ -79,18 +99,18 @@ class Script(Base):
     show = relationship("Show", back_populates="scripts")
     elements = relationship("ScriptElement", back_populates="script", order_by="ScriptElement.elementOrder")
 
-    intendedStartTime = Column(DateTime(timezone=True))
-    actualStartTime = Column(DateTime(timezone=True), nullable=True)
-    scriptStatus = Column(String, default="ready") # e.g., 'ready', 'running', 'paused', 'done'
-
 class ScriptElement(Base):
     __tablename__ = "scriptElementsTable"
+    __table_args__ = (
+        Index('idx_scriptelement_timeoffset', 'timeOffset'),
+        Index('idx_scriptelement_script_order', 'scriptID', 'elementOrder'),
+    )
     
     elementID = Column(Integer, primary_key=True, index=True)
     scriptID = Column(Integer, ForeignKey("scriptsTable.scriptID"))
     departmentID = Column(Integer, ForeignKey("departmentsTable.departmentID"), nullable=True)
     
-    elementType = Column(String) 
+    elementType = Column(Enum(ElementType), nullable=False)
     elementOrder = Column(Integer, nullable=False)
     
     cueNumber = Column(String)
@@ -98,6 +118,9 @@ class ScriptElement(Base):
     
     # This should be the only time-related column
     timeOffset = Column(Interval, nullable=False)
+    
+    # For temporarily disabling elements without deleting them
+    isActive = Column(Boolean, default=True, nullable=False)
 
     # Relationships
     script = relationship("Script", back_populates="elements")

@@ -3,7 +3,7 @@
 from pydantic import BaseModel, model_validator, field_validator
 from datetime import date, timedelta, datetime
 from uuid import UUID
-from typing import List
+from typing import List, Optional
 
 # This is the schema for an element coming FROM the database
 class ScriptElementFromDB(BaseModel):
@@ -52,11 +52,23 @@ class Script(BaseModel):
 class ScriptCreate(BaseModel):
     scriptName: str | None = None
 
+class VenueBase(BaseModel):
+    venueName: str
+
+class VenueCreate(VenueBase):
+    pass
+
+class Venue(VenueBase):
+    venueID: int
+
+    class Config:
+        from_attributes = True
+
 class Show(BaseModel):
     showID: UUID
     ownerID: int
     showName: str
-    showVenue: str | None = None
+    venue: Optional[Venue] = None  # Changed from showVenue to venue relationship
     showDate: date | None = None
     dateUpdated: datetime
     
@@ -66,11 +78,11 @@ class Show(BaseModel):
     class Config:
         from_attributes = True
 
-# Other schemas remain the same
 class ShowCreate(BaseModel):
     showName: str
-    showVenue: str | None = None
-    showDate: date | None = None
+    venueID: Optional[int] = None  # Changed from showVenue: str
+    showDate: Optional[date] = None
+    deadline: datetime | None = None
 
 class Department(BaseModel):
     departmentID: int
@@ -86,3 +98,7 @@ class User(BaseModel):
     
     class Config:
         from_attributes = True
+
+class GuestLinkCreate(BaseModel):
+    departmentID: int
+    linkName: Optional[str] = None

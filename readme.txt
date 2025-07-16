@@ -48,3 +48,7 @@ Thursday Jul 10, 2025
 Friday Jul 11, 2025
 1) Added button for editing the show
 2) Fixed the formatting of the show edit page and activated the return button
+3) Added stub of edit show page
+
+Wednesday Jul 16, 2025
+1) Substantial code review and component architecture revisions - reusable patterns, proper state management, clean separation of concerns... plus more consistent styling
