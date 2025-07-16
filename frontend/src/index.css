@@ -93,3 +93,18 @@ button:focus, button:focus-visible {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* FOCUS REMOVAL */
+
+button:focus,
+button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Also target Chakra UI button classes if needed */
+.chakra-button:focus,
+.chakra-button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}

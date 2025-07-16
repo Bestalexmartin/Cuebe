@@ -1,4 +1,4 @@
-// frontend/src/CreateScriptModal.jsx
+// frontend/src/CreateVenueModal.jsx
 
 import { useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
@@ -14,56 +14,50 @@ import {
     FormControl,
     FormLabel,
     Input,
-    useToast,
+    useToast
 } from '@chakra-ui/react';
 
-export const CreateScriptModal = ({ isOpen, onClose, showId, onScriptCreated }) => {
+export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
     const { getToken } = useAuth();
     const toast = useToast();
-    const [scriptName, setScriptName] = useState('');
+    const [venueName, setVenueName] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const resetForm = () => {
-        setScriptName('');
+        setVenueName('');
     };
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         setIsSubmitting(true);
 
         try {
             const token = await getToken();
-            // The API endpoint to create a script for a specific show
-            const response = await fetch(`/api/shows/${showId}/scripts/`, {
+            const response = await fetch('/api/venues/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                // Our model gives scriptName a default, so this body could be empty,
-                // but we'll include it for customization.
-                body: JSON.stringify({
-                    scriptName: scriptName || "New Script" // Use input or a default
-                })
+                body: JSON.stringify({ venueName: venueName })
             });
 
             if (!response.ok) {
-                throw new Error('Failed to create script.');
+                throw new Error('Failed to create venue');
             }
 
             toast({
-                title: 'Script Created',
-                description: `"${scriptName || 'New Script'}" has been created successfully`,
+                title: 'Venue Created',
+                description: `"${venueName}" has been added to your venues`,
             });
 
             resetForm();
-            onScriptCreated(); // This will be our refetchShows function
-            onClose(); // Close the modal
-
+            onVenueCreated(); // This will be a refetch function
+            onClose();
         } catch (error) {
-            console.error(error);
+            console.error("Failed to create venue", error);
             toast({
-                title: 'Error Creating Script',
+                title: 'Error Creating Venue',
                 description: error.message || 'Something went wrong',
                 status: 'error',
             });
@@ -82,19 +76,18 @@ export const CreateScriptModal = ({ isOpen, onClose, showId, onScriptCreated }) 
                 border="2px solid"
                 borderColor="gray.600"
             >
-                <ModalHeader>Create a New Script</ModalHeader>
+                <ModalHeader>Create New Venue</ModalHeader>
                 <ModalCloseButton />
                 <ModalBody pb={6}>
-                    <FormControl>
-                        <FormLabel>Script Name (optional)</FormLabel>
+                    <FormControl isRequired>
+                        <FormLabel>Venue Name</FormLabel>
                         <Input
-                            placeholder="Enter script name"
-                            value={scriptName}
-                            onChange={(e) => setScriptName(e.target.value)}
+                            value={venueName}
+                            onChange={(e) => setVenueName(e.target.value)}
+                            placeholder="e.g., The Grand Theater"
                         />
                     </FormControl>
                 </ModalBody>
-
                 <ModalFooter>
                     <Button
                         bg="blue.400"
@@ -103,9 +96,10 @@ export const CreateScriptModal = ({ isOpen, onClose, showId, onScriptCreated }) 
                         mr={3}
                         type="submit"
                         isLoading={isSubmitting}
+                        isDisabled={!venueName.trim()}
                         _hover={{ bg: 'orange.400' }}
                     >
-                        Create Script
+                        Create Venue
                     </Button>
                     <Button
                         size="xs"

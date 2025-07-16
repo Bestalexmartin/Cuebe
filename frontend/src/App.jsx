@@ -8,7 +8,15 @@ import DashboardPage from './DashboardPage';
 import SignInPage from "./SignInPage";
 import SignUpPage from "./SignUpPage";
 import UserProfilePage from "./UserProfilePage";
-import { EditShowPage } from './EditShowPage'; // Make sure this is imported
+import { EditShowPage } from './EditShowPage';
+
+// Protected Route Component - wraps any component that requires authentication
+const ProtectedRoute = ({ children }) => (
+  <>
+    <SignedIn>{children}</SignedIn>
+    <SignedOut><Navigate to="/sign-in" replace /></SignedOut>
+  </>
+);
 
 function App() {
   const { isOpen: isMenuOpen, onOpen: onMenuOpen, onClose: onMenuClose } = useDisclosure();
@@ -21,7 +29,7 @@ function App() {
       width="100vw"
       overflow="hidden"
     >
-      <Header onMenuOpen={onMenuOpen} />
+      <Header onMenuOpen={onMenuOpen} isMenuOpen={isMenuOpen} />
 
       <Box as="main" overflow="hidden">
         <Routes>
@@ -31,34 +39,27 @@ function App() {
 
           {/* Private Routes */}
           <Route path="/dashboard" element={
-            <>
-              <SignedIn>
-                <DashboardPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
-              </SignedIn>
-              <SignedOut> <Navigate to="/sign-in" replace /> </SignedOut>
-            </>
+            <ProtectedRoute>
+              <DashboardPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
+            </ProtectedRoute>
           } />
 
           <Route path="/shows/:showId/edit" element={
-            <>
-              <SignedIn>
-                <EditShowPage />
-              </SignedIn>
-              <SignedOut> <Navigate to="/sign-in" replace /> </SignedOut>
-            </>
+            <ProtectedRoute>
+              <EditShowPage />
+            </ProtectedRoute>
           } />
 
           <Route path="/user-profile/*" element={
-            <>
-              <SignedIn> <UserProfilePage /> </SignedIn>
-              <SignedOut> <Navigate to="/sign-in" replace /> </SignedOut>
-            </>
+            <ProtectedRoute>
+              <UserProfilePage />
+            </ProtectedRoute>
           } />
 
           <Route path="*" element={
             <>
-              <SignedIn> <Navigate to="/dashboard" replace /> </SignedIn>
-              <SignedOut> <Navigate to="/sign-in" replace /> </SignedOut>
+              <SignedIn><Navigate to="/dashboard" replace /></SignedIn>
+              <SignedOut><Navigate to="/sign-in" replace /></SignedOut>
             </>
           } />
         </Routes>

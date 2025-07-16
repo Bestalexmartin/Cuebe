@@ -49,15 +49,23 @@ export const ShowsView = ({
             <Box
                 mt="4"
                 border="1px solid"
-                borderColor="gray.300"
+                borderColor="container.border"
                 p="4"
                 borderRadius="md"
                 flexGrow={1}
                 overflowY="auto"
                 className="hide-scrollbar"
             >
-                {isLoading && <Spinner />}
-                {error && <Text color="red.500">{error}</Text>}
+                {isLoading && (
+                    <Flex justify="center" align="center" height="200px">
+                        <Spinner />
+                    </Flex>
+                )}
+                {error && (
+                    <Text color="red.500" textAlign="center" p="4">
+                        {error}
+                    </Text>
+                )}
                 {!isLoading && !error && (
                     sortedShows.length > 0 ? (
                         <VStack spacing={4} align="stretch">
@@ -79,7 +87,24 @@ export const ShowsView = ({
                                 </div>
                             ))}
                         </VStack>
-                    ) : (<Text>You haven't added any shows yet.</Text>)
+                    ) : (
+                        <Flex direction="column" align="center" justify="center" height="200px" gap="4">
+                            <AppIcon name="show" boxSize="40px" color="gray.400" />
+                            <Text color="gray.500" textAlign="center">
+                                You haven't added any shows yet.
+                            </Text>
+                            <Button
+                                bg="blue.400"
+                                color="white"
+                                size="sm"
+                                onClick={onShowModalOpen}
+                                _hover={{ bg: 'orange.400' }}
+                                _focus={{ boxShadow: 'none' }}
+                            >
+                                Create Your First Show
+                            </Button>
+                        </Flex>
+                    )
                 )}
             </Box>
         </Flex>

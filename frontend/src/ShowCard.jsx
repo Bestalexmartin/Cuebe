@@ -42,6 +42,9 @@ export const ShowCard = ({
         navigate(`/shows/${show.showID}/edit`);
     };
 
+    // Get venue name safely
+    const venueName = show.venue?.venueName || 'No venue set';
+
     return (
         <Box
             p="4"
@@ -80,7 +83,7 @@ export const ShowCard = ({
                     </HStack>
                 )}
             </Flex>
-            <Text fontSize="sm" color="gray.500" mt={2}>{show.showVenue || 'No venue set'}</Text>
+            <Text fontSize="sm" color="gray.500" mt={2}>{venueName}</Text>
             <HStack mt={2} justify="space-between" fontSize="xs" color="gray.600">
                 <Text>Date: {show.showDate ? new Date(show.showDate).toLocaleDateString() : 'N/A'}</Text>
                 <Text>Scripts: {show.scripts ? show.scripts.length : 0}</Text>
