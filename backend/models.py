@@ -1,6 +1,6 @@
 # backend/models.py
 
-from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, func, Boolean, Text, Interval, UniqueConstraint, Index, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Date, ForeignKey, func, Boolean, Text, Interval, UniqueConstraint, Index, Enum, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
@@ -48,11 +48,46 @@ class User(Base):
 
     shows = relationship("Show", back_populates="showOwner")
 
+# Update your Venue model in models.py
+
 class Venue(Base):
     __tablename__ = "venuesTable"
+    
     venueID = Column(Integer, primary_key=True, index=True)
     venueName = Column(String, unique=True, nullable=False)
+    
+    # Location Information
+    address = Column(Text, nullable=True)
+    
+    # Venue Details
+    capacity = Column(Integer, nullable=True)
+    venueType = Column(String, nullable=True)  # e.g., "Proscenium", "Thrust", "Arena", "Black Box"
+    
+    # Contact Information
+    contactName = Column(String, nullable=True)
+    contactEmail = Column(String, nullable=True)
+    contactPhone = Column(String, nullable=True)
+    
+    # Technical Specifications (in feet)
+    stageWidth = Column(Integer, nullable=True)
+    stageDepth = Column(Integer, nullable=True)
+    flyHeight = Column(Integer, nullable=True)
+    
+    # Equipment and Features (stored as JSON array)
+    equipment = Column(JSON, nullable=True)  # e.g., ["Fly System", "Orchestra Pit", "Sound System"]
+    
+    # Additional Information
+    notes = Column(Text, nullable=True)
+    
+    # Rental Information
+    rentalRate = Column(Integer, nullable=True)  # Daily rate in dollars
+    minimumRental = Column(Integer, nullable=True)  # Minimum rental amount
+    
+    # Timestamps
+    dateCreated = Column(DateTime, server_default=func.now())
+    dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
+    # Relationships
     shows = relationship("Show", back_populates="venue")
 
 class Show(Base):
@@ -81,6 +116,8 @@ class Department(Base):
     departmentDescription = Column(String)
     departmentColor = Column(String) # e.g., "#FF5733"
     # Note: Department head logic is handled by the CrewAssignment table
+    dateCreated = Column(DateTime, server_default=func.now())
+    dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 class Script(Base):
     __tablename__ = "scriptsTable"
