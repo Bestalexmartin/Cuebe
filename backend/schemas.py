@@ -5,52 +5,51 @@ from datetime import date, timedelta, datetime
 from uuid import UUID
 from typing import List, Optional
 
-# This is the schema for an element coming FROM the database
-class ScriptElementFromDB(BaseModel):
-    elementID: int
-    scriptID: int
-    timeOffset: timedelta
+# =============================================================================
+# USER SCHEMAS
+# =============================================================================
 
-    class Config:
-        from_attributes = True
-
-# This is the schema for an element going TO the frontend
-class ScriptElement(BaseModel):
-    elementID: int
-    scriptID: int
-    departmentID: int | None = None
-    elementType: str
-    elementOrder: int
-    cueNumber: str | None = None
-    elementDescription: str | None = None
-    timeOffset: int # The final output type will be an integer
-
-    class Config:
-        from_attributes = True
-
-    # This validator runs before other validation and handles the conversion
-    @field_validator('timeOffset', mode='before')
-    @classmethod
-    def format_timedelta_to_seconds(cls, v):
-        if isinstance(v, timedelta):
-            return int(v.total_seconds())
-        return v
-
-class Script(BaseModel):
-    scriptID: int
-    scriptName: str
-    scriptStatus: str
-    showID: UUID
+class User(BaseModel):
+    ID: int
+    clerk_user_id: Optional[str] = None  # Nullable for guest users
+    emailAddress: str
+    fullnameFirst: str
+    fullnameLast: str
+    userName: Optional[str] = None
+    profileImgURL: Optional[str] = None
+    phoneNumber: Optional[str] = None
+    userStatus: str  # 'guest' or 'verified'
+    userRole: str
+    createdBy: Optional[int] = None  # For guest users
+    notes: Optional[str] = None
+    isActive: bool
+    dateCreated: datetime
     dateUpdated: datetime
-    
-    # This will be a list of ScriptElement schemas
-    elements: List[ScriptElement] = []
 
     class Config:
         from_attributes = True
 
-class ScriptCreate(BaseModel):
-    scriptName: str | None = None
+class CrewMemberCreate(BaseModel):
+    emailAddress: str
+    fullnameFirst: str
+    fullnameLast: str
+    userRole: str
+
+class GuestUserCreate(BaseModel):
+    emailAddress: str
+    fullnameFirst: str
+    fullnameLast: str
+    userRole: str = "crew"
+    phoneNumber: Optional[str] = None
+    notes: Optional[str] = None
+
+class CrewRelationshipCreate(BaseModel):
+    crew_user_id: int
+    notes: Optional[str] = None
+
+# =============================================================================
+# VENUE SCHEMAS
+# =============================================================================
 
 class VenueBase(BaseModel):
     venueName: str
@@ -79,37 +78,9 @@ class Venue(VenueBase):
     class Config:
         from_attributes = True
 
-class Show(BaseModel):
-    showID: UUID
-    ownerID: int
-    showName: str
-    venue: Optional[Venue] = None  # Changed from showVenue to venue relationship
-    showDate: date | None = None
-    dateUpdated: datetime
-    
-    # We will just return the full list of scripts
-    scripts: List['Script'] = []
-
-    class Config:
-        from_attributes = True
-
-class ShowCreate(BaseModel):
-    showName: str
-    venueID: Optional[int] = None  # Changed from showVenue: str
-    showDate: Optional[date] = None
-    deadline: datetime | None = None
-        
-class User(BaseModel):
-    ID: int
-    clerk_user_id: str
-    emailAddress: str
-    
-    class Config:
-        from_attributes = True
-
-class GuestLinkCreate(BaseModel):
-    departmentID: int
-    linkName: Optional[str] = None
+# =============================================================================
+# DEPARTMENT SCHEMAS
+# =============================================================================
 
 class DepartmentCreate(BaseModel):
     departmentName: str
@@ -127,8 +98,90 @@ class Department(BaseModel):
     class Config:
         from_attributes = True
 
-class CrewMemberCreate(BaseModel):
-    emailAddress: str
-    fullnameFirst: str
-    fullnameLast: str
-    userRole: str
+# =============================================================================
+# SHOW SCHEMAS
+# =============================================================================
+
+class ShowCreate(BaseModel):
+    showName: str
+    venueID: Optional[int] = None
+    showDate: Optional[date] = None
+    showNotes: Optional[str] = None
+    deadline: Optional[datetime] = None
+
+class Show(BaseModel):
+    showID: UUID
+    ownerID: int
+    showName: str
+    venue: Optional[Venue] = None
+    showDate: Optional[date] = None
+    dateUpdated: datetime
+    
+    # Forward reference to Script (defined below)
+    scripts: List['Script'] = []
+
+    class Config:
+        from_attributes = True
+
+# =============================================================================
+# SCRIPT SCHEMAS
+# =============================================================================
+
+class ScriptCreate(BaseModel):
+    scriptName: Optional[str] = None
+
+class Script(BaseModel):
+    scriptID: int
+    scriptName: str
+    scriptStatus: str
+    showID: UUID
+    dateUpdated: datetime
+    
+    # Forward reference to ScriptElement (defined below)
+    elements: List['ScriptElement'] = []
+
+    class Config:
+        from_attributes = True
+
+# =============================================================================
+# SCRIPT ELEMENT SCHEMAS
+# =============================================================================
+
+class ScriptElementFromDB(BaseModel):
+    """Schema for script elements coming FROM the database"""
+    elementID: int
+    scriptID: int
+    timeOffset: timedelta
+
+    class Config:
+        from_attributes = True
+
+class ScriptElement(BaseModel):
+    """Schema for script elements going TO the frontend"""
+    elementID: int
+    scriptID: int
+    departmentID: Optional[int] = None
+    elementType: str
+    elementOrder: int
+    cueNumber: Optional[str] = None
+    elementDescription: Optional[str] = None
+    timeOffset: int  # Converted to seconds for frontend
+
+    class Config:
+        from_attributes = True
+
+    @field_validator('timeOffset', mode='before')
+    @classmethod
+    def format_timedelta_to_seconds(cls, v):
+        """Convert timedelta to seconds for frontend consumption"""
+        if isinstance(v, timedelta):
+            return int(v.total_seconds())
+        return v
+
+# =============================================================================
+# GUEST ACCESS SCHEMAS
+# =============================================================================
+
+class GuestLinkCreate(BaseModel):
+    departmentID: int
+    linkName: Optional[str] = None

@@ -34,12 +34,6 @@ const NavigationItem = ({ icon, title, description, isActive, onClick }) => (
 export const QuickAccessPanel = ({ activeView, setActiveView }) => {
     const navigationItems = [
         {
-            id: 'pinned',
-            icon: 'pinned',
-            title: 'Pinned Script',
-            description: 'View your pinned script.'
-        },
-        {
             id: 'shows',
             icon: 'show',
             title: 'Shows',

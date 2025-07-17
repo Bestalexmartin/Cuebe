@@ -2,25 +2,28 @@
 
 import React, { useState } from 'react';
 import {
-  Flex, Box, Heading, useDisclosure,
+  Flex, Box, Heading,
   Drawer, DrawerBody, DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton
 } from "@chakra-ui/react";
-import { PinnedView } from './PinnedView';
 import { ShowsView } from './ShowsView';
 import { VenuesView } from './VenuesView';
 import { DepartmentsView } from './DepartmentsView';
 import { CrewView } from './CrewView';
 import { QuickAccessPanel } from './QuickAccessPanel';
-import { useShows } from "./useShows";
-import { useDashboardState } from './useDashboardState';
-import { CreateShowModal } from "./CreateShowModal";
-import { CreateScriptModal } from "./CreateScriptModal";
-import { CreateVenueModal } from './CreateVenueModal';
-import { CreateDepartmentModal } from "./CreateDepartmentModal";
-import { CreateCrewModal } from "./CreateCrewModal";
+import { useShows } from "./hooks/useShows";
+import { useDashboardState } from './hooks/useDashboardState';
+import { useModalManager, MODAL_TYPES } from './hooks/useModalManager';
+
+// Import all modals
+import { CreateShowModal } from "./components/modals/CreateShowModal";
+import { CreateScriptModal } from "./components/modals/CreateScriptModal";
+import { CreateVenueModal } from "./components/modals/CreateVenueModal";
+import { CreateDepartmentModal } from "./components/modals/CreateDepartmentModal";
+import { CreateCrewModal } from "./components/modals/CreateCrewModal";
 
 const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
   const { shows, isLoading, error, refetchShows } = useShows();
+  const { activeModal, modalData, isOpen, openModal, closeModal } = useModalManager();
 
   const {
     selectedShowId,
@@ -33,15 +36,67 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
     shows: safeShows,
   } = useDashboardState(shows);
 
-  const { isOpen: isShowModalOpen, onOpen: onShowModalOpen, onClose: onShowModalClose } = useDisclosure();
-  const { isOpen: isScriptModalOpen, onOpen: onScriptModalOpen, onClose: onScriptModalClose } = useDisclosure();
-
-  const [activeShowIdForScript, setActiveShowIdForScript] = useState(null);
   const [activeView, setActiveView] = useState('shows');
 
-  const handleOpenCreateScriptModal = (showId) => {
-    setActiveShowIdForScript(showId);
-    onScriptModalOpen();
+  // Modal handlers
+  const handleCreateShow = () => openModal(MODAL_TYPES.CREATE_SHOW);
+  const handleCreateScript = (showId) => openModal(MODAL_TYPES.CREATE_SCRIPT, { showId });
+  const handleCreateVenue = () => openModal(MODAL_TYPES.CREATE_VENUE);
+  const handleCreateDepartment = () => openModal(MODAL_TYPES.CREATE_DEPARTMENT);
+  const handleCreateCrew = () => openModal(MODAL_TYPES.CREATE_CREW);
+
+  // Data refresh handlers
+  const handleDataRefresh = () => {
+    refetchShows();
+    // Add other refetch calls as needed
+  };
+
+  const renderModal = () => {
+    switch (activeModal) {
+      case MODAL_TYPES.CREATE_SHOW:
+        return (
+          <CreateShowModal
+            isOpen={isOpen}
+            onClose={closeModal}
+            onShowCreated={handleDataRefresh}
+          />
+        );
+      case MODAL_TYPES.CREATE_SCRIPT:
+        return (
+          <CreateScriptModal
+            isOpen={isOpen}
+            onClose={closeModal}
+            showId={modalData.showId}
+            onScriptCreated={handleDataRefresh}
+          />
+        );
+      case MODAL_TYPES.CREATE_VENUE:
+        return (
+          <CreateVenueModal
+            isOpen={isOpen}
+            onClose={closeModal}
+            onVenueCreated={handleDataRefresh}
+          />
+        );
+      case MODAL_TYPES.CREATE_DEPARTMENT:
+        return (
+          <CreateDepartmentModal
+            isOpen={isOpen}
+            onClose={closeModal}
+            onDepartmentCreated={handleDataRefresh}
+          />
+        );
+      case MODAL_TYPES.CREATE_CREW:
+        return (
+          <CreateCrewModal
+            isOpen={isOpen}
+            onClose={closeModal}
+            onCrewCreated={handleDataRefresh}
+          />
+        );
+      default:
+        return null;
+    }
   };
 
   return (
@@ -61,19 +116,12 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
           height={{ base: '100vh', lg: 'auto' }}
           overflowY={{ base: 'auto', lg: 'visible' }}
         >
-          {activeView === 'pinned' && (
-            <PinnedView
-              sortedPins={sortedPins}
-              isLoading={isLoading}
-              error={error}
-            />
-          )}
           {activeView === 'shows' && (
             <ShowsView
               shows={shows}
               isLoading={isLoading}
               error={error}
-              onShowModalOpen={onShowModalOpen}
+              onCreateShow={handleCreateShow}
               selectedShowId={selectedShowId}
               hoveredShowId={hoveredShowId}
               setHoveredShowId={setHoveredShowId}
@@ -81,17 +129,17 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
               showCardRefs={showCardRefs}
               selectedScriptId={selectedScriptId}
               handleScriptClick={handleScriptClick}
-              handleOpenCreateScriptModal={handleOpenCreateScriptModal}
+              onCreateScript={handleCreateScript}
             />
           )}
           {activeView === 'venues' && (
-            <VenuesView /> // No props needed
+            <VenuesView onCreateVenue={handleCreateVenue} />
           )}
           {activeView === 'departments' && (
-            <DepartmentsView /> // No props needed
+            <DepartmentsView onCreateDepartment={handleCreateDepartment} />
           )}
           {activeView === 'crew' && (
-            <CrewView />
+            <CrewView onCreateCrew={handleCreateCrew} />
           )}
         </Box>
 
@@ -104,16 +152,8 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
         </Box>
       </Flex>
 
-      <CreateShowModal isOpen={isShowModalOpen} onClose={onShowModalClose} onShowCreated={refetchShows} />
-
-      {activeShowIdForScript && (
-        <CreateScriptModal
-          isOpen={isScriptModalOpen}
-          onClose={onScriptModalClose}
-          showId={activeShowIdForScript}
-          onScriptCreated={refetchShows}
-        />
-      )}
+      {/* Single modal renderer */}
+      {renderModal()}
 
       <Drawer isOpen={isMenuOpen} placement="right" onClose={onMenuClose}>
         <DrawerOverlay />

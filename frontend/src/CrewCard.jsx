@@ -1,5 +1,3 @@
-// frontend/src/CrewCard.jsx
-
 import React from 'react';
 import {
     Box,
@@ -44,6 +42,19 @@ export const CrewCard = ({
         return `${firstName} ${lastName}`.trim() || 'Unknown User';
     };
 
+    const getUserStatusBadge = () => {
+        const isVerified = crewMember.userStatus === 'verified';
+        return (
+            <Badge
+                variant={isVerified ? "solid" : "outline"}
+                colorScheme={isVerified ? "green" : "orange"}
+                size="sm"
+            >
+                {isVerified ? "✅ Verified" : "👤 Guest"}
+            </Badge>
+        );
+    };
+
     return (
         <Box
             p="4"
@@ -58,7 +69,7 @@ export const CrewCard = ({
             onClick={() => onCrewClick(crewMember.ID)}
         >
             {/* Header Row */}
-            <Flex justify="space-between" align="center" mb="2">
+            <Flex justify="space-between" align="start" mb="2">
                 <Flex align="center" gap="3">
                     <Avatar
                         size="sm"
@@ -67,20 +78,11 @@ export const CrewCard = ({
                     />
                     <VStack align="start" spacing="0">
                         <Heading size="sm">{getFullName()}</Heading>
-                        <HStack spacing="2" align="center">
-                            <Badge variant="outline" colorScheme="blue" size="sm">
-                                {formatRole(crewMember.userRole)}
-                            </Badge>
-                            {!crewMember.isActive && (
-                                <Badge variant="solid" colorScheme="red" size="sm">
-                                    Inactive
-                                </Badge>
-                            )}
-                        </HStack>
                     </VStack>
                 </Flex>
 
-                {isSelected && (
+                {/* Right side - badges and email when collapsed, edit button when expanded */}
+                {isSelected ? (
                     <HStack spacing="1">
                         <Button
                             aria-label="Edit Crew Member"
@@ -91,65 +93,78 @@ export const CrewCard = ({
                             Edit
                         </Button>
                     </HStack>
+                ) : (
+                    <VStack align="end" spacing="2">
+                        <HStack spacing="2" align="center">
+                            <Badge variant="outline" colorScheme="blue" size="sm">
+                                {formatRole(crewMember.userRole)}
+                            </Badge>
+                            {getUserStatusBadge()}
+                            {!crewMember.isActive && (
+                                <Badge variant="solid" colorScheme="red" size="sm">
+                                    Inactive
+                                </Badge>
+                            )}
+                        </HStack>
+                        <VStack align="end" spacing="1">
+                            <Text fontSize="sm" color="gray.500" isTruncated maxWidth="200px">
+                                📧 {crewMember.emailAddress}
+                            </Text>
+                            {crewMember.phoneNumber && (
+                                <Text fontSize="sm" color="gray.500" isTruncated maxWidth="200px">
+                                    📱 {crewMember.phoneNumber}
+                                </Text>
+                            )}
+                        </VStack>
+                    </VStack>
                 )}
             </Flex>
-
-            {/* Quick Info Row */}
-            <HStack spacing="4" color="gray.500" fontSize="sm">
-                {crewMember.emailAddress && (
-                    <Text isTruncated maxWidth="250px">
-                        📧 {crewMember.emailAddress}
-                    </Text>
-                )}
-            </HStack>
 
             {/* Expandable Details - only show when selected */}
             <Collapse in={isSelected} animateOpacity>
                 <VStack align="stretch" spacing="3" mt="4" pt="3" borderTop="1px solid" borderColor="ui.border">
 
-                    {/* Contact Information */}
+                    {/* Contact & Basic Info */}
                     <Box>
-                        <Text fontWeight="semibold" mb="1">Contact Information</Text>
-                        <VStack align="stretch" spacing="1" fontSize="sm" color="gray.600">
+                        <VStack align="stretch" spacing="2" fontSize="sm" color="gray.600">
+                            <HStack>
+                                <Badge variant="outline" colorScheme="blue" size="sm">
+                                    {formatRole(crewMember.userRole)}
+                                </Badge>
+                            </HStack>
                             <Text>📧 {crewMember.emailAddress}</Text>
-                            {crewMember.userName && (
-                                <Text>👤 Username: {crewMember.userName}</Text>
+                            {crewMember.phoneNumber && (
+                                <Text>📱 {crewMember.phoneNumber}</Text>
+                            )}
+                            {crewMember.notes && (
+                                <Text>📝 Notes: {crewMember.notes}</Text>
                             )}
                         </VStack>
                     </Box>
 
-                    {/* Role & Status */}
+                    {/* Account Status */}
                     <Box>
-                        <Text fontWeight="semibold" mb="1">Role & Status</Text>
-                        <HStack spacing="4" fontSize="sm" color="gray.600">
-                            <Text>🎭 {formatRole(crewMember.userRole)}</Text>
+                        <Text fontWeight="semibold" mb="2">Account Status</Text>
+                        <VStack align="stretch" spacing="2" fontSize="sm" color="gray.600">
+                            <HStack>
+                                {getUserStatusBadge()}
+                            </HStack>
                             <Text>
-                                Status: {crewMember.isActive ? '✅ Active' : '❌ Inactive'}
+                                📅 Added: {new Date(crewMember.dateCreated).toLocaleDateString()}
                             </Text>
-                        </HStack>
-                    </Box>
-
-                    {/* Account Information */}
-                    <Box>
-                        <Text fontWeight="semibold" mb="1">Account Information</Text>
-                        <VStack align="stretch" spacing="1" fontSize="sm" color="gray.600">
-                            {crewMember.clerk_user_id && (
-                                <Text>🔑 Clerk ID: {crewMember.clerk_user_id.slice(0, 8)}...</Text>
+                            {crewMember.userStatus === 'guest' && (
+                                <Text color="orange.500" fontSize="xs">
+                                    💡 Guest users can view their call schedules via shared links
+                                </Text>
                             )}
-                            <Text>
-                                📅 Joined: {new Date(crewMember.dateCreated).toLocaleDateString()}
-                            </Text>
-                            <Text>
-                                🔄 Last Updated: {new Date(crewMember.dateUpdated).toLocaleDateString()}
-                            </Text>
                         </VStack>
                     </Box>
 
-                    {/* Department Assignments */}
+                    {/* Future: Show Assignments */}
                     <Box>
-                        <Text fontWeight="semibold" mb="1">Department Assignments</Text>
-                        <Text fontSize="sm" color="gray.500">
-                            👥 0 show assignments • 🎭 0 departments
+                        <Text fontWeight="semibold" mb="2">Show Assignments</Text>
+                        <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                            Show assignments will appear here when implemented
                         </Text>
                     </Box>
                 </VStack>

@@ -9,7 +9,6 @@ import {
     Text,
     Collapse,
     Button,
-    Tooltip,
     Heading
 } from "@chakra-ui/react";
 import { EditIcon } from '@chakra-ui/icons';
@@ -45,22 +44,27 @@ export const DepartmentCard = ({
             {/* Header Row */}
             <Flex justify="space-between" align="center" mb="2">
                 <Flex align="center" gap="3">
-                    <Heading size="sm">{department.departmentName}</Heading>
+                    {/* Color chip on the left */}
                     {department.departmentColor && (
                         <Box
-                            w="24px"
-                            h="24px"
+                            w="32px"
+                            h="32px"
                             borderRadius="full"
                             bg={department.departmentColor}
                             border="2px solid"
                             borderColor="gray.300"
                             _dark={{ borderColor: "gray.600" }}
+                            flexShrink="0"
                         />
                     )}
+
+                    {/* Department name */}
+                    <Heading size="sm">{department.departmentName}</Heading>
                 </Flex>
 
+                {/* Edit button */}
                 {isSelected && (
-                    <HStack spacing="1">
+                    <HStack spacing="1" flexShrink="0">
                         <Button
                             aria-label="Edit Department"
                             leftIcon={<EditIcon />}
@@ -73,13 +77,6 @@ export const DepartmentCard = ({
                 )}
             </Flex>
 
-            {/* Quick Info Row */}
-            {department.departmentDescription && (
-                <Text fontSize="sm" color="gray.500" mb="2" noOfLines={2}>
-                    {department.departmentDescription}
-                </Text>
-            )}
-
             {/* Expandable Details - only show when selected */}
             <Collapse in={isSelected} animateOpacity>
                 <VStack align="stretch" spacing="3" mt="4" pt="3" borderTop="1px solid" borderColor="ui.border">
@@ -87,7 +84,7 @@ export const DepartmentCard = ({
                     {/* Full Description */}
                     {department.departmentDescription && (
                         <Box>
-                            <Text fontWeight="semibold" mb="1">Description</Text>
+                            <Text fontWeight="semibold" mb="2">Description</Text>
                             <Text fontSize="sm" color="gray.600">
                                 {department.departmentDescription}
                             </Text>
@@ -97,7 +94,7 @@ export const DepartmentCard = ({
                     {/* Color Information */}
                     {department.departmentColor && (
                         <Box>
-                            <Text fontWeight="semibold" mb="1">Department Color</Text>
+                            <Text fontWeight="semibold" mb="2">Department Color</Text>
                             <HStack spacing="3" align="center">
                                 <Box
                                     w="40px"
@@ -122,7 +119,7 @@ export const DepartmentCard = ({
 
                     {/* Department Statistics */}
                     <Box>
-                        <Text fontWeight="semibold" mb="1">Statistics</Text>
+                        <Text fontWeight="semibold" mb="2">Statistics</Text>
                         <HStack spacing="4" fontSize="sm" color="gray.600">
                             <Text>👥 0 crew members</Text>
                             <Text>🎭 0 shows assigned</Text>

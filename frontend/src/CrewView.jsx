@@ -4,8 +4,8 @@ import { useState, useMemo } from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem, useDisclosure } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
 import { CrewCard } from './CrewCard';
-import { useCrews } from './useCrews';
-import { CreateCrewModal } from './CreateCrewModal';
+import { useCrews } from './hooks/useCrews';
+import { CreateCrewModal } from './components/modals/CreateCrewModal';
 
 export const CrewView = () => {
     const { crews, isLoading, error, refetchCrews } = useCrews();
