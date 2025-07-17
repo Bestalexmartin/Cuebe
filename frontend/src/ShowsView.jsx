@@ -9,7 +9,7 @@ export const ShowsView = ({
     shows,
     isLoading,
     error,
-    onShowModalOpen,
+    onCreateShow, // Updated prop name
     selectedShowId,
     hoveredShowId,
     setHoveredShowId,
@@ -17,7 +17,7 @@ export const ShowsView = ({
     showCardRefs,
     selectedScriptId,
     handleScriptClick,
-    handleOpenCreateScriptModal,
+    onCreateScript, // Updated prop name
 }) => {
     // Shows-specific sorting state
     const [sortBy, setSortBy] = useState('dateUpdated');
@@ -53,6 +53,16 @@ export const ShowsView = ({
         return showsToSort;
     }, [shows, sortBy, sortDirection]);
 
+    // Create the sort button text
+    const getSortButtonText = () => {
+        switch (sortBy) {
+            case 'showName': return 'Name';
+            case 'showDate': return 'Show Date';
+            case 'dateUpdated': return 'Updated';
+            default: return 'Updated';
+        }
+    };
+
     return (
         <Flex direction="column" height="100%">
             {/* Header Section */}
@@ -64,7 +74,7 @@ export const ShowsView = ({
                 <HStack spacing="2">
                     <Menu>
                         <MenuButton as={Button} size="xs" rightIcon={<AppIcon name="openmenu" />}>
-                            Sort by: {sortBy === 'showDate' ? 'Show Date' : sortBy === 'showName' ? 'Name' : 'Updated'}
+                            Sort by: {getSortButtonText()}
                         </MenuButton>
                         <MenuList>
                             <MenuItem onClick={() => handleSortClick('showName')}>Name</MenuItem>
@@ -73,11 +83,19 @@ export const ShowsView = ({
                         </MenuList>
                     </Menu>
                     <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
-                    <Button bg="blue.400" color="white" size="xs" onClick={onShowModalOpen} _hover={{ bg: 'orange.400' }}>
+                    <Button
+                        bg="blue.400"
+                        color="white"
+                        size="xs"
+                        onClick={onCreateShow}
+                        _hover={{ bg: 'orange.400' }}
+                    >
                         Create Show
                     </Button>
                 </HStack>
             </Flex>
+
+            {/* Content Section */}
             <Box
                 mt="4"
                 border="1px solid"
@@ -88,23 +106,27 @@ export const ShowsView = ({
                 overflowY="auto"
                 className="hide-scrollbar"
             >
+                {/* Loading State */}
                 {isLoading && (
                     <Flex justify="center" align="center" height="200px">
                         <Spinner />
                     </Flex>
                 )}
+
+                {/* Error State */}
                 {error && (
                     <Text color="red.500" textAlign="center" p="4">
                         {error}
                     </Text>
                 )}
+
+                {/* Shows List or Empty State */}
                 {!isLoading && !error && (
                     sortedShows.length > 0 ? (
                         <VStack spacing={4} align="stretch">
                             {sortedShows.map(show => (
                                 <div key={show.showID} ref={el => showCardRefs.current[show.showID] = el}>
                                     <ShowCard
-                                        key={show.showID}
                                         show={show}
                                         sortBy={sortBy}
                                         sortDirection={sortDirection}
@@ -114,7 +136,7 @@ export const ShowsView = ({
                                         onShowClick={handleShowClick}
                                         selectedScriptId={selectedScriptId}
                                         onScriptClick={handleScriptClick}
-                                        onCreateScriptClick={handleOpenCreateScriptModal}
+                                        onCreateScriptClick={onCreateScript} // Updated prop name
                                     />
                                 </div>
                             ))}
@@ -129,7 +151,7 @@ export const ShowsView = ({
                                 bg="blue.400"
                                 color="white"
                                 size="sm"
-                                onClick={onShowModalOpen}
+                                onClick={onCreateShow}
                                 _hover={{ bg: 'orange.400' }}
                             >
                                 Create Your First Show

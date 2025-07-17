@@ -3,9 +3,9 @@
 import { useState, useMemo } from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem, useDisclosure } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
-import { useVenues } from './useVenues';
+import { useVenues } from './hooks/useVenues';
 import { VenueCard } from './VenueCard';
-import { CreateVenueModal } from './CreateVenueModal';
+import { CreateVenueModal } from './components/modals/CreateVenueModal';
 
 export const VenuesView = () => {
     const { venues, isLoading, refetchVenues } = useVenues();

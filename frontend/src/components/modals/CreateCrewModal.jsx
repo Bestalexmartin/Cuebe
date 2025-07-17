@@ -1,0 +1,237 @@
+// frontend/src/components/modals/CreateCrewModal.jsx
+
+import {
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalHeader,
+    ModalFooter,
+    ModalBody,
+    ModalCloseButton,
+    Button,
+    FormControl,
+    FormLabel,
+    Input,
+    Select,
+    VStack,
+    HStack,
+} from '@chakra-ui/react';
+import { useAuth } from '@clerk/clerk-react';
+import { useFormManager } from '../../hooks/useFormManager';
+
+const INITIAL_FORM_STATE = {
+    emailAddress: '',
+    fullnameFirst: '',
+    fullnameLast: '',
+    userRole: 'crew',
+    phoneNumber: '',
+    notes: '',
+};
+
+// Common theater roles
+const ROLE_OPTIONS = [
+    { value: 'crew', label: 'Crew Member' },
+    { value: 'department_head', label: 'Department Head' },
+    { value: 'stage_manager', label: 'Stage Manager' },
+    { value: 'assistant_stage_manager', label: 'Assistant Stage Manager' },
+    { value: 'director', label: 'Director' },
+    { value: 'producer', label: 'Producer' },
+    { value: 'designer', label: 'Designer' },
+    { value: 'technician', label: 'Technician' },
+    { value: 'admin', label: 'Administrator' },
+];
+
+export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
+    const { getToken } = useAuth();
+
+    // Form management
+    const {
+        formData,
+        isSubmitting,
+        updateField,
+        resetForm,
+        submitForm,
+    } = useFormManager(INITIAL_FORM_STATE);
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+
+        try {
+            // First, check if user already exists by email
+            console.log('Checking if user exists:', formData.emailAddress);
+
+            const checkEmailResponse = await fetch(`/api/users/check-email?email=${encodeURIComponent(formData.emailAddress)}`, {
+                headers: {
+                    'Authorization': `Bearer ${await getToken()}`
+                }
+            });
+
+            console.log('Check email response status:', checkEmailResponse.status);
+
+            if (checkEmailResponse.ok) {
+                const existingUser = await checkEmailResponse.json();
+                console.log('Existing user found:', existingUser);
+
+                if (existingUser) {
+                    // User exists - create crew relationship
+                    console.log('Creating crew relationship for existing user');
+                    const relationshipData = {
+                        crew_user_id: existingUser.ID,
+                        notes: formData.notes.trim() || null
+                    };
+
+                    await submitForm(
+                        '/api/crew-relationships/',
+                        'POST',
+                        `"${existingUser.fullnameFirst} ${existingUser.fullnameLast}" has been added to your crew`,
+                        relationshipData
+                    );
+                } else {
+                    // User doesn't exist - create new guest user + relationship
+                    console.log('Creating new guest user with relationship');
+                    const userData = {
+                        emailAddress: formData.emailAddress,
+                        fullnameFirst: formData.fullnameFirst,
+                        fullnameLast: formData.fullnameLast,
+                        userRole: formData.userRole,
+                        phoneNumber: formData.phoneNumber || null,
+                        notes: formData.notes || null,
+                    };
+
+                    await submitForm(
+                        '/api/users/create-guest-with-relationship',
+                        'POST',
+                        `"${formData.fullnameFirst} ${formData.fullnameLast}" has been added as a guest user`,
+                        userData
+                    );
+                }
+            } else {
+                console.error('Check email failed with status:', checkEmailResponse.status);
+                throw new Error('Failed to check for existing user');
+            }
+
+            // Reset and close
+            handleModalClose();
+            onCrewCreated();
+
+        } catch (error) {
+            // Error handling is done in submitForm
+            console.error('Crew addition failed:', error);
+        }
+    };
+
+    const handleModalClose = () => {
+        resetForm();
+        onClose();
+    };
+
+    const isFormValid = () => {
+        return formData.emailAddress.trim() &&
+            formData.fullnameFirst.trim() &&
+            formData.fullnameLast.trim();
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={handleModalClose} onCloseComplete={resetForm}>
+            <ModalOverlay />
+            <ModalContent
+                as="form"
+                onSubmit={handleSubmit}
+                bg="page.background"
+                border="2px solid"
+                borderColor="gray.600"
+            >
+                <ModalHeader>Add New Crew Member</ModalHeader>
+                <ModalCloseButton />
+                <ModalBody pb={6}>
+                    <VStack spacing={4} align="stretch">
+                        <HStack spacing={4}>
+                            <FormControl isRequired>
+                                <FormLabel>First Name</FormLabel>
+                                <Input
+                                    placeholder=""
+                                    value={formData.fullnameFirst}
+                                    onChange={(e) => updateField('fullnameFirst', e.target.value)}
+                                />
+                            </FormControl>
+
+                            <FormControl isRequired>
+                                <FormLabel>Last Name</FormLabel>
+                                <Input
+                                    placeholder=""
+                                    value={formData.fullnameLast}
+                                    onChange={(e) => updateField('fullnameLast', e.target.value)}
+                                />
+                            </FormControl>
+                        </HStack>
+
+                        <FormControl isRequired>
+                            <FormLabel>Email Address</FormLabel>
+                            <Input
+                                type="email"
+                                placeholder=""
+                                value={formData.emailAddress}
+                                onChange={(e) => updateField('emailAddress', e.target.value)}
+                            />
+                        </FormControl>
+
+                        <FormControl isRequired>
+                            <FormLabel>Role</FormLabel>
+                            <Select
+                                value={formData.userRole}
+                                onChange={(e) => updateField('userRole', e.target.value)}
+                            >
+                                {ROLE_OPTIONS.map((role) => (
+                                    <option key={role.value} value={role.value}>
+                                        {role.label}
+                                    </option>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        <FormControl>
+                            <FormLabel>Phone Number</FormLabel>
+                            <Input
+                                type="tel"
+                                placeholder=""
+                                value={formData.phoneNumber}
+                                onChange={(e) => updateField('phoneNumber', e.target.value)}
+                            />
+                        </FormControl>
+
+                        <FormControl>
+                            <FormLabel>Notes</FormLabel>
+                            <Input
+                                placeholder=""
+                                value={formData.notes}
+                                onChange={(e) => updateField('notes', e.target.value)}
+                            />
+                        </FormControl>
+                    </VStack>
+                </ModalBody>
+
+                <ModalFooter>
+                    <Button
+                        bg="blue.400"
+                        color="white"
+                        size="xs"
+                        mr={3}
+                        type="submit"
+                        isLoading={isSubmitting}
+                        isDisabled={!isFormValid()}
+                        _hover={{ bg: 'orange.400' }}
+                    >
+                        Add Crew Member
+                    </Button>
+                    <Button
+                        size="xs"
+                        onClick={handleModalClose}
+                        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
+                    >
+                        Cancel
+                    </Button>
+                </ModalFooter>
+            </ModalContent>
+        </Modal>
+    );
+};

@@ -48,7 +48,6 @@ const components = {
     },
   },
   Alert: {
-    // This styles toast notifications since they use the Alert component
     baseStyle: {
       container: {
         width: '400px',

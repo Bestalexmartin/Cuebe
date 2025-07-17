@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { Flex, Box, Heading, HStack, VStack, Button, Text, Spinner, FormControl, FormLabel, Input, Textarea, Select } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
 import { useParams, useNavigate } from "react-router-dom";
-import { useShow } from "./useShow";
-import { useVenues } from "./useVenues";
+import { useShow } from "./hooks/useShow";
+import { useVenues } from "./hooks/useVenues";
 import { useAuth } from '@clerk/clerk-react';
 
 export const EditShowPage = () => {

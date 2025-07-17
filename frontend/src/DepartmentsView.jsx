@@ -4,8 +4,8 @@ import { useState, useMemo } from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem, useDisclosure } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
 import { DepartmentCard } from './DepartmentCard';
-import { useDepartments } from './useDepartments';
-import { CreateDepartmentModal } from './CreateDepartmentModal';
+import { useDepartments } from './hooks/useDepartments';
+import { CreateDepartmentModal } from './components/modals/CreateDepartmentModal';
 
 export const DepartmentsView = () => {
     const { departments, isLoading, error, refetchDepartments } = useDepartments();
