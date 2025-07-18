@@ -130,12 +130,12 @@ export const CrewView = () => {
                             <VStack spacing={4} align="stretch">
                                 {sortedCrews.map(crewMember => (
                                     <CrewCard
-                                        key={crewMember.ID}
+                                        key={crewMember.userID}
                                         crewMember={crewMember}
                                         onEdit={handleEdit}
                                         onCrewClick={handleCrewClick}
-                                        isHovered={hoveredCrewId === crewMember.ID}
-                                        isSelected={selectedCrewId === crewMember.ID}
+                                        isHovered={hoveredCrewId === crewMember.userID}
+                                        isSelected={selectedCrewId === crewMember.userID}
                                         onHover={setHoveredCrewId}
                                     />
                                 ))}

@@ -9,6 +9,7 @@ import SignInPage from "./SignInPage";
 import SignUpPage from "./SignUpPage";
 import UserProfilePage from "./UserProfilePage";
 import { EditShowPage } from './EditShowPage';
+import { EditScriptPage } from './EditScriptPage'; // Add this import
 
 // Protected Route Component - wraps any component that requires authentication
 const ProtectedRoute = ({ children }) => (
@@ -47,6 +48,13 @@ function App() {
           <Route path="/shows/:showId/edit" element={
             <ProtectedRoute>
               <EditShowPage />
+            </ProtectedRoute>
+          } />
+
+          {/* Add this new route for script editing */}
+          <Route path="/scripts/:scriptId/edit" element={
+            <ProtectedRoute>
+              <EditScriptPage />
             </ProtectedRoute>
           } />
 

@@ -1,75 +1,92 @@
 // frontend/src/EditShowPage.jsx
 
-import { useEffect, useState } from 'react';
-import { Flex, Box, Heading, HStack, VStack, Button, Text, Spinner, FormControl, FormLabel, Input, Textarea, Select } from "@chakra-ui/react";
-import { AppIcon } from './components/AppIcon';
+import { useEffect } from 'react';
+import {
+    Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
+    FormControl, FormLabel, Input, Textarea, Select
+} from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useShow } from "./hooks/useShow";
-import { useVenues } from "./hooks/useVenues";
-import { useAuth } from '@clerk/clerk-react';
+import { useFormManager } from './hooks/useFormManager';
+import { useResource } from './hooks/useResource';
+import { AppIcon } from './components/AppIcon';
+
+const INITIAL_FORM_STATE = {
+    showName: '',
+    showNotes: '',
+    showDate: '',
+    deadline: '',
+    venueID: ''
+};
 
 export const EditShowPage = () => {
     const { showId } = useParams();
     const navigate = useNavigate();
-    const { getToken } = useAuth();
-    const { venues } = useVenues();
 
     // Fetch the initial show data
-    const { show, isLoading, error } = useShow(showId);
+    const { show, isLoading: isLoadingShow, error: showError } = useShow(showId);
 
-    // --- State to manage the form data ---
-    const [formData, setFormData] = useState({
-        showName: '',
-        showNotes: '',
-        showDate: '',
-        deadline: '',
-        venueID: ''
-    });
-    const [isSaving, setIsSaving] = useState(false);
+    // Fetch venues for the dropdown
+    const {
+        data: venues,
+        isLoading: isLoadingVenues
+    } = useResource('/api/venues/');
 
-    // --- Effect to populate the form when data is loaded ---
+    // Form management
+    const {
+        formData,
+        isSubmitting,
+        updateField,
+        setFormData,
+        submitForm,
+    } = useFormManager(INITIAL_FORM_STATE);
+
+    // Populate form when show data loads
     useEffect(() => {
         if (show) {
             setFormData({
                 showName: show.showName || '',
                 showNotes: show.showNotes || '',
-                // Formatting dates for the input fields
+                // Format dates for input fields
                 showDate: show.showDate ? show.showDate.split('T')[0] : '',
                 deadline: show.deadline ? show.deadline.substring(0, 16) : '',
-                // Fix: get venueID from the venue relationship
+                // Get venueID from the venue relationship
                 venueID: show.venue?.venueID || ''
             });
         }
-    }, [show]);
+    }, [show, setFormData]);
 
-    // --- Handler for form input changes ---
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+    // Handle form field changes
+    const handleChange = (field, value) => {
+        updateField(field, value);
     };
 
-    // --- Handler for form submission ---
+    // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsSaving(true);
-        console.log("Data being sent to API:", formData);
+
         try {
-            const token = await getToken();
-            const response = await fetch(`/api/shows/${showId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-                body: JSON.stringify(formData)
-            });
-            if (!response.ok) throw new Error('Failed to save changes.');
-            navigate('/dashboard'); // Go back to dashboard on success
-        } catch (err) {
-            console.error(err);
-            // You can add a user-facing error message here
-        } finally {
-            setIsSaving(false);
+            // Prepare data for API (convert venueID to integer if provided)
+            const updateData = {
+                ...formData,
+                venueID: formData.venueID || null,
+                showDate: formData.showDate || null,
+                deadline: formData.deadline || null,
+                showNotes: formData.showNotes || null,
+            };
+
+            await submitForm(
+                `/api/shows/${showId}`,
+                'PATCH',
+                `"${formData.showName}" has been updated successfully`,
+                updateData
+            );
+
+            // Navigate back to dashboard on success
+            navigate('/dashboard');
+
+        } catch (error) {
+            // Error handling is done in submitForm
         }
     };
 
@@ -77,18 +94,36 @@ export const EditShowPage = () => {
         navigate('/dashboard');
     };
 
+    const isFormValid = () => {
+        return formData.showName.trim();
+    };
+
+    const isLoading = isLoadingShow || isLoadingVenues;
+
     return (
-        <Flex as="form" onSubmit={handleSubmit} width="100%" height="100%" p="2rem" flexDirection="column" boxSizing="border-box">
+        <Flex
+            as="form"
+            onSubmit={handleSubmit}
+            width="100%"
+            height="100%"
+            p="2rem"
+            flexDirection="column"
+            boxSizing="border-box"
+        >
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
                 <HStack spacing="2" align="center">
-                    <AppIcon name="edit" boxSize="25px" />
+                    <AppIcon name="edit" boxSize="20px" />
                     <Heading as="h2" size="md">
-                        {isLoading ? 'Loading...' : `Edit: ${show?.showName}`}
+                        {isLoadingShow ? 'Loading...' : `${show?.showName}`}
                     </Heading>
                 </HStack>
                 <HStack spacing="2">
-                    <Button onClick={handleClose} size="xs">
+                    <Button
+                        onClick={handleClose}
+                        size="xs"
+                        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
+                    >
                         Cancel
                     </Button>
                     <Button
@@ -97,7 +132,8 @@ export const EditShowPage = () => {
                         size="xs"
                         _hover={{ bg: 'orange.400' }}
                         type="submit"
-                        isLoading={isSaving}
+                        isLoading={isSubmitting}
+                        isDisabled={!isFormValid()}
                     >
                         Save Changes
                     </Button>
@@ -115,27 +151,40 @@ export const EditShowPage = () => {
                 overflowY="auto"
                 className="hide-scrollbar"
             >
+                {/* Loading State */}
                 {isLoading && (
                     <Flex justify="center" align="center" height="200px">
                         <Spinner />
                     </Flex>
                 )}
-                {error && (
+
+                {/* Error State */}
+                {showError && (
                     <Text color="red.500" textAlign="center" p="4">
-                        {error}
+                        {showError}
                     </Text>
                 )}
+
+                {/* Form Content */}
                 {!isLoading && show && (
                     <VStack spacing={4} align="stretch" height="100%">
                         <FormControl isRequired>
                             <FormLabel>Show Name</FormLabel>
-                            <Input name="showName" value={formData.showName} onChange={handleChange} />
+                            <Input
+                                value={formData.showName}
+                                onChange={(e) => handleChange('showName', e.target.value)}
+                                placeholder=""
+                            />
                         </FormControl>
 
                         <FormControl>
                             <FormLabel>Venue</FormLabel>
-                            <Select name="venueID" value={formData.venueID} onChange={handleChange} placeholder="Select venue">
-                                {/* Map over the fetched venues to create options */}
+                            <Select
+                                value={formData.venueID}
+                                onChange={(e) => handleChange('venueID', e.target.value)}
+                                placeholder={isLoadingVenues ? "Loading venues..." : "Select Venue"}
+                                disabled={isLoadingVenues}
+                            >
                                 {venues.map(venue => (
                                     <option key={venue.venueID} value={venue.venueID}>
                                         {venue.venueName}
@@ -144,23 +193,36 @@ export const EditShowPage = () => {
                             </Select>
                         </FormControl>
 
-                        {/* Use an HStack to put date fields side-by-side */}
-                        <HStack>
+                        {/* Date fields side-by-side */}
+                        <HStack spacing={4}>
                             <FormControl>
                                 <FormLabel>Show Date</FormLabel>
-                                <Input name="showDate" type="date" value={formData.showDate} onChange={handleChange} />
+                                <Input
+                                    type="date"
+                                    value={formData.showDate}
+                                    onChange={(e) => handleChange('showDate', e.target.value)}
+                                />
                             </FormControl>
                             <FormControl>
-                                <FormLabel>Final Info Deadline</FormLabel>
-                                <Input name="deadline" type="datetime-local" value={formData.deadline} onChange={handleChange} />
+                                <FormLabel>Script Deadline</FormLabel>
+                                <Input
+                                    type="datetime-local"
+                                    value={formData.deadline}
+                                    onChange={(e) => handleChange('deadline', e.target.value)}
+                                />
                             </FormControl>
                         </HStack>
 
-                        {/* This FormControl will now expand */}
+                        {/* Expandable notes textarea */}
                         <FormControl display="flex" flexDirection="column" flexGrow={1}>
                             <FormLabel>Notes</FormLabel>
-                            {/* This Textarea will grow to fill the FormControl */}
-                            <Textarea name="showNotes" value={formData.showNotes} onChange={handleChange} flexGrow={1} />
+                            <Textarea
+                                value={formData.showNotes}
+                                onChange={(e) => handleChange('showNotes', e.target.value)}
+                                placeholder=""
+                                flexGrow={1}
+                                resize="vertical"
+                            />
                         </FormControl>
                     </VStack>
                 )}

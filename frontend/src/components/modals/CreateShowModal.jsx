@@ -96,7 +96,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
       // Prepare show data with proper formatting
       const showData = {
         showName: formData.showName,
-        venueID: venueId ? parseInt(venueId) : null,
+        venueID: venueId || null, // REMOVED parseInt() - venueID is now a UUID string
         showDate: formData.showDate || null,
         showNotes: formData.showNotes || null,
         deadline: formData.deadline || null,

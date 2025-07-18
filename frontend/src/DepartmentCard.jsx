@@ -11,7 +11,7 @@ import {
     Button,
     Heading
 } from "@chakra-ui/react";
-import { EditIcon } from '@chakra-ui/icons';
+import { AppIcon } from './components/AppIcon';
 
 export const DepartmentCard = ({
     department,
@@ -67,7 +67,7 @@ export const DepartmentCard = ({
                     <HStack spacing="1" flexShrink="0">
                         <Button
                             aria-label="Edit Department"
-                            leftIcon={<EditIcon />}
+                            leftIcon={<AppIcon name="edit" boxSize="12px" />}
                             size="xs"
                             onClick={handleEditClick}
                         >

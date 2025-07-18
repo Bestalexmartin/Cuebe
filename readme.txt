@@ -56,3 +56,4 @@ Wednesday Jul 16, 2025
 
 Thursday JUl 17, 2025
 1) Major refactoring to extract modal functionality, complete all creation endpoints and create a form hook to facilitate creation of forms
+2) Updated all table IDs to UUID for security, general UI/UX cleanup

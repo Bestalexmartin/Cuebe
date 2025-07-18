@@ -11,7 +11,7 @@ import {
     Heading,
     Avatar
 } from "@chakra-ui/react";
-import { EditIcon } from '@chakra-ui/icons';
+import { AppIcon } from './components/AppIcon';
 
 export const CrewCard = ({
     crewMember,
@@ -25,7 +25,7 @@ export const CrewCard = ({
 
     const handleEditClick = (e) => {
         e.stopPropagation();
-        onEdit(crewMember.ID);
+        onEdit(crewMember.userID);
     };
 
     const formatRole = (role) => {
@@ -64,9 +64,9 @@ export const CrewCard = ({
             cursor="pointer"
             borderColor={borderColor}
             _hover={{ borderColor: 'orange.400' }}
-            onMouseEnter={() => onHover?.(crewMember.ID)}
+            onMouseEnter={() => onHover?.(crewMember.userID)}
             onMouseLeave={() => onHover?.(null)}
-            onClick={() => onCrewClick(crewMember.ID)}
+            onClick={() => onCrewClick(crewMember.userID)}
         >
             {/* Header Row */}
             <Flex justify="space-between" align="start" mb="2">
@@ -86,7 +86,7 @@ export const CrewCard = ({
                     <HStack spacing="1">
                         <Button
                             aria-label="Edit Crew Member"
-                            leftIcon={<EditIcon />}
+                            leftIcon={<AppIcon name="edit" boxSize="12px" />}
                             size="xs"
                             onClick={handleEditClick}
                         >

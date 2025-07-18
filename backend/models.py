@@ -34,8 +34,8 @@ class User(Base):
     """Unified user model supporting both guest and verified users"""
     __tablename__ = "userTable"
     
-    # Primary key
-    ID = Column(Integer, primary_key=True, index=True)
+    # Primary key - CHANGED TO UUID
+    userID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
     # Clerk integration (nullable for guest users)
     clerk_user_id = Column(String, unique=True, nullable=True, index=True)
@@ -54,8 +54,8 @@ class User(Base):
     userStatus = Column(Enum(UserStatus), default=UserStatus.VERIFIED, nullable=False)
     userRole = Column(String, default="admin")  # admin for verified users, crew for guests
     
-    # Guest user management
-    createdBy = Column(Integer, ForeignKey("userTable.ID"), nullable=True)  # Who created this guest user
+    # Guest user management - CHANGED TO UUID
+    createdBy = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=True)  # Who created this guest user
     invitedAt = Column(DateTime, nullable=True)  # When invitation was sent
     invitationToken = Column(String, unique=True, nullable=True)  # For invitation links
     
@@ -72,7 +72,7 @@ class User(Base):
     crew_assignments = relationship("CrewAssignment", back_populates="user")
     
     # Guest user management relationships
-    created_users = relationship("User", remote_side=[ID], backref="creator")
+    created_users = relationship("User", remote_side=[userID], backref="creator")
     
     # Crew relationship management
     managed_crew = relationship("CrewRelationship", foreign_keys="CrewRelationship.manager_user_id", back_populates="manager")
@@ -85,12 +85,12 @@ class CrewRelationship(Base):
         UniqueConstraint('manager_user_id', 'crew_user_id', name='unique_manager_crew'),
     )
     
-    # Primary key
-    relationshipID = Column(Integer, primary_key=True, index=True)
+    # Primary key - CHANGED TO UUID
+    relationshipID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    # Foreign keys
-    manager_user_id = Column(Integer, ForeignKey("userTable.ID"), nullable=False)  # The verified user who manages
-    crew_user_id = Column(Integer, ForeignKey("userTable.ID"), nullable=False)     # The user being managed
+    # Foreign keys - CHANGED TO UUID
+    manager_user_id = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)  # The verified user who manages
+    crew_user_id = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)     # The user being managed
     
     # Status and metadata
     isActive = Column(Boolean, default=True, nullable=False)
@@ -110,8 +110,8 @@ class Venue(Base):
     """Theater venue information"""
     __tablename__ = "venuesTable"
     
-    # Primary key
-    venueID = Column(Integer, primary_key=True, index=True)
+    # Primary key - CHANGED TO UUID
+    venueID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     venueName = Column(String, unique=True, nullable=False)
     
     # Location Information
@@ -156,8 +156,8 @@ class Department(Base):
     """Theater departments (Sound, Lighting, etc.)"""
     __tablename__ = "departmentsTable"
     
-    # Primary key
-    departmentID = Column(Integer, primary_key=True, index=True)
+    # Primary key - CHANGED TO UUID
+    departmentID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     departmentName = Column(String, nullable=False)
     departmentDescription = Column(String, nullable=True)
     departmentColor = Column(String, nullable=True)  # e.g., "#FF5733"
@@ -174,7 +174,7 @@ class Show(Base):
     """Theater production/show"""
     __tablename__ = "showsTable"
 
-    # Primary key
+    # Primary key - ALREADY UUID
     showID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Core show information
@@ -183,9 +183,9 @@ class Show(Base):
     showNotes = Column(Text, nullable=True)
     deadline = Column(DateTime, nullable=True)
     
-    # Foreign keys
-    venueID = Column(Integer, ForeignKey("venuesTable.venueID"), nullable=True)
-    ownerID = Column(Integer, ForeignKey("userTable.ID"), nullable=False)
+    # Foreign keys - CHANGED TO UUID
+    venueID = Column(UUID(as_uuid=True), ForeignKey("venuesTable.venueID"), nullable=True)
+    ownerID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)
     
     # Timestamps
     dateCreated = Column(DateTime, server_default=func.now())
@@ -204,13 +204,13 @@ class CrewAssignment(Base):
         UniqueConstraint('showID', 'userID', 'departmentID', name='unique_user_show_dept'),
     )
     
-    # Primary key
-    assignmentID = Column(Integer, primary_key=True, index=True)
+    # Primary key - CHANGED TO UUID
+    assignmentID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    # Foreign keys
+    # Foreign keys - CHANGED TO UUID
     showID = Column(UUID(as_uuid=True), ForeignKey("showsTable.showID"), nullable=False)
-    userID = Column(Integer, ForeignKey("userTable.ID"), nullable=False)
-    departmentID = Column(Integer, ForeignKey("departmentsTable.departmentID"), nullable=False)
+    userID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)
+    departmentID = Column(UUID(as_uuid=True), ForeignKey("departmentsTable.departmentID"), nullable=False)
     
     # Show-specific role (may differ from user's general role)
     showRole = Column(String, nullable=True)  # e.g., "Head of Sound", "Assistant LD"
@@ -232,8 +232,8 @@ class Script(Base):
     """Call script for a show"""
     __tablename__ = "scriptsTable"
     
-    # Primary key
-    scriptID = Column(Integer, primary_key=True, index=True)
+    # Primary key - CHANGED TO UUID
+    scriptID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
     # Core script information
     scriptName = Column(String, nullable=False)
@@ -246,7 +246,7 @@ class Script(Base):
     # Status flags
     isPinned = Column(Boolean, default=False, nullable=False)
     
-    # Foreign keys
+    # Foreign keys - ALREADY UUID
     showID = Column(UUID(as_uuid=True), ForeignKey("showsTable.showID"), nullable=False)
     
     # Timestamps
@@ -265,12 +265,12 @@ class ScriptElement(Base):
         Index('idx_scriptelement_script_order', 'scriptID', 'elementOrder'),
     )
     
-    # Primary key
-    elementID = Column(Integer, primary_key=True, index=True)
+    # Primary key - CHANGED TO UUID
+    elementID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    # Foreign keys
-    scriptID = Column(Integer, ForeignKey("scriptsTable.scriptID"), nullable=False)
-    departmentID = Column(Integer, ForeignKey("departmentsTable.departmentID"), nullable=True)
+    # Foreign keys - CHANGED TO UUID
+    scriptID = Column(UUID(as_uuid=True), ForeignKey("scriptsTable.scriptID"), nullable=False)
+    departmentID = Column(UUID(as_uuid=True), ForeignKey("departmentsTable.departmentID"), nullable=False)
     
     # Element information
     elementType = Column(Enum(ElementType), nullable=False)
@@ -296,15 +296,15 @@ class GuestAccessLink(Base):
     """Secure links for guest users to access their call information"""
     __tablename__ = "guestAccessLinksTable"
     
-    # Primary key
-    linkID = Column(Integer, primary_key=True, index=True)
+    # Primary key - CHANGED TO UUID
+    linkID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
     # Access token
     accessToken = Column(String, unique=True, index=True, nullable=False)
     
-    # What this link provides access to
+    # What this link provides access to - ALREADY UUID
     showID = Column(UUID(as_uuid=True), ForeignKey("showsTable.showID"), nullable=False)
-    departmentID = Column(Integer, ForeignKey("departmentsTable.departmentID"), nullable=False)
+    departmentID = Column(UUID(as_uuid=True), ForeignKey("departmentsTable.departmentID"), nullable=False)
 
     # Optional metadata
     linkName = Column(String, nullable=True)  # e.g., "Guest Mic 1"

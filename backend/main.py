@@ -26,7 +26,7 @@ import schemas
 from database import get_db, engine
 
 # This creates tables on startup. Good for dev, but Alembic is the main tool.
-models.Base.metadata.create_all(bind=engine)
+# models.Base.metadata.create_all(bind=engine)
 
 # =============================================================================
 # APP INITIALIZATION
@@ -133,7 +133,7 @@ async def create_guest_user_with_relationship(
         userStatus=models.UserStatus.GUEST,  # Explicitly set as guest
         phoneNumber=guest_data.phoneNumber,
         notes=guest_data.notes,
-        createdBy=user.ID,  # Track who created this guest user
+        createdBy=user.userID,  # Track who created this guest user
         clerk_user_id=None,  # No Clerk integration yet
         userName=None,
         profileImgURL=None,
@@ -144,8 +144,8 @@ async def create_guest_user_with_relationship(
     
     # Create crew relationship
     crew_relationship = models.CrewRelationship(
-        manager_user_id=user.ID,
-        crew_user_id=new_guest_user.ID,
+        manager_user_id=user.userID,
+        crew_user_id=new_guest_user.userID,
         notes=guest_data.notes
     )
     db.add(crew_relationship)
@@ -169,10 +169,10 @@ async def get_my_crew(
     # Show current user + users they manage via CrewRelationship
     my_crew = db.query(models.User).filter(
         or_(
-            models.User.ID == user.ID,  # Show yourself
-            models.User.ID.in_(  # Show users you manage
+            models.User.userID == user.userID,  # Show yourself
+            models.User.userID.in_(  # Show users you manage
                 db.query(models.CrewRelationship.crew_user_id)
-                .filter(models.CrewRelationship.manager_user_id == user.ID)
+                .filter(models.CrewRelationship.manager_user_id == user.userID)
                 .filter(models.CrewRelationship.isActive == True)
             )
         )
@@ -197,7 +197,7 @@ async def create_crew_relationship(
 ):
     # Check if relationship already exists
     existing_relationship = db.query(models.CrewRelationship).filter(
-        models.CrewRelationship.manager_user_id == user.ID,
+        models.CrewRelationship.manager_user_id == user.userID,
         models.CrewRelationship.crew_user_id == relationship_data.crew_user_id
     ).first()
     
@@ -213,7 +213,7 @@ async def create_crew_relationship(
     
     # Create new relationship
     new_relationship = models.CrewRelationship(
-        manager_user_id=user.ID,
+        manager_user_id=user.userID,
         crew_user_id=relationship_data.crew_user_id,
         notes=relationship_data.notes
     )
@@ -338,7 +338,7 @@ async def create_show(
         showDate=show.showDate,
         showNotes=show.showNotes,  # Add this line
         deadline=show.deadline,
-        ownerID=user.ID
+        ownerID=user.userID
     )
     db.add(new_show)
     db.commit()
@@ -364,7 +364,7 @@ async def read_shows_for_current_user(
     shows = db.query(models.Show).options(
         joinedload(models.Show.scripts).joinedload(models.Script.elements),
         joinedload(models.Show.venue)
-    ).filter(models.Show.ownerID == user.ID).offset(skip).limit(limit).all()
+    ).filter(models.Show.ownerID == user.userID).offset(skip).limit(limit).all()
     
     return shows
 
@@ -386,8 +386,8 @@ async def read_show(
         raise HTTPException(status_code=404, detail="Show not found")
     
     # Security check: ensure the user owns this show
-    if show.ownerID != user.ID: # type: ignore
-        logger.warning(f"User {user.ID} attempted to access show {show_id} without permission")
+    if show.ownerID != user.userID: # type: ignore
+        logger.warning(f"User {user.userID} attempted to access show {show_id} without permission")
         raise HTTPException(status_code=403, detail="Not authorized to view this show")
 
     return show
@@ -404,7 +404,7 @@ async def update_show(
         raise HTTPException(status_code=404, detail="Show not found")
 
     # Security check
-    if show_to_update.ownerID != user.ID: # type: ignore
+    if show_to_update.ownerID != user.userID: # type: ignore
         raise HTTPException(status_code=403, detail="Not authorized to update this show")
 
     update_data = show_update.model_dump(exclude_unset=True)
@@ -429,7 +429,7 @@ async def delete_show(
         raise HTTPException(status_code=404, detail="Show not found")
 
     # Security check: ensure the user owns this show
-    if show_to_delete.ownerID != user.ID: # type: ignore
+    if show_to_delete.ownerID != user.userID: # type: ignore
         raise HTTPException(status_code=403, detail="Not authorized to delete this show")
 
     db.delete(show_to_delete)
@@ -454,7 +454,7 @@ async def create_script_for_show(
         raise HTTPException(status_code=404, detail="Show not found")
 
     # Security Check: Make sure the current user owns this show
-    if show.ownerID != user.ID: # type: ignore
+    if show.ownerID != user.userID: # type: ignore
         raise HTTPException(status_code=403, detail="Not authorized to add a script to this show")
 
     # Create the new script
@@ -467,6 +467,86 @@ async def create_script_for_show(
     db.refresh(new_script)
 
     return new_script
+
+@app.get("/api/scripts/{script_id}", response_model=schemas.Script)
+async def get_script(
+    script_id: UUID,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get a single script by ID.
+    """
+    # Query the script from database with show relationship for authorization
+    script = db.query(models.Script).options(
+        joinedload(models.Script.show),
+        joinedload(models.Script.elements)
+    ).filter(models.Script.scriptID == script_id).first()
+    
+    if not script:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Script not found"
+        )
+    
+    # Check if user has access to this script (through show ownership)
+    if script.show.ownerID != user.userID:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this script"
+        )
+    
+    return script
+
+@app.patch("/api/scripts/{script_id}", response_model=schemas.Script)
+async def update_script(
+    script_id: UUID,
+    script_update: schemas.ScriptUpdate,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update a script's metadata.
+    """
+    # Query the script from database with show relationship for authorization
+    script = db.query(models.Script).options(
+        joinedload(models.Script.show)
+    ).filter(models.Script.scriptID == script_id).first()
+    
+    if not script:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Script not found"
+        )
+    
+    # Check if user has access to this script (through show ownership)
+    if script.show.ownerID != user.userID:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to modify this script"
+        )
+    
+    # Update only the fields that were provided
+    update_data = script_update.model_dump(exclude_unset=True)
+    
+    for field, value in update_data.items():
+        if hasattr(script, field):
+            setattr(script, field, value)
+    
+    # Update the dateUpdated timestamp
+    script.dateUpdated = datetime.utcnow() # type: ignore
+    
+    try:
+        db.commit()
+        db.refresh(script)
+        return script
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to update script {script_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update script: {str(e)}"
+        )
 
 # =============================================================================
 # GUEST ACCESS ENDPOINTS
@@ -484,7 +564,7 @@ def create_guest_link_for_show(
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
     
-    if show.ownerID != user.ID: # type: ignore
+    if show.ownerID != user.userID: # type: ignore
         raise HTTPException(status_code=403, detail="Not authorized to create guest links for this show")
     
     # Verify the department exists
