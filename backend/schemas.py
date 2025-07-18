@@ -10,7 +10,7 @@ from typing import List, Optional
 # =============================================================================
 
 class User(BaseModel):
-    ID: int
+    userID: UUID  # CHANGED TO UUID
     clerk_user_id: Optional[str] = None  # Nullable for guest users
     emailAddress: str
     fullnameFirst: str
@@ -20,7 +20,7 @@ class User(BaseModel):
     phoneNumber: Optional[str] = None
     userStatus: str  # 'guest' or 'verified'
     userRole: str
-    createdBy: Optional[int] = None  # For guest users
+    createdBy: Optional[UUID] = None  # CHANGED TO UUID
     notes: Optional[str] = None
     isActive: bool
     dateCreated: datetime
@@ -44,7 +44,7 @@ class GuestUserCreate(BaseModel):
     notes: Optional[str] = None
 
 class CrewRelationshipCreate(BaseModel):
-    crew_user_id: int
+    crew_user_id: UUID  # CHANGED TO UUID
     notes: Optional[str] = None
 
 # =============================================================================
@@ -71,7 +71,7 @@ class VenueCreate(VenueBase):
     pass
 
 class Venue(VenueBase):
-    venueID: int
+    venueID: UUID  # CHANGED TO UUID
     dateCreated: datetime
     dateUpdated: datetime
 
@@ -88,7 +88,7 @@ class DepartmentCreate(BaseModel):
     departmentColor: str
 
 class Department(BaseModel):
-    departmentID: int
+    departmentID: UUID  # CHANGED TO UUID
     departmentName: str
     departmentDescription: Optional[str] = None
     departmentColor: str
@@ -104,17 +104,19 @@ class Department(BaseModel):
 
 class ShowCreate(BaseModel):
     showName: str
-    venueID: Optional[int] = None
+    venueID: Optional[UUID] = None  # CHANGED TO UUID
     showDate: Optional[date] = None
     showNotes: Optional[str] = None
     deadline: Optional[datetime] = None
 
 class Show(BaseModel):
-    showID: UUID
-    ownerID: int
+    showID: UUID  # ALREADY UUID
+    ownerID: UUID  # CHANGED TO UUID
     showName: str
     venue: Optional[Venue] = None
     showDate: Optional[date] = None
+    showNotes: Optional[str] = None
+    deadline: Optional[datetime] = None
     dateUpdated: datetime
     
     # Forward reference to Script (defined below)
@@ -131,10 +133,11 @@ class ScriptCreate(BaseModel):
     scriptName: Optional[str] = None
 
 class Script(BaseModel):
-    scriptID: int
+    scriptID: UUID  # ALREADY UUID
     scriptName: str
     scriptStatus: str
-    showID: UUID
+    intendedStartTime: Optional[datetime] = None
+    showID: UUID  # ALREADY UUID
     dateUpdated: datetime
     
     # Forward reference to ScriptElement (defined below)
@@ -143,14 +146,19 @@ class Script(BaseModel):
     class Config:
         from_attributes = True
 
+class ScriptUpdate(BaseModel):
+    scriptName: Optional[str] = None
+    scriptStatus: Optional[str] = None
+    intendedStartTime: Optional[datetime] = None
+
 # =============================================================================
 # SCRIPT ELEMENT SCHEMAS
 # =============================================================================
 
 class ScriptElementFromDB(BaseModel):
     """Schema for script elements coming FROM the database"""
-    elementID: int
-    scriptID: int
+    elementID: UUID  # CHANGED TO UUID
+    scriptID: UUID  # CHANGED TO UUID
     timeOffset: timedelta
 
     class Config:
@@ -158,9 +166,9 @@ class ScriptElementFromDB(BaseModel):
 
 class ScriptElement(BaseModel):
     """Schema for script elements going TO the frontend"""
-    elementID: int
-    scriptID: int
-    departmentID: Optional[int] = None
+    elementID: UUID  # CHANGED TO UUID
+    scriptID: UUID  # CHANGED TO UUID
+    departmentID: Optional[UUID] = None  # CHANGED TO UUID
     elementType: str
     elementOrder: int
     cueNumber: Optional[str] = None
@@ -183,5 +191,5 @@ class ScriptElement(BaseModel):
 # =============================================================================
 
 class GuestLinkCreate(BaseModel):
-    departmentID: int
+    departmentID: UUID  # CHANGED TO UUID
     linkName: Optional[str] = None

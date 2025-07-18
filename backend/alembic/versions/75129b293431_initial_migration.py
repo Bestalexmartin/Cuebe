@@ -1,8 +1,8 @@
-"""Add CrewRelationship table
+"""initial_migration
 
-Revision ID: 056095c4dd77
-Revises: 8b8af524dabc
-Create Date: 2025-07-17 02:56:38.457853
+Revision ID: 75129b293431
+Revises: a2471fd11a8a
+Create Date: 2025-07-18 02:02:01.393596
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '056095c4dd77'
-down_revision: Union[str, Sequence[str], None] = '8b8af524dabc'
+revision: str = '75129b293431'
+down_revision: Union[str, Sequence[str], None] = 'a2471fd11a8a'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

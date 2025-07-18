@@ -13,7 +13,7 @@ import {
     Button,
     Heading
 } from "@chakra-ui/react";
-import { EditIcon } from '@chakra-ui/icons';
+import { AppIcon } from './components/AppIcon';
 
 export const VenueCard = ({
     venue,
@@ -66,7 +66,7 @@ export const VenueCard = ({
                     <HStack spacing="1">
                         <Button
                             aria-label="Edit venue"
-                            leftIcon={<EditIcon />}
+                            leftIcon={<AppIcon name="edit" boxSize="12px" />}
                             size="xs"
                             onClick={handleEditClick}
                         >
