@@ -172,11 +172,17 @@ export const ShowCard: React.FC<ShowCardProps> = ({
           </Button>
         </HStack>
       </Flex>
-      <Text fontSize="sm" color="detail.text" mt={2}>
+      <Text fontSize="sm" color="detail.text" mt={2} ml={4}>
         {venueName} • Date:{" "}
         {show.showDate ? new Date(show.showDate).toLocaleDateString() : "N/A"}
       </Text>
-      <HStack justify="space-between" fontSize="sm" color="detail.text" mt={1}>
+      <HStack
+        justify="space-between"
+        fontSize="sm"
+        color="detail.text"
+        mt={1}
+        ml={4}
+      >
         <Text>Scripts: {show.scripts ? show.scripts.length : 0}</Text>
         <Text fontSize="xs">
           Updated: {new Date(show.dateUpdated).toLocaleDateString()}
@@ -193,7 +199,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
         >
           {/* Scripts Section */}
           <Box>
-            <Text fontWeight="semibold" mb="2">
+            <Text fontWeight="semibold" mb={4}>
               Scripts
             </Text>
             <Box pl="4">
@@ -225,6 +231,8 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                           justify="space-between"
                           fontSize="xs"
                           color="detail.text"
+                          ml={4}
+                          mt={2}
                         >
                           <Badge variant="solid" colorScheme="blue" size="sm">
                             {script.scriptStatus.toUpperCase()}
@@ -238,6 +246,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                           justify="space-between"
                           fontSize="xs"
                           color="detail.text"
+                          ml={4}
                         >
                           <Text>
                             Start Time:{" "}

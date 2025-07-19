@@ -22,7 +22,7 @@ import { AppIcon } from './components/AppIcon';
 
 const INITIAL_FORM_STATE = {
     scriptName: '',
-    scriptStatus: 'draft',
+    scriptStatus: 'DRAFT',
     startTime: '',
 };
 
@@ -56,8 +56,7 @@ export const EditScriptPage = () => {
         if (script) {
             setFormData({
                 scriptName: script.scriptName || '',
-                scriptStatus: script.scriptStatus || 'draft',
-                // Format datetime for input field
+                scriptStatus: script.scriptStatus || 'DRAFT',
                 startTime: script.startTime
                     ? script.startTime.substring(0, 16)
                     : '',

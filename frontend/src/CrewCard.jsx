@@ -74,7 +74,7 @@ export const CrewCard = ({
             onClick={() => onCrewClick(crewMember.userID)}
         >
             {/* Header Row */}
-            <Flex justify="space-between" align="center" mb="4">
+            <Flex justify="space-between" align="center" mb={4}>
                 <Flex align="center" gap="3">
                     <Avatar
                         size="sm"
@@ -97,7 +97,7 @@ export const CrewCard = ({
             </Flex>
 
             {/* Info Rows */}
-            <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text">
+            <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text" ml={4}>
                 <HStack spacing="2" align="center">
                     <Badge variant="outline" colorScheme="blue" size="sm">
                         {formatRole(crewMember.userRole)}
@@ -159,35 +159,27 @@ export const CrewCard = ({
                     {/* Notes Section */}
                     {crewMember.notes && (
                         <Box>
-                            <Text fontWeight="semibold" mb="2">Notes</Text>
-                            <Text fontSize="sm" color="detail.text">
+                            <Text fontWeight="semibold" mb={2}>Notes</Text>
+                            <Text fontSize="sm" color="detail.text" ml={4}>
                                 {crewMember.notes}
                             </Text>
                         </Box>
                     )}
 
-                    {/* Account Status */}
-                    <Box>
-                        <Text fontWeight="semibold" mb="2">Account Status</Text>
-                        <VStack align="stretch" spacing="2" fontSize="sm" color="detail.text">
-                            <Text>
-                                Added: {new Date(crewMember.dateCreated).toLocaleDateString()}
-                            </Text>
-                            {crewMember.userStatus === 'guest' && (
-                                <Text color="orange.500" fontSize="xs">
-                                    Guest users can view their call schedules via shared links
-                                </Text>
-                            )}
-                        </VStack>
-                    </Box>
-
                     {/* Future: Show Assignments */}
                     <Box>
-                        <Text fontWeight="semibold" mb="2">Show Assignments</Text>
-                        <Text fontSize="sm" color="detail.text" fontStyle="italic">
+                        <Text fontWeight="semibold" mb={2}>Show Assignments</Text>
+                        <Text fontSize="sm" color="detail.text" fontStyle="italic" ml={4}>
                             Show assignments will appear here when implemented
                         </Text>
                     </Box>
+
+                    {/* Created Date */}
+                    <Flex justify="flex-end">
+                        <Text fontSize="xs" color="detail.text">
+                            Created: {new Date(crewMember.dateCreated || crewMember.dateUpdated).toLocaleDateString()}
+                        </Text>
+                    </Flex>
                 </VStack>
             </Collapse>
         </Box>

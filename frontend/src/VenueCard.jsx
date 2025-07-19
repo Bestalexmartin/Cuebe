@@ -55,7 +55,7 @@ export const VenueCard = ({
             onClick={() => onVenueClick(venue.venueID)}
         >
             {/* Header Row */}
-            <Flex justify="space-between" align="center" mb="2">
+            <Flex justify="space-between" align="center" mb={2}>
                 <Flex align="center" gap="3">
                     <Heading size="sm">{venue.venueName}</Heading>
                     {showCount > 0 && (
@@ -78,7 +78,7 @@ export const VenueCard = ({
             </Flex>
 
             {/* Quick Info Rows */}
-            <VStack align="stretch" spacing="1" color="detail.text" fontSize="sm">
+            <VStack align="stretch" spacing="1" color="detail.text" fontSize="sm" ml={4}>
                 <HStack spacing="4">
                     {venue.venueType && (
                         <Badge variant="outline" colorScheme="green">
@@ -112,8 +112,8 @@ export const VenueCard = ({
                     {/* Contact Information */}
                     {(venue.contactName || venue.contactEmail || venue.contactPhone) && (
                         <Box>
-                            <Text fontWeight="semibold" mb="2">Contact Information</Text>
-                            <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text">
+                            <Text fontWeight="semibold" mb={2}>Contact Information</Text>
+                            <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text" ml={4}>
                                 {venue.contactName && <Text>Contact: {venue.contactName}</Text>}
                                 {venue.contactEmail && <Text>Email: {venue.contactEmail}</Text>}
                                 {venue.contactPhone && <Text>Phone: {venue.contactPhone}</Text>}
@@ -124,8 +124,8 @@ export const VenueCard = ({
                     {/* Technical Specifications */}
                     {(venue.stageWidth || venue.stageDepth || venue.flyHeight) && (
                         <Box>
-                            <Text fontWeight="semibold" mb="2">Technical Specifications</Text>
-                            <HStack spacing="4" fontSize="sm" color="detail.text">
+                            <Text fontWeight="semibold" mb={2}>Technical Specifications</Text>
+                            <HStack spacing="4" fontSize="sm" color="detail.text" ml={4}>
                                 {venue.stageWidth && <Text>Width: {venue.stageWidth} ft</Text>}
                                 {venue.stageDepth && <Text>Depth: {venue.stageDepth} ft</Text>}
                                 {venue.flyHeight && <Text>Fly Height: {venue.flyHeight} ft</Text>}
@@ -136,8 +136,8 @@ export const VenueCard = ({
                     {/* Equipment & Features */}
                     {venue.equipment && venue.equipment.length > 0 && (
                         <Box>
-                            <Text fontWeight="semibold" mb="2">Available Equipment</Text>
-                            <Flex wrap="wrap" gap="1">
+                            <Text fontWeight="semibold" mb={2}>Available Equipment</Text>
+                            <Flex wrap="wrap" gap="1" ml={4}>
                                 {venue.equipment.map((item, index) => (
                                     <Badge key={index} variant="subtle" colorScheme="purple">
                                         {item}
@@ -150,8 +150,8 @@ export const VenueCard = ({
                     {/* Notes */}
                     {venue.notes && (
                         <Box>
-                            <Text fontWeight="semibold" mb="2">Notes</Text>
-                            <Text fontSize="sm" color="detail.text">
+                            <Text fontWeight="semibold" mb={2}>Notes</Text>
+                            <Text fontSize="sm" color="detail.text" ml={4}>
                                 {venue.notes}
                             </Text>
                         </Box>
@@ -160,8 +160,8 @@ export const VenueCard = ({
                     {/* Rental Information */}
                     {(venue.rentalRate || venue.minimumRental) && (
                         <Box>
-                            <Text fontWeight="semibold" mb="2">Rental Information</Text>
-                            <HStack spacing="4" fontSize="sm" color="detail.text">
+                            <Text fontWeight="semibold" mb={2}>Rental Information</Text>
+                            <HStack spacing="4" fontSize="sm" color="detail.text" ml={4}>
                                 {venue.rentalRate && <Text>Daily Rate: ${venue.rentalRate}</Text>}
                                 {venue.minimumRental && <Text>Minimum: ${venue.minimumRental}</Text>}
                             </HStack>

@@ -48,7 +48,7 @@ export const DepartmentCard = ({
             onClick={() => onDepartmentClick(department.departmentID)}
         >
             {/* Header Row */}
-            <Flex justify="space-between" align="center" mb="2">
+            <Flex justify="space-between" align="center" mb={2}>
                 <Flex align="center" gap="3">
                     {/* Color chip on the left */}
                     {department.departmentColor && (
@@ -83,15 +83,15 @@ export const DepartmentCard = ({
             </Flex>
 
             {/* Quick Info Row */}
-            <HStack spacing="4" fontSize="sm" color="detail.text" justify="space-between">
-                <HStack spacing="4">
-                    <Text>0 crew members</Text>
+            <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text" ml={4}>
+                <Text>0 crew members</Text>
+                <HStack justify="space-between">
                     <Text>0 shows assigned</Text>
+                    <Text fontSize="xs">
+                        Updated: {new Date(department.dateUpdated || department.dateCreated).toLocaleDateString()}
+                    </Text>
                 </HStack>
-                <Text fontSize="xs">
-                    Updated: {new Date(department.dateUpdated || department.dateCreated).toLocaleDateString()}
-                </Text>
-            </HStack>
+            </VStack>
 
             {/* Expandable Details - only show when selected */}
             <Collapse in={isSelected} animateOpacity>
@@ -100,8 +100,8 @@ export const DepartmentCard = ({
                     {/* Full Description */}
                     {department.departmentDescription && (
                         <Box>
-                            <Text fontWeight="semibold" mb="2">Description</Text>
-                            <Text fontSize="sm" color="detail.text">
+                            <Text fontWeight="semibold" mb={2}>Description</Text>
+                            <Text fontSize="sm" color="detail.text" ml={4}>
                                 {department.departmentDescription}
                             </Text>
                         </Box>
@@ -110,8 +110,8 @@ export const DepartmentCard = ({
                     {/* Color Information */}
                     {department.departmentColor && (
                         <Box>
-                            <Text fontWeight="semibold" mb="2">Department Color</Text>
-                            <HStack spacing="3" align="center">
+                            <Text fontWeight="semibold" mb={2}>Department Color</Text>
+                            <HStack spacing="3" align="center" ml={4}>
                                 <Box
                                     w="40px"
                                     h="40px"
@@ -133,15 +133,6 @@ export const DepartmentCard = ({
                         </Box>
                     )}
 
-                    {/* Department Statistics */}
-                    <Box>
-                        <Text fontWeight="semibold" mb="2">Statistics</Text>
-                        <HStack spacing="4" fontSize="sm" color="detail.text">
-                            <Text>0 crew members</Text>
-                            <Text>0 shows assigned</Text>
-                        </HStack>
-                    </Box>
-
                     {/* Created Date */}
                     <Flex justify="flex-end">
                         <Text fontSize="xs" color="detail.text">
@@ -150,6 +141,6 @@ export const DepartmentCard = ({
                     </Flex>
                 </VStack>
             </Collapse>
-        </Box>
+        </Box >
     );
 };
