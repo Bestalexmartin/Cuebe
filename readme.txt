@@ -54,6 +54,9 @@ Wednesday Jul 16, 2025
 1) Substantial code review and component architecture revisions - reusable patterns, proper state management, clean separation of concerns... plus more consistent styling
 2) Major refactor: distributed sorting, self-contained views and completed CRUD for venues/departments/crew
 
-Thursday JUl 17, 2025
+Thursday Jul 17, 2025
 1) Major refactoring to extract modal functionality, complete all creation endpoints and create a form hook to facilitate creation of forms
 2) Updated all table IDs to UUID for security, general UI/UX cleanup
+
+Saturday Jul 18, 2025
+1) Completed edit pages, major refactor to state management to preserve open cards across edits

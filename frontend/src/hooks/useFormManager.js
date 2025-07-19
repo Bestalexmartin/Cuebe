@@ -36,7 +36,6 @@ export const useFormManager = (initialState = {}) => {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                console.error('Server response:', response.status, errorData);
                 throw new Error(errorData.message || errorData.detail || `Failed to ${method.toLowerCase()} resource`);
             }
 
@@ -54,7 +53,6 @@ export const useFormManager = (initialState = {}) => {
 
             return result;
         } catch (error) {
-            console.error('Form submission error:', error);
             toast({
                 title: 'Error',
                 description: error.message || 'Something went wrong',

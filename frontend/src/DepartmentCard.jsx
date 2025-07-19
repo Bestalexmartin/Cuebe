@@ -19,12 +19,18 @@ export const DepartmentCard = ({
     onDepartmentClick,
     isHovered,
     isSelected,
-    onHover
+    onHover,
+    onSaveNavigationState
 }) => {
     const borderColor = isHovered ? 'orange.400' : isSelected ? 'blue.400' : 'gray.600';
 
     const handleEditClick = (e) => {
         e.stopPropagation();
+
+        if (onSaveNavigationState) {
+            onSaveNavigationState();
+        }
+
         onEdit(department.departmentID);
     };
 
@@ -62,7 +68,6 @@ export const DepartmentCard = ({
                     <Heading size="sm">{department.departmentName}</Heading>
                 </Flex>
 
-                {/* Edit button */}
                 {isSelected && (
                     <HStack spacing="1" flexShrink="0">
                         <Button

@@ -2,22 +2,27 @@
 
 import { useState, useMemo } from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem, useDisclosure } from "@chakra-ui/react";
+import { useNavigate } from 'react-router-dom';
 import { AppIcon } from './components/AppIcon';
 import { DepartmentCard } from './DepartmentCard';
 import { useDepartments } from './hooks/useDepartments';
 import { CreateDepartmentModal } from './components/modals/CreateDepartmentModal';
 
-export const DepartmentsView = () => {
+export const DepartmentsView = ({
+    onCreateDepartment,
+    selectedDepartmentId,
+    onDepartmentClick,
+    hoveredCardId,
+    setHoveredCardId,
+    onSaveNavigationState // NEW: Add prop for saving navigation state
+}) => {
+    const navigate = useNavigate();
     const { departments, isLoading, error, refetchDepartments } = useDepartments();
     const { isOpen, onOpen, onClose } = useDisclosure();
 
     // Department-specific sorting state  
     const [sortBy, setSortBy] = useState('departmentName');
     const [sortDirection, setSortDirection] = useState('asc');
-
-    // Department selection state
-    const [selectedDepartmentId, setSelectedDepartmentId] = useState(null);
-    const [hoveredDepartmentId, setHoveredDepartmentId] = useState(null);
 
     // Department-specific sorting logic
     const handleSortClick = (newSortBy) => {
@@ -38,9 +43,8 @@ export const DepartmentsView = () => {
             if (sortBy === 'departmentName') {
                 comparison = a.departmentName.localeCompare(b.departmentName);
             } else if (sortBy === 'departmentColor') {
-                // Sort by color hue - convert hex to HSL hue value
                 const getHue = (hex) => {
-                    if (!hex) return 999; // Put colorless departments at end
+                    if (!hex) return 999;
                     // Simple hex to hue conversion (approximate)
                     const r = parseInt(hex.slice(1, 3), 16) / 255;
                     const g = parseInt(hex.slice(3, 5), 16) / 255;
@@ -68,14 +72,15 @@ export const DepartmentsView = () => {
         return departmentsToSort;
     }, [departments, sortBy, sortDirection]);
 
-    const handleDepartmentClick = (departmentId) => {
-        setSelectedDepartmentId(selectedDepartmentId === departmentId ? null : departmentId);
+    const handleEdit = (departmentId) => {
+        if (onSaveNavigationState) {
+            onSaveNavigationState();
+        }
+        navigate(`/departments/${departmentId}/edit`);
     };
 
-    const handleEdit = (departmentId) => {
-        console.log('Edit department:', departmentId);
-        onOpen(); // Open the create modal for now
-    };
+    // Use the modal handler from props if provided, otherwise use local modal
+    const handleCreateDepartment = onCreateDepartment || onOpen;
 
     return (
         <>
@@ -102,7 +107,7 @@ export const DepartmentsView = () => {
                             bg="blue.400"
                             color="white"
                             size="xs"
-                            onClick={onOpen}
+                            onClick={handleCreateDepartment}
                             _hover={{ bg: 'orange.400' }}
                         >
                             Add Department
@@ -138,10 +143,11 @@ export const DepartmentsView = () => {
                                         key={department.departmentID}
                                         department={department}
                                         onEdit={handleEdit}
-                                        onDepartmentClick={handleDepartmentClick}
-                                        isHovered={hoveredDepartmentId === department.departmentID}
+                                        onDepartmentClick={onDepartmentClick}
+                                        isHovered={hoveredCardId === department.departmentID}
                                         isSelected={selectedDepartmentId === department.departmentID}
-                                        onHover={setHoveredDepartmentId}
+                                        onHover={setHoveredCardId}
+                                        onSaveNavigationState={onSaveNavigationState} // NEW: Pass down the save function
                                     />
                                 ))}
                             </VStack>
@@ -155,7 +161,7 @@ export const DepartmentsView = () => {
                                     bg="blue.400"
                                     color="white"
                                     size="sm"
-                                    onClick={onOpen}
+                                    onClick={handleCreateDepartment}
                                     _hover={{ bg: 'orange.400' }}
                                 >
                                     Add Your First Department

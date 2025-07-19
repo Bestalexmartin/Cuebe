@@ -28,7 +28,6 @@ export const useDepartments = () => {
             const departmentsData = await response.json();
             setDepartments(departmentsData);
         } catch (err) {
-            console.error('Error fetching departments:', err);
             setError(err.message || 'Failed to load departments');
         } finally {
             setIsLoading(false);

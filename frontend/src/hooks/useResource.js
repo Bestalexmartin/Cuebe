@@ -73,7 +73,6 @@ export const useResource = (endpoint, options = {}) => {
             setData(prev => [...prev, newResource]);
             return newResource;
         } catch (err) {
-            console.error('Error creating resource:', err);
             throw err;
         }
     };

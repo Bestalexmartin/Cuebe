@@ -6,18 +6,23 @@ import { AppIcon } from './components/AppIcon';
 import { useVenues } from './hooks/useVenues';
 import { VenueCard } from './VenueCard';
 import { CreateVenueModal } from './components/modals/CreateVenueModal';
+import { useNavigate } from 'react-router-dom';
 
-export const VenuesView = () => {
+export const VenuesView = ({
+    onCreateVenue,
+    selectedVenueId,
+    onVenueClick,
+    hoveredCardId,
+    setHoveredCardId,
+    onSaveNavigationState // NEW: Add prop for saving navigation state
+}) => {
+    const navigate = useNavigate();
     const { venues, isLoading, refetchVenues } = useVenues();
     const { isOpen, onOpen, onClose } = useDisclosure();
 
     // Venue-specific sorting state  
     const [sortBy, setSortBy] = useState('venueName');
     const [sortDirection, setSortDirection] = useState('asc');
-
-    // Venue selection state
-    const [selectedVenueId, setSelectedVenueId] = useState(null);
-    const [hoveredVenueId, setHoveredVenueId] = useState(null);
 
     // Venue-specific sorting logic
     const handleSortClick = (newSortBy) => {
@@ -38,15 +43,14 @@ export const VenuesView = () => {
             if (sortBy === 'venueName') {
                 comparison = a.venueName.localeCompare(b.venueName);
             } else if (sortBy === 'capacity') {
-                // Handle null/undefined capacity values
                 const aCapacity = a.capacity || 0;
                 const bCapacity = b.capacity || 0;
                 comparison = aCapacity - bCapacity;
             } else if (sortBy === 'venueType') {
-                const aType = a.venueType || 'ZZZ'; // Put empty types at end
+                const aType = a.venueType || 'ZZZ';
                 const bType = b.venueType || 'ZZZ';
                 comparison = aType.localeCompare(bType);
-            } else { // 'dateCreated'
+            } else {
                 comparison = new Date(b.dateCreated || b.dateUpdated) - new Date(a.dateCreated || a.dateUpdated);
             }
             return sortDirection === 'asc' ? comparison : -comparison;
@@ -54,19 +58,21 @@ export const VenuesView = () => {
         return venuesToSort;
     }, [venues, sortBy, sortDirection]);
 
-    const handleVenueClick = (venueId) => {
-        setSelectedVenueId(selectedVenueId === venueId ? null : venueId);
+    const handleEdit = (venueId) => {
+        // Save navigation state before leaving dashboard
+        if (onSaveNavigationState) {
+            onSaveNavigationState();
+        }
+
+        navigate(`/venues/${venueId}/edit`);
     };
 
-    const handleEdit = (venueId) => {
-        console.log('Edit venue:', venueId);
-        onOpen(); // Open the create modal for now
-    };
+    // Use the modal handler from props if provided, otherwise use local modal
+    const handleCreateVenue = onCreateVenue || onOpen;
 
     return (
         <>
             <Flex direction="column" height="100%">
-                {/* Header Section */}
                 <Flex justify="space-between" align="center" flexShrink={0}>
                     <HStack spacing="2" align="center">
                         <AppIcon name="venue" boxSize="25px" />
@@ -89,7 +95,7 @@ export const VenuesView = () => {
                             bg="blue.400"
                             color="white"
                             size="xs"
-                            onClick={onOpen}
+                            onClick={handleCreateVenue}
                             _hover={{ bg: 'orange.400' }}
                         >
                             Add Venue
@@ -120,11 +126,12 @@ export const VenuesView = () => {
                                         key={venue.venueID}
                                         venue={venue}
                                         onEdit={handleEdit}
-                                        onVenueClick={handleVenueClick}
+                                        onVenueClick={onVenueClick}
                                         showCount={0}
-                                        isHovered={hoveredVenueId === venue.venueID}
+                                        isHovered={hoveredCardId === venue.venueID}
                                         isSelected={selectedVenueId === venue.venueID}
-                                        onHover={setHoveredVenueId}
+                                        onHover={setHoveredCardId}
+                                        onSaveNavigationState={onSaveNavigationState} // NEW: Pass down the save function
                                     />
                                 ))}
                             </VStack>
@@ -138,7 +145,7 @@ export const VenuesView = () => {
                                     bg="blue.400"
                                     color="white"
                                     size="sm"
-                                    onClick={onOpen}
+                                    onClick={handleCreateVenue}
                                     _hover={{ bg: 'orange.400' }}
                                 >
                                     Add Your First Venue

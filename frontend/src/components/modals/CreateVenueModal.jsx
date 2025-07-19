@@ -24,7 +24,6 @@ const INITIAL_FORM_STATE = {
 };
 
 export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
-    // Form management
     const {
         formData,
         isSubmitting,
@@ -37,14 +36,12 @@ export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
         event.preventDefault();
 
         try {
-            // Prepare venue data, filtering out empty optional fields
             const venueData = {
                 venueName: formData.venueName,
                 ...(formData.city.trim() && { city: formData.city.trim() }),
                 ...(formData.state.trim() && { state: formData.state.trim() }),
             };
 
-            // Create the venue
             await submitForm(
                 '/api/venues/',
                 'POST',
@@ -52,13 +49,10 @@ export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
                 venueData
             );
 
-            // Reset and close
             handleModalClose();
             onVenueCreated();
 
         } catch (error) {
-            // Error handling is done in submitForm
-            console.error('Venue creation failed:', error);
         }
     };
 
@@ -88,7 +82,7 @@ export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
                         <FormControl isRequired>
                             <FormLabel>Venue Name</FormLabel>
                             <Input
-                                placeholder=""
+                                placeholder="Enter venue name"
                                 value={formData.venueName}
                                 onChange={(e) => updateField('venueName', e.target.value)}
                             />
@@ -98,7 +92,7 @@ export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
                             <FormControl>
                                 <FormLabel>City</FormLabel>
                                 <Input
-                                    placeholder=""
+                                    placeholder="Enter city"
                                     value={formData.city}
                                     onChange={(e) => updateField('city', e.target.value)}
                                 />
@@ -107,7 +101,7 @@ export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
                             <FormControl>
                                 <FormLabel>State</FormLabel>
                                 <Input
-                                    placeholder=""
+                                    placeholder="CA"
                                     value={formData.state}
                                     onChange={(e) => updateField('state', e.target.value)}
                                     maxLength={2}

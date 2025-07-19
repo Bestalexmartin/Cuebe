@@ -21,7 +21,6 @@ const INITIAL_FORM_STATE = {
 };
 
 export const CreateScriptModal = ({ isOpen, onClose, showId, onScriptCreated }) => {
-    // Form management
     const {
         formData,
         isSubmitting,
@@ -34,12 +33,10 @@ export const CreateScriptModal = ({ isOpen, onClose, showId, onScriptCreated }) 
         event.preventDefault();
 
         try {
-            // Prepare script data
             const scriptData = {
                 scriptName: formData.scriptName
             };
 
-            // Create the script for the specific show
             await submitForm(
                 `/api/shows/${showId}/scripts/`,
                 'POST',
@@ -47,13 +44,10 @@ export const CreateScriptModal = ({ isOpen, onClose, showId, onScriptCreated }) 
                 scriptData
             );
 
-            // Reset and close
             handleModalClose();
             onScriptCreated();
 
         } catch (error) {
-            // Error handling is done in submitForm
-            console.error('Script creation failed:', error);
         }
     };
 
@@ -76,14 +70,14 @@ export const CreateScriptModal = ({ isOpen, onClose, showId, onScriptCreated }) 
                 border="2px solid"
                 borderColor="gray.600"
             >
-                <ModalHeader>Create a New Script</ModalHeader>
+                <ModalHeader>Create New Script</ModalHeader>
                 <ModalCloseButton />
                 <ModalBody pb={6}>
                     <VStack spacing={4} align="stretch">
                         <FormControl isRequired>
                             <FormLabel>Script Name</FormLabel>
                             <Input
-                                placeholder=""
+                                placeholder="Enter script name"
                                 value={formData.scriptName}
                                 onChange={(e) => updateField('scriptName', e.target.value)}
                             />

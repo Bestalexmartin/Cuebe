@@ -28,7 +28,6 @@ export const useCrews = () => {
             const crewsData = await response.json();
             setCrews(crewsData);
         } catch (err) {
-            console.error('Error fetching crew members:', err);
             setError(err.message || 'Failed to load crew members');
         } finally {
             setIsLoading(false);

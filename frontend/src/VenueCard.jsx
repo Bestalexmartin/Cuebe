@@ -22,7 +22,8 @@ export const VenueCard = ({
     showCount = 0,
     isHovered,
     isSelected,
-    onHover
+    onHover,
+    onSaveNavigationState
 }) => {
     const { isOpen: isExpanded, onToggle } = useDisclosure();
 
@@ -30,6 +31,11 @@ export const VenueCard = ({
 
     const handleEditClick = (e) => {
         e.stopPropagation();
+
+        if (onSaveNavigationState) {
+            onSaveNavigationState();
+        }
+
         onEdit(venue.venueID);
     };
 

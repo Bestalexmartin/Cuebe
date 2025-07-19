@@ -49,6 +49,8 @@ interface ShowCardProps {
   onCreateScriptClick: (showId: string) => void;
   sortBy: "showName" | "showDate" | "dateUpdated";
   sortDirection: "asc" | "desc";
+  // NEW: Add function to save navigation state before leaving
+  onSaveNavigationState?: () => void;
 }
 
 export const ShowCard: React.FC<ShowCardProps> = ({
@@ -62,6 +64,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
   onCreateScriptClick,
   sortBy,
   sortDirection,
+  onSaveNavigationState, // NEW: Optional prop for saving navigation state
 }) => {
   const navigate = useNavigate();
 
@@ -91,6 +94,12 @@ export const ShowCard: React.FC<ShowCardProps> = ({
   // Handler for the show edit button
   const handleShowEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Save navigation state before leaving dashboard
+    if (onSaveNavigationState) {
+      onSaveNavigationState();
+    }
+
     navigate(`/shows/${show.showID}/edit`);
   };
 
@@ -100,6 +109,11 @@ export const ShowCard: React.FC<ShowCardProps> = ({
 
     // Call the original handler for any additional logic (like analytics, etc.)
     onScriptClick(scriptId);
+
+    // Save navigation state before leaving dashboard
+    if (onSaveNavigationState) {
+      onSaveNavigationState();
+    }
 
     // Navigate to the script edit page
     navigate(`/scripts/${scriptId}/edit`);

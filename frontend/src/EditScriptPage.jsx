@@ -89,7 +89,14 @@ export const EditScriptPage = () => {
             );
 
             // Navigate back to dashboard on success
-            navigate('/dashboard');
+            navigate('/dashboard', {
+                state: {
+                    view: 'shows',
+                    selectedShowId: script.showID,
+                    selectedScriptId: scriptId,
+                    returnFromEdit: true
+                }
+            });
 
         } catch (error) {
             // Error handling is done in submitForm
@@ -97,7 +104,14 @@ export const EditScriptPage = () => {
     };
 
     const handleClose = () => {
-        navigate('/dashboard');
+        navigate('/dashboard', {
+            state: {
+                view: 'shows',
+                selectedShowId: script.showID,
+                selectedScriptId: scriptId,
+                returnFromEdit: true
+            }
+        });
     };
 
     const isFormValid = () => {

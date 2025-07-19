@@ -19,7 +19,6 @@ export const useVenues = () => {
       const data = await response.json();
       setVenues(data);
     } catch (error) {
-      console.error(error);
     } finally {
       setIsLoading(false);
     }

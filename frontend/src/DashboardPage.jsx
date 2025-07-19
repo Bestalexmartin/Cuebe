@@ -1,10 +1,11 @@
 // frontend/src/DashboardPage.jsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Flex, Box, Heading,
   Drawer, DrawerBody, DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton
 } from "@chakra-ui/react";
+import { useLocation } from 'react-router-dom';
 import { ShowsView } from './ShowsView';
 import { VenuesView } from './VenuesView';
 import { DepartmentsView } from './DepartmentsView';
@@ -22,21 +23,50 @@ import { CreateDepartmentModal } from "./components/modals/CreateDepartmentModal
 import { CreateCrewModal } from "./components/modals/CreateCrewModal";
 
 const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
+  const location = useLocation();
   const { shows, isLoading, error, refetchShows } = useShows();
   const { activeModal, modalData, isOpen, openModal, closeModal } = useModalManager();
 
   const {
     selectedShowId,
     selectedScriptId,
-    hoveredShowId,
-    setHoveredShowId,
-    handleScriptClick,
+    hoveredCardId,
+    selectedVenueId,
+    selectedDepartmentId,
+    selectedCrewId,
+    setHoveredCardId,
     handleShowClick,
+    handleScriptClick,
+    handleVenueClick,
+    handleDepartmentClick,
+    handleCrewClick,
     showCardRefs,
     shows: safeShows,
+    currentView,
+    handleViewChange: hookHandleViewChange,
+    saveNavigationState,
+    saveCurrentNavigationState,
+    restoreNavigationState,
+    clearNavigationState,
   } = useDashboardState(shows);
 
+  // Use local state for activeView, initialized from currentView
   const [activeView, setActiveView] = useState('shows');
+
+  // Sync activeView with currentView from hook
+  useEffect(() => {
+    if (location.state?.returnFromEdit) {
+      const { view } = location.state;
+      setActiveView(view);
+      hookHandleViewChange(view);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  const handleViewChange = (newView) => {
+    setActiveView(newView);
+    hookHandleViewChange(newView);
+  };
 
   // Modal handlers
   const handleCreateShow = () => openModal(MODAL_TYPES.CREATE_SHOW);
@@ -123,23 +153,45 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
               error={error}
               onCreateShow={handleCreateShow}
               selectedShowId={selectedShowId}
-              hoveredShowId={hoveredShowId}
-              setHoveredShowId={setHoveredShowId}
+              hoveredCardId={hoveredCardId}
+              setHoveredCardId={setHoveredCardId}
               handleShowClick={handleShowClick}
               showCardRefs={showCardRefs}
               selectedScriptId={selectedScriptId}
               handleScriptClick={handleScriptClick}
               onCreateScript={handleCreateScript}
+              onSaveNavigationState={saveCurrentNavigationState}
             />
           )}
           {activeView === 'venues' && (
-            <VenuesView onCreateVenue={handleCreateVenue} />
+            <VenuesView
+              onCreateVenue={handleCreateVenue}
+              selectedVenueId={selectedVenueId}
+              onVenueClick={handleVenueClick}
+              hoveredCardId={hoveredCardId}
+              setHoveredCardId={setHoveredCardId}
+              onSaveNavigationState={saveCurrentNavigationState}
+            />
           )}
           {activeView === 'departments' && (
-            <DepartmentsView onCreateDepartment={handleCreateDepartment} />
+            <DepartmentsView
+              onCreateDepartment={handleCreateDepartment}
+              selectedDepartmentId={selectedDepartmentId}
+              onDepartmentClick={handleDepartmentClick}
+              hoveredCardId={hoveredCardId}
+              setHoveredCardId={setHoveredCardId}
+              onSaveNavigationState={saveCurrentNavigationState}
+            />
           )}
           {activeView === 'crew' && (
-            <CrewView onCreateCrew={handleCreateCrew} />
+            <CrewView
+              onCreateCrew={handleCreateCrew}
+              selectedCrewId={selectedCrewId}
+              onCrewClick={handleCrewClick}
+              hoveredCardId={hoveredCardId}
+              setHoveredCardId={setHoveredCardId}
+              onSaveNavigationState={saveCurrentNavigationState}
+            />
           )}
         </Box>
 
@@ -148,7 +200,7 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
           display={{ base: 'none', lg: 'flex' }}
           flexDirection="column"
         >
-          <QuickAccessPanel activeView={activeView} setActiveView={setActiveView} />
+          <QuickAccessPanel activeView={activeView} setActiveView={handleViewChange} />
         </Box>
       </Flex>
 
@@ -167,7 +219,7 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
           />
           <DrawerHeader>Quick•Access</DrawerHeader>
           <DrawerBody>
-            <QuickAccessPanel activeView={activeView} setActiveView={setActiveView} />
+            <QuickAccessPanel activeView={activeView} setActiveView={handleViewChange} />
           </DrawerBody>
         </DrawerContent>
       </Drawer>
