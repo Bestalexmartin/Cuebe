@@ -55,7 +55,7 @@ export const CrewCard = ({
                 colorScheme={isVerified ? "green" : "orange"}
                 size="sm"
             >
-                {isVerified ? "✅ Verified" : "👤 Guest"}
+                {isVerified ? "Verified" : "Guest"}
             </Badge>
         );
     };
@@ -74,91 +74,108 @@ export const CrewCard = ({
             onClick={() => onCrewClick(crewMember.userID)}
         >
             {/* Header Row */}
-            <Flex justify="space-between" align="start" mb="2">
+            <Flex justify="space-between" align="center" mb="4">
                 <Flex align="center" gap="3">
                     <Avatar
                         size="sm"
                         name={getFullName()}
                         src={crewMember.profileImgURL}
                     />
-                    <VStack align="start" spacing="0">
-                        <Heading size="sm">{getFullName()}</Heading>
-                    </VStack>
+                    <Heading size="sm">{getFullName()}</Heading>
                 </Flex>
 
-                {isSelected ? (
-                    <HStack spacing="1">
-                        <Button
-                            aria-label="Edit Crew Member"
-                            leftIcon={<AppIcon name="edit" boxSize="12px" />}
-                            size="xs"
-                            onClick={handleEditClick}
-                        >
-                            Edit
-                        </Button>
-                    </HStack>
-                ) : (
-                    <VStack align="end" spacing="2">
-                        <HStack spacing="2" align="center">
-                            <Badge variant="outline" colorScheme="blue" size="sm">
-                                {formatRole(crewMember.userRole)}
-                            </Badge>
-                            {getUserStatusBadge()}
-                            {!crewMember.isActive && (
-                                <Badge variant="solid" colorScheme="red" size="sm">
-                                    Inactive
-                                </Badge>
-                            )}
-                        </HStack>
-                        <VStack align="end" spacing="1">
-                            <Text fontSize="sm" color="gray.500" isTruncated maxWidth="200px">
-                                📧 {crewMember.emailAddress}
-                            </Text>
-                            {crewMember.phoneNumber && (
-                                <Text fontSize="sm" color="gray.500" isTruncated maxWidth="200px">
-                                    📱 {crewMember.phoneNumber}
-                                </Text>
-                            )}
-                        </VStack>
-                    </VStack>
-                )}
+                <HStack spacing="1" opacity={isSelected ? 1 : 0} pointerEvents={isSelected ? "auto" : "none"}>
+                    <Button
+                        aria-label="Edit Crew Member"
+                        leftIcon={<AppIcon name="edit" boxSize="12px" />}
+                        size="xs"
+                        onClick={handleEditClick}
+                    >
+                        Edit
+                    </Button>
+                </HStack>
             </Flex>
+
+            {/* Info Rows */}
+            <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text">
+                <HStack spacing="2" align="center">
+                    <Badge variant="outline" colorScheme="blue" size="sm">
+                        {formatRole(crewMember.userRole)}
+                    </Badge>
+                    {getUserStatusBadge()}
+                    {!crewMember.isActive && (
+                        <Badge variant="solid" colorScheme="red" size="sm">
+                            Inactive
+                        </Badge>
+                    )}
+                </HStack>
+
+                {/* Email - always show if present */}
+                {crewMember.emailAddress && (
+                    crewMember.phoneNumber ? (
+                        // Has both email and phone - email gets its own line
+                        <Text isTruncated>
+                            {crewMember.emailAddress}
+                        </Text>
+                    ) : (
+                        // Has email but no phone - email gets the updated date
+                        <HStack justify="space-between">
+                            <Text isTruncated>
+                                {crewMember.emailAddress}
+                            </Text>
+                            <Text fontSize="xs">
+                                Updated: {new Date(crewMember.dateUpdated).toLocaleDateString()}
+                            </Text>
+                        </HStack>
+                    )
+                )}
+
+                {/* Phone - always gets updated date if it's the last item */}
+                {crewMember.phoneNumber && (
+                    <HStack justify="space-between">
+                        <Text isTruncated>
+                            {crewMember.phoneNumber}
+                        </Text>
+                        <Text fontSize="xs">
+                            Updated: {new Date(crewMember.dateUpdated).toLocaleDateString()}
+                        </Text>
+                    </HStack>
+                )}
+
+                {/* If neither email nor phone, put updated date on badges row */}
+                {!crewMember.emailAddress && !crewMember.phoneNumber && (
+                    <Flex justify="flex-end">
+                        <Text fontSize="xs">
+                            Updated: {new Date(crewMember.dateUpdated).toLocaleDateString()}
+                        </Text>
+                    </Flex>
+                )}
+            </VStack>
 
             {/* Expandable Details - only show when selected */}
             <Collapse in={isSelected} animateOpacity>
                 <VStack align="stretch" spacing="3" mt="4" pt="3" borderTop="1px solid" borderColor="ui.border">
 
-                    {/* Contact & Basic Info */}
-                    <Box>
-                        <VStack align="stretch" spacing="2" fontSize="sm" color="gray.600">
-                            <HStack>
-                                <Badge variant="outline" colorScheme="blue" size="sm">
-                                    {formatRole(crewMember.userRole)}
-                                </Badge>
-                            </HStack>
-                            <Text>📧 {crewMember.emailAddress}</Text>
-                            {crewMember.phoneNumber && (
-                                <Text>📱 {crewMember.phoneNumber}</Text>
-                            )}
-                            {crewMember.notes && (
-                                <Text>📝 Notes: {crewMember.notes}</Text>
-                            )}
-                        </VStack>
-                    </Box>
+                    {/* Notes Section */}
+                    {crewMember.notes && (
+                        <Box>
+                            <Text fontWeight="semibold" mb="2">Notes</Text>
+                            <Text fontSize="sm" color="detail.text">
+                                {crewMember.notes}
+                            </Text>
+                        </Box>
+                    )}
 
                     {/* Account Status */}
                     <Box>
                         <Text fontWeight="semibold" mb="2">Account Status</Text>
-                        <VStack align="stretch" spacing="2" fontSize="sm" color="gray.600">
-                            <HStack>
-                                {getUserStatusBadge()}
-                            </HStack>
+                        <VStack align="stretch" spacing="2" fontSize="sm" color="detail.text">
                             <Text>
-                                📅 Added: {new Date(crewMember.dateCreated).toLocaleDateString()}
+                                Added: {new Date(crewMember.dateCreated).toLocaleDateString()}
                             </Text>
                             {crewMember.userStatus === 'guest' && (
                                 <Text color="orange.500" fontSize="xs">
-                                    💡 Guest users can view their call schedules via shared links
+                                    Guest users can view their call schedules via shared links
                                 </Text>
                             )}
                         </VStack>
@@ -167,7 +184,7 @@ export const CrewCard = ({
                     {/* Future: Show Assignments */}
                     <Box>
                         <Text fontWeight="semibold" mb="2">Show Assignments</Text>
-                        <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                        <Text fontSize="sm" color="detail.text" fontStyle="italic">
                             Show assignments will appear here when implemented
                         </Text>
                     </Box>

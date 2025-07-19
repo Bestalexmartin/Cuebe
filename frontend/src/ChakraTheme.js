@@ -21,6 +21,10 @@ const semanticTokens = {
       _light: 'gray.800',
       _dark: 'whiteAlpha.900',
     },
+    'detail.text': {
+      _light: 'gray.600',
+      _dark: 'gray.400',
+    },
     'ui.border': {
       _light: 'gray.200',
       _dark: 'whiteAlpha.300',

@@ -26,6 +26,14 @@ class UserStatus(enum.Enum):
     GUEST = "guest"         # Created by someone else, no Clerk account
     VERIFIED = "verified"   # Has Clerk account and can log in
 
+class ScriptStatus(enum.Enum):
+    """Script workflow status"""
+    DRAFT = "DRAFT"
+    COPY = "COPY"
+    WORKING = "WORKING"
+    FINAL = "FINAL"
+    BACKUP = "BACKUP"
+
 # =============================================================================
 # USER MODELS
 # =============================================================================
@@ -237,10 +245,10 @@ class Script(Base):
     
     # Core script information
     scriptName = Column(String, nullable=False)
-    scriptStatus = Column(String, default="ready")  # e.g., 'ready', 'running', 'paused', 'done'
+    scriptStatus = Column(Enum(ScriptStatus), default=ScriptStatus.DRAFT, nullable=False)  # Updated to use enum with DRAFT default
     
     # Timing information
-    intendedStartTime = Column(DateTime(timezone=True), nullable=True)
+    startTime = Column(DateTime(timezone=True), nullable=True)
     actualStartTime = Column(DateTime(timezone=True), nullable=True)
     
     # Status flags

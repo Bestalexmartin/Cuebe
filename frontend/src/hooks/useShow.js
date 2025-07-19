@@ -10,8 +10,7 @@ export const useShow = (showId) => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        if (!showId) return; // Don't fetch if there's no ID
-
+        if (!showId) return;
         const fetchShow = async () => {
             setIsLoading(true);
             try {

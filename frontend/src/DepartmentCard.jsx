@@ -82,6 +82,17 @@ export const DepartmentCard = ({
                 )}
             </Flex>
 
+            {/* Quick Info Row */}
+            <HStack spacing="4" fontSize="sm" color="detail.text" justify="space-between">
+                <HStack spacing="4">
+                    <Text>0 crew members</Text>
+                    <Text>0 shows assigned</Text>
+                </HStack>
+                <Text fontSize="xs">
+                    Updated: {new Date(department.dateUpdated || department.dateCreated).toLocaleDateString()}
+                </Text>
+            </HStack>
+
             {/* Expandable Details - only show when selected */}
             <Collapse in={isSelected} animateOpacity>
                 <VStack align="stretch" spacing="3" mt="4" pt="3" borderTop="1px solid" borderColor="ui.border">
@@ -90,7 +101,7 @@ export const DepartmentCard = ({
                     {department.departmentDescription && (
                         <Box>
                             <Text fontWeight="semibold" mb="2">Description</Text>
-                            <Text fontSize="sm" color="gray.600">
+                            <Text fontSize="sm" color="detail.text">
                                 {department.departmentDescription}
                             </Text>
                         </Box>
@@ -111,10 +122,10 @@ export const DepartmentCard = ({
                                     _dark={{ borderColor: "gray.600" }}
                                 />
                                 <VStack align="start" spacing="0">
-                                    <Text fontSize="sm" fontWeight="medium" color="gray.700" _dark={{ color: "gray.300" }}>
+                                    <Text fontSize="sm" fontWeight="medium">
                                         {department.departmentColor.toUpperCase()}
                                     </Text>
-                                    <Text fontSize="xs" color="gray.500">
+                                    <Text fontSize="xs" color="detail.text">
                                         Hex Color Code
                                     </Text>
                                 </VStack>
@@ -125,18 +136,18 @@ export const DepartmentCard = ({
                     {/* Department Statistics */}
                     <Box>
                         <Text fontWeight="semibold" mb="2">Statistics</Text>
-                        <HStack spacing="4" fontSize="sm" color="gray.600">
-                            <Text>👥 0 crew members</Text>
-                            <Text>🎭 0 shows assigned</Text>
+                        <HStack spacing="4" fontSize="sm" color="detail.text">
+                            <Text>0 crew members</Text>
+                            <Text>0 shows assigned</Text>
                         </HStack>
                     </Box>
 
-                    {/* Last Updated */}
-                    <Box>
-                        <Text fontSize="xs" color="gray.400">
+                    {/* Created Date */}
+                    <Flex justify="flex-end">
+                        <Text fontSize="xs" color="detail.text">
                             Created: {new Date(department.dateCreated || department.dateUpdated).toLocaleDateString()}
                         </Text>
-                    </Box>
+                    </Flex>
                 </VStack>
             </Collapse>
         </Box>

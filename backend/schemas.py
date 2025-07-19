@@ -104,19 +104,20 @@ class Department(BaseModel):
 
 class ShowCreate(BaseModel):
     showName: str
-    venueID: Optional[UUID] = None  # CHANGED TO UUID
+    venueID: Optional[UUID] = None
     showDate: Optional[date] = None
     showNotes: Optional[str] = None
     deadline: Optional[datetime] = None
 
 class Show(BaseModel):
-    showID: UUID  # ALREADY UUID
-    ownerID: UUID  # CHANGED TO UUID
+    showID: UUID
+    ownerID: UUID
     showName: str
     venue: Optional[Venue] = None
     showDate: Optional[date] = None
     showNotes: Optional[str] = None
     deadline: Optional[datetime] = None
+    dateCreated: datetime
     dateUpdated: datetime
     
     # Forward reference to Script (defined below)
@@ -136,8 +137,9 @@ class Script(BaseModel):
     scriptID: UUID  # ALREADY UUID
     scriptName: str
     scriptStatus: str
-    intendedStartTime: Optional[datetime] = None
+    startTime: Optional[datetime] = None
     showID: UUID  # ALREADY UUID
+    dateCreated: datetime
     dateUpdated: datetime
     
     # Forward reference to ScriptElement (defined below)
@@ -149,7 +151,7 @@ class Script(BaseModel):
 class ScriptUpdate(BaseModel):
     scriptName: Optional[str] = None
     scriptStatus: Optional[str] = None
-    intendedStartTime: Optional[datetime] = None
+    startTime: Optional[datetime] = None
 
 # =============================================================================
 # SCRIPT ELEMENT SCHEMAS

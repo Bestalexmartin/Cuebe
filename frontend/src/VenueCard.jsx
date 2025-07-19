@@ -9,7 +9,6 @@ import {
     Text,
     Badge,
     Collapse,
-    useDisclosure,
     Button,
     Heading
 } from "@chakra-ui/react";
@@ -25,8 +24,6 @@ export const VenueCard = ({
     onHover,
     onSaveNavigationState
 }) => {
-    const { isOpen: isExpanded, onToggle } = useDisclosure();
-
     const borderColor = isHovered ? 'orange.400' : isSelected ? 'blue.400' : 'gray.600';
 
     const handleEditClick = (e) => {
@@ -68,51 +65,58 @@ export const VenueCard = ({
                     )}
                 </Flex>
 
-                {isSelected && (
-                    <HStack spacing="1">
-                        <Button
-                            aria-label="Edit venue"
-                            leftIcon={<AppIcon name="edit" boxSize="12px" />}
-                            size="xs"
-                            onClick={handleEditClick}
-                        >
-                            Edit
-                        </Button>
-                    </HStack>
-                )}
+                <HStack spacing="1" opacity={isSelected ? 1 : 0} pointerEvents={isSelected ? "auto" : "none"}>
+                    <Button
+                        aria-label="Edit venue"
+                        leftIcon={<AppIcon name="edit" boxSize="12px" />}
+                        size="xs"
+                        onClick={handleEditClick}
+                    >
+                        Edit
+                    </Button>
+                </HStack>
             </Flex>
 
-            {/* Quick Info Row */}
-            <HStack spacing="4" color="gray.500" fontSize="sm">
-                {venue.address && (
-                    <Text isTruncated maxWidth="200px">
-                        📍 {venue.address}
+            {/* Quick Info Rows */}
+            <VStack align="stretch" spacing="1" color="detail.text" fontSize="sm">
+                <HStack spacing="4">
+                    {venue.venueType && (
+                        <Badge variant="outline" colorScheme="green">
+                            {venue.venueType}
+                        </Badge>
+                    )}
+                    {venue.capacity && (
+                        <Text>
+                            Capacity: {formatCapacity(venue.capacity)}
+                        </Text>
+                    )}
+                </HStack>
+                <HStack justify="space-between">
+                    {venue.address ? (
+                        <Text isTruncated>
+                            {venue.address}
+                        </Text>
+                    ) : (
+                        <Box />
+                    )}
+                    <Text fontSize="xs">
+                        Updated: {new Date(venue.dateUpdated || venue.dateCreated).toLocaleDateString()}
                     </Text>
-                )}
-                {venue.capacity && (
-                    <Text>
-                        👥 {formatCapacity(venue.capacity)}
-                    </Text>
-                )}
-                {venue.venueType && (
-                    <Badge variant="outline" colorScheme="green">
-                        {venue.venueType}
-                    </Badge>
-                )}
-            </HStack>
+                </HStack>
+            </VStack>
 
             {/* Expandable Details - only show when selected */}
             <Collapse in={isSelected} animateOpacity>
-                <VStack spacing={2} align="stretch">
+                <VStack align="stretch" spacing="3" mt="4" pt="3" borderTop="1px solid" borderColor="ui.border">
 
                     {/* Contact Information */}
                     {(venue.contactName || venue.contactEmail || venue.contactPhone) && (
                         <Box>
-                            <Text fontWeight="semibold" mb="1">Contact Information</Text>
-                            <VStack align="stretch" spacing="1" fontSize="sm" color="gray.600">
-                                {venue.contactName && <Text>👤 {venue.contactName}</Text>}
-                                {venue.contactEmail && <Text>📧 {venue.contactEmail}</Text>}
-                                {venue.contactPhone && <Text>📞 {venue.contactPhone}</Text>}
+                            <Text fontWeight="semibold" mb="2">Contact Information</Text>
+                            <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text">
+                                {venue.contactName && <Text>Contact: {venue.contactName}</Text>}
+                                {venue.contactEmail && <Text>Email: {venue.contactEmail}</Text>}
+                                {venue.contactPhone && <Text>Phone: {venue.contactPhone}</Text>}
                             </VStack>
                         </Box>
                     )}
@@ -120,11 +124,11 @@ export const VenueCard = ({
                     {/* Technical Specifications */}
                     {(venue.stageWidth || venue.stageDepth || venue.flyHeight) && (
                         <Box>
-                            <Text fontWeight="semibold" mb="1">Technical Specifications</Text>
-                            <HStack spacing="4" fontSize="sm" color="gray.600">
-                                {venue.stageWidth && <Text>Width: {venue.stageWidth}'</Text>}
-                                {venue.stageDepth && <Text>Depth: {venue.stageDepth}'</Text>}
-                                {venue.flyHeight && <Text>Fly: {venue.flyHeight}'</Text>}
+                            <Text fontWeight="semibold" mb="2">Technical Specifications</Text>
+                            <HStack spacing="4" fontSize="sm" color="detail.text">
+                                {venue.stageWidth && <Text>Width: {venue.stageWidth} ft</Text>}
+                                {venue.stageDepth && <Text>Depth: {venue.stageDepth} ft</Text>}
+                                {venue.flyHeight && <Text>Fly Height: {venue.flyHeight} ft</Text>}
                             </HStack>
                         </Box>
                     )}
@@ -132,7 +136,7 @@ export const VenueCard = ({
                     {/* Equipment & Features */}
                     {venue.equipment && venue.equipment.length > 0 && (
                         <Box>
-                            <Text fontWeight="semibold" mb="1">Available Equipment</Text>
+                            <Text fontWeight="semibold" mb="2">Available Equipment</Text>
                             <Flex wrap="wrap" gap="1">
                                 {venue.equipment.map((item, index) => (
                                     <Badge key={index} variant="subtle" colorScheme="purple">
@@ -146,8 +150,8 @@ export const VenueCard = ({
                     {/* Notes */}
                     {venue.notes && (
                         <Box>
-                            <Text fontWeight="semibold" mb="1">Notes</Text>
-                            <Text fontSize="sm" color="gray.600">
+                            <Text fontWeight="semibold" mb="2">Notes</Text>
+                            <Text fontSize="sm" color="detail.text">
                                 {venue.notes}
                             </Text>
                         </Box>
@@ -156,20 +160,20 @@ export const VenueCard = ({
                     {/* Rental Information */}
                     {(venue.rentalRate || venue.minimumRental) && (
                         <Box>
-                            <Text fontWeight="semibold" mb="1">Rental Information</Text>
-                            <HStack spacing="4" fontSize="sm" color="gray.600">
-                                {venue.rentalRate && <Text>Rate: ${venue.rentalRate}/day</Text>}
+                            <Text fontWeight="semibold" mb="2">Rental Information</Text>
+                            <HStack spacing="4" fontSize="sm" color="detail.text">
+                                {venue.rentalRate && <Text>Daily Rate: ${venue.rentalRate}</Text>}
                                 {venue.minimumRental && <Text>Minimum: ${venue.minimumRental}</Text>}
                             </HStack>
                         </Box>
                     )}
 
-                    {/* Last Updated */}
-                    <Box>
-                        <Text fontSize="xs" color="gray.400">
-                            Last updated: {new Date(venue.dateUpdated || venue.dateCreated).toLocaleDateString()}
+                    {/* Created Date */}
+                    <Flex justify="flex-end">
+                        <Text fontSize="xs" color="detail.text">
+                            Created: {new Date(venue.dateCreated || venue.dateUpdated).toLocaleDateString()}
                         </Text>
-                    </Box>
+                    </Flex>
                 </VStack>
             </Collapse>
         </Box>
