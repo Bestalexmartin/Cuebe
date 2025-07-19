@@ -28,7 +28,6 @@ const INITIAL_FORM_STATE = {
     notes: '',
 };
 
-// Common theater roles
 const ROLE_OPTIONS = [
     { value: 'crew', label: 'Crew Member' },
     { value: 'department_head', label: 'Department Head' },
@@ -44,7 +43,6 @@ const ROLE_OPTIONS = [
 export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
     const { getToken } = useAuth();
 
-    // Form management
     const {
         formData,
         isSubmitting,
@@ -57,8 +55,6 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
         event.preventDefault();
 
         try {
-            // First, check if user already exists by email
-            console.log('Checking if user exists:', formData.emailAddress);
 
             const checkEmailResponse = await fetch(`/api/users/check-email?email=${encodeURIComponent(formData.emailAddress)}`, {
                 headers: {
@@ -66,15 +62,10 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                 }
             });
 
-            console.log('Check email response status:', checkEmailResponse.status);
-
             if (checkEmailResponse.ok) {
                 const existingUser = await checkEmailResponse.json();
-                console.log('Existing user found:', existingUser);
 
                 if (existingUser) {
-                    // User exists - create crew relationship
-                    console.log('Creating crew relationship for existing user');
                     const relationshipData = {
                         crew_user_id: existingUser.ID,
                         notes: formData.notes.trim() || null
@@ -87,8 +78,6 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                         relationshipData
                     );
                 } else {
-                    // User doesn't exist - create new guest user + relationship
-                    console.log('Creating new guest user with relationship');
                     const userData = {
                         emailAddress: formData.emailAddress,
                         fullnameFirst: formData.fullnameFirst,
@@ -106,17 +95,13 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                     );
                 }
             } else {
-                console.error('Check email failed with status:', checkEmailResponse.status);
                 throw new Error('Failed to check for existing user');
             }
 
-            // Reset and close
             handleModalClose();
             onCrewCreated();
 
         } catch (error) {
-            // Error handling is done in submitForm
-            console.error('Crew addition failed:', error);
         }
     };
 
@@ -149,7 +134,7 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                             <FormControl isRequired>
                                 <FormLabel>First Name</FormLabel>
                                 <Input
-                                    placeholder=""
+                                    placeholder="Enter first name"
                                     value={formData.fullnameFirst}
                                     onChange={(e) => updateField('fullnameFirst', e.target.value)}
                                 />
@@ -158,7 +143,7 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                             <FormControl isRequired>
                                 <FormLabel>Last Name</FormLabel>
                                 <Input
-                                    placeholder=""
+                                    placeholder="Enter last name"
                                     value={formData.fullnameLast}
                                     onChange={(e) => updateField('fullnameLast', e.target.value)}
                                 />
@@ -169,7 +154,7 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                             <FormLabel>Email Address</FormLabel>
                             <Input
                                 type="email"
-                                placeholder=""
+                                placeholder="crew@example.com"
                                 value={formData.emailAddress}
                                 onChange={(e) => updateField('emailAddress', e.target.value)}
                             />
@@ -193,7 +178,7 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                             <FormLabel>Phone Number</FormLabel>
                             <Input
                                 type="tel"
-                                placeholder=""
+                                placeholder="(555) 123-4567"
                                 value={formData.phoneNumber}
                                 onChange={(e) => updateField('phoneNumber', e.target.value)}
                             />
@@ -202,7 +187,7 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                         <FormControl>
                             <FormLabel>Notes</FormLabel>
                             <Input
-                                placeholder=""
+                                placeholder="Additional notes about this crew member"
                                 value={formData.notes}
                                 onChange={(e) => updateField('notes', e.target.value)}
                             />

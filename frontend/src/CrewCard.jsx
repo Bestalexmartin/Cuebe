@@ -19,18 +19,23 @@ export const CrewCard = ({
     onCrewClick,
     isHovered,
     isSelected,
-    onHover
+    onHover,
+    onSaveNavigationState
 }) => {
     const borderColor = isHovered ? 'orange.400' : isSelected ? 'blue.400' : 'gray.600';
 
     const handleEditClick = (e) => {
         e.stopPropagation();
+
+        if (onSaveNavigationState) {
+            onSaveNavigationState();
+        }
+
         onEdit(crewMember.userID);
     };
 
     const formatRole = (role) => {
         if (!role) return 'Crew Member';
-        // Convert underscores to spaces and title case
         return role.split('_').map(word =>
             word.charAt(0).toUpperCase() + word.slice(1)
         ).join(' ');
@@ -81,7 +86,6 @@ export const CrewCard = ({
                     </VStack>
                 </Flex>
 
-                {/* Right side - badges and email when collapsed, edit button when expanded */}
                 {isSelected ? (
                     <HStack spacing="1">
                         <Button

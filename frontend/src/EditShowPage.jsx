@@ -83,7 +83,13 @@ export const EditShowPage = () => {
             );
 
             // Navigate back to dashboard on success
-            navigate('/dashboard');
+            navigate('/dashboard', {
+                state: {
+                    view: 'shows',
+                    selectedShowId: showId,
+                    returnFromEdit: true
+                }
+            });
 
         } catch (error) {
             // Error handling is done in submitForm
@@ -91,7 +97,13 @@ export const EditShowPage = () => {
     };
 
     const handleClose = () => {
-        navigate('/dashboard');
+        navigate('/dashboard', {
+            state: {
+                view: 'shows',
+                selectedShowId: showId,
+                returnFromEdit: true
+            }
+        });
     };
 
     const isFormValid = () => {

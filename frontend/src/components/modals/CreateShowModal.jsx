@@ -49,15 +49,14 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
     createResource: createVenue,
     refetch: refetchVenues,
   } = useResource('/api/venues/', {
-    fetchOnMount: false, // Only fetch when modal opens
+    fetchOnMount: false,
   });
 
-  // Fetch venues when modal opens
   useEffect(() => {
     if (isOpen) {
       refetchVenues();
     }
-  }, [isOpen]); // Removed refetchVenues from dependencies
+  }, [isOpen]);
 
   const handleVenueSelectChange = (e) => {
     const value = e.target.value;
@@ -77,7 +76,6 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
     try {
       let venueId = formData.venueID;
 
-      // Create new venue if needed
       if (isAddingNewVenue && newVenueName.trim()) {
         const newVenue = await createVenue({ venueName: newVenueName.trim() });
         venueId = newVenue.venueID;
@@ -93,30 +91,25 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
         });
       }
 
-      // Prepare show data with proper formatting
       const showData = {
         showName: formData.showName,
-        venueID: venueId || null, // REMOVED parseInt() - venueID is now a UUID string
+        venueID: venueId || null,
         showDate: formData.showDate || null,
         showNotes: formData.showNotes || null,
         deadline: formData.deadline || null,
       };
 
-      // Create the show using custom data
       await submitForm(
         '/api/shows/',
         'POST',
         `"${formData.showName}" has been created successfully`,
-        showData // Pass the custom data
+        showData
       );
 
-      // Reset and close
       handleModalClose();
       onShowCreated();
 
     } catch (error) {
-      // Error handling is done in submitForm
-      console.error('Show creation failed:', error);
     }
   };
 
@@ -142,14 +135,14 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
         border="2px solid"
         borderColor="gray.600"
       >
-        <ModalHeader>Create a New Show</ModalHeader>
+        <ModalHeader>Create New Show</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
           <VStack spacing={4} align="stretch">
             <FormControl isRequired>
               <FormLabel>Show Name</FormLabel>
               <Input
-                placeholder=""
+                placeholder="Enter show name"
                 value={formData.showName}
                 onChange={(e) => updateField('showName', e.target.value)}
               />
@@ -159,7 +152,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
               <FormLabel>Venue</FormLabel>
               <VStack align="stretch" spacing={3}>
                 <Select
-                  placeholder={isLoadingVenues ? "Loading venues..." : "Select a Venue"}
+                  placeholder={isLoadingVenues ? "Loading venues..." : "Select venue"}
                   value={isAddingNewVenue ? 'add_new' : formData.venueID}
                   onChange={handleVenueSelectChange}
                   disabled={isLoadingVenues}
@@ -174,7 +167,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
 
                 {isAddingNewVenue && (
                   <Input
-                    placeholder=""
+                    placeholder="Enter venue name"
                     value={newVenueName}
                     onChange={(e) => setNewVenueName(e.target.value)}
                   />
@@ -192,7 +185,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
             </FormControl>
 
             <FormControl>
-              <FormLabel>Deadline</FormLabel>
+              <FormLabel>Script Deadline</FormLabel>
               <Input
                 type="datetime-local"
                 value={formData.deadline}
@@ -203,12 +196,11 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
             <FormControl>
               <FormLabel>Notes</FormLabel>
               <Input
-                placeholder=""
+                placeholder="Additional notes about this show"
                 value={formData.showNotes}
                 onChange={(e) => updateField('showNotes', e.target.value)}
               />
             </FormControl>
-
           </VStack>
         </ModalBody>
 

@@ -18,16 +18,14 @@ import {
     Box,
     Text,
 } from '@chakra-ui/react';
-import { useState } from 'react';
 import { useFormManager } from '../../hooks/useFormManager';
 
 const INITIAL_FORM_STATE = {
     departmentName: '',
     departmentDescription: '',
-    departmentColor: '#6495ED', // Default to your blue.400
+    departmentColor: '#6495ED',
 };
 
-// Predefined color options for quick selection
 const PRESET_COLORS = [
     { name: 'Blue', value: '#6495ED' },
     { name: 'Orange', value: '#e79e40' },
@@ -40,7 +38,6 @@ const PRESET_COLORS = [
 ];
 
 export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) => {
-    // Form management
     const {
         formData,
         isSubmitting,
@@ -53,7 +50,6 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
         event.preventDefault();
 
         try {
-            // Prepare department data, filtering out empty optional fields
             const departmentData = {
                 departmentName: formData.departmentName,
                 departmentColor: formData.departmentColor,
@@ -62,7 +58,6 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
                 }),
             };
 
-            // Create the department
             await submitForm(
                 '/api/departments/',
                 'POST',
@@ -70,13 +65,10 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
                 departmentData
             );
 
-            // Reset and close
             handleModalClose();
             onDepartmentCreated();
 
         } catch (error) {
-            // Error handling is done in submitForm
-            console.error('Department creation failed:', error);
         }
     };
 
@@ -106,16 +98,16 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
                         <FormControl isRequired>
                             <FormLabel>Department Name</FormLabel>
                             <Input
-                                placeholder=""
+                                placeholder="Enter department name"
                                 value={formData.departmentName}
                                 onChange={(e) => updateField('departmentName', e.target.value)}
                             />
                         </FormControl>
 
                         <FormControl>
-                            <FormLabel>Description (Optional)</FormLabel>
+                            <FormLabel>Description</FormLabel>
                             <Textarea
-                                placeholder=""
+                                placeholder="Describe the department's role and responsibilities"
                                 value={formData.departmentDescription}
                                 onChange={(e) => updateField('departmentDescription', e.target.value)}
                                 rows={3}
@@ -126,7 +118,6 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
                         <FormControl>
                             <FormLabel>Department Color</FormLabel>
                             <VStack align="stretch" spacing={3}>
-                                {/* Color Picker Input */}
                                 <HStack>
                                     <Input
                                         type="color"
@@ -145,7 +136,6 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
                                     />
                                 </HStack>
 
-                                {/* Preset Color Options */}
                                 <Box>
                                     <Text fontSize="sm" color="gray.500" mb={2}>
                                         Quick Colors:
@@ -169,7 +159,6 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
                                     </HStack>
                                 </Box>
 
-                                {/* Color Preview */}
                                 <HStack>
                                     <Text fontSize="sm" color="gray.500">Preview:</Text>
                                     <Box

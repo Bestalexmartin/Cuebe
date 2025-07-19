@@ -9,7 +9,10 @@ import SignInPage from "./SignInPage";
 import SignUpPage from "./SignUpPage";
 import UserProfilePage from "./UserProfilePage";
 import { EditShowPage } from './EditShowPage';
-import { EditScriptPage } from './EditScriptPage'; // Add this import
+import { EditScriptPage } from './EditScriptPage';
+import { EditVenuePage } from './EditVenuePage';
+import { EditDepartmentPage } from './EditDepartmentPage';
+import { EditCrewPage } from './EditCrewPage';
 
 // Protected Route Component - wraps any component that requires authentication
 const ProtectedRoute = ({ children }) => (
@@ -64,12 +67,30 @@ function App() {
             </ProtectedRoute>
           } />
 
+          <Route path="/venues/:venueId/edit" element={
+            <ProtectedRoute>
+              <EditVenuePage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/departments/:departmentId/edit" element={
+            <ProtectedRoute>
+              <EditDepartmentPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/crew/:crewId/edit" element={
+            <ProtectedRoute>
+              <EditCrewPage />
+            </ProtectedRoute>
+          } />
+
           <Route path="*" element={
             <>
               <SignedIn><Navigate to="/dashboard" replace /></SignedIn>
               <SignedOut><Navigate to="/sign-in" replace /></SignedOut>
             </>
           } />
+
         </Routes>
       </Box>
     </Box>

@@ -11,13 +11,14 @@ export const ShowsView = ({
     error,
     onCreateShow, // Updated prop name
     selectedShowId,
-    hoveredShowId,
-    setHoveredShowId,
+    hoveredCardId,
+    setHoveredCardId,
     handleShowClick,
     showCardRefs,
     selectedScriptId,
     handleScriptClick,
     onCreateScript, // Updated prop name
+    onSaveNavigationState, // NEW: Add prop for saving navigation state
 }) => {
     // Shows-specific sorting state
     const [sortBy, setSortBy] = useState('dateUpdated');
@@ -131,12 +132,13 @@ export const ShowsView = ({
                                         sortBy={sortBy}
                                         sortDirection={sortDirection}
                                         isSelected={selectedShowId === show.showID}
-                                        isHovered={hoveredShowId === show.showID}
-                                        onShowHover={setHoveredShowId}
+                                        isHovered={hoveredCardId === show.showID}
+                                        onShowHover={setHoveredCardId}
                                         onShowClick={handleShowClick}
                                         selectedScriptId={selectedScriptId}
                                         onScriptClick={handleScriptClick}
                                         onCreateScriptClick={onCreateScript} // Updated prop name
+                                        onSaveNavigationState={onSaveNavigationState} // NEW: Pass down the save function
                                     />
                                 </div>
                             ))}

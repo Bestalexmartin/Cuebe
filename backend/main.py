@@ -102,23 +102,23 @@ def read_root():
 # USER ENDPOINTS
 # =============================================================================
 
-# CHECK IF USER EXISTS BY EMAIL
 @app.get("/api/users/check-email")
 async def check_user_by_email(
     email: str,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Check if a user exists by email address."""
     existing_user = db.query(models.User).filter(models.User.emailAddress == email).first()
     return existing_user
 
-# CREATE GUEST USER WITH RELATIONSHIP (atomic operation)
 @app.post("/api/users/create-guest-with-relationship", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
 async def create_guest_user_with_relationship(
     guest_data: schemas.GuestUserCreate,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Create a guest user with crew relationship in an atomic operation."""
     # Double-check user doesn't already exist
     existing_user = db.query(models.User).filter(models.User.emailAddress == guest_data.emailAddress).first()
     if existing_user:
@@ -160,12 +160,12 @@ async def create_guest_user_with_relationship(
 # CREW ENDPOINTS
 # =============================================================================
 
-# GET MY CREW (current user + users they manage)
-@app.get("/api/crew/my-crew", response_model=list[schemas.User])
-async def get_my_crew(
+@app.get("/api/crew/", response_model=list[schemas.User])
+async def read_crew_members(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Get crew members for the current user (themselves + users they manage)."""
     # Show current user + users they manage via CrewRelationship
     my_crew = db.query(models.User).filter(
         or_(
@@ -180,21 +180,149 @@ async def get_my_crew(
     
     return my_crew
 
-# MAIN CREW ENDPOINT (redirects to my-crew)
-@app.get("/api/crew/", response_model=list[schemas.User])
-async def read_crew_members(
+@app.get("/api/crew/{crew_id}", response_model=schemas.User)
+async def get_crew_member(
+    crew_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    return await get_my_crew(user, db)
+    """
+    Get a single crew member by ID.
+    Only returns crew members that the current user manages or is themselves.
+    """
+    crew_member = db.query(models.User).filter(models.User.userID == crew_id).first()
+    
+    if not crew_member:
+        raise HTTPException(status_code=404, detail="Crew member not found")
+    
+    # Security check: User can only access themselves or crew they manage
+    if crew_member.userID != user.userID: # type: ignore
+        # Check if current user manages this crew member
+        relationship = db.query(models.CrewRelationship).filter(
+            models.CrewRelationship.manager_user_id == user.userID,
+            models.CrewRelationship.crew_user_id == crew_id,
+            models.CrewRelationship.isActive == True
+        ).first()
+        
+        if not relationship:
+            raise HTTPException(status_code=403, detail="Not authorized to access this crew member")
+    
+    return crew_member
 
-# CREATE CREW RELATIONSHIP (for existing users)
+@app.patch("/api/crew/{crew_id}", response_model=schemas.User)
+async def update_crew_member(
+    crew_id: UUID,
+    crew_update: schemas.GuestUserCreate,  # Reuse the same fields
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Update a crew member's information.
+    Only allows updating crew members that the current user manages or is themselves.
+    """
+    crew_member = db.query(models.User).filter(models.User.userID == crew_id).first()
+    
+    if not crew_member:
+        raise HTTPException(status_code=404, detail="Crew member not found")
+    
+    # Security check: User can only update themselves or crew they manage
+    if crew_member.userID != user.userID: # type: ignore
+        # Check if current user manages this crew member
+        relationship = db.query(models.CrewRelationship).filter(
+            models.CrewRelationship.manager_user_id == user.userID,
+            models.CrewRelationship.crew_user_id == crew_id,
+            models.CrewRelationship.isActive == True
+        ).first()
+        
+        if not relationship:
+            raise HTTPException(status_code=403, detail="Not authorized to update this crew member")
+    
+    # Update only the fields that were provided
+    update_data = crew_update.model_dump(exclude_unset=True)
+    logger.info(f"Updating crew member {crew_id} with data: {update_data}")
+    
+    # Don't allow changing certain fields for verified users
+    if crew_member.userStatus == models.UserStatus.VERIFIED: # type: ignore
+        # Remove fields that shouldn't be changed for verified users
+        update_data.pop('emailAddress', None)
+        logger.info(f"Removed emailAddress from update for verified user {crew_id}")
+    
+    for key, value in update_data.items():
+        if hasattr(crew_member, key):
+            setattr(crew_member, key, value)
+    
+    # Update the dateUpdated timestamp
+    crew_member.dateUpdated = datetime.utcnow() # type: ignore
+    
+    try:
+        db.commit()
+        db.refresh(crew_member)
+        return crew_member
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to update crew member {crew_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update crew member: {str(e)}"
+        )
+
+@app.delete("/api/crew/{crew_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_crew_member(
+    crew_id: UUID,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Remove a crew member from the current user's crew.
+    For guest users, this deactivates them entirely.
+    For verified users, this just removes the crew relationship.
+    """
+    crew_member = db.query(models.User).filter(models.User.userID == crew_id).first()
+    
+    if not crew_member:
+        raise HTTPException(status_code=404, detail="Crew member not found")
+    
+    # Security check: User can only remove crew they manage (not themselves)
+    if crew_member.userID == user.userID: # type: ignore
+        raise HTTPException(status_code=400, detail="Cannot remove yourself from crew")
+    
+    # Check if current user manages this crew member
+    relationship = db.query(models.CrewRelationship).filter(
+        models.CrewRelationship.manager_user_id == user.userID,
+        models.CrewRelationship.crew_user_id == crew_id,
+        models.CrewRelationship.isActive == True
+    ).first()
+    
+    if not relationship:
+        raise HTTPException(status_code=403, detail="Not authorized to remove this crew member")
+    
+    # Deactivate the crew relationship
+    relationship.isActive = False # type: ignore
+    
+    # If this is a guest user and they have no other active relationships, deactivate them
+    if crew_member.userStatus == models.UserStatus.GUEST: # type: ignore
+        other_relationships = db.query(models.CrewRelationship).filter(
+            models.CrewRelationship.crew_user_id == crew_id,
+            models.CrewRelationship.isActive == True,
+            models.CrewRelationship.manager_user_id != user.userID
+        ).count()
+        
+        if other_relationships == 0:
+            crew_member.isActive = False # type: ignore
+            logger.info(f"Deactivated guest user {crew_id} as they have no active relationships")
+    
+    db.commit()
+    logger.info(f"Removed crew member {crew_id} from user {user.userID}'s crew")
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 @app.post("/api/crew-relationships/", status_code=status.HTTP_201_CREATED)
 async def create_crew_relationship(
     relationship_data: schemas.CrewRelationshipCreate,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Create a crew relationship for existing users."""
     # Check if relationship already exists
     existing_relationship = db.query(models.CrewRelationship).filter(
         models.CrewRelationship.manager_user_id == user.userID,
@@ -231,6 +359,7 @@ async def read_venues(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Get all venues."""
     venues = db.query(models.Venue).all()
     return venues
 
@@ -240,11 +369,47 @@ async def create_venue(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Create a new venue."""
     new_venue = models.Venue(**venue.model_dump())
     db.add(new_venue)
     db.commit()
     db.refresh(new_venue)
     return new_venue
+
+@app.get("/api/venues/{venue_id}", response_model=schemas.Venue)
+async def get_venue(
+    venue_id: UUID,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get a single venue by ID."""
+    venue = db.query(models.Venue).filter(models.Venue.venueID == venue_id).first()
+    if not venue:
+        raise HTTPException(status_code=404, detail="Venue not found")
+    return venue
+
+@app.patch("/api/venues/{venue_id}", response_model=schemas.Venue)
+async def update_venue(
+    venue_id: UUID,
+    venue_update: schemas.VenueCreate,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update a venue."""
+    venue_to_update = db.query(models.Venue).filter(models.Venue.venueID == venue_id).first()
+    if not venue_to_update:
+        raise HTTPException(status_code=404, detail="Venue not found")
+
+    update_data = venue_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(venue_to_update, key, value)
+    
+    # Update the dateUpdated timestamp
+    venue_to_update.dateUpdated = datetime.utcnow() # type: ignore
+    
+    db.commit()
+    db.refresh(venue_to_update)
+    return venue_to_update
 
 # =============================================================================
 # DEPARTMENT ENDPOINTS
@@ -255,6 +420,7 @@ async def read_departments(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Get all departments."""
     departments = db.query(models.Department).all()
     return departments
 
@@ -264,6 +430,7 @@ async def create_department(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Create a new department."""
     new_department = models.Department(
         departmentName=department.departmentName,
         departmentDescription=department.departmentDescription,
@@ -276,10 +443,11 @@ async def create_department(
 
 @app.get("/api/departments/{department_id}", response_model=schemas.Department)
 async def read_department(
-    department_id: int,
+    department_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Get a single department by ID."""
     department = db.query(models.Department).filter(models.Department.departmentID == department_id).first()
     if not department:
         raise HTTPException(status_code=404, detail="Department not found")
@@ -287,11 +455,12 @@ async def read_department(
 
 @app.patch("/api/departments/{department_id}", response_model=schemas.Department)
 async def update_department(
-    department_id: int,
+    department_id: UUID,
     department_update: schemas.DepartmentCreate,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Update a department."""
     department_to_update = db.query(models.Department).filter(models.Department.departmentID == department_id).first()
     if not department_to_update:
         raise HTTPException(status_code=404, detail="Department not found")
@@ -302,6 +471,9 @@ async def update_department(
     for key, value in update_data.items():
         setattr(department_to_update, key, value)
     
+    # Update the dateUpdated timestamp
+    department_to_update.dateUpdated = datetime.utcnow() # type: ignore
+    
     db.commit()
     db.refresh(department_to_update)
     
@@ -309,10 +481,11 @@ async def update_department(
 
 @app.delete("/api/departments/{department_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_department(
-    department_id: int,
+    department_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Delete a department."""
     department_to_delete = db.query(models.Department).filter(models.Department.departmentID == department_id).first()
     if not department_to_delete:
         raise HTTPException(status_code=404, detail="Department not found")
@@ -332,11 +505,12 @@ async def create_show(
     db: Session = Depends(get_db), 
     user: models.User = Depends(get_current_user)
 ):
+    """Create a new show with a default first draft script."""
     new_show = models.Show(
         showName=show.showName,
         venueID=show.venueID,
         showDate=show.showDate,
-        showNotes=show.showNotes,  # Add this line
+        showNotes=show.showNotes,
         deadline=show.deadline,
         ownerID=user.userID
     )
@@ -360,7 +534,8 @@ async def read_shows_for_current_user(
     db: Session = Depends(get_db), 
     skip: int = 0,
     limit: int = 100
-):  
+):
+    """Get all shows owned by the current user."""
     shows = db.query(models.Show).options(
         joinedload(models.Show.scripts).joinedload(models.Script.elements),
         joinedload(models.Show.venue)
@@ -374,6 +549,7 @@ async def read_show(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Get a single show by ID."""
     logger.info(f"Looking for show with UUID: {show_id}")
     show = db.query(models.Show).options(
         joinedload(models.Show.scripts).joinedload(models.Script.elements),
@@ -399,6 +575,7 @@ async def update_show(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Update a show."""
     show_to_update = db.query(models.Show).filter(models.Show.showID == show_id).first()
     if not show_to_update:
         raise HTTPException(status_code=404, detail="Show not found")
@@ -413,6 +590,9 @@ async def update_show(
     for key, value in update_data.items():
         setattr(show_to_update, key, value)
     
+    # Update the dateUpdated timestamp
+    show_to_update.dateUpdated = datetime.utcnow() # type: ignore
+    
     db.commit()
     db.refresh(show_to_update)
     
@@ -424,6 +604,7 @@ async def delete_show(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Delete a show."""
     show_to_delete = db.query(models.Show).filter(models.Show.showID == show_id).first()
     if not show_to_delete:
         raise HTTPException(status_code=404, detail="Show not found")
@@ -448,6 +629,7 @@ async def create_script_for_show(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Create a new script for a show."""
     # Find the show this script will belong to
     show = db.query(models.Show).filter(models.Show.showID == show_id).first()
     if not show:
@@ -474,9 +656,7 @@ async def get_script(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Get a single script by ID.
-    """
+    """Get a single script by ID."""
     # Query the script from database with show relationship for authorization
     script = db.query(models.Script).options(
         joinedload(models.Script.show),
@@ -505,9 +685,7 @@ async def update_script(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Update a script's metadata.
-    """
+    """Update a script's metadata."""
     # Query the script from database with show relationship for authorization
     script = db.query(models.Script).options(
         joinedload(models.Script.show)
@@ -559,6 +737,7 @@ def create_guest_link_for_show(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    """Create a guest access link for a specific show and department."""
     # Verify the show exists and user owns it
     show = db.query(models.Show).filter(models.Show.showID == show_id).first()
     if not show:
@@ -589,6 +768,7 @@ def create_guest_link_for_show(
 
 @app.get("/api/guest/{access_token}", response_model=list[schemas.ScriptElement])
 def get_script_for_guest(access_token: str, db: Session = Depends(get_db)):
+    """Get script elements for a guest user via access token."""
     # Find the link in the database
     link = db.query(models.GuestAccessLink).filter(models.GuestAccessLink.accessToken == access_token).first()
     
@@ -626,6 +806,7 @@ async def handle_clerk_webhook(
     request: Request,
     db: Session = Depends(get_db)
 ):
+    """Handle Clerk authentication webhooks for user lifecycle management."""
     headers = request.headers
     payload = await request.body()
     webhook_secret = os.getenv("CLERK_WEBHOOK_SECRET")

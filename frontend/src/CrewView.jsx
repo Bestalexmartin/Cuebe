@@ -2,22 +2,27 @@
 
 import { useState, useMemo } from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem, useDisclosure } from "@chakra-ui/react";
+import { useNavigate } from 'react-router-dom';
 import { AppIcon } from './components/AppIcon';
 import { CrewCard } from './CrewCard';
 import { useCrews } from './hooks/useCrews';
 import { CreateCrewModal } from './components/modals/CreateCrewModal';
 
-export const CrewView = () => {
+export const CrewView = ({
+    onCreateCrew,
+    selectedCrewId,
+    onCrewClick,
+    hoveredCardId,
+    setHoveredCardId,
+    onSaveNavigationState // NEW: Add prop for saving navigation state
+}) => {
+    const navigate = useNavigate();
     const { crews, isLoading, error, refetchCrews } = useCrews();
     const { isOpen, onOpen, onClose } = useDisclosure();
 
     // Crew-specific sorting state  
     const [sortBy, setSortBy] = useState('fullnameFirst');
     const [sortDirection, setSortDirection] = useState('asc');
-
-    // Crew selection state
-    const [selectedCrewId, setSelectedCrewId] = useState(null);
-    const [hoveredCrewId, setHoveredCrewId] = useState(null);
 
     // Crew-specific sorting logic
     const handleSortClick = (newSortBy) => {
@@ -36,17 +41,15 @@ export const CrewView = () => {
         crewsToSort.sort((a, b) => {
             let comparison = 0;
             if (sortBy === 'fullnameFirst') {
-                // Sort by first name, then last name
                 const aName = `${a.fullnameFirst || ''} ${a.fullnameLast || ''}`.trim();
                 const bName = `${b.fullnameFirst || ''} ${b.fullnameLast || ''}`.trim();
                 comparison = aName.localeCompare(bName);
             } else if (sortBy === 'fullnameLast') {
-                // Sort by last name, then first name
                 const aName = `${a.fullnameLast || ''} ${a.fullnameFirst || ''}`.trim();
                 const bName = `${b.fullnameLast || ''} ${b.fullnameFirst || ''}`.trim();
                 comparison = aName.localeCompare(bName);
             } else if (sortBy === 'userRole') {
-                const aRole = a.userRole || 'zzz'; // Put empty roles at end
+                const aRole = a.userRole || 'zzz';
                 const bRole = b.userRole || 'zzz';
                 comparison = aRole.localeCompare(bRole);
             } else if (sortBy === 'emailAddress') {
@@ -61,14 +64,15 @@ export const CrewView = () => {
         return crewsToSort;
     }, [crews, sortBy, sortDirection]);
 
-    const handleCrewClick = (crewId) => {
-        setSelectedCrewId(selectedCrewId === crewId ? null : crewId);
+    const handleEdit = (crewId) => {
+        if (onSaveNavigationState) {
+            onSaveNavigationState();
+        }
+        navigate(`/crew/${crewId}/edit`);
     };
 
-    const handleEdit = (crewId) => {
-        console.log('Edit crew member:', crewId);
-        onOpen(); // Open the create modal for now
-    };
+    // Use the modal handler from props if provided, otherwise use local modal
+    const handleCreateCrew = onCreateCrew || onOpen;
 
     return (
         <>
@@ -97,7 +101,7 @@ export const CrewView = () => {
                             bg="blue.400"
                             color="white"
                             size="xs"
-                            onClick={onOpen}
+                            onClick={handleCreateCrew}
                             _hover={{ bg: 'orange.400' }}
                         >
                             Add Crew Member
@@ -133,10 +137,11 @@ export const CrewView = () => {
                                         key={crewMember.userID}
                                         crewMember={crewMember}
                                         onEdit={handleEdit}
-                                        onCrewClick={handleCrewClick}
-                                        isHovered={hoveredCrewId === crewMember.userID}
+                                        onCrewClick={onCrewClick}
+                                        isHovered={hoveredCardId === crewMember.userID}
                                         isSelected={selectedCrewId === crewMember.userID}
-                                        onHover={setHoveredCrewId}
+                                        onHover={setHoveredCardId}
+                                        onSaveNavigationState={onSaveNavigationState} // NEW: Pass down the save function
                                     />
                                 ))}
                             </VStack>
@@ -150,7 +155,7 @@ export const CrewView = () => {
                                     bg="blue.400"
                                     color="white"
                                     size="sm"
-                                    onClick={onOpen}
+                                    onClick={handleCreateCrew}
                                     _hover={{ bg: 'orange.400' }}
                                 >
                                     Add Your First Crew Member
