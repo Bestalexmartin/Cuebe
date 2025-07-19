@@ -185,7 +185,7 @@ export const EditShowPage = () => {
                             <Input
                                 value={formData.showName}
                                 onChange={(e) => handleChange('showName', e.target.value)}
-                                placeholder=""
+                                placeholder="Enter show title"
                             />
                         </FormControl>
 
@@ -194,7 +194,7 @@ export const EditShowPage = () => {
                             <Select
                                 value={formData.venueID}
                                 onChange={(e) => handleChange('venueID', e.target.value)}
-                                placeholder={isLoadingVenues ? "Loading venues..." : "Select Venue"}
+                                placeholder={isLoadingVenues ? "Loading venues..." : "Select venue"}
                                 disabled={isLoadingVenues}
                             >
                                 {venues.map(venue => (
@@ -231,7 +231,7 @@ export const EditShowPage = () => {
                             <Textarea
                                 value={formData.showNotes}
                                 onChange={(e) => handleChange('showNotes', e.target.value)}
-                                placeholder=""
+                                placeholder="Additional show information, special requirements, etc."
                                 flexGrow={1}
                                 resize="vertical"
                             />

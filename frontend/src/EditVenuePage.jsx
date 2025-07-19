@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import {
     Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
-    FormControl, FormLabel, Input, Textarea, Select, NumberInput, NumberInputField
+    FormControl, FormLabel, Input, Textarea, Select
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useVenue } from "./hooks/useVenue";
@@ -147,7 +147,7 @@ export const EditVenuePage = () => {
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
                 <HStack spacing="2" align="center">
-                    <AppIcon name="venue" boxSize="20px" />
+                    <AppIcon name="edit" boxSize="20px" />
                     <Heading as="h2" size="md">
                         {isLoadingVenue ? 'Loading...' : `${venue?.venueName}`}
                     </Heading>
@@ -237,7 +237,7 @@ export const EditVenuePage = () => {
                             />
                         </FormControl>
 
-                        {/* Capacity and Technical Specs */}
+                        {/* Capacity and Technical Specs - All on one row */}
                         <HStack spacing={4}>
                             <FormControl>
                                 <FormLabel>Capacity</FormLabel>
@@ -257,9 +257,6 @@ export const EditVenuePage = () => {
                                     placeholder="Width in feet"
                                 />
                             </FormControl>
-                        </HStack>
-
-                        <HStack spacing={4}>
                             <FormControl>
                                 <FormLabel>Stage Depth (ft)</FormLabel>
                                 <Input

@@ -11,13 +11,14 @@ import {
   Divider,
   Text,
   Collapse,
+  Badge,
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { AppIcon } from "./components/AppIcon";
 
 // TypeScript interfaces
 interface Venue {
-  venueID: string; // CHANGED: UUID is now a string
+  venueID: string;
   venueName: string;
 }
 
@@ -26,13 +27,17 @@ interface Script {
   scriptName: string;
   scriptStatus: string;
   showID: string;
+  startTime: string;
+  dateCreated: string;
   dateUpdated: string;
+  lastUsed?: string; // Optional field for last used date
 }
 
 interface Show {
   showID: string;
   showName: string;
   showDate?: string;
+  dateCreated: string;
   dateUpdated: string;
   venue?: Venue;
   scripts: Script[];
@@ -44,12 +49,11 @@ interface ShowCardProps {
   isHovered: boolean;
   selectedScriptId: string | null;
   onShowClick: (showId: string) => void;
-  onScriptClick: (scriptId: string) => void; // CHANGED: string instead of number
+  onScriptClick: (scriptId: string) => void;
   onShowHover: (showId: string | null) => void;
   onCreateScriptClick: (showId: string) => void;
   sortBy: "showName" | "showDate" | "dateUpdated";
   sortDirection: "asc" | "desc";
-  // NEW: Add function to save navigation state before leaving
   onSaveNavigationState?: () => void;
 }
 
@@ -59,12 +63,12 @@ export const ShowCard: React.FC<ShowCardProps> = ({
   isHovered,
   selectedScriptId,
   onShowClick,
-  onScriptClick, // Still called for any additional logic
+  onScriptClick,
   onShowHover,
   onCreateScriptClick,
   sortBy,
   sortDirection,
-  onSaveNavigationState, // NEW: Optional prop for saving navigation state
+  onSaveNavigationState,
 }) => {
   const navigate = useNavigate();
 
@@ -136,90 +140,161 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     >
       <Flex justify="space-between" align="center">
         <Heading size="sm">{show.showName}</Heading>
-        {isSelected && (
-          <HStack>
-            <Button
-              leftIcon={<AppIcon name="edit" boxSize="12px" />}
-              size="xs"
-              onClick={handleShowEditClick}
-            >
-              Edit
-            </Button>
-            <Divider
-              orientation="vertical"
-              height="20px"
-              borderColor="gray.400"
-              mx="2"
-            />
-            <Button
-              bg="blue.400"
-              size="xs"
-              color="white"
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation();
-                onCreateScriptClick(show.showID);
-              }}
-              _hover={{ bg: "orange.400" }}
-              _focus={{ boxShadow: "none" }}
-            >
-              Create Script
-            </Button>
-          </HStack>
-        )}
+        <HStack
+          opacity={isSelected ? 1 : 0}
+          pointerEvents={isSelected ? "auto" : "none"}
+        >
+          <Button
+            leftIcon={<AppIcon name="edit" boxSize="12px" />}
+            size="xs"
+            onClick={handleShowEditClick}
+          >
+            Edit
+          </Button>
+          <Divider
+            orientation="vertical"
+            height="20px"
+            borderColor="gray.400"
+            mx="2"
+          />
+          <Button
+            bg="blue.400"
+            size="xs"
+            color="white"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              onCreateScriptClick(show.showID);
+            }}
+            _hover={{ bg: "orange.400" }}
+            _focus={{ boxShadow: "none" }}
+          >
+            Create Script
+          </Button>
+        </HStack>
       </Flex>
-      <Text fontSize="sm" color="gray.500" mt={2}>
-        {venueName}
+      <Text fontSize="sm" color="detail.text" mt={2}>
+        {venueName} • Date:{" "}
+        {show.showDate ? new Date(show.showDate).toLocaleDateString() : "N/A"}
       </Text>
-      <HStack mt={2} justify="space-between" fontSize="xs" color="gray.600">
-        <Text>
-          Date:{" "}
-          {show.showDate ? new Date(show.showDate).toLocaleDateString() : "N/A"}
-        </Text>
+      <HStack justify="space-between" fontSize="sm" color="detail.text" mt={1}>
         <Text>Scripts: {show.scripts ? show.scripts.length : 0}</Text>
-        <Text>Updated: {new Date(show.dateUpdated).toLocaleDateString()}</Text>
+        <Text fontSize="xs">
+          Updated: {new Date(show.dateUpdated).toLocaleDateString()}
+        </Text>
       </HStack>
       <Collapse in={isSelected} animateOpacity>
-        <Box pl="8" pt="4">
-          {sortedScripts.length > 0 ? (
-            <VStack spacing={2} align="stretch">
-              {sortedScripts.map((script) => (
-                <Box
-                  key={script.scriptID}
-                  p="3"
-                  borderWidth="2px"
-                  borderRadius="md"
-                  shadow="sm"
-                  cursor="pointer"
-                  onClick={(e: React.MouseEvent) =>
-                    handleScriptClick(script.scriptID, e)
-                  }
-                  borderColor={
-                    selectedScriptId === script.scriptID
-                      ? "blue.400"
-                      : "gray.600"
-                  }
-                  _hover={{ borderColor: "orange.400" }}
-                  onMouseEnter={() => onShowHover(null)}
-                  onMouseLeave={() => onShowHover(show.showID)}
-                >
-                  <Flex justify="space-between" align="center">
-                    <Heading size="sm" mb="0">
-                      {script.scriptName}
-                    </Heading>
-                    <Text fontSize="xs" color="gray.500">
-                      Updated:{" "}
-                      {new Date(script.dateUpdated).toLocaleDateString()}
-                    </Text>
-                  </Flex>
-                </Box>
-              ))}
-            </VStack>
-          ) : (
-            <Text fontSize="sm" fontStyle="italic" pl={2}>
-              No scripts for this show.
+        <VStack
+          align="stretch"
+          spacing="3"
+          mt="4"
+          pt="3"
+          borderTop="1px solid"
+          borderColor="ui.border"
+        >
+          {/* Scripts Section */}
+          <Box>
+            <Text fontWeight="semibold" mb="2">
+              Scripts
             </Text>
-          )}
-        </Box>
+            <Box pl="4">
+              {sortedScripts.length > 0 ? (
+                <VStack spacing={2} align="stretch">
+                  {sortedScripts.map((script) => (
+                    <Box
+                      key={script.scriptID}
+                      p="3"
+                      borderWidth="2px"
+                      borderRadius="md"
+                      shadow="sm"
+                      cursor="pointer"
+                      onClick={(e: React.MouseEvent) =>
+                        handleScriptClick(script.scriptID, e)
+                      }
+                      borderColor={
+                        selectedScriptId === script.scriptID
+                          ? "blue.400"
+                          : "gray.600"
+                      }
+                      _hover={{ borderColor: "orange.400" }}
+                      onMouseEnter={() => onShowHover(null)}
+                      onMouseLeave={() => onShowHover(show.showID)}
+                    >
+                      <VStack align="stretch" spacing="1">
+                        <Heading size="sm">{script.scriptName}</Heading>
+                        <HStack
+                          justify="space-between"
+                          fontSize="xs"
+                          color="detail.text"
+                        >
+                          <Badge variant="solid" colorScheme="blue" size="sm">
+                            {script.scriptStatus.toUpperCase()}
+                          </Badge>
+                          <Text>
+                            Created:{" "}
+                            {new Date(script.dateCreated).toLocaleDateString()}
+                          </Text>
+                        </HStack>
+                        <HStack
+                          justify="space-between"
+                          fontSize="xs"
+                          color="detail.text"
+                        >
+                          <Text>
+                            Start Time:{" "}
+                            {script.startTime
+                              ? new Date(script.startTime).toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  },
+                                )
+                              : "Not set"}
+                          </Text>
+                          <Text>
+                            Updated:{" "}
+                            {new Date(script.dateUpdated).toLocaleDateString()}
+                          </Text>
+                        </HStack>
+                        {script.lastUsed && (
+                          <HStack
+                            justify="flex-end"
+                            fontSize="xs"
+                            color="detail.text"
+                          >
+                            <Text>
+                              Last Used:{" "}
+                              {new Date(script.lastUsed).toLocaleDateString()}
+                            </Text>
+                          </HStack>
+                        )}
+                      </VStack>
+                    </Box>
+                  ))}
+                </VStack>
+              ) : (
+                <Text
+                  fontSize="sm"
+                  fontStyle="italic"
+                  color="detail.text"
+                  pl={2}
+                >
+                  No scripts for this show.
+                </Text>
+              )}
+            </Box>
+          </Box>
+
+          {/* Show creation date at bottom right */}
+          <Flex justify="flex-end" mt="3">
+            <Text fontSize="xs" color="detail.text">
+              Created:{" "}
+              {new Date(
+                show.dateCreated || show.dateUpdated,
+              ).toLocaleDateString()}
+            </Text>
+          </Flex>
+        </VStack>
       </Collapse>
     </Box>
   );

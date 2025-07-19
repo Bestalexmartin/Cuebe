@@ -60,3 +60,4 @@ Thursday Jul 17, 2025
 
 Saturday Jul 18, 2025
 1) Completed edit pages, major refactor to state management to preserve open cards across edits
+2) General UI/UX improvements to cards and edit pages for consistency and readability, updates to data types and improved code quality

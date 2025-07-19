@@ -22,16 +22,17 @@ import { AppIcon } from './components/AppIcon';
 
 const INITIAL_FORM_STATE = {
     scriptName: '',
-    scriptStatus: 'ready',
-    intendedStartTime: '',
+    scriptStatus: 'draft',
+    startTime: '',
 };
 
-// Script status options
+// Script status options - updated workflow states
 const SCRIPT_STATUS_OPTIONS = [
-    { value: 'ready', label: 'Ready' },
-    { value: 'running', label: 'Running' },
-    { value: 'paused', label: 'Paused' },
-    { value: 'done', label: 'Done' },
+    { value: 'DRAFT', label: 'Draft' },
+    { value: 'COPY', label: 'Copy' },
+    { value: 'WORKING', label: 'Working' },
+    { value: 'FINAL', label: 'Final' },
+    { value: 'BACKUP', label: 'Backup' },
 ];
 
 export const EditScriptPage = () => {
@@ -55,10 +56,10 @@ export const EditScriptPage = () => {
         if (script) {
             setFormData({
                 scriptName: script.scriptName || '',
-                scriptStatus: script.scriptStatus || 'ready',
+                scriptStatus: script.scriptStatus || 'draft',
                 // Format datetime for input field
-                intendedStartTime: script.intendedStartTime
-                    ? script.intendedStartTime.substring(0, 16)
+                startTime: script.startTime
+                    ? script.startTime.substring(0, 16)
                     : '',
             });
         }
@@ -78,7 +79,7 @@ export const EditScriptPage = () => {
             const updateData = {
                 scriptName: formData.scriptName,
                 scriptStatus: formData.scriptStatus,
-                intendedStartTime: formData.intendedStartTime || null,
+                startTime: formData.startTime || null,
             };
 
             await submitForm(
@@ -210,13 +211,14 @@ export const EditScriptPage = () => {
                         </FormControl>
 
                         <FormControl>
-                            <FormLabel>Intended Start Time</FormLabel>
+                            <FormLabel>Start Time</FormLabel>
                             <Input
                                 type="datetime-local"
-                                value={formData.intendedStartTime}
-                                onChange={(e) => handleChange('intendedStartTime', e.target.value)}
+                                value={formData.startTime}
+                                onChange={(e) => handleChange('startTime', e.target.value)}
+                                placeholder="Select start time"
                             />
-                            <Text fontSize="sm" color="gray.500" mt="1">
+                            <Text fontSize="sm" color="detail.text" mt="1">
                                 When this script is scheduled to begin
                             </Text>
                         </FormControl>
@@ -233,7 +235,7 @@ export const EditScriptPage = () => {
                         >
                             <Text fontWeight="semibold" mb="2">Script Content</Text>
                             <Box flexGrow={1} display="flex" alignItems="center" justifyContent="center">
-                                <Text fontSize="sm" color="gray.500" fontStyle="italic" textAlign="center">
+                                <Text fontSize="sm" color="detail.text" fontStyle="italic" textAlign="center">
                                     Script content editing will be implemented in a future version.
                                     For now, you can manage the script metadata above.
                                 </Text>

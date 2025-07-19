@@ -150,7 +150,7 @@ export const EditCrewPage = () => {
                 colorScheme={isVerified ? "green" : "orange"}
                 size="sm"
             >
-                {isVerified ? "✅ Verified" : "👤 Guest"}
+                {isVerified ? "Verified" : "Guest"}
             </Badge>
         );
     };
@@ -167,8 +167,8 @@ export const EditCrewPage = () => {
         >
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
-                <HStack spacing="3" align="center">
-                    <AppIcon name="crew" boxSize="20px" />
+                <HStack spacing="2" align="center">
+                    <AppIcon name="edit" boxSize="20px" />
                     <Heading as="h2" size="md">
                         {isLoadingCrew ? 'Loading...' : getFullName()}
                     </Heading>
@@ -247,10 +247,10 @@ export const EditCrewPage = () => {
                                             </Badge>
                                         )}
                                     </HStack>
-                                    <Text fontSize="sm" color="gray.600">
+                                    <Text fontSize="sm" color="detail.text">
                                         {formatRole(formData.userRole)}
                                     </Text>
-                                    <Text fontSize="sm" color="gray.500">
+                                    <Text fontSize="sm" color="detail.text">
                                         {formData.emailAddress}
                                     </Text>
                                 </VStack>
@@ -321,12 +321,12 @@ export const EditCrewPage = () => {
                             <Textarea
                                 value={formData.notes}
                                 onChange={(e) => handleChange('notes', e.target.value)}
-                                placeholder="Additional notes about this crew member..."
+                                placeholder="Additional notes about this crew member"
                                 flexGrow={1}
                                 resize="vertical"
                                 minHeight="100px"
                             />
-                            <Text fontSize="xs" color="gray.500" mt="1">
+                            <Text fontSize="xs" color="detail.text" mt="1">
                                 Notes are visible to administrators and can include special skills, availability, or other relevant information.
                             </Text>
                         </FormControl>
@@ -339,7 +339,7 @@ export const EditCrewPage = () => {
                             borderRadius="md"
                         >
                             <Text fontWeight="semibold" mb="3">Account Information</Text>
-                            <VStack align="stretch" spacing="2" fontSize="sm" color="gray.600">
+                            <VStack align="stretch" spacing="2" fontSize="sm" color="detail.text">
                                 <HStack justify="space-between">
                                     <Text>Account Status:</Text>
                                     <HStack>
@@ -352,20 +352,20 @@ export const EditCrewPage = () => {
                                     </HStack>
                                 </HStack>
                                 <HStack justify="space-between">
-                                    <Text>📅 Added:</Text>
+                                    <Text>Added:</Text>
                                     <Text fontWeight="medium">
                                         {new Date(crew.dateCreated).toLocaleDateString()}
                                     </Text>
                                 </HStack>
                                 <HStack justify="space-between">
-                                    <Text>🔄 Last Updated:</Text>
+                                    <Text>Last Updated:</Text>
                                     <Text fontWeight="medium">
                                         {new Date(crew.dateUpdated).toLocaleDateString()}
                                     </Text>
                                 </HStack>
                                 {crew.userStatus === 'guest' && (
                                     <Text color="orange.500" fontSize="xs" fontStyle="italic">
-                                        💡 Guest users can view their call schedules via shared links but cannot log into the full system.
+                                        Guest users can view their call schedules via shared links but cannot log into the full system.
                                     </Text>
                                 )}
                             </VStack>

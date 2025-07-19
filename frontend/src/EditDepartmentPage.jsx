@@ -119,7 +119,7 @@ export const EditDepartmentPage = () => {
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
                 <HStack spacing="2" align="center">
-                    <AppIcon name="department" boxSize="20px" />
+                    <AppIcon name="edit" boxSize="20px" />
                     <Heading as="h2" size="md">
                         {isLoadingDepartment ? 'Loading...' : `${department?.departmentName}`}
                     </Heading>
@@ -209,14 +209,14 @@ export const EditDepartmentPage = () => {
                                         maxWidth="120px"
                                         fontFamily="mono"
                                     />
-                                    <Text fontSize="sm" color="gray.500">
+                                    <Text fontSize="sm" color="detail.text">
                                         Click the color box or enter a hex value
                                     </Text>
                                 </HStack>
 
                                 {/* Preset Color Options */}
                                 <Box>
-                                    <Text fontSize="sm" color="gray.500" mb={2}>
+                                    <Text fontSize="sm" color="detail.text" mb={2}>
                                         Quick Colors:
                                     </Text>
                                     <HStack spacing={2} flexWrap="wrap">
@@ -255,7 +255,7 @@ export const EditDepartmentPage = () => {
                                             <Text fontSize="sm" fontWeight="medium">
                                                 {formData.departmentName || 'Department Name'}
                                             </Text>
-                                            <Text fontSize="xs" color="gray.500">
+                                            <Text fontSize="xs" color="detail.text">
                                                 {formData.departmentColor.toUpperCase()}
                                             </Text>
                                         </VStack>
@@ -270,12 +270,12 @@ export const EditDepartmentPage = () => {
                             <Textarea
                                 value={formData.departmentDescription}
                                 onChange={(e) => handleChange('departmentDescription', e.target.value)}
-                                placeholder="Describe this department's role and responsibilities..."
+                                placeholder="Describe this department's role and responsibilities"
                                 flexGrow={1}
                                 resize="vertical"
                                 minHeight="120px"
                             />
-                            <Text fontSize="xs" color="gray.500" mt="1">
+                            <Text fontSize="xs" color="detail.text" mt="1">
                                 This description will help crew members understand the department's purpose and responsibilities.
                             </Text>
                         </FormControl>
@@ -288,29 +288,29 @@ export const EditDepartmentPage = () => {
                             borderRadius="md"
                         >
                             <Text fontWeight="semibold" mb="3">Department Statistics</Text>
-                            <VStack align="stretch" spacing="2" fontSize="sm" color="gray.600">
+                            <VStack align="stretch" spacing="2" fontSize="sm" color="detail.text">
                                 <HStack justify="space-between">
-                                    <Text>👥 Crew Members:</Text>
+                                    <Text>Crew Members:</Text>
                                     <Text fontWeight="medium">0</Text>
                                 </HStack>
                                 <HStack justify="space-between">
-                                    <Text>🎭 Shows Assigned:</Text>
+                                    <Text>Shows Assigned:</Text>
                                     <Text fontWeight="medium">0</Text>
                                 </HStack>
                                 <HStack justify="space-between">
-                                    <Text>📅 Created:</Text>
+                                    <Text>Created:</Text>
                                     <Text fontWeight="medium">
                                         {new Date(department.dateCreated).toLocaleDateString()}
                                     </Text>
                                 </HStack>
                                 <HStack justify="space-between">
-                                    <Text>🔄 Last Updated:</Text>
+                                    <Text>Last Updated:</Text>
                                     <Text fontWeight="medium">
                                         {new Date(department.dateUpdated).toLocaleDateString()}
                                     </Text>
                                 </HStack>
                             </VStack>
-                            <Text fontSize="xs" color="gray.500" mt="3" fontStyle="italic">
+                            <Text fontSize="xs" color="detail.text" mt="3" fontStyle="italic">
                                 Crew member and show assignment counts will be updated when those features are implemented.
                             </Text>
                         </Box>
