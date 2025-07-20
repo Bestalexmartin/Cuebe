@@ -1,14 +1,23 @@
-// frontend/src/VenuesView.jsx
+// frontend/src/VenuesView.tsx
 
-import { useState, useMemo } from 'react';
-import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem, useDisclosure } from "@chakra-ui/react";
+import React, { useState, useMemo } from 'react';
+import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
 import { useVenues } from './hooks/useVenues';
 import { VenueCard } from './VenueCard';
-import { CreateVenueModal } from './components/modals/CreateVenueModal';
 import { useNavigate } from 'react-router-dom';
 
-export const VenuesView = ({
+// TypeScript interfaces
+interface VenuesViewProps {
+    onCreateVenue: () => void;
+    selectedVenueId?: string | null;
+    onVenueClick: (venueId: string) => void;
+    hoveredCardId?: string | null;
+    setHoveredCardId: (id: string | null) => void;
+    onSaveNavigationState?: () => void;
+}
+
+export const VenuesView: React.FC<VenuesViewProps> = ({
     onCreateVenue,
     selectedVenueId,
     onVenueClick,
@@ -17,15 +26,14 @@ export const VenuesView = ({
     onSaveNavigationState
 }) => {
     const navigate = useNavigate();
-    const { venues, isLoading, refetchVenues } = useVenues();
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const { venues, isLoading } = useVenues();
 
     // Venue-specific sorting state  
-    const [sortBy, setSortBy] = useState('venueName');
-    const [sortDirection, setSortDirection] = useState('asc');
+    const [sortBy, setSortBy] = useState<'venueName' | 'capacity' | 'venueType' | 'dateCreated'>('venueName');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
     // Venue-specific sorting logic
-    const handleSortClick = (newSortBy) => {
+    const handleSortClick = (newSortBy: typeof sortBy) => {
         if (sortBy === newSortBy) {
             setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
         } else {
@@ -51,14 +59,14 @@ export const VenuesView = ({
                 const bType = b.venueType || 'ZZZ';
                 comparison = aType.localeCompare(bType);
             } else {
-                comparison = new Date(b.dateCreated || b.dateUpdated) - new Date(a.dateCreated || a.dateUpdated);
+                comparison = new Date(b.dateCreated || b.dateUpdated).getTime() - new Date(a.dateCreated || a.dateUpdated).getTime();
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
         return venuesToSort;
     }, [venues, sortBy, sortDirection]);
 
-    const handleEdit = (venueId) => {
+    const handleEdit = (venueId: string) => {
         // Save navigation state before leaving dashboard
         if (onSaveNavigationState) {
             onSaveNavigationState();
@@ -68,7 +76,7 @@ export const VenuesView = ({
     };
 
     // Use the modal handler from props if provided, otherwise use local modal
-    const handleCreateVenue = onCreateVenue || onOpen;
+    const handleCreateVenue = onCreateVenue;
 
     return (
         <>
@@ -156,11 +164,6 @@ export const VenuesView = ({
                 </Box>
             </Flex>
 
-            <CreateVenueModal
-                isOpen={isOpen}
-                onClose={onClose}
-                onVenueCreated={refetchVenues}
-            />
         </>
     );
 };

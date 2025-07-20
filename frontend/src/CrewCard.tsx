@@ -1,4 +1,4 @@
-// frontend/src/CrewCard.jsx
+// frontend/src/CrewCard.tsx
 
 import React from 'react';
 import {
@@ -15,7 +15,33 @@ import {
 } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
 
-export const CrewCard = ({
+// TypeScript interfaces
+interface CrewMember {
+    userID: string;
+    fullnameFirst?: string;
+    fullnameLast?: string;
+    emailAddress?: string;
+    phoneNumber?: string;
+    userRole?: string;
+    userStatus?: string;
+    isActive?: boolean;
+    profileImgURL?: string;
+    notes?: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+interface CrewCardProps {
+    crewMember: CrewMember;
+    onEdit: (crewId: string) => void;
+    onCrewClick: (crewId: string) => void;
+    isHovered: boolean;
+    isSelected: boolean;
+    onHover?: (crewId: string | null) => void;
+    onSaveNavigationState?: () => void;
+}
+
+export const CrewCard: React.FC<CrewCardProps> = ({
     crewMember,
     onEdit,
     onCrewClick,
@@ -26,7 +52,7 @@ export const CrewCard = ({
 }) => {
     const borderColor = isHovered ? 'orange.400' : isSelected ? 'blue.400' : 'gray.600';
 
-    const handleEditClick = (e) => {
+    const handleEditClick = (e: React.MouseEvent) => {
         e.stopPropagation();
 
         if (onSaveNavigationState) {
@@ -36,14 +62,14 @@ export const CrewCard = ({
         onEdit(crewMember.userID);
     };
 
-    const formatRole = (role) => {
-        if (!role) return 'Crew Member';
+    const formatRole = (role?: string): string => {
+        if (!role) return 'Crew';
         return role.split('_').map(word =>
             word.charAt(0).toUpperCase() + word.slice(1)
         ).join(' ');
     };
 
-    const getFullName = () => {
+    const getFullName = (): string => {
         const firstName = crewMember.fullnameFirst || '';
         const lastName = crewMember.fullnameLast || '';
         return `${firstName} ${lastName}`.trim() || 'Unknown User';

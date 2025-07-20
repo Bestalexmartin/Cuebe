@@ -51,39 +51,15 @@ const components = {
       },
     },
   },
-  Alert: {
-    baseStyle: {
-      container: {
-        width: '400px',
-        maxWidth: '400px',
-      },
-    },
-    variants: {
-      'left-accent': {
-        container: {
-          bg: 'blue.400',
-          color: 'white',
-          width: '400px',
-          maxWidth: '400px',
-        },
-      },
-      'top-accent': {
-        container: {
-          bg: 'blue.400',
-          color: 'white',
-          width: '400px',
-          maxWidth: '400px',
-        },
-      },
-      'solid': {
-        container: {
-          bg: 'blue.400',
-          color: 'white',
-          width: '400px',
-          maxWidth: '400px',
-        },
-      },
-    },
+};
+
+// Toast configuration - use this for consistent toast styling
+export const toastConfig = {
+  containerStyle: {
+    bg: 'blue.400',
+    color: 'white',
+    width: '400px',
+    maxWidth: '400px',
   },
 };
 

@@ -4,6 +4,7 @@ import { Icon } from "@chakra-ui/react";
 import { ChevronDownIcon } from '@chakra-ui/icons';
 import { TiPin } from "react-icons/ti";
 import { IoPeopleSharp } from "react-icons/io5";
+import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
 import { FaMasksTheater } from "react-icons/fa6";
 import { EditIcon } from "@chakra-ui/icons";

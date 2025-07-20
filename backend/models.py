@@ -120,7 +120,10 @@ class Venue(Base):
     
     # Primary key - CHANGED TO UUID
     venueID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    venueName = Column(String, unique=True, nullable=False)
+    venueName = Column(String, nullable=False)  # Removed unique=True for user-scoped data
+    
+    # Owner - NEW FIELD
+    ownerID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)
     
     # Location Information
     address = Column(Text, nullable=True)
@@ -154,6 +157,7 @@ class Venue(Base):
     dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
+    owner = relationship("User", foreign_keys=[ownerID])
     shows = relationship("Show", back_populates="venue")
 
 # =============================================================================
@@ -170,9 +174,15 @@ class Department(Base):
     departmentDescription = Column(String, nullable=True)
     departmentColor = Column(String, nullable=True)  # e.g., "#FF5733"
     
+    # Owner - NEW FIELD
+    ownerID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)
+    
     # Timestamps
     dateCreated = Column(DateTime, server_default=func.now())
     dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    owner = relationship("User", foreign_keys=[ownerID])
 
 # =============================================================================
 # SHOW MODELS
@@ -257,11 +267,15 @@ class Script(Base):
     # Foreign keys - ALREADY UUID
     showID = Column(UUID(as_uuid=True), ForeignKey("showsTable.showID"), nullable=False)
     
+    # Owner - NEW FIELD (explicit ownership even though tied to show)
+    ownerID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)
+    
     # Timestamps
     dateCreated = Column(DateTime, server_default=func.now())
     dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     # Relationships
+    owner = relationship("User", foreign_keys=[ownerID])
     show = relationship("Show", back_populates="scripts")
     elements = relationship("ScriptElement", back_populates="script", order_by="ScriptElement.elementOrder")
 

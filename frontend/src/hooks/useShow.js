@@ -1,6 +1,6 @@
-// frontend/src/useShow.js
+// frontend/src/hooks/useShow.js
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 
 export const useShow = (showId) => {
@@ -9,30 +9,31 @@ export const useShow = (showId) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
+    const fetchShow = useCallback(async () => {
         if (!showId) return;
-        const fetchShow = async () => {
-            setIsLoading(true);
-            try {
-                const token = await getToken();
-                const response = await fetch(`/api/shows/${showId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+        
+        setIsLoading(true);
+        try {
+            const token = await getToken();
+            const response = await fetch(`/api/shows/${showId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
 
-                if (!response.ok) {
-                    throw new Error('Failed to fetch show data.');
-                }
-                const data = await response.json();
-                setShow(data);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setIsLoading(false);
+            if (!response.ok) {
+                throw new Error('Failed to fetch show data.');
             }
-        };
-
-        fetchShow();
+            const data = await response.json();
+            setShow(data);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
     }, [showId, getToken]);
+
+    useEffect(() => {
+        fetchShow();
+    }, [fetchShow]);
 
     return { show, isLoading, error };
 };

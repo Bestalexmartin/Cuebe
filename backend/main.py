@@ -159,12 +159,12 @@ async def create_guest_user_with_relationship(
 # CREW ENDPOINTS
 # =============================================================================
 
-@app.get("/api/crew/", response_model=list[schemas.User])
+@app.get("/api/me/crews", response_model=list[schemas.User])
 async def read_crew_members(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get crew members for the current user (themselves + users they manage)."""
+    """Get crews for the current user (themselves + users they manage)."""
     # Show current user + users they manage via CrewRelationship
     my_crew = db.query(models.User).filter(
         or_(
@@ -303,23 +303,25 @@ async def create_crew_relationship(
 # VENUE ENDPOINTS
 # =============================================================================
 
-@app.get("/api/venues/", response_model=list[schemas.Venue])
+@app.get("/api/me/venues", response_model=list[schemas.Venue])
 async def read_venues(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get all venues."""
-    venues = db.query(models.Venue).all()
+    """Get venues owned by the current user."""
+    venues = db.query(models.Venue).filter(models.Venue.ownerID == user.userID).all()
     return venues
 
-@app.post("/api/venues/", response_model=schemas.Venue, status_code=status.HTTP_201_CREATED)
+@app.post("/api/me/venues", response_model=schemas.Venue, status_code=status.HTTP_201_CREATED)
 async def create_venue(
     venue: schemas.VenueCreate,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Create a new venue."""
-    new_venue = models.Venue(**venue.model_dump())
+    """Create a new venue owned by the current user."""
+    venue_data = venue.model_dump()
+    venue_data['ownerID'] = user.userID
+    new_venue = models.Venue(**venue_data)
     db.add(new_venue)
     db.commit()
     db.refresh(new_venue)
@@ -331,8 +333,11 @@ async def get_venue(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get a single venue by ID."""
-    venue = db.query(models.Venue).filter(models.Venue.venueID == venue_id).first()
+    """Get a single venue by ID (must be owned by current user)."""
+    venue = db.query(models.Venue).filter(
+        models.Venue.venueID == venue_id,
+        models.Venue.ownerID == user.userID
+    ).first()
     if not venue:
         raise HTTPException(status_code=404, detail="Venue not found")
     return venue
@@ -345,7 +350,10 @@ async def update_venue(
     db: Session = Depends(get_db)
 ):
     """Update a venue."""
-    venue_to_update = db.query(models.Venue).filter(models.Venue.venueID == venue_id).first()
+    venue_to_update = db.query(models.Venue).filter(
+        models.Venue.venueID == venue_id,
+        models.Venue.ownerID == user.userID
+    ).first()
     if not venue_to_update:
         raise HTTPException(status_code=404, detail="Venue not found")
 
@@ -364,26 +372,27 @@ async def update_venue(
 # DEPARTMENT ENDPOINTS
 # =============================================================================
 
-@app.get("/api/departments/", response_model=list[schemas.Department])
+@app.get("/api/me/departments", response_model=list[schemas.Department])
 async def read_departments(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get all departments."""
-    departments = db.query(models.Department).all()
+    """Get departments owned by the current user."""
+    departments = db.query(models.Department).filter(models.Department.ownerID == user.userID).all()
     return departments
 
-@app.post("/api/departments/", response_model=schemas.Department, status_code=status.HTTP_201_CREATED)
+@app.post("/api/me/departments", response_model=schemas.Department, status_code=status.HTTP_201_CREATED)
 async def create_department(
     department: schemas.DepartmentCreate,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Create a new department."""
+    """Create a new department owned by the current user."""
     new_department = models.Department(
         departmentName=department.departmentName,
         departmentDescription=department.departmentDescription,
-        departmentColor=department.departmentColor
+        departmentColor=department.departmentColor,
+        ownerID=user.userID
     )
     db.add(new_department)
     db.commit()
@@ -396,8 +405,11 @@ async def read_department(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get a single department by ID."""
-    department = db.query(models.Department).filter(models.Department.departmentID == department_id).first()
+    """Get a single department by ID (must be owned by current user)."""
+    department = db.query(models.Department).filter(
+        models.Department.departmentID == department_id,
+        models.Department.ownerID == user.userID
+    ).first()
     if not department:
         raise HTTPException(status_code=404, detail="Department not found")
     return department
@@ -410,7 +422,10 @@ async def update_department(
     db: Session = Depends(get_db)
 ):
     """Update a department."""
-    department_to_update = db.query(models.Department).filter(models.Department.departmentID == department_id).first()
+    department_to_update = db.query(models.Department).filter(
+        models.Department.departmentID == department_id,
+        models.Department.ownerID == user.userID
+    ).first()
     if not department_to_update:
         raise HTTPException(status_code=404, detail="Department not found")
 
@@ -555,7 +570,8 @@ async def create_script_for_show(
     # Create the new script
     new_script = models.Script(
         showID=show_id,
-        scriptName=script.scriptName or "New Script"
+        scriptName=script.scriptName or "New Script",
+        ownerID=user.userID
     )
     db.add(new_script)
     db.commit()
@@ -582,8 +598,8 @@ async def get_script(
             detail="Script not found"
         )
     
-    # Check if user has access to this script (through show ownership)
-    if script.show.ownerID != user.userID:
+    # Check if user has access to this script (through direct ownership or show ownership)
+    if script.ownerID != user.userID and script.show.ownerID != user.userID:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this script"

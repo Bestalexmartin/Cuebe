@@ -59,7 +59,7 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
             };
 
             await submitForm(
-                '/api/departments/',
+                '/api/me/departments',
                 'POST',
                 `"${formData.departmentName}" department has been created`,
                 departmentData

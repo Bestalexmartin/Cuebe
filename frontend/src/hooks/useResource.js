@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useToast } from '@chakra-ui/react';
+import { toastConfig } from '../ChakraTheme';
 
 export const useResource = (endpoint, options = {}) => {
     const [data, setData] = useState([]);
@@ -42,10 +43,7 @@ export const useResource = (endpoint, options = {}) => {
                     title: 'Error Loading Data',
                     description: err.message,
                     status: 'error',
-                    containerStyle: {
-                        width: '400px',
-                        maxWidth: '400px',
-                    },
+                    ...toastConfig,
                 });
             }
         } finally {

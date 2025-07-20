@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useToast } from '@chakra-ui/react';
+import { toastConfig } from '../ChakraTheme';
 
 export const useFormManager = (initialState = {}) => {
     const [formData, setFormData] = useState(initialState);
@@ -45,10 +46,7 @@ export const useFormManager = (initialState = {}) => {
                 title: 'Success',
                 description: successMessage,
                 status: 'success',
-                containerStyle: {
-                    width: '400px',
-                    maxWidth: '400px',
-                },
+                ...toastConfig,
             });
 
             return result;
@@ -57,10 +55,7 @@ export const useFormManager = (initialState = {}) => {
                 title: 'Error',
                 description: error.message || 'Something went wrong',
                 status: 'error',
-                containerStyle: {
-                    width: '400px',
-                    maxWidth: '400px',
-                },
+                ...toastConfig,
             });
             throw error;
         } finally {

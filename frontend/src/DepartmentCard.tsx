@@ -1,4 +1,4 @@
-// frontend/src/DepartmentCard.jsx
+// frontend/src/DepartmentCard.tsx
 
 import React from 'react';
 import {
@@ -13,7 +13,27 @@ import {
 } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
 
-export const DepartmentCard = ({
+// TypeScript interfaces
+interface Department {
+    departmentID: string;
+    departmentName: string;
+    departmentDescription?: string;
+    departmentColor?: string;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+interface DepartmentCardProps {
+    department: Department;
+    onEdit: (departmentId: string) => void;
+    onDepartmentClick: (departmentId: string) => void;
+    isHovered: boolean;
+    isSelected: boolean;
+    onHover?: (departmentId: string | null) => void;
+    onSaveNavigationState?: () => void;
+}
+
+export const DepartmentCard: React.FC<DepartmentCardProps> = ({
     department,
     onEdit,
     onDepartmentClick,
@@ -24,7 +44,7 @@ export const DepartmentCard = ({
 }) => {
     const borderColor = isHovered ? 'orange.400' : isSelected ? 'blue.400' : 'gray.600';
 
-    const handleEditClick = (e) => {
+    const handleEditClick = (e: React.MouseEvent) => {
         e.stopPropagation();
 
         if (onSaveNavigationState) {
