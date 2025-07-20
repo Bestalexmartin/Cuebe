@@ -1,14 +1,23 @@
-// frontend/src/CrewView.jsx
+// frontend/src/CrewView.tsx
 
-import { useState, useMemo } from 'react';
-import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem, useDisclosure } from "@chakra-ui/react";
+import React, { useState, useMemo } from 'react';
+import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import { useNavigate } from 'react-router-dom';
 import { AppIcon } from './components/AppIcon';
 import { CrewCard } from './CrewCard';
 import { useCrews } from './hooks/useCrews';
-import { CreateCrewModal } from './components/modals/CreateCrewModal';
 
-export const CrewView = ({
+// TypeScript interfaces
+interface CrewViewProps {
+    onCreateCrew: () => void;
+    selectedCrewId?: string | null;
+    onCrewClick: (crewId: string) => void;
+    hoveredCardId?: string | null;
+    setHoveredCardId: (id: string | null) => void;
+    onSaveNavigationState?: () => void;
+}
+
+export const CrewView: React.FC<CrewViewProps> = ({
     onCreateCrew,
     selectedCrewId,
     onCrewClick,
@@ -17,15 +26,14 @@ export const CrewView = ({
     onSaveNavigationState
 }) => {
     const navigate = useNavigate();
-    const { crews, isLoading, error, refetchCrews } = useCrews();
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const { crews, isLoading, error } = useCrews();
 
     // Crew-specific sorting state  
-    const [sortBy, setSortBy] = useState('fullnameFirst');
-    const [sortDirection, setSortDirection] = useState('asc');
+    const [sortBy, setSortBy] = useState<'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated'>('fullnameFirst');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
     // Crew-specific sorting logic
-    const handleSortClick = (newSortBy) => {
+    const handleSortClick = (newSortBy: typeof sortBy) => {
         if (sortBy === newSortBy) {
             setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
         } else {
@@ -57,14 +65,14 @@ export const CrewView = ({
                 const bEmail = b.emailAddress || 'zzz';
                 comparison = aEmail.localeCompare(bEmail);
             } else {
-                comparison = new Date(b.dateCreated || b.dateUpdated) - new Date(a.dateCreated || a.dateUpdated);
+                comparison = new Date(b.dateCreated || b.dateUpdated).getTime() - new Date(a.dateCreated || a.dateUpdated).getTime();
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
         return crewsToSort;
     }, [crews, sortBy, sortDirection]);
 
-    const handleEdit = (crewId) => {
+    const handleEdit = (crewId: string) => {
         if (onSaveNavigationState) {
             onSaveNavigationState();
         }
@@ -72,7 +80,7 @@ export const CrewView = ({
     };
 
     // Use the modal handler from props if provided, otherwise use local modal
-    const handleCreateCrew = onCreateCrew || onOpen;
+    const handleCreateCrew = onCreateCrew;
 
     return (
         <>
@@ -166,11 +174,6 @@ export const CrewView = ({
                 </Box>
             </Flex>
 
-            <CreateCrewModal
-                isOpen={isOpen}
-                onClose={onClose}
-                onCrewCreated={refetchCrews}
-            />
         </>
     );
 };

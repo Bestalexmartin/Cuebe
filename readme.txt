@@ -63,3 +63,6 @@ Saturday Jul 18, 2025
 2) General UI/UX improvements to cards and edit pages for consistency and readability, updates to data types and improved code quality
 3) Indented detail text on cards
 4) Cleaned up comments and console logs in preparation for next dev push
+
+Sunday Jul 19, 2025
+1) Code review and cleanup, fixed error handling, hook callback usage, dependency management, toast styling and others. Began conversion to TypeScript

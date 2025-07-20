@@ -43,7 +43,7 @@ export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
             };
 
             await submitForm(
-                '/api/venues/',
+                '/api/me/venues',
                 'POST',
                 `"${formData.venueName}" has been added to your venues`,
                 venueData

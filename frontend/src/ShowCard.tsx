@@ -95,7 +95,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
       : "gray.600";
 
   // Handler for the show edit button
-  const handleShowEditClick = (e: React.MouseEvent) => {
+  const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
 
     // Save navigation state before leaving dashboard
@@ -146,7 +146,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
           <Button
             leftIcon={<AppIcon name="edit" boxSize="12px" />}
             size="xs"
-            onClick={handleShowEditClick}
+            onClick={handleEditClick}
           >
             Edit
           </Button>

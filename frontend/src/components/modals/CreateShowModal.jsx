@@ -17,6 +17,7 @@ import {
   VStack,
   useToast,
 } from '@chakra-ui/react';
+import { toastConfig } from '../../ChakraTheme';
 import { useFormManager } from '../../hooks/useFormManager';
 import { useResource } from '../../hooks/useResource';
 
@@ -48,7 +49,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
     isLoading: isLoadingVenues,
     createResource: createVenue,
     refetch: refetchVenues,
-  } = useResource('/api/venues/', {
+  } = useResource('/api/me/venues', {
     fetchOnMount: false,
   });
 
@@ -84,10 +85,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
           title: 'Venue Created',
           description: `"${newVenueName}" has been added to your venues`,
           status: 'success',
-          containerStyle: {
-            width: '400px',
-            maxWidth: '400px',
-          },
+          ...toastConfig,
         });
       }
 

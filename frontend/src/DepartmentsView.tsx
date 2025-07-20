@@ -1,14 +1,23 @@
-// frontend/src/DepartmentsView.jsx
+// frontend/src/DepartmentsView.tsx
 
-import { useState, useMemo } from 'react';
-import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem, useDisclosure } from "@chakra-ui/react";
+import React, { useState, useMemo } from 'react';
+import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import { useNavigate } from 'react-router-dom';
 import { AppIcon } from './components/AppIcon';
 import { DepartmentCard } from './DepartmentCard';
 import { useDepartments } from './hooks/useDepartments';
-import { CreateDepartmentModal } from './components/modals/CreateDepartmentModal';
 
-export const DepartmentsView = ({
+// TypeScript interfaces
+interface DepartmentsViewProps {
+    onCreateDepartment: () => void;
+    selectedDepartmentId?: string | null;
+    onDepartmentClick: (departmentId: string) => void;
+    hoveredCardId?: string | null;
+    setHoveredCardId: (id: string | null) => void;
+    onSaveNavigationState?: () => void;
+}
+
+export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
     onCreateDepartment,
     selectedDepartmentId,
     onDepartmentClick,
@@ -17,15 +26,14 @@ export const DepartmentsView = ({
     onSaveNavigationState
 }) => {
     const navigate = useNavigate();
-    const { departments, isLoading, error, refetchDepartments } = useDepartments();
-    const { isOpen, onOpen, onClose } = useDisclosure();
+    const { departments, isLoading, error } = useDepartments();
 
     // Department-specific sorting state  
-    const [sortBy, setSortBy] = useState('departmentName');
-    const [sortDirection, setSortDirection] = useState('asc');
+    const [sortBy, setSortBy] = useState<'departmentName' | 'departmentColor' | 'dateCreated'>('departmentName');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
     // Department-specific sorting logic
-    const handleSortClick = (newSortBy) => {
+    const handleSortClick = (newSortBy: typeof sortBy) => {
         if (sortBy === newSortBy) {
             setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
         } else {
@@ -43,7 +51,7 @@ export const DepartmentsView = ({
             if (sortBy === 'departmentName') {
                 comparison = a.departmentName.localeCompare(b.departmentName);
             } else if (sortBy === 'departmentColor') {
-                const getHue = (hex) => {
+                const getHue = (hex?: string) => {
                     if (!hex) return 999;
                     // Simple hex to hue conversion (approximate)
                     const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -65,14 +73,14 @@ export const DepartmentsView = ({
                 };
                 comparison = getHue(a.departmentColor) - getHue(b.departmentColor);
             } else {
-                comparison = new Date(b.dateCreated || b.dateUpdated) - new Date(a.dateCreated || a.dateUpdated);
+                comparison = new Date(b.dateCreated || b.dateUpdated).getTime() - new Date(a.dateCreated || a.dateUpdated).getTime();
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
         return departmentsToSort;
     }, [departments, sortBy, sortDirection]);
 
-    const handleEdit = (departmentId) => {
+    const handleEdit = (departmentId: string) => {
         if (onSaveNavigationState) {
             onSaveNavigationState();
         }
@@ -80,7 +88,7 @@ export const DepartmentsView = ({
     };
 
     // Use the modal handler from props if provided, otherwise use local modal
-    const handleCreateDepartment = onCreateDepartment || onOpen;
+    const handleCreateDepartment = onCreateDepartment;
 
     return (
         <>
@@ -172,11 +180,6 @@ export const DepartmentsView = ({
                 </Box>
             </Flex>
 
-            <CreateDepartmentModal
-                isOpen={isOpen}
-                onClose={onClose}
-                onDepartmentCreated={refetchDepartments}
-            />
         </>
     );
 };

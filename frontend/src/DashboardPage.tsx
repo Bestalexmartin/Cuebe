@@ -1,4 +1,4 @@
-// frontend/src/DashboardPage.jsx
+// frontend/src/DashboardPage.tsx
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -22,7 +22,18 @@ import { CreateVenueModal } from "./components/modals/CreateVenueModal";
 import { CreateDepartmentModal } from "./components/modals/CreateDepartmentModal";
 import { CreateCrewModal } from "./components/modals/CreateCrewModal";
 
-const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
+// TypeScript interfaces
+interface DashboardPageProps {
+  isMenuOpen: boolean;
+  onMenuClose: () => void;
+}
+
+interface LocationState {
+  returnFromEdit?: boolean;
+  view?: string;
+}
+
+const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }) => {
   const location = useLocation();
   const { shows, isLoading, error, refetchShows } = useShows();
   const { activeModal, modalData, isOpen, openModal, closeModal } = useModalManager();
@@ -55,22 +66,25 @@ const DashboardPage = ({ isMenuOpen, onMenuClose }) => {
 
   // Sync activeView with currentView from hook
   useEffect(() => {
-    if (location.state?.returnFromEdit) {
-      const { view } = location.state;
-      setActiveView(view);
-      hookHandleViewChange(view);
+    const state = location.state as LocationState;
+    if (state?.returnFromEdit) {
+      const { view } = state;
+      if (view) {
+        setActiveView(view);
+        hookHandleViewChange(view);
+      }
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+  }, [location.state, hookHandleViewChange]);
 
-  const handleViewChange = (newView) => {
+  const handleViewChange = (newView: string) => {
     setActiveView(newView);
     hookHandleViewChange(newView);
   };
 
   // Modal handlers
   const handleCreateShow = () => openModal(MODAL_TYPES.CREATE_SHOW);
-  const handleCreateScript = (showId) => openModal(MODAL_TYPES.CREATE_SCRIPT, { showId });
+  const handleCreateScript = (showId: string) => openModal(MODAL_TYPES.CREATE_SCRIPT, { showId });
   const handleCreateVenue = () => openModal(MODAL_TYPES.CREATE_VENUE);
   const handleCreateDepartment = () => openModal(MODAL_TYPES.CREATE_DEPARTMENT);
   const handleCreateCrew = () => openModal(MODAL_TYPES.CREATE_CREW);

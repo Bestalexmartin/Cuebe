@@ -1,4 +1,4 @@
-// frontend/src/VenueCard.jsx
+// frontend/src/VenueCard.tsx
 
 import React from 'react';
 import {
@@ -14,7 +14,39 @@ import {
 } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
 
-export const VenueCard = ({
+// TypeScript interfaces
+interface Venue {
+    venueID: string;
+    venueName: string;
+    venueType?: string;
+    capacity?: number;
+    address?: string;
+    contactName?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    stageWidth?: number;
+    stageDepth?: number;
+    flyHeight?: number;
+    equipment?: string[];
+    notes?: string;
+    rentalRate?: number;
+    minimumRental?: number;
+    dateCreated: string;
+    dateUpdated: string;
+}
+
+interface VenueCardProps {
+    venue: Venue;
+    onEdit: (venueId: string) => void;
+    onVenueClick: (venueId: string) => void;
+    showCount?: number;
+    isHovered: boolean;
+    isSelected: boolean;
+    onHover?: (venueId: string | null) => void;
+    onSaveNavigationState?: () => void;
+}
+
+export const VenueCard: React.FC<VenueCardProps> = ({
     venue,
     onEdit,
     onVenueClick,
@@ -26,7 +58,7 @@ export const VenueCard = ({
 }) => {
     const borderColor = isHovered ? 'orange.400' : isSelected ? 'blue.400' : 'gray.600';
 
-    const handleEditClick = (e) => {
+    const handleEditClick = (e: React.MouseEvent) => {
         e.stopPropagation();
 
         if (onSaveNavigationState) {
@@ -36,7 +68,7 @@ export const VenueCard = ({
         onEdit(venue.venueID);
     };
 
-    const formatCapacity = (capacity) => {
+    const formatCapacity = (capacity?: number): string => {
         if (!capacity) return 'Not specified';
         return capacity.toLocaleString();
     };

@@ -30,7 +30,7 @@ export const EditShowPage = () => {
     const {
         data: venues,
         isLoading: isLoadingVenues
-    } = useResource('/api/venues/');
+    } = useResource('/api/me/venues');
 
     // Form management
     const {
