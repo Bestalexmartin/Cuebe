@@ -14,7 +14,7 @@ export const VenuesView = ({
     onVenueClick,
     hoveredCardId,
     setHoveredCardId,
-    onSaveNavigationState // NEW: Add prop for saving navigation state
+    onSaveNavigationState
 }) => {
     const navigate = useNavigate();
     const { venues, isLoading, refetchVenues } = useVenues();
@@ -131,7 +131,7 @@ export const VenuesView = ({
                                         isHovered={hoveredCardId === venue.venueID}
                                         isSelected={selectedVenueId === venue.venueID}
                                         onHover={setHoveredCardId}
-                                        onSaveNavigationState={onSaveNavigationState} // NEW: Pass down the save function
+                                        onSaveNavigationState={onSaveNavigationState}
                                     />
                                 ))}
                             </VStack>

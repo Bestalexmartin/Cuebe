@@ -9,7 +9,7 @@ export const ShowsView = ({
     shows,
     isLoading,
     error,
-    onCreateShow, // Updated prop name
+    onCreateShow,
     selectedShowId,
     hoveredCardId,
     setHoveredCardId,
@@ -17,8 +17,8 @@ export const ShowsView = ({
     showCardRefs,
     selectedScriptId,
     handleScriptClick,
-    onCreateScript, // Updated prop name
-    onSaveNavigationState, // NEW: Add prop for saving navigation state
+    onCreateScript,
+    onSaveNavigationState,
 }) => {
     // Shows-specific sorting state
     const [sortBy, setSortBy] = useState('dateUpdated');
@@ -46,7 +46,7 @@ export const ShowsView = ({
                 if (!a.showDate) return 1;
                 if (!b.showDate) return -1;
                 comparison = new Date(a.showDate) - new Date(b.showDate);
-            } else { // 'dateUpdated'
+            } else {
                 comparison = new Date(b.dateUpdated) - new Date(a.dateUpdated);
             }
             return sortDirection === 'asc' ? comparison : -comparison;
@@ -137,8 +137,8 @@ export const ShowsView = ({
                                         onShowClick={handleShowClick}
                                         selectedScriptId={selectedScriptId}
                                         onScriptClick={handleScriptClick}
-                                        onCreateScriptClick={onCreateScript} // Updated prop name
-                                        onSaveNavigationState={onSaveNavigationState} // NEW: Pass down the save function
+                                        onCreateScriptClick={onCreateScript}
+                                        onSaveNavigationState={onSaveNavigationState}
                                     />
                                 </div>
                             ))}

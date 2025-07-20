@@ -47,10 +47,8 @@ export const EditShowPage = () => {
             setFormData({
                 showName: show.showName || '',
                 showNotes: show.showNotes || '',
-                // Format dates for input fields
                 showDate: show.showDate ? show.showDate.split('T')[0] : '',
                 deadline: show.deadline ? show.deadline.substring(0, 16) : '',
-                // Get venueID from the venue relationship
                 venueID: show.venue?.venueID || ''
             });
         }

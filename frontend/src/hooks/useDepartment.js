@@ -1,4 +1,5 @@
 // frontend/src/hooks/useDepartment.js
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 

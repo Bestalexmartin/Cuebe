@@ -14,7 +14,7 @@ export const DepartmentsView = ({
     onDepartmentClick,
     hoveredCardId,
     setHoveredCardId,
-    onSaveNavigationState // NEW: Add prop for saving navigation state
+    onSaveNavigationState
 }) => {
     const navigate = useNavigate();
     const { departments, isLoading, error, refetchDepartments } = useDepartments();
@@ -64,7 +64,7 @@ export const DepartmentsView = ({
                     return hue < 0 ? hue + 360 : hue;
                 };
                 comparison = getHue(a.departmentColor) - getHue(b.departmentColor);
-            } else { // 'dateCreated'
+            } else {
                 comparison = new Date(b.dateCreated || b.dateUpdated) - new Date(a.dateCreated || a.dateUpdated);
             }
             return sortDirection === 'asc' ? comparison : -comparison;
@@ -147,7 +147,7 @@ export const DepartmentsView = ({
                                         isHovered={hoveredCardId === department.departmentID}
                                         isSelected={selectedDepartmentId === department.departmentID}
                                         onHover={setHoveredCardId}
-                                        onSaveNavigationState={onSaveNavigationState} // NEW: Pass down the save function
+                                        onSaveNavigationState={onSaveNavigationState}
                                     />
                                 ))}
                             </VStack>

@@ -10,7 +10,7 @@ export const useScript = (scriptId) => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        if (!scriptId) return; // Don't fetch if there's no ID
+        if (!scriptId) return;
 
         const fetchScript = async () => {
             setIsLoading(true);

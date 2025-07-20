@@ -38,5 +38,4 @@ export const MODAL_TYPES = {
     CREATE_CREW_MEMBER: 'CREATE_CREW_MEMBER',
     EDIT_SHOW: 'EDIT_SHOW',
     EDIT_VENUE: 'EDIT_VENUE',
-    // Add more as needed
 };

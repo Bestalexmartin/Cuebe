@@ -37,6 +37,5 @@ export const useShows = () => {
     fetchShows();
   }, [fetchShows]);
 
-  // Return the fetch function so other components can call it
   return { shows, isLoading, error, refetchShows: fetchShows };
 };

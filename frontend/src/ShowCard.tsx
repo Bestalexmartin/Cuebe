@@ -30,7 +30,7 @@ interface Script {
   startTime: string;
   dateCreated: string;
   dateUpdated: string;
-  lastUsed?: string; // Optional field for last used date
+  lastUsed?: string;
 }
 
 interface Show {
@@ -80,7 +80,6 @@ export const ShowCard: React.FC<ShowCardProps> = ({
       if (sortBy === "showName") {
         comparison = a.scriptName.localeCompare(b.scriptName);
       } else {
-        // 'dateUpdated'
         comparison =
           new Date(b.dateUpdated).getTime() - new Date(a.dateUpdated).getTime();
       }
