@@ -13,7 +13,7 @@ import { AppIcon } from './components/AppIcon';
 const INITIAL_FORM_STATE = {
     departmentName: '',
     departmentDescription: '',
-    departmentColor: '#3182CE' // Default blue color
+    departmentColor: '#3182CE'
 };
 
 // Predefined color options for quick selection (same as CreateDepartmentModal)

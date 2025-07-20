@@ -14,7 +14,7 @@ export const CrewView = ({
     onCrewClick,
     hoveredCardId,
     setHoveredCardId,
-    onSaveNavigationState // NEW: Add prop for saving navigation state
+    onSaveNavigationState
 }) => {
     const navigate = useNavigate();
     const { crews, isLoading, error, refetchCrews } = useCrews();
@@ -56,7 +56,7 @@ export const CrewView = ({
                 const aEmail = a.emailAddress || 'zzz';
                 const bEmail = b.emailAddress || 'zzz';
                 comparison = aEmail.localeCompare(bEmail);
-            } else { // 'dateCreated'
+            } else {
                 comparison = new Date(b.dateCreated || b.dateUpdated) - new Date(a.dateCreated || a.dateUpdated);
             }
             return sortDirection === 'asc' ? comparison : -comparison;
@@ -141,7 +141,7 @@ export const CrewView = ({
                                         isHovered={hoveredCardId === crewMember.userID}
                                         isSelected={selectedCrewId === crewMember.userID}
                                         onHover={setHoveredCardId}
-                                        onSaveNavigationState={onSaveNavigationState} // NEW: Pass down the save function
+                                        onSaveNavigationState={onSaveNavigationState}
                                     />
                                 ))}
                             </VStack>

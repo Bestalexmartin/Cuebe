@@ -1,7 +1,6 @@
 # backend/main.py
 
 import os
-import json
 import time
 import secrets
 from typing import Dict
@@ -266,56 +265,6 @@ async def update_crew_member(
             detail=f"Failed to update crew member: {str(e)}"
         )
 
-@app.delete("/api/crew/{crew_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def remove_crew_member(
-    crew_id: UUID,
-    user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Remove a crew member from the current user's crew.
-    For guest users, this deactivates them entirely.
-    For verified users, this just removes the crew relationship.
-    """
-    crew_member = db.query(models.User).filter(models.User.userID == crew_id).first()
-    
-    if not crew_member:
-        raise HTTPException(status_code=404, detail="Crew member not found")
-    
-    # Security check: User can only remove crew they manage (not themselves)
-    if crew_member.userID == user.userID: # type: ignore
-        raise HTTPException(status_code=400, detail="Cannot remove yourself from crew")
-    
-    # Check if current user manages this crew member
-    relationship = db.query(models.CrewRelationship).filter(
-        models.CrewRelationship.manager_user_id == user.userID,
-        models.CrewRelationship.crew_user_id == crew_id,
-        models.CrewRelationship.isActive == True
-    ).first()
-    
-    if not relationship:
-        raise HTTPException(status_code=403, detail="Not authorized to remove this crew member")
-    
-    # Deactivate the crew relationship
-    relationship.isActive = False # type: ignore
-    
-    # If this is a guest user and they have no other active relationships, deactivate them
-    if crew_member.userStatus == models.UserStatus.GUEST: # type: ignore
-        other_relationships = db.query(models.CrewRelationship).filter(
-            models.CrewRelationship.crew_user_id == crew_id,
-            models.CrewRelationship.isActive == True,
-            models.CrewRelationship.manager_user_id != user.userID
-        ).count()
-        
-        if other_relationships == 0:
-            crew_member.isActive = False # type: ignore
-            logger.info(f"Deactivated guest user {crew_id} as they have no active relationships")
-    
-    db.commit()
-    logger.info(f"Removed crew member {crew_id} from user {user.userID}'s crew")
-    
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
 @app.post("/api/crew-relationships/", status_code=status.HTTP_201_CREATED)
 async def create_crew_relationship(
     relationship_data: schemas.CrewRelationshipCreate,
@@ -479,22 +428,6 @@ async def update_department(
     
     return department_to_update
 
-@app.delete("/api/departments/{department_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_department(
-    department_id: UUID,
-    user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Delete a department."""
-    department_to_delete = db.query(models.Department).filter(models.Department.departmentID == department_id).first()
-    if not department_to_delete:
-        raise HTTPException(status_code=404, detail="Department not found")
-
-    db.delete(department_to_delete)
-    db.commit()
-    
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
 # =============================================================================
 # SHOW ENDPOINTS
 # =============================================================================
@@ -597,26 +530,6 @@ async def update_show(
     db.refresh(show_to_update)
     
     return show_to_update
-
-@app.delete("/api/shows/{show_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_show(
-    show_id: UUID,
-    user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Delete a show."""
-    show_to_delete = db.query(models.Show).filter(models.Show.showID == show_id).first()
-    if not show_to_delete:
-        raise HTTPException(status_code=404, detail="Show not found")
-
-    # Security check: ensure the user owns this show
-    if show_to_delete.ownerID != user.userID: # type: ignore
-        raise HTTPException(status_code=403, detail="Not authorized to delete this show")
-
-    db.delete(show_to_delete)
-    db.commit()
-    
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 # =============================================================================
 # SCRIPT ENDPOINTS

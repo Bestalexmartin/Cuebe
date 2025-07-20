@@ -13,12 +13,12 @@ export const useDashboardState = (shows) => {
   const [selectedDepartmentId, setSelectedDepartmentId] = useState(null);
   const [selectedCrewId, setSelectedCrewId] = useState(null);
   const [isRestoring, setIsRestoring] = useState(false);
-  const [hasInitialized, setHasInitialized] = useState(false); // NEW: Track if we've completed initial restore
+  const [hasInitialized, setHasInitialized] = useState(false);
   const showCardRefs = useRef({});
 
   // Enhanced navigation memory functions
   const saveNavigationState = useCallback((view) => {
-    if (isRestoring || !hasInitialized) return; // Don't save during restoration OR before initialization
+    if (isRestoring || !hasInitialized) return;
 
     const navigationState = {
       view,
@@ -106,7 +106,7 @@ export const useDashboardState = (shows) => {
     setSelectedVenueId(null);
     setSelectedDepartmentId(null);
     setSelectedCrewId(null);
-    setHasInitialized(true); // Mark as initialized even after clearing
+    setHasInitialized(true);
   }, []);
 
   // Restore navigation state on mount - ONLY ONCE
