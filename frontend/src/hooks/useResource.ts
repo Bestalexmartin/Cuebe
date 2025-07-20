@@ -1,14 +1,32 @@
-// frontend/src/hooks/useResource.js
+// frontend/src/hooks/useResource.ts
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useToast } from '@chakra-ui/react';
 import { toastConfig } from '../ChakraTheme';
 
-export const useResource = (endpoint, options = {}) => {
-    const [data, setData] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
+// TypeScript interfaces
+interface UseResourceOptions {
+  fetchOnMount?: boolean;
+  showErrorToast?: boolean;
+  dependencies?: any[];
+}
+
+interface UseResourceReturn<T> {
+  data: T[];
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+  createResource: (resourceData: Partial<T>) => Promise<T>;
+}
+
+export const useResource = <T = any>(
+  endpoint: string,
+  options: UseResourceOptions = {}
+): UseResourceReturn<T> => {
+    const [data, setData] = useState<T[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
     const { getToken } = useAuth();
     const toast = useToast();
 
@@ -18,12 +36,16 @@ export const useResource = (endpoint, options = {}) => {
         dependencies = []
     } = options;
 
-    const fetchData = async () => {
+    const fetchData = async (): Promise<void> => {
         setIsLoading(true);
         setError(null);
 
         try {
             const token = await getToken();
+            if (!token) {
+                throw new Error('Authentication token not available');
+            }
+            
             const response = await fetch(endpoint, {
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -34,14 +56,15 @@ export const useResource = (endpoint, options = {}) => {
                 throw new Error(`Failed to fetch ${endpoint}`);
             }
 
-            const result = await response.json();
+            const result: T[] = await response.json();
             setData(result);
         } catch (err) {
-            setError(err.message);
+            const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
+            setError(errorMessage);
             if (showErrorToast) {
                 toast({
                     title: 'Error Loading Data',
-                    description: err.message,
+                    description: errorMessage,
                     status: 'error',
                     ...toastConfig,
                 });
@@ -51,9 +74,13 @@ export const useResource = (endpoint, options = {}) => {
         }
     };
 
-    const createResource = async (resourceData) => {
+    const createResource = async (resourceData: Partial<T>): Promise<T> => {
         try {
             const token = await getToken();
+            if (!token) {
+                throw new Error('Authentication token not available');
+            }
+            
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
@@ -67,7 +94,7 @@ export const useResource = (endpoint, options = {}) => {
                 throw new Error('Failed to create resource');
             }
 
-            const newResource = await response.json();
+            const newResource: T = await response.json();
             setData(prev => [...prev, newResource]);
             return newResource;
         } catch (err) {

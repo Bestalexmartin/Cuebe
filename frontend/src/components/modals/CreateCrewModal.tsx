@@ -1,5 +1,6 @@
-// frontend/src/components/modals/CreateCrewModal.jsx
+// frontend/src/components/modals/CreateCrewModal.tsx
 
+import React from 'react';
 import {
     Modal,
     ModalOverlay,
@@ -19,7 +20,34 @@ import {
 import { useAuth } from '@clerk/clerk-react';
 import { useFormManager } from '../../hooks/useFormManager';
 
-const INITIAL_FORM_STATE = {
+// TypeScript interfaces
+interface CrewFormData {
+    emailAddress: string;
+    fullnameFirst: string;
+    fullnameLast: string;
+    userRole: string;
+    phoneNumber: string;
+    notes: string;
+}
+
+interface CreateCrewModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onCrewCreated: () => void;
+}
+
+interface RoleOption {
+    value: string;
+    label: string;
+}
+
+interface ExistingUser {
+    ID: string;
+    fullnameFirst: string;
+    fullnameLast: string;
+}
+
+const INITIAL_FORM_STATE: CrewFormData = {
     emailAddress: '',
     fullnameFirst: '',
     fullnameLast: '',
@@ -28,7 +56,7 @@ const INITIAL_FORM_STATE = {
     notes: '',
 };
 
-const ROLE_OPTIONS = [
+const ROLE_OPTIONS: RoleOption[] = [
     { value: 'crew', label: 'Crew Member' },
     { value: 'department_head', label: 'Department Head' },
     { value: 'stage_manager', label: 'Stage Manager' },
@@ -40,7 +68,11 @@ const ROLE_OPTIONS = [
     { value: 'admin', label: 'Administrator' },
 ];
 
-export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
+export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    onCrewCreated 
+}) => {
     const { getToken } = useAuth();
 
     const {
@@ -49,13 +81,12 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
         updateField,
         resetForm,
         submitForm,
-    } = useFormManager(INITIAL_FORM_STATE);
+    } = useFormManager<CrewFormData>(INITIAL_FORM_STATE);
 
-    const handleSubmit = async (event) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
         try {
-
             const checkEmailResponse = await fetch(`/api/users/check-email?email=${encodeURIComponent(formData.emailAddress)}`, {
                 headers: {
                     'Authorization': `Bearer ${await getToken()}`
@@ -63,7 +94,7 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
             });
 
             if (checkEmailResponse.ok) {
-                const existingUser = await checkEmailResponse.json();
+                const existingUser: ExistingUser | null = await checkEmailResponse.json();
 
                 if (existingUser) {
                     const relationshipData = {
@@ -102,6 +133,7 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
             onCrewCreated();
 
         } catch (error) {
+            // Error handling is done in submitForm
         }
     };
 
@@ -110,10 +142,10 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
         onClose();
     };
 
-    const isFormValid = () => {
-        return formData.emailAddress.trim() &&
-            formData.fullnameFirst.trim() &&
-            formData.fullnameLast.trim();
+    const isFormValid = (): boolean => {
+        return formData.emailAddress.trim() !== '' &&
+            formData.fullnameFirst.trim() !== '' &&
+            formData.fullnameLast.trim() !== '';
     };
 
     return (
@@ -136,7 +168,7 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                                 <Input
                                     placeholder="Enter first name"
                                     value={formData.fullnameFirst}
-                                    onChange={(e) => updateField('fullnameFirst', e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('fullnameFirst', e.target.value)}
                                 />
                             </FormControl>
 
@@ -145,7 +177,7 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                                 <Input
                                     placeholder="Enter last name"
                                     value={formData.fullnameLast}
-                                    onChange={(e) => updateField('fullnameLast', e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('fullnameLast', e.target.value)}
                                 />
                             </FormControl>
                         </HStack>
@@ -156,7 +188,7 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                                 type="email"
                                 placeholder="crew@example.com"
                                 value={formData.emailAddress}
-                                onChange={(e) => updateField('emailAddress', e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('emailAddress', e.target.value)}
                             />
                         </FormControl>
 
@@ -164,7 +196,7 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                             <FormLabel>Role</FormLabel>
                             <Select
                                 value={formData.userRole}
-                                onChange={(e) => updateField('userRole', e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('userRole', e.target.value)}
                             >
                                 {ROLE_OPTIONS.map((role) => (
                                     <option key={role.value} value={role.value}>
@@ -180,7 +212,7 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                                 type="tel"
                                 placeholder="(555) 123-4567"
                                 value={formData.phoneNumber}
-                                onChange={(e) => updateField('phoneNumber', e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('phoneNumber', e.target.value)}
                             />
                         </FormControl>
 
@@ -189,7 +221,7 @@ export const CreateCrewModal = ({ isOpen, onClose, onCrewCreated }) => {
                             <Input
                                 placeholder="Additional notes about this crew member"
                                 value={formData.notes}
-                                onChange={(e) => updateField('notes', e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('notes', e.target.value)}
                             />
                         </FormControl>
                     </VStack>

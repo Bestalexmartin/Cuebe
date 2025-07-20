@@ -1,8 +1,9 @@
-// frontend/src/SignInPage.jsx
+// frontend/src/SignInPage.tsx
 
+import React from 'react';
 import { SignIn } from "@clerk/clerk-react";
 
-const SignInPage = () => {
+const SignInPage: React.FC = () => {
   return (
     <div style={{
       display: 'flex',

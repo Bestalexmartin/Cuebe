@@ -75,7 +75,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
       }
       window.history.replaceState({}, document.title);
     }
-  }, [location.state, hookHandleViewChange]);
+  }, [location.state]);
 
   const handleViewChange = (newView: string) => {
     setActiveView(newView);

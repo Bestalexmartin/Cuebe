@@ -1,8 +1,8 @@
-// frontend/src/main.jsx
+// frontend/src/main.tsx
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App.jsx';
+import App from './App.tsx';
 import './index.css';
 import chakraTheme from './ChakraTheme';
 
@@ -10,13 +10,18 @@ import { ClerkProvider } from '@clerk/clerk-react';
 import { BrowserRouter } from 'react-router-dom';
 import { ChakraProvider } from '@chakra-ui/react';
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const PUBLISHABLE_KEY: string | undefined = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!PUBLISHABLE_KEY) {
   throw new Error("Missing Publishable Key");
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error("Root element not found");
+}
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <BrowserRouter>
       <ClerkProvider publishableKey={PUBLISHABLE_KEY}>

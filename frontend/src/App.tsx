@@ -1,5 +1,6 @@
-// frontend/src/App.jsx
+// frontend/src/App.tsx
 
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { useDisclosure, Box } from '@chakra-ui/react';
@@ -14,15 +15,20 @@ import { EditVenuePage } from './EditVenuePage';
 import { EditDepartmentPage } from './EditDepartmentPage';
 import { EditCrewPage } from './EditCrewPage';
 
+// TypeScript interfaces
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
 // Protected Route Component - wraps any component that requires authentication
-const ProtectedRoute = ({ children }) => (
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => (
   <>
     <SignedIn>{children}</SignedIn>
     <SignedOut><Navigate to="/sign-in" replace /></SignedOut>
   </>
 );
 
-function App() {
+const App: React.FC = () => {
   const { isOpen: isMenuOpen, onOpen: onMenuOpen, onClose: onMenuClose } = useDisclosure();
 
   return (
@@ -95,6 +101,6 @@ function App() {
       </Box>
     </Box>
   );
-}
+};
 
 export default App;

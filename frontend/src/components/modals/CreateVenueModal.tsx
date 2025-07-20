@@ -1,5 +1,6 @@
-// frontend/src/components/modals/CreateVenueModal.jsx
+// frontend/src/components/modals/CreateVenueModal.tsx
 
+import React from 'react';
 import {
     Modal,
     ModalOverlay,
@@ -17,22 +18,39 @@ import {
 } from '@chakra-ui/react';
 import { useFormManager } from '../../hooks/useFormManager';
 
-const INITIAL_FORM_STATE = {
+// TypeScript interfaces
+interface VenueFormData {
+    venueName: string;
+    city: string;
+    state: string;
+}
+
+interface CreateVenueModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onVenueCreated: () => void;
+}
+
+const INITIAL_FORM_STATE: VenueFormData = {
     venueName: '',
     city: '',
     state: '',
 };
 
-export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
+export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    onVenueCreated 
+}) => {
     const {
         formData,
         isSubmitting,
         updateField,
         resetForm,
         submitForm,
-    } = useFormManager(INITIAL_FORM_STATE);
+    } = useFormManager<VenueFormData>(INITIAL_FORM_STATE);
 
-    const handleSubmit = async (event) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
         try {
@@ -53,6 +71,7 @@ export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
             onVenueCreated();
 
         } catch (error) {
+            // Error handling is done in submitForm
         }
     };
 
@@ -61,8 +80,8 @@ export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
         onClose();
     };
 
-    const isFormValid = () => {
-        return formData.venueName.trim();
+    const isFormValid = (): boolean => {
+        return formData.venueName.trim() !== '';
     };
 
     return (
@@ -84,7 +103,7 @@ export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
                             <Input
                                 placeholder="Enter venue name"
                                 value={formData.venueName}
-                                onChange={(e) => updateField('venueName', e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('venueName', e.target.value)}
                             />
                         </FormControl>
 
@@ -94,7 +113,7 @@ export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
                                 <Input
                                     placeholder="Enter city"
                                     value={formData.city}
-                                    onChange={(e) => updateField('city', e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('city', e.target.value)}
                                 />
                             </FormControl>
 
@@ -103,7 +122,7 @@ export const CreateVenueModal = ({ isOpen, onClose, onVenueCreated }) => {
                                 <Input
                                     placeholder="CA"
                                     value={formData.state}
-                                    onChange={(e) => updateField('state', e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('state', e.target.value)}
                                     maxLength={2}
                                 />
                             </FormControl>

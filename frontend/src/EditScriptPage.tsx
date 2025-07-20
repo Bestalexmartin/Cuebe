@@ -1,6 +1,6 @@
-// frontend/src/EditScriptPage.jsx
+// frontend/src/EditScriptPage.tsx
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
     Flex,
     Box,
@@ -20,14 +20,26 @@ import { useFormManager } from './hooks/useFormManager';
 import { useScript } from './hooks/useScript';
 import { AppIcon } from './components/AppIcon';
 
-const INITIAL_FORM_STATE = {
+// TypeScript interfaces
+interface ScriptFormData {
+    scriptName: string;
+    scriptStatus: string;
+    startTime: string;
+}
+
+interface ScriptStatusOption {
+    value: string;
+    label: string;
+}
+
+const INITIAL_FORM_STATE: ScriptFormData = {
     scriptName: '',
     scriptStatus: 'DRAFT',
     startTime: '',
 };
 
 // Script status options - updated workflow states
-const SCRIPT_STATUS_OPTIONS = [
+const SCRIPT_STATUS_OPTIONS: ScriptStatusOption[] = [
     { value: 'DRAFT', label: 'Draft' },
     { value: 'COPY', label: 'Copy' },
     { value: 'WORKING', label: 'Working' },
@@ -35,8 +47,8 @@ const SCRIPT_STATUS_OPTIONS = [
     { value: 'BACKUP', label: 'Backup' },
 ];
 
-export const EditScriptPage = () => {
-    const { scriptId } = useParams();
+export const EditScriptPage: React.FC = () => {
+    const { scriptId } = useParams<{ scriptId: string }>();
     const navigate = useNavigate();
 
     // Fetch the initial script data
@@ -49,7 +61,7 @@ export const EditScriptPage = () => {
         updateField,
         setFormData,
         submitForm,
-    } = useFormManager(INITIAL_FORM_STATE);
+    } = useFormManager<ScriptFormData>(INITIAL_FORM_STATE);
 
     // Populate form when script data loads
     useEffect(() => {
@@ -65,13 +77,15 @@ export const EditScriptPage = () => {
     }, [script, setFormData]);
 
     // Handle form field changes
-    const handleChange = (field, value) => {
+    const handleChange = (field: keyof ScriptFormData, value: string) => {
         updateField(field, value);
     };
 
     // Handle form submission
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!scriptId) return;
 
         try {
             // Prepare data for API
@@ -92,7 +106,7 @@ export const EditScriptPage = () => {
             navigate('/dashboard', {
                 state: {
                     view: 'shows',
-                    selectedShowId: script.showID,
+                    selectedShowId: script?.showID,
                     selectedScriptId: scriptId,
                     returnFromEdit: true
                 }
@@ -107,15 +121,15 @@ export const EditScriptPage = () => {
         navigate('/dashboard', {
             state: {
                 view: 'shows',
-                selectedShowId: script.showID,
+                selectedShowId: script?.showID,
                 selectedScriptId: scriptId,
                 returnFromEdit: true
             }
         });
     };
 
-    const isFormValid = () => {
-        return formData.scriptName.trim();
+    const isFormValid = (): boolean => {
+        return formData.scriptName.trim().length > 0;
     };
 
     return (

@@ -1,6 +1,6 @@
-// frontend/src/EditCrewPage.jsx
+// frontend/src/EditCrewPage.tsx
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
     Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
     FormControl, FormLabel, Input, Textarea, Select, Badge, Avatar
@@ -10,7 +10,22 @@ import { useCrew } from "./hooks/useCrew";
 import { useFormManager } from './hooks/useFormManager';
 import { AppIcon } from './components/AppIcon';
 
-const INITIAL_FORM_STATE = {
+// TypeScript interfaces
+interface CrewFormData {
+    fullnameFirst: string;
+    fullnameLast: string;
+    emailAddress: string;
+    phoneNumber: string;
+    userRole: string;
+    notes: string;
+}
+
+interface UserRoleOption {
+    value: string;
+    label: string;
+}
+
+const INITIAL_FORM_STATE: CrewFormData = {
     fullnameFirst: '',
     fullnameLast: '',
     emailAddress: '',
@@ -20,7 +35,7 @@ const INITIAL_FORM_STATE = {
 };
 
 // User role options based on typical theatre crew roles
-const USER_ROLE_OPTIONS = [
+const USER_ROLE_OPTIONS: UserRoleOption[] = [
     { value: 'crew', label: 'Crew Member' },
     { value: 'assistant_director', label: 'Assistant Director' },
     { value: 'stage_manager', label: 'Stage Manager' },
@@ -43,8 +58,8 @@ const USER_ROLE_OPTIONS = [
     { value: 'other', label: 'Other' }
 ];
 
-export const EditCrewPage = () => {
-    const { crewId } = useParams();
+export const EditCrewPage: React.FC = () => {
+    const { crewId } = useParams<{ crewId: string }>();
     const navigate = useNavigate();
 
     // Fetch the initial crew data
@@ -57,7 +72,7 @@ export const EditCrewPage = () => {
         updateField,
         setFormData,
         submitForm,
-    } = useFormManager(INITIAL_FORM_STATE);
+    } = useFormManager<CrewFormData>(INITIAL_FORM_STATE);
 
     // Populate form when crew data loads
     useEffect(() => {
@@ -74,13 +89,15 @@ export const EditCrewPage = () => {
     }, [crew, setFormData]);
 
     // Handle form field changes
-    const handleChange = (field, value) => {
+    const handleChange = (field: keyof CrewFormData, value: string) => {
         updateField(field, value);
     };
 
     // Handle form submission
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!crewId) return;
 
         try {
             // Prepare data for API
@@ -110,6 +127,7 @@ export const EditCrewPage = () => {
             });
 
         } catch (error) {
+            // Error handling is done in submitForm
         }
     };
 
@@ -123,18 +141,18 @@ export const EditCrewPage = () => {
         });
     };
 
-    const isFormValid = () => {
-        return formData.fullnameFirst.trim() &&
-            formData.fullnameLast.trim() &&
-            formData.emailAddress.trim() &&
-            formData.userRole.trim();
+    const isFormValid = (): boolean => {
+        return formData.fullnameFirst.trim().length > 0 &&
+            formData.fullnameLast.trim().length > 0 &&
+            formData.emailAddress.trim().length > 0 &&
+            formData.userRole.trim().length > 0;
     };
 
-    const getFullName = () => {
+    const getFullName = (): string => {
         return `${formData.fullnameFirst} ${formData.fullnameLast}`.trim() || 'Crew';
     };
 
-    const formatRole = (role) => {
+    const formatRole = (role: string): string => {
         if (!role) return 'Crew';
         return role.split('_').map(word =>
             word.charAt(0).toUpperCase() + word.slice(1)
