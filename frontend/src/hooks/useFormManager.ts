@@ -1,17 +1,36 @@
-// frontend/src/hooks/useFormManager.js
+// frontend/src/hooks/useFormManager.ts
 
 import { useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useToast } from '@chakra-ui/react';
 import { toastConfig } from '../ChakraTheme';
 
-export const useFormManager = (initialState = {}) => {
-    const [formData, setFormData] = useState(initialState);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+// TypeScript interfaces
+interface FormData {
+  [key: string]: any;
+}
+
+interface UseFormManagerReturn<T extends FormData> {
+  formData: T;
+  isSubmitting: boolean;
+  updateField: (field: keyof T, value: any) => void;
+  resetForm: () => void;
+  submitForm: (
+    endpoint: string,
+    method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
+    successMessage?: string,
+    customData?: FormData | null
+  ) => Promise<any>;
+  setFormData: (data: T | ((prev: T) => T)) => void;
+}
+
+export const useFormManager = <T extends FormData>(initialState: T = {} as T): UseFormManagerReturn<T> => {
+    const [formData, setFormData] = useState<T>(initialState);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const { getToken } = useAuth();
     const toast = useToast();
 
-    const updateField = (field, value) => {
+    const updateField = (field: keyof T, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -20,10 +39,19 @@ export const useFormManager = (initialState = {}) => {
         setIsSubmitting(false);
     };
 
-    const submitForm = async (endpoint, method = 'POST', successMessage = 'Operation successful', customData = null) => {
+    const submitForm = async (
+        endpoint: string,
+        method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' = 'POST',
+        successMessage: string = 'Operation successful',
+        customData: FormData | null = null
+    ): Promise<any> => {
         setIsSubmitting(true);
         try {
             const token = await getToken();
+            if (!token) {
+                throw new Error('Authentication token not available');
+            }
+            
             const dataToSubmit = customData || formData;
 
             const response = await fetch(endpoint, {
@@ -51,9 +79,10 @@ export const useFormManager = (initialState = {}) => {
 
             return result;
         } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Something went wrong';
             toast({
                 title: 'Error',
-                description: error.message || 'Something went wrong',
+                description: errorMessage,
                 status: 'error',
                 ...toastConfig,
             });

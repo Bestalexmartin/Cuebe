@@ -1,6 +1,6 @@
-// frontend/src/EditDepartmentPage.jsx
+// frontend/src/EditDepartmentPage.tsx
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
     Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
     FormControl, FormLabel, Input, Textarea
@@ -10,14 +10,26 @@ import { useDepartment } from "./hooks/useDepartment";
 import { useFormManager } from './hooks/useFormManager';
 import { AppIcon } from './components/AppIcon';
 
-const INITIAL_FORM_STATE = {
+// TypeScript interfaces
+interface DepartmentFormData {
+    departmentName: string;
+    departmentDescription: string;
+    departmentColor: string;
+}
+
+interface PresetColor {
+    name: string;
+    value: string;
+}
+
+const INITIAL_FORM_STATE: DepartmentFormData = {
     departmentName: '',
     departmentDescription: '',
     departmentColor: '#3182CE'
 };
 
 // Predefined color options for quick selection (same as CreateDepartmentModal)
-const PRESET_COLORS = [
+const PRESET_COLORS: PresetColor[] = [
     { name: 'Blue', value: '#6495ED' },
     { name: 'Orange', value: '#e79e40' },
     { name: 'Green', value: '#48BB78' },
@@ -28,8 +40,8 @@ const PRESET_COLORS = [
     { name: 'Yellow', value: '#ECC94B' },
 ];
 
-export const EditDepartmentPage = () => {
-    const { departmentId } = useParams();
+export const EditDepartmentPage: React.FC = () => {
+    const { departmentId } = useParams<{ departmentId: string }>();
     const navigate = useNavigate();
 
     // Fetch the initial department data
@@ -42,7 +54,7 @@ export const EditDepartmentPage = () => {
         updateField,
         setFormData,
         submitForm,
-    } = useFormManager(INITIAL_FORM_STATE);
+    } = useFormManager<DepartmentFormData>(INITIAL_FORM_STATE);
 
     // Populate form when department data loads
     useEffect(() => {
@@ -56,13 +68,15 @@ export const EditDepartmentPage = () => {
     }, [department, setFormData]);
 
     // Handle form field changes
-    const handleChange = (field, value) => {
+    const handleChange = (field: keyof DepartmentFormData, value: string) => {
         updateField(field, value);
     };
 
     // Handle form submission
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!departmentId) return;
 
         try {
             // Prepare data for API
@@ -89,6 +103,7 @@ export const EditDepartmentPage = () => {
             });
 
         } catch (error) {
+            // Error handled by submitForm
         }
     };
 
@@ -102,8 +117,8 @@ export const EditDepartmentPage = () => {
         });
     };
 
-    const isFormValid = () => {
-        return formData.departmentName.trim() && formData.departmentColor.trim();
+    const isFormValid = (): boolean => {
+        return formData.departmentName.trim().length > 0 && formData.departmentColor.trim().length > 0;
     };
 
     return (

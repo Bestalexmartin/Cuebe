@@ -1,5 +1,6 @@
-// frontend/src/components/modals/CreateScriptModal.jsx
+// frontend/src/components/modals/CreateScriptModal.tsx
 
+import React from 'react';
 import {
     Modal,
     ModalOverlay,
@@ -16,20 +17,37 @@ import {
 } from '@chakra-ui/react';
 import { useFormManager } from '../../hooks/useFormManager';
 
-const INITIAL_FORM_STATE = {
+// TypeScript interfaces
+interface ScriptFormData {
+    scriptName: string;
+}
+
+interface CreateScriptModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    showId: string;
+    onScriptCreated: () => void;
+}
+
+const INITIAL_FORM_STATE: ScriptFormData = {
     scriptName: '',
 };
 
-export const CreateScriptModal = ({ isOpen, onClose, showId, onScriptCreated }) => {
+export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    showId, 
+    onScriptCreated 
+}) => {
     const {
         formData,
         isSubmitting,
         updateField,
         resetForm,
         submitForm,
-    } = useFormManager(INITIAL_FORM_STATE);
+    } = useFormManager<ScriptFormData>(INITIAL_FORM_STATE);
 
-    const handleSubmit = async (event) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
         try {
@@ -48,6 +66,7 @@ export const CreateScriptModal = ({ isOpen, onClose, showId, onScriptCreated }) 
             onScriptCreated();
 
         } catch (error) {
+            // Error handling is done in submitForm
         }
     };
 
@@ -56,8 +75,8 @@ export const CreateScriptModal = ({ isOpen, onClose, showId, onScriptCreated }) 
         onClose();
     };
 
-    const isFormValid = () => {
-        return formData.scriptName.trim();
+    const isFormValid = (): boolean => {
+        return formData.scriptName.trim() !== '';
     };
 
     return (
@@ -79,7 +98,7 @@ export const CreateScriptModal = ({ isOpen, onClose, showId, onScriptCreated }) 
                             <Input
                                 placeholder="Enter script name"
                                 value={formData.scriptName}
-                                onChange={(e) => updateField('scriptName', e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('scriptName', e.target.value)}
                             />
                         </FormControl>
                     </VStack>

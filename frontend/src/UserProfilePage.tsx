@@ -1,8 +1,9 @@
-// frontend/src/UserProfilePage.jsx
+// frontend/src/UserProfilePage.tsx
 
+import React from 'react';
 import { UserProfile } from "@clerk/clerk-react";
 
-const UserProfilePage = () => {
+const UserProfilePage: React.FC = () => {
   return (
     <div style={{
       display: 'flex',

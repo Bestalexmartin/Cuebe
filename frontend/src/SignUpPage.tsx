@@ -1,8 +1,9 @@
-// frontend/src/SignUpPage.jsx
+// frontend/src/SignUpPage.tsx
 
+import React from 'react';
 import { SignUp } from "@clerk/clerk-react";
 
-const SignUpPage = () => {
+const SignUpPage: React.FC = () => {
   return (
     <div style={{
       display: 'flex',

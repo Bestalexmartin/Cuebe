@@ -1,5 +1,6 @@
-// frontend/src/components/modals/CreateDepartmentModal.jsx
+// frontend/src/components/modals/CreateDepartmentModal.tsx
 
+import React from 'react';
 import {
     Modal,
     ModalOverlay,
@@ -20,13 +21,31 @@ import {
 } from '@chakra-ui/react';
 import { useFormManager } from '../../hooks/useFormManager';
 
-const INITIAL_FORM_STATE = {
+// TypeScript interfaces
+interface DepartmentFormData {
+    departmentName: string;
+    departmentDescription: string;
+    departmentColor: string;
+}
+
+interface CreateDepartmentModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onDepartmentCreated: () => void;
+}
+
+interface PresetColor {
+    name: string;
+    value: string;
+}
+
+const INITIAL_FORM_STATE: DepartmentFormData = {
     departmentName: '',
     departmentDescription: '',
     departmentColor: '#6495ED',
 };
 
-const PRESET_COLORS = [
+const PRESET_COLORS: PresetColor[] = [
     { name: 'Blue', value: '#6495ED' },
     { name: 'Orange', value: '#e79e40' },
     { name: 'Green', value: '#48BB78' },
@@ -37,16 +56,20 @@ const PRESET_COLORS = [
     { name: 'Yellow', value: '#ECC94B' },
 ];
 
-export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) => {
+export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({ 
+    isOpen, 
+    onClose, 
+    onDepartmentCreated 
+}) => {
     const {
         formData,
         isSubmitting,
         updateField,
         resetForm,
         submitForm,
-    } = useFormManager(INITIAL_FORM_STATE);
+    } = useFormManager<DepartmentFormData>(INITIAL_FORM_STATE);
 
-    const handleSubmit = async (event) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
         try {
@@ -69,6 +92,7 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
             onDepartmentCreated();
 
         } catch (error) {
+            // Error handling is done in submitForm
         }
     };
 
@@ -77,8 +101,12 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
         onClose();
     };
 
-    const isFormValid = () => {
-        return formData.departmentName.trim();
+    const isFormValid = (): boolean => {
+        return formData.departmentName.trim() !== '';
+    };
+
+    const handleColorButtonClick = (colorValue: string) => {
+        updateField('departmentColor', colorValue);
     };
 
     return (
@@ -100,7 +128,7 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
                             <Input
                                 placeholder="Enter department name"
                                 value={formData.departmentName}
-                                onChange={(e) => updateField('departmentName', e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('departmentName', e.target.value)}
                             />
                         </FormControl>
 
@@ -109,7 +137,7 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
                             <Textarea
                                 placeholder="Describe the department's role and responsibilities"
                                 value={formData.departmentDescription}
-                                onChange={(e) => updateField('departmentDescription', e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateField('departmentDescription', e.target.value)}
                                 rows={3}
                                 resize="vertical"
                             />
@@ -122,7 +150,7 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
                                     <Input
                                         type="color"
                                         value={formData.departmentColor}
-                                        onChange={(e) => updateField('departmentColor', e.target.value)}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('departmentColor', e.target.value)}
                                         width="60px"
                                         height="40px"
                                         padding="1"
@@ -130,7 +158,7 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
                                     />
                                     <Input
                                         value={formData.departmentColor}
-                                        onChange={(e) => updateField('departmentColor', e.target.value)}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('departmentColor', e.target.value)}
                                         placeholder="#6495ED"
                                         flex="1"
                                     />
@@ -151,7 +179,7 @@ export const CreateDepartmentModal = ({ isOpen, onClose, onDepartmentCreated }) 
                                                 backgroundColor={color.value}
                                                 border={formData.departmentColor === color.value ? '3px solid' : '1px solid'}
                                                 borderColor={formData.departmentColor === color.value ? 'white' : 'gray.300'}
-                                                onClick={() => updateField('departmentColor', color.value)}
+                                                onClick={() => handleColorButtonClick(color.value)}
                                                 _hover={{ transform: 'scale(1.1)' }}
                                                 title={color.name}
                                             />

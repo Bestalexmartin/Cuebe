@@ -1,6 +1,6 @@
-// frontend/src/EditVenuePage.jsx
+// frontend/src/EditVenuePage.tsx
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
     Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
     FormControl, FormLabel, Input, Textarea, Select
@@ -10,7 +10,29 @@ import { useVenue } from "./hooks/useVenue";
 import { useFormManager } from './hooks/useFormManager';
 import { AppIcon } from './components/AppIcon';
 
-const INITIAL_FORM_STATE = {
+// TypeScript interfaces
+interface VenueFormData {
+    venueName: string;
+    address: string;
+    capacity: string;
+    venueType: string;
+    contactName: string;
+    contactEmail: string;
+    contactPhone: string;
+    stageWidth: string;
+    stageDepth: string;
+    flyHeight: string;
+    notes: string;
+    rentalRate: string;
+    minimumRental: string;
+}
+
+interface VenueTypeOption {
+    value: string;
+    label: string;
+}
+
+const INITIAL_FORM_STATE: VenueFormData = {
     venueName: '',
     address: '',
     capacity: '',
@@ -27,7 +49,7 @@ const INITIAL_FORM_STATE = {
 };
 
 // Venue type options
-const VENUE_TYPE_OPTIONS = [
+const VENUE_TYPE_OPTIONS: VenueTypeOption[] = [
     { value: 'Proscenium', label: 'Proscenium' },
     { value: 'Thrust', label: 'Thrust' },
     { value: 'Arena', label: 'Arena' },
@@ -36,8 +58,8 @@ const VENUE_TYPE_OPTIONS = [
     { value: 'Other', label: 'Other' },
 ];
 
-export const EditVenuePage = () => {
-    const { venueId } = useParams();
+export const EditVenuePage: React.FC = () => {
+    const { venueId } = useParams<{ venueId: string }>();
     const navigate = useNavigate();
 
     // Fetch the initial venue data
@@ -50,7 +72,7 @@ export const EditVenuePage = () => {
         updateField,
         setFormData,
         submitForm,
-    } = useFormManager(INITIAL_FORM_STATE);
+    } = useFormManager<VenueFormData>(INITIAL_FORM_STATE);
 
     // Populate form when venue data loads
     useEffect(() => {
@@ -74,13 +96,15 @@ export const EditVenuePage = () => {
     }, [venue, setFormData]);
 
     // Handle form field changes
-    const handleChange = (field, value) => {
+    const handleChange = (field: keyof VenueFormData, value: string) => {
         updateField(field, value);
     };
 
     // Handle form submission
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!venueId) return;
 
         try {
             // Prepare data for API - convert numeric fields
@@ -117,6 +141,7 @@ export const EditVenuePage = () => {
             });
 
         } catch (error) {
+            // Error handled by submitForm
         }
     };
 
@@ -130,8 +155,8 @@ export const EditVenuePage = () => {
         });
     };
 
-    const isFormValid = () => {
-        return formData.venueName.trim();
+    const isFormValid = (): boolean => {
+        return formData.venueName.trim().length > 0;
     };
 
     return (

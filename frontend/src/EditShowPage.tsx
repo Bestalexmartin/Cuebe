@@ -1,6 +1,6 @@
-// frontend/src/EditShowPage.jsx
+// frontend/src/EditShowPage.tsx
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
     Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
     FormControl, FormLabel, Input, Textarea, Select
@@ -11,7 +11,21 @@ import { useFormManager } from './hooks/useFormManager';
 import { useResource } from './hooks/useResource';
 import { AppIcon } from './components/AppIcon';
 
-const INITIAL_FORM_STATE = {
+// TypeScript interfaces
+interface ShowFormData {
+    showName: string;
+    showNotes: string;
+    showDate: string;
+    deadline: string;
+    venueID: string;
+}
+
+interface Venue {
+    venueID: string;
+    venueName: string;
+}
+
+const INITIAL_FORM_STATE: ShowFormData = {
     showName: '',
     showNotes: '',
     showDate: '',
@@ -19,8 +33,8 @@ const INITIAL_FORM_STATE = {
     venueID: ''
 };
 
-export const EditShowPage = () => {
-    const { showId } = useParams();
+export const EditShowPage: React.FC = () => {
+    const { showId } = useParams<{ showId: string }>();
     const navigate = useNavigate();
 
     // Fetch the initial show data
@@ -30,7 +44,7 @@ export const EditShowPage = () => {
     const {
         data: venues,
         isLoading: isLoadingVenues
-    } = useResource('/api/me/venues');
+    } = useResource<Venue[]>('/api/me/venues');
 
     // Form management
     const {
@@ -39,7 +53,7 @@ export const EditShowPage = () => {
         updateField,
         setFormData,
         submitForm,
-    } = useFormManager(INITIAL_FORM_STATE);
+    } = useFormManager<ShowFormData>(INITIAL_FORM_STATE);
 
     // Populate form when show data loads
     useEffect(() => {
@@ -55,13 +69,15 @@ export const EditShowPage = () => {
     }, [show, setFormData]);
 
     // Handle form field changes
-    const handleChange = (field, value) => {
+    const handleChange = (field: keyof ShowFormData, value: string) => {
         updateField(field, value);
     };
 
     // Handle form submission
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!showId) return;
 
         try {
             // Prepare data for API (convert venueID to integer if provided)
@@ -104,8 +120,8 @@ export const EditShowPage = () => {
         });
     };
 
-    const isFormValid = () => {
-        return formData.showName.trim();
+    const isFormValid = (): boolean => {
+        return formData.showName.trim().length > 0;
     };
 
     const isLoading = isLoadingShow || isLoadingVenues;
@@ -195,7 +211,7 @@ export const EditShowPage = () => {
                                 placeholder={isLoadingVenues ? "Loading venues..." : "Select venue"}
                                 disabled={isLoadingVenues}
                             >
-                                {venues.map(venue => (
+                                {venues?.map(venue => (
                                     <option key={venue.venueID} value={venue.venueID}>
                                         {venue.venueName}
                                     </option>

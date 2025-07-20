@@ -1,6 +1,6 @@
-// frontend/src/components/modals/CreateShowModal.jsx
+// frontend/src/components/modals/CreateShowModal.tsx
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -21,7 +21,27 @@ import { toastConfig } from '../../ChakraTheme';
 import { useFormManager } from '../../hooks/useFormManager';
 import { useResource } from '../../hooks/useResource';
 
-const INITIAL_FORM_STATE = {
+// TypeScript interfaces
+interface Venue {
+  venueID: string;
+  venueName: string;
+}
+
+interface ShowFormData {
+  showName: string;
+  venueID: string;
+  showDate: string;
+  showNotes: string;
+  deadline: string;
+}
+
+interface CreateShowModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onShowCreated: () => void;
+}
+
+const INITIAL_FORM_STATE: ShowFormData = {
   showName: '',
   venueID: '',
   showDate: '',
@@ -29,10 +49,14 @@ const INITIAL_FORM_STATE = {
   deadline: '',
 };
 
-export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
+export const CreateShowModal: React.FC<CreateShowModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onShowCreated 
+}) => {
   const toast = useToast();
-  const [isAddingNewVenue, setIsAddingNewVenue] = useState(false);
-  const [newVenueName, setNewVenueName] = useState('');
+  const [isAddingNewVenue, setIsAddingNewVenue] = useState<boolean>(false);
+  const [newVenueName, setNewVenueName] = useState<string>('');
 
   // Form management
   const {
@@ -41,7 +65,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
     updateField,
     resetForm,
     submitForm,
-  } = useFormManager(INITIAL_FORM_STATE);
+  } = useFormManager<ShowFormData>(INITIAL_FORM_STATE);
 
   // Venue data management
   const {
@@ -49,7 +73,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
     isLoading: isLoadingVenues,
     createResource: createVenue,
     refetch: refetchVenues,
-  } = useResource('/api/me/venues', {
+  } = useResource<Venue[]>('/api/me/venues', {
     fetchOnMount: false,
   });
 
@@ -57,9 +81,9 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
     if (isOpen) {
       refetchVenues();
     }
-  }, [isOpen]);
+  }, [isOpen, refetchVenues]);
 
-  const handleVenueSelectChange = (e) => {
+  const handleVenueSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     if (value === 'add_new') {
       setIsAddingNewVenue(true);
@@ -71,7 +95,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
     }
   };
 
-  const handleSubmit = async (event) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     try {
@@ -108,6 +132,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
       onShowCreated();
 
     } catch (error) {
+      // Error handling is done in submitForm
     }
   };
 
@@ -118,9 +143,9 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
     onClose();
   };
 
-  const isFormValid = () => {
-    return formData.showName.trim() &&
-      (!isAddingNewVenue || newVenueName.trim());
+  const isFormValid = (): boolean => {
+    return formData.showName.trim() !== '' &&
+      (!isAddingNewVenue || newVenueName.trim() !== '');
   };
 
   return (
@@ -142,7 +167,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
               <Input
                 placeholder="Enter show name"
                 value={formData.showName}
-                onChange={(e) => updateField('showName', e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('showName', e.target.value)}
               />
             </FormControl>
 
@@ -167,7 +192,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
                   <Input
                     placeholder="Enter venue name"
                     value={newVenueName}
-                    onChange={(e) => setNewVenueName(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewVenueName(e.target.value)}
                   />
                 )}
               </VStack>
@@ -178,7 +203,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
               <Input
                 type="date"
                 value={formData.showDate}
-                onChange={(e) => updateField('showDate', e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('showDate', e.target.value)}
               />
             </FormControl>
 
@@ -187,7 +212,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
               <Input
                 type="datetime-local"
                 value={formData.deadline}
-                onChange={(e) => updateField('deadline', e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('deadline', e.target.value)}
               />
             </FormControl>
 
@@ -196,7 +221,7 @@ export const CreateShowModal = ({ isOpen, onClose, onShowCreated }) => {
               <Input
                 placeholder="Additional notes about this show"
                 value={formData.showNotes}
-                onChange={(e) => updateField('showNotes', e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('showNotes', e.target.value)}
               />
             </FormControl>
           </VStack>

@@ -1,26 +1,44 @@
-// frontend/src/Header.jsx
+// frontend/src/Header.tsx
 
+import React from "react";
 import { SignedIn, UserButton } from "@clerk/clerk-react";
 import { Flex, Heading, Image, useColorMode, IconButton } from "@chakra-ui/react";
 import { MoonIcon, SunIcon } from '@chakra-ui/icons';
 import { CiMenuBurger } from 'react-icons/ci';
 
-function DarkModeSwitch() {
+// TypeScript interfaces
+interface DarkModeSwitchProps {}
+
+interface HeaderProps {
+  onMenuOpen: () => void;
+  isMenuOpen: boolean;
+}
+
+const DarkModeSwitch: React.FC<DarkModeSwitchProps> = () => {
   const { colorMode, toggleColorMode } = useColorMode();
+  
+  const handleToggle = (): void => {
+    toggleColorMode();
+  };
+
   return (
     <IconButton
       aria-label="Toggle dark mode"
       icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
-      onClick={toggleColorMode}
+      onClick={handleToggle}
       variant="ghost"
       isRound={true}
       _focus={{ boxShadow: 'none' }}
       _hover={{ bg: "transparent", color: "initial" }}
     />
   );
-}
+};
 
-const Header = ({ onMenuOpen, isMenuOpen }) => {
+const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
+  const handleMenuOpen = (): void => {
+    onMenuOpen();
+  };
+
   return (
     <Flex
       as="header"
@@ -82,7 +100,7 @@ const Header = ({ onMenuOpen, isMenuOpen }) => {
             _hover={{ borderColor: 'orange.400' }}
             _focus={{ boxShadow: 'none' }}
             display={{ base: 'flex', lg: 'none' }}
-            onClick={onMenuOpen}
+            onClick={handleMenuOpen}
           />
 
         </Flex>

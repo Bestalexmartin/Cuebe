@@ -1,11 +1,57 @@
-// frontend/src/ShowsView.jsx
+// frontend/src/ShowsView.tsx
 
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
 import { ShowCard } from "./ShowCard";
 
-export const ShowsView = ({
+// TypeScript interfaces
+interface Venue {
+  venueID: string;
+  venueName: string;
+}
+
+interface Script {
+  scriptID: string;
+  scriptName: string;
+  scriptStatus: string;
+  showID: string;
+  startTime: string;
+  dateCreated: string;
+  dateUpdated: string;
+  lastUsed?: string;
+}
+
+interface Show {
+  showID: string;
+  showName: string;
+  showDate?: string;
+  dateCreated: string;
+  dateUpdated: string;
+  venue?: Venue;
+  scripts: Script[];
+}
+
+interface ShowsViewProps {
+  shows: Show[];
+  isLoading: boolean;
+  error: string | null;
+  onCreateShow: () => void;
+  selectedShowId: string | null;
+  hoveredCardId: string | null;
+  setHoveredCardId: (id: string | null) => void;
+  handleShowClick: (showId: string) => void;
+  showCardRefs: React.MutableRefObject<{[key: string]: HTMLElement | null}>;
+  selectedScriptId: string | null;
+  handleScriptClick: (scriptId: string) => void;
+  onCreateScript: (showId: string) => void;
+  onSaveNavigationState: () => void;
+}
+
+type SortBy = 'showName' | 'showDate' | 'dateUpdated';
+type SortDirection = 'asc' | 'desc';
+
+export const ShowsView: React.FC<ShowsViewProps> = ({
     shows,
     isLoading,
     error,
@@ -21,11 +67,11 @@ export const ShowsView = ({
     onSaveNavigationState,
 }) => {
     // Shows-specific sorting state
-    const [sortBy, setSortBy] = useState('dateUpdated');
-    const [sortDirection, setSortDirection] = useState('desc');
+    const [sortBy, setSortBy] = useState<SortBy>('dateUpdated');
+    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
     // Shows-specific sorting logic
-    const handleSortClick = (newSortBy) => {
+    const handleSortClick = (newSortBy: SortBy): void => {
         if (sortBy === newSortBy) {
             setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
         } else {
@@ -34,7 +80,7 @@ export const ShowsView = ({
         }
     };
 
-    const sortedShows = useMemo(() => {
+    const sortedShows = useMemo((): Show[] => {
         if (!shows || shows.length === 0) return [];
 
         const showsToSort = [...shows];
@@ -45,9 +91,9 @@ export const ShowsView = ({
             } else if (sortBy === 'showDate') {
                 if (!a.showDate) return 1;
                 if (!b.showDate) return -1;
-                comparison = new Date(a.showDate) - new Date(b.showDate);
+                comparison = new Date(a.showDate).getTime() - new Date(b.showDate).getTime();
             } else {
-                comparison = new Date(b.dateUpdated) - new Date(a.dateUpdated);
+                comparison = new Date(b.dateUpdated).getTime() - new Date(a.dateUpdated).getTime();
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
@@ -55,7 +101,7 @@ export const ShowsView = ({
     }, [shows, sortBy, sortDirection]);
 
     // Create the sort button text
-    const getSortButtonText = () => {
+    const getSortButtonText = (): string => {
         switch (sortBy) {
             case 'showName': return 'Name';
             case 'showDate': return 'Show Date';

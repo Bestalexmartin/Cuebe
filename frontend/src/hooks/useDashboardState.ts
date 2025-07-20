@@ -1,26 +1,87 @@
-// frontend/src/hooks/useDashboardState.js
+// frontend/src/hooks/useDashboardState.ts
 
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback, MutableRefObject } from 'react';
+
+// TypeScript interfaces
+interface Show {
+  showID: string;
+  showName: string;
+  showDate?: string;
+  dateCreated: string;
+  dateUpdated: string;
+  venue?: {
+    venueID: string;
+    venueName: string;
+  };
+  scripts: Array<{
+    scriptID: string;
+    scriptName: string;
+    scriptStatus: string;
+    showID: string;
+    startTime: string;
+    dateCreated: string;
+    dateUpdated: string;
+    lastUsed?: string;
+  }>;
+}
+
+interface NavigationState {
+  view: string;
+  selectedShowId: string | null;
+  selectedScriptId: string | null;
+  selectedVenueId: string | null;
+  selectedDepartmentId: string | null;
+  selectedCrewId: string | null;
+  timestamp: number;
+}
+
+interface UseDashboardStateReturn {
+  // State
+  selectedShowId: string | null;
+  selectedScriptId: string | null;
+  selectedVenueId: string | null;
+  selectedDepartmentId: string | null;
+  selectedCrewId: string | null;
+  hoveredCardId: string | null;
+  setHoveredCardId: (id: string | null) => void;
+  showCardRefs: MutableRefObject<Record<string, HTMLElement | null>>;
+  currentView: string;
+  shows: Show[];
+
+  // Handlers
+  handleShowClick: (showId: string) => void;
+  handleScriptClick: (scriptId: string) => void;
+  handleVenueClick: (venueId: string) => void;
+  handleDepartmentClick: (departmentId: string) => void;
+  handleCrewClick: (crewId: string) => void;
+  handleViewChange: (newView: string) => void;
+
+  // Navigation state management
+  saveNavigationState: (view: string) => void;
+  saveCurrentNavigationState: () => void;
+  restoreNavigationState: () => void;
+  clearNavigationState: () => void;
+}
 
 const SCROLL_DELAY = 100; // Configurable scroll delay
 
-export const useDashboardState = (shows) => {
-  const [currentView, setCurrentView] = useState('shows');
-  const [hoveredCardId, setHoveredCardId] = useState(null);
-  const [selectedShowId, setSelectedShowId] = useState(null);
-  const [selectedScriptId, setSelectedScriptId] = useState(null);
-  const [selectedVenueId, setSelectedVenueId] = useState(null);
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState(null);
-  const [selectedCrewId, setSelectedCrewId] = useState(null);
-  const [isRestoring, setIsRestoring] = useState(false);
-  const [hasInitialized, setHasInitialized] = useState(false);
-  const showCardRefs = useRef({});
+export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateReturn => {
+  const [currentView, setCurrentView] = useState<string>('shows');
+  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
+  const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
+  const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
+  const [selectedCrewId, setSelectedCrewId] = useState<string | null>(null);
+  const [isRestoring, setIsRestoring] = useState<boolean>(false);
+  const [hasInitialized, setHasInitialized] = useState<boolean>(false);
+  const showCardRefs = useRef<Record<string, HTMLElement | null>>({});
 
   // Enhanced navigation memory functions
-  const saveNavigationState = useCallback((view) => {
+  const saveNavigationState = useCallback((view: string) => {
     if (isRestoring || !hasInitialized) return;
 
-    const navigationState = {
+    const navigationState: NavigationState = {
       view,
       selectedShowId,
       selectedScriptId,
@@ -38,7 +99,7 @@ export const useDashboardState = (shows) => {
   const saveCurrentNavigationState = useCallback(() => {
     if (!hasInitialized) return; // Don't save if we haven't initialized yet
 
-    const navigationState = {
+    const navigationState: NavigationState = {
       view: currentView,
       selectedShowId,
       selectedScriptId,
@@ -56,7 +117,7 @@ export const useDashboardState = (shows) => {
       const savedState = sessionStorage.getItem('dashboardNavigationState');
       if (savedState) {
         setIsRestoring(true);
-        const state = JSON.parse(savedState);
+        const state: NavigationState = JSON.parse(savedState);
 
         // Restore ALL selections
         setCurrentView(state.view);
@@ -93,6 +154,7 @@ export const useDashboardState = (shows) => {
         setHasInitialized(true);
       }
     } catch (error) {
+      console.error('Error restoring navigation state:', error);
       setIsRestoring(false);
       setHasInitialized(true);
     }
@@ -132,7 +194,7 @@ export const useDashboardState = (shows) => {
     };
   }, [saveCurrentNavigationState, hasInitialized, isRestoring]);
 
-  const handleShowClick = (showId) => {
+  const handleShowClick = (showId: string) => {
     const newSelectedShowId = selectedShowId === showId ? null : showId;
     setSelectedShowId(newSelectedShowId);
     setSelectedScriptId(null);
@@ -149,28 +211,28 @@ export const useDashboardState = (shows) => {
     }, SCROLL_DELAY);
   };
 
-  const handleScriptClick = (scriptId) => {
+  const handleScriptClick = (scriptId: string) => {
     const newSelectedScriptId = selectedScriptId === scriptId ? null : scriptId;
     setSelectedScriptId(newSelectedScriptId);
   };
 
-  const handleVenueClick = (venueId) => {
+  const handleVenueClick = (venueId: string) => {
     const newSelectedVenueId = selectedVenueId === venueId ? null : venueId;
     setSelectedVenueId(newSelectedVenueId);
   };
 
-  const handleDepartmentClick = (departmentId) => {
+  const handleDepartmentClick = (departmentId: string) => {
     const newSelectedDepartmentId = selectedDepartmentId === departmentId ? null : departmentId;
     setSelectedDepartmentId(newSelectedDepartmentId);
   };
 
-  const handleCrewClick = (crewId) => {
+  const handleCrewClick = (crewId: string) => {
     const newSelectedCrewId = selectedCrewId === crewId ? null : crewId;
     setSelectedCrewId(newSelectedCrewId);
   };
 
   // View change handler
-  const handleViewChange = (newView) => {
+  const handleViewChange = (newView: string) => {
     setCurrentView(newView);
   };
 

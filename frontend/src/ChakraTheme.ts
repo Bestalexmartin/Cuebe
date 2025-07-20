@@ -1,8 +1,18 @@
 import { extendTheme } from '@chakra-ui/react';
 
+// TypeScript interfaces
+interface ToastConfig {
+  containerStyle: {
+    bg: string;
+    color: string;
+    width: string;
+    maxWidth: string;
+  };
+}
+
 // Chakra Config
 const config = {
-  initialColorMode: 'system',
+  initialColorMode: 'system' as const,
   useSystemColorMode: true,
 };
 
@@ -54,7 +64,7 @@ const components = {
 };
 
 // Toast configuration - use this for consistent toast styling
-export const toastConfig = {
+export const toastConfig: ToastConfig = {
   containerStyle: {
     bg: 'blue.400',
     color: 'white',
@@ -64,7 +74,7 @@ export const toastConfig = {
 };
 
 const styles = {
-  global: (props) => ({
+  global: () => ({
     body: {
       bg: 'page.background',
       color: 'page.text',
