@@ -42,7 +42,7 @@ const INITIAL_FORM_STATE: CrewFormData = {
 
 // User role options based on typical theatre crew roles
 const USER_ROLE_OPTIONS: UserRoleOption[] = [
-    { value: 'crew', label: 'Crew Member' },
+    { value: 'crew', label: 'Crew' },
     { value: 'assistant_director', label: 'Assistant Director' },
     { value: 'stage_manager', label: 'Stage Manager' },
     { value: 'assistant_stage_manager', label: 'Assistant Stage Manager' },
@@ -171,7 +171,6 @@ export const EditCrewPage: React.FC = () => {
     };
 
     const isSelfEdit = (): boolean => {
-        // Check if the current Clerk user ID matches the crew member's Clerk user ID
         if (!clerkUser || !crew) return false;
         return crew.clerk_user_id === clerkUser.id;
     };
@@ -206,11 +205,11 @@ export const EditCrewPage: React.FC = () => {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to remove crew member');
+                throw new Error('Failed to remove crew');
             }
 
             toast({
-                title: 'Crew Member Removed',
+                title: 'Crew Removed',
                 description: `"${getFullName()}" has been removed from your crew`,
                 status: 'success',
                 ...toastConfig,
@@ -225,10 +224,10 @@ export const EditCrewPage: React.FC = () => {
             });
 
         } catch (error) {
-            console.error('Error removing crew member:', error);
+            console.error('Error removing crew:', error);
             toast({
                 title: 'Error',
-                description: 'Failed to remove crew member. Please try again.',
+                description: 'Failed to remove crew. Please try again.',
                 status: 'error',
                 ...toastConfig,
             });
@@ -372,8 +371,8 @@ export const EditCrewPage: React.FC = () => {
                                         <Text fontSize="sm" color="detail.text">
                                             {formatRole(formData.userRole)}
                                         </Text>
-                                        <Text fontSize="xs" color="detail.text">
-                                            Added: {new Date(crew.dateCreated).toLocaleDateString()}
+                                         <Text fontSize="xs" color="detail.text">
+                                            Updated: {new Date(crew.dateUpdated).toLocaleDateString()}
                                         </Text>
                                     </HStack>
                                     <HStack justify="space-between" width="100%">
@@ -381,7 +380,7 @@ export const EditCrewPage: React.FC = () => {
                                             {formData.emailAddress}
                                         </Text>
                                         <Text fontSize="xs" color="detail.text">
-                                            Updated: {new Date(crew.dateUpdated).toLocaleDateString()}
+                                            Created: {new Date(crew.dateCreated).toLocaleDateString()}
                                         </Text>
                                     </HStack>
                                 </VStack>
@@ -395,7 +394,7 @@ export const EditCrewPage: React.FC = () => {
                                 <Textarea
                                     value={formData.notes}
                                     onChange={(e) => handleChange('notes', e.target.value)}
-                                    placeholder="Your private notes about this crew member"
+                                    placeholder="Your private notes about this crew"
                                     resize="vertical"
                                     minHeight="100px"
                                 />
@@ -512,7 +511,7 @@ export const EditCrewPage: React.FC = () => {
                 isOpen={isDeleteModalOpen}
                 onClose={handleDeleteCancel}
                 onConfirm={handleInitialDeleteConfirm}
-                entityType="Crew Member"
+                entityType="Crew"
                 entityName={getFullName()}
             />
 
@@ -521,9 +520,9 @@ export const EditCrewPage: React.FC = () => {
                 onClose={handleDeleteCancel}
                 onConfirm={handleFinalDeleteConfirm}
                 isLoading={isDeleting}
-                entityType="Crew Member"
+                entityType="Crew"
                 entityName={getFullName()}
-                warningMessage={`Removing this crew member will delete their relationship to your account and remove them from any show assignments.`}
+                warningMessage={`Removing this crew will delete their relationship to your account and remove them from any show assignments.`}
             />
         </Flex>
     );

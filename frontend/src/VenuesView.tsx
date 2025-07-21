@@ -88,14 +88,36 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
                     </HStack>
                     <HStack spacing="2">
                         <Menu>
-                            <MenuButton as={Button} size="xs" rightIcon={<AppIcon name="openmenu" />}>
-                                Sort by: {sortBy === 'venueName' ? 'Name' : sortBy === 'capacity' ? 'Capacity' : sortBy === 'venueType' ? 'Type' : 'Date Added'}
-                            </MenuButton>
+                            <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
                             <MenuList>
-                                <MenuItem onClick={() => handleSortClick('venueName')}>Name</MenuItem>
-                                <MenuItem onClick={() => handleSortClick('capacity')}>Capacity</MenuItem>
-                                <MenuItem onClick={() => handleSortClick('venueType')}>Type</MenuItem>
-                                <MenuItem onClick={() => handleSortClick('dateCreated')}>Date Added</MenuItem>
+                                <MenuItem
+                                    onClick={() => handleSortClick('venueName')}
+                                    color={sortBy === 'venueName' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'venueName' ? 'bold' : 'normal'}
+                                >
+                                    Name
+                                </MenuItem>
+                                <MenuItem
+                                    onClick={() => handleSortClick('capacity')}
+                                    color={sortBy === 'capacity' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'capacity' ? 'bold' : 'normal'}
+                                >
+                                    Capacity
+                                </MenuItem>
+                                <MenuItem
+                                    onClick={() => handleSortClick('venueType')}
+                                    color={sortBy === 'venueType' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'venueType' ? 'bold' : 'normal'}
+                                >
+                                    Type
+                                </MenuItem>
+                                <MenuItem
+                                    onClick={() => handleSortClick('dateCreated')}
+                                    color={sortBy === 'dateCreated' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
+                                >
+                                    Date Added
+                                </MenuItem>
                             </MenuList>
                         </Menu>
                         <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
