@@ -152,9 +152,14 @@ export const ShowCard: React.FC<ShowCardProps> = ({
           </Button>
         </HStack>
       </Flex>
-      <Text fontSize="sm" color="detail.text" mt={2} ml={4}>
-        {venueName} • {formatDateFriendly(show.showDate)}
-      </Text>
+      <HStack justify="space-between" fontSize="sm" color="detail.text" mt={2} ml={4}>
+        <Text>
+          {venueName} • {formatDateFriendly(show.showDate)}
+        </Text>
+        <Text fontSize="xs">
+          Created: {formatDateTimeLocal(show.dateCreated)}
+        </Text>
+      </HStack>
       <HStack
         justify="space-between"
         fontSize="sm"
@@ -232,8 +237,8 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                             {script.scriptStatus.toUpperCase()}
                           </Badge>
                           <Text>
-                            Updated:{" "}
-                            {formatDateTimeLocal(script.dateUpdated)}
+                            Created:{" "}
+                            {formatDateTimeLocal(script.dateCreated)}
                           </Text>
                         </HStack>
                         <HStack
@@ -247,8 +252,8 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                             {formatTimeLocal(script.startTime)}
                           </Text>
                           <Text>
-                            Created:{" "}
-                            {formatDateTimeLocal(script.dateCreated)}
+                            Updated:{" "}
+                            {formatDateTimeLocal(script.dateUpdated)}
                           </Text>
                         </HStack>
                         {script.lastUsed && (
@@ -280,13 +285,6 @@ export const ShowCard: React.FC<ShowCardProps> = ({
             </Box>
           </Box>
 
-          {/* Show creation date at bottom right */}
-          <Flex justify="flex-end" mt="3">
-            <Text fontSize="xs" color="detail.text">
-              Created:{" "}
-              {formatDateTimeLocal(show.dateCreated || show.dateUpdated)}
-            </Text>
-          </Flex>
         </VStack>
       </Collapse>
     </Box >

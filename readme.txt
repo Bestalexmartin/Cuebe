@@ -72,3 +72,4 @@ Monday Jul 29, 2025
 1) Completed delete functionality for all elements, including two stage deletion for show and crew, plus major revisions to modals and edit pages
 2) Refactored sort controls and general visual improvements
 3) Cleanup of scrolling on edit pages and minor UI fixes
+4) General UI/UX cleanup, pruned unused endpoints

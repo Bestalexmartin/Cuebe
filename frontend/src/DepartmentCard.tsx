@@ -105,7 +105,12 @@ export const DepartmentCard: React.FC<DepartmentCardProps> = ({
 
             {/* Quick Info Row */}
             <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text" ml={4}>
-                <Text>0 crew members</Text>
+                <HStack justify="space-between">
+                    <Text>0 crew members</Text>
+                    <Text fontSize="xs">
+                        Created: {formatDateTimeLocal(department.dateCreated || department.dateUpdated)}
+                    </Text>
+                </HStack>
                 <HStack justify="space-between">
                     <Text>0 shows assigned</Text>
                     <Text fontSize="xs">
@@ -154,12 +159,6 @@ export const DepartmentCard: React.FC<DepartmentCardProps> = ({
                         </Box>
                     )}
 
-                    {/* Created Date */}
-                    <Flex justify="flex-end">
-                        <Text fontSize="xs" color="detail.text">
-                            Created: {formatDateTimeLocal(department.dateCreated || department.dateUpdated)}
-                        </Text>
-                    </Flex>
                 </VStack>
             </Collapse>
         </Box >

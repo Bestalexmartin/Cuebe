@@ -61,6 +61,7 @@ class CrewMemberWithRelationship(BaseModel):
     userStatus: str
     userRole: str
     createdBy: Optional[UUID] = None
+    notes: Optional[str] = None  # Notes from User table
     isActive: bool
     dateCreated: datetime
     dateUpdated: datetime
@@ -215,10 +216,3 @@ class ScriptElement(BaseModel):
             return int(v.total_seconds())
         return v
 
-# =============================================================================
-# GUEST ACCESS SCHEMAS
-# =============================================================================
-
-class GuestLinkCreate(BaseModel):
-    departmentID: UUID  # CHANGED TO UUID
-    linkName: Optional[str] = None
