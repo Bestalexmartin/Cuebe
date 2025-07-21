@@ -20,6 +20,7 @@ import {
 import { toastConfig } from '../../ChakraTheme';
 import { useFormManager } from '../../hooks/useFormManager';
 import { useResource } from '../../hooks/useResource';
+import { convertLocalToUTC } from '../../utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface Venue {
@@ -81,7 +82,7 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
     if (isOpen) {
       refetchVenues();
     }
-  }, [isOpen, refetchVenues]);
+  }, [isOpen]); // Removed refetchVenues from dependencies to prevent infinite loop
 
   const handleVenueSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -116,9 +117,9 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
       const showData = {
         showName: formData.showName,
         venueID: venueId || null,
-        showDate: formData.showDate || null,
+        showDate: convertLocalToUTC(formData.showDate),
         showNotes: formData.showNotes || null,
-        deadline: formData.deadline || null,
+        deadline: convertLocalToUTC(formData.deadline),
       };
 
       await submitForm(
@@ -201,7 +202,7 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
             <FormControl>
               <FormLabel>Show Date</FormLabel>
               <Input
-                type="date"
+                type="datetime-local"
                 value={formData.showDate}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('showDate', e.target.value)}
               />
@@ -229,23 +230,23 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
 
         <ModalFooter>
           <Button
+            size="xs"
+            mr={3}
+            onClick={handleModalClose}
+            _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
+          >
+            Cancel
+          </Button>
+          <Button
             bg="blue.400"
             color="white"
             size="xs"
-            mr={3}
             type="submit"
             isLoading={isSubmitting}
             isDisabled={!isFormValid()}
             _hover={{ bg: 'orange.400' }}
           >
             Create Show
-          </Button>
-          <Button
-            size="xs"
-            onClick={handleModalClose}
-            _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
-          >
-            Cancel
           </Button>
         </ModalFooter>
       </ModalContent>

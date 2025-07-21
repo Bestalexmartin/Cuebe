@@ -194,13 +194,7 @@ export const CrewCard: React.FC<CrewCardProps> = ({
                         </Box>
                     )}
 
-                    {/* Future: Show Assignments */}
-                    <Box>
-                        <Text fontWeight="semibold" mb={2}>Show Assignments</Text>
-                        <Text fontSize="sm" color="detail.text" fontStyle="italic" ml={4}>
-                            Show assignments will appear here when implemented
-                        </Text>
-                    </Box>
+                    {/* TODO: Show Assignments section will be added later */}
 
                     {/* Created Date */}
                     <Flex justify="flex-end">

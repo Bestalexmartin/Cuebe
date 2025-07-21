@@ -26,8 +26,6 @@ interface CrewFormData {
     fullnameFirst: string;
     fullnameLast: string;
     userRole: string;
-    phoneNumber: string;
-    notes: string;
 }
 
 interface CreateCrewModalProps {
@@ -52,8 +50,6 @@ const INITIAL_FORM_STATE: CrewFormData = {
     fullnameFirst: '',
     fullnameLast: '',
     userRole: 'crew',
-    phoneNumber: '',
-    notes: '',
 };
 
 const ROLE_OPTIONS: RoleOption[] = [
@@ -98,8 +94,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
 
                 if (existingUser) {
                     const relationshipData = {
-                        crew_user_id: existingUser.ID,
-                        notes: formData.notes.trim() || null
+                        crew_user_id: existingUser.ID
                     };
 
                     await submitForm(
@@ -114,8 +109,6 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
                         fullnameFirst: formData.fullnameFirst,
                         fullnameLast: formData.fullnameLast,
                         userRole: formData.userRole,
-                        phoneNumber: formData.phoneNumber || null,
-                        notes: formData.notes || null,
                     };
 
                     await submitForm(
@@ -205,47 +198,28 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
                                 ))}
                             </Select>
                         </FormControl>
-
-                        <FormControl>
-                            <FormLabel>Phone Number</FormLabel>
-                            <Input
-                                type="tel"
-                                placeholder="(555) 123-4567"
-                                value={formData.phoneNumber}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('phoneNumber', e.target.value)}
-                            />
-                        </FormControl>
-
-                        <FormControl>
-                            <FormLabel>Notes</FormLabel>
-                            <Input
-                                placeholder="Additional notes about this crew member"
-                                value={formData.notes}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('notes', e.target.value)}
-                            />
-                        </FormControl>
                     </VStack>
                 </ModalBody>
 
                 <ModalFooter>
                     <Button
+                        size="xs"
+                        mr={3}
+                        onClick={handleModalClose}
+                        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
                         bg="blue.400"
                         color="white"
                         size="xs"
-                        mr={3}
                         type="submit"
                         isLoading={isSubmitting}
                         isDisabled={!isFormValid()}
                         _hover={{ bg: 'orange.400' }}
                     >
                         Add Crew Member
-                    </Button>
-                    <Button
-                        size="xs"
-                        onClick={handleModalClose}
-                        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
-                    >
-                        Cancel
                     </Button>
                 </ModalFooter>
             </ModalContent>

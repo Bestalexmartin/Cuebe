@@ -131,7 +131,7 @@ async def create_guest_user_with_relationship(
         userRole=guest_data.userRole,
         userStatus=models.UserStatus.GUEST,  # Explicitly set as guest
         phoneNumber=guest_data.phoneNumber,
-        notes=guest_data.notes,
+        notes=None,  # Notes belong in the relationship, not the user
         createdBy=user.userID,  # Track who created this guest user
         clerk_user_id=None,  # No Clerk integration yet
         userName=None,
@@ -179,14 +179,14 @@ async def read_crew_members(
     
     return my_crew
 
-@app.get("/api/crew/{crew_id}", response_model=schemas.User)
+@app.get("/api/crew/{crew_id}", response_model=schemas.CrewMemberWithRelationship)
 async def get_crew_member(
     crew_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Get a single crew member by ID.
+    Get a single crew member by ID with relationship notes.
     Only returns crew members that the current user manages or is themselves.
     """
     crew_member = db.query(models.User).filter(models.User.userID == crew_id).first()
@@ -194,8 +194,12 @@ async def get_crew_member(
     if not crew_member:
         raise HTTPException(status_code=404, detail="Crew member not found")
     
-    # Security check: User can only access themselves or crew they manage
-    if crew_member.userID != user.userID: # type: ignore
+    # Determine if this is a self-access vs manager-access
+    is_self_access = crew_member.userID == user.userID
+    
+    # Get relationship data for manager access
+    relationship = None
+    if not is_self_access:
         # Check if current user manages this crew member
         relationship = db.query(models.CrewRelationship).filter(
             models.CrewRelationship.manager_user_id == user.userID,
@@ -206,7 +210,28 @@ async def get_crew_member(
         if not relationship:
             raise HTTPException(status_code=403, detail="Not authorized to access this crew member")
     
-    return crew_member
+    # Create response combining user data with appropriate notes
+    crew_data = {
+        # User fields
+        "userID": crew_member.userID,
+        "clerk_user_id": crew_member.clerk_user_id,
+        "emailAddress": crew_member.emailAddress,
+        "fullnameFirst": crew_member.fullnameFirst,
+        "fullnameLast": crew_member.fullnameLast,
+        "userName": crew_member.userName,
+        "profileImgURL": crew_member.profileImgURL,
+        "phoneNumber": crew_member.phoneNumber,
+        "userStatus": crew_member.userStatus.value if crew_member.userStatus else "guest",
+        "userRole": crew_member.userRole,
+        "createdBy": crew_member.createdBy,
+        "isActive": crew_member.isActive,
+        "dateCreated": crew_member.dateCreated,
+        "dateUpdated": crew_member.dateUpdated,
+        # Notes field - use relationship notes for manager access, user notes for self access
+        "relationshipNotes": relationship.notes if relationship else crew_member.notes
+    }
+    
+    return schemas.CrewMemberWithRelationship(**crew_data)
 
 @app.patch("/api/crew/{crew_id}", response_model=schemas.User)
 async def update_crew_member(
@@ -240,15 +265,55 @@ async def update_crew_member(
     update_data = crew_update.model_dump(exclude_unset=True)
     logger.info(f"Updating crew member {crew_id} with data: {update_data}")
     
-    # Don't allow changing certain fields for verified users
-    if crew_member.userStatus == models.UserStatus.VERIFIED: # type: ignore
-        # Remove fields that shouldn't be changed for verified users
-        update_data.pop('emailAddress', None)
-        logger.info(f"Removed emailAddress from update for verified user {crew_id}")
+    # Determine if this is a self-edit vs manager-edit
+    is_self_edit = crew_member.userID == user.userID
     
-    for key, value in update_data.items():
-        if hasattr(crew_member, key):
-            setattr(crew_member, key, value)
+    if is_self_edit:
+        # User editing themselves - update their actual user data
+        logger.info(f"Self-edit detected for user {crew_id}")
+        
+        # Notes go to user record for self-edits (their personal notes)
+        # All fields are editable including contact info
+        for key, value in update_data.items():
+            if hasattr(crew_member, key):
+                setattr(crew_member, key, value)
+        
+    else:
+        # Manager editing crew member - use relationship-based logic
+        logger.info(f"Manager edit detected for crew member {crew_id}")
+        
+        # Handle notes separately - they belong to the relationship, not the user
+        relationship_notes = update_data.pop('notes', None)
+        
+        # Don't allow changing certain fields for verified users when manager is editing
+        if crew_member.userStatus == models.UserStatus.VERIFIED: # type: ignore
+            # Remove fields that shouldn't be changed for verified users (they own their contact info and role)
+            protected_fields = ['emailAddress', 'phoneNumber', 'fullnameFirst', 'fullnameLast', 'userRole']
+            for field in protected_fields:
+                if update_data.pop(field, None) is not None:
+                    logger.info(f"Removed {field} from update for verified user {crew_id} (manager edit)")
+        
+        # Update user fields (userRole, etc.)
+        for key, value in update_data.items():
+            if hasattr(crew_member, key):
+                setattr(crew_member, key, value)
+        
+        # Update relationship notes if provided
+        if relationship_notes is not None:
+            relationship = db.query(models.CrewRelationship).filter(
+                models.CrewRelationship.manager_user_id == user.userID,
+                models.CrewRelationship.crew_user_id == crew_id,
+                models.CrewRelationship.isActive == True
+            ).first()
+            
+            if relationship:
+                relationship.notes = relationship_notes
+                relationship.dateUpdated = datetime.utcnow()
+                logger.info(f"Updated relationship notes for crew member {crew_id}")
+        
+        # Clear user notes field for guest users (notes should be in relationship)
+        if crew_member.userStatus == models.UserStatus.GUEST:
+            crew_member.notes = None
     
     # Update the dateUpdated timestamp
     crew_member.dateUpdated = datetime.utcnow() # type: ignore
@@ -298,6 +363,39 @@ async def create_crew_relationship(
     db.commit()
     
     return {"message": "User added to your crew"}
+
+@app.delete("/api/crew-relationships/{crew_user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_crew_relationship(
+    crew_user_id: UUID,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a crew relationship (remove crew member from manager's crew)."""
+    # Find the crew relationship
+    relationship_to_delete = db.query(models.CrewRelationship).filter(
+        models.CrewRelationship.manager_user_id == user.userID,
+        models.CrewRelationship.crew_user_id == crew_user_id,
+        models.CrewRelationship.isActive == True
+    ).first()
+    
+    if not relationship_to_delete:
+        raise HTTPException(status_code=404, detail="Crew relationship not found")
+
+    # TODO: Future enhancement - Remove crew member from any show assignments
+    # When show assignments are implemented, add logic here to:
+    # 1. Find all show assignments for this crew member under this manager
+    # 2. Delete or deactivate those assignments
+    # 3. Log the cleanup for debugging
+    
+    # For now, just log that this will be needed
+    logger.info(f"Deleting crew relationship between manager {user.userID} and crew member {crew_user_id}")
+    logger.info("TODO: Remove crew member from show assignments when that feature is implemented")
+    
+    # Delete the crew relationship (this preserves the guest user account)
+    db.delete(relationship_to_delete)
+    db.commit()
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 # =============================================================================
 # VENUE ENDPOINTS
@@ -367,6 +465,39 @@ async def update_venue(
     db.commit()
     db.refresh(venue_to_update)
     return venue_to_update
+
+@app.delete("/api/venues/{venue_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_venue(
+    venue_id: UUID,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a venue and nullify venue references in shows."""
+    venue_to_delete = db.query(models.Venue).filter(
+        models.Venue.venueID == venue_id,
+        models.Venue.ownerID == user.userID
+    ).first()
+    if not venue_to_delete:
+        raise HTTPException(status_code=404, detail="Venue not found")
+
+    # First, nullify the venueID in any shows that reference this venue
+    shows_using_venue = db.query(models.Show).filter(
+        models.Show.venueID == venue_id,
+        models.Show.ownerID == user.userID  # Only update user's own shows
+    ).all()
+    
+    for show in shows_using_venue:
+        show.venueID = None # type: ignore
+        show.dateUpdated = datetime.utcnow() # type: ignore
+    
+    # Log the cleanup for debugging
+    if shows_using_venue:
+        logger.info(f"Nullified venue reference for {len(shows_using_venue)} shows when deleting venue {venue_id}")
+    
+    # Now delete the venue
+    db.delete(venue_to_delete)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 # =============================================================================
 # DEPARTMENT ENDPOINTS
@@ -443,6 +574,54 @@ async def update_department(
     
     return department_to_update
 
+@app.delete("/api/departments/{department_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_department(
+    department_id: UUID,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a department after checking for dependencies."""
+    department_to_delete = db.query(models.Department).filter(
+        models.Department.departmentID == department_id,
+        models.Department.ownerID == user.userID
+    ).first()
+    if not department_to_delete:
+        raise HTTPException(status_code=404, detail="Department not found")
+
+    # Check for dependent records that would prevent deletion
+    crew_assignments = db.query(models.CrewAssignment).filter(
+        models.CrewAssignment.departmentID == department_id
+    ).count()
+    
+    script_elements = db.query(models.ScriptElement).filter(
+        models.ScriptElement.departmentID == department_id
+    ).count()
+    
+    guest_links = db.query(models.GuestAccessLink).filter(
+        models.GuestAccessLink.departmentID == department_id
+    ).count()
+    
+    # If there are dependencies, prevent deletion and inform user
+    dependencies = []
+    if crew_assignments > 0:
+        dependencies.append(f"{crew_assignments} crew assignment(s)")
+    if script_elements > 0:
+        dependencies.append(f"{script_elements} script element(s)")
+    if guest_links > 0:
+        dependencies.append(f"{guest_links} guest access link(s)")
+    
+    if dependencies:
+        dependency_list = ", ".join(dependencies)
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot delete department. It is still referenced by: {dependency_list}. Please remove these references first."
+        )
+
+    # Safe to delete - no dependencies
+    db.delete(department_to_delete)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 # =============================================================================
 # SHOW ENDPOINTS
 # =============================================================================
@@ -469,7 +648,8 @@ async def create_show(
     # Create first draft script
     first_draft = models.Script(
         scriptName="First Draft",
-        showID=new_show.showID
+        showID=new_show.showID,
+        ownerID=user.userID
     )
     db.add(first_draft)
     db.commit()
@@ -546,6 +726,49 @@ async def update_show(
     
     return show_to_update
 
+@app.delete("/api/shows/{show_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_show(
+    show_id: UUID,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a show and all associated scripts."""
+    show_to_delete = db.query(models.Show).filter(
+        models.Show.showID == show_id,
+        models.Show.ownerID == user.userID
+    ).first()
+    if not show_to_delete:
+        raise HTTPException(status_code=404, detail="Show not found")
+
+    # Delete all scripts associated with this show
+    scripts_to_delete = db.query(models.Script).filter(
+        models.Script.showID == show_id,
+        models.Script.ownerID == user.userID
+    ).all()
+    
+    script_count = len(scripts_to_delete)
+    
+    # Delete script elements first (due to foreign key constraints)
+    for script in scripts_to_delete:
+        script_elements = db.query(models.ScriptElement).filter(
+            models.ScriptElement.scriptID == script.scriptID
+        ).all()
+        for element in script_elements:
+            db.delete(element)
+    
+    # Delete scripts
+    for script in scripts_to_delete:
+        db.delete(script)
+    
+    # Log the cleanup for debugging
+    if script_count > 0:
+        logger.info(f"Deleted {script_count} scripts and their elements when deleting show {show_id}")
+    
+    # Finally delete the show
+    db.delete(show_to_delete)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 # =============================================================================
 # SCRIPT ENDPOINTS
 # =============================================================================
@@ -571,6 +794,8 @@ async def create_script_for_show(
     new_script = models.Script(
         showID=show_id,
         scriptName=script.scriptName or "New Script",
+        scriptStatus=models.ScriptStatus(script.scriptStatus) if script.scriptStatus else models.ScriptStatus.DRAFT,
+        startTime=show.showDate,  # Inherit show datetime as start time
         ownerID=user.userID
     )
     db.add(new_script)
@@ -599,7 +824,7 @@ async def get_script(
         )
     
     # Check if user has access to this script (through direct ownership or show ownership)
-    if script.ownerID != user.userID and script.show.ownerID != user.userID:
+    if script.ownerID != user.userID and script.show.ownerID != user.userID: # type: ignore
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this script"
@@ -653,6 +878,46 @@ async def update_script(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update script: {str(e)}"
+        )
+
+@app.delete("/api/scripts/{script_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_script(
+    script_id: UUID,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a script and all its elements."""
+    # Query the script from database with show relationship for authorization
+    script = db.query(models.Script).options(
+        joinedload(models.Script.show)
+    ).filter(models.Script.scriptID == script_id).first()
+    
+    if not script:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Script not found"
+        )
+    
+    # Check if user has access to this script (through show ownership)
+    if script.show.ownerID != user.userID:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete this script"
+        )
+    
+    try:
+        # Delete the script (cascade will handle script elements)
+        db.delete(script)
+        db.commit()
+        
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete script {script_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete script: {str(e)}"
         )
 
 # =============================================================================
@@ -761,13 +1026,20 @@ async def handle_clerk_webhook(
         
         existing_user = db.query(models.User).filter(models.User.emailAddress == email).first()
 
-        if existing_user and existing_user.isActive is False:
-            logger.info(f"Reactivating user for email: {email}")
+        if existing_user:
+            # Update existing user (whether active guest or inactive user)
             existing_user.isActive = True # type: ignore
             existing_user.clerk_user_id = new_clerk_id
             existing_user.userName = user_data.get('username')
             existing_user.userStatus = models.UserStatus.VERIFIED # type: ignore
-        elif not existing_user:
+            # Update name and profile if provided by Clerk and not already set
+            if user_data.get('first_name') and not existing_user.fullnameFirst:
+                existing_user.fullnameFirst = user_data.get('first_name')
+            if user_data.get('last_name') and not existing_user.fullnameLast:
+                existing_user.fullnameLast = user_data.get('last_name')
+            if user_data.get('image_url'):
+                existing_user.profileImgURL = user_data.get('image_url')
+        else:
             logger.info(f"Creating new user for email: {email}")
             new_user = models.User(
                 clerk_user_id=new_clerk_id,

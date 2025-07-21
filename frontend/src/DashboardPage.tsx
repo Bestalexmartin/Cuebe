@@ -38,6 +38,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
   const { shows, isLoading, error, refetchShows } = useShows();
   const { activeModal, modalData, isOpen, openModal, closeModal } = useModalManager();
 
+  // Simple refresh key to force re-mounting/re-fetching
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const {
     selectedShowId,
     selectedScriptId,
@@ -92,7 +95,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
   // Data refresh handlers
   const handleDataRefresh = () => {
     refetchShows();
-    // Add other refetch calls as needed
+    setRefreshKey(prev => prev + 1); // Force re-mount of view components
   };
 
   const renderModal = () => {
@@ -162,6 +165,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
         >
           {activeView === 'shows' && (
             <ShowsView
+              key={`shows-${refreshKey}`}
               shows={shows}
               isLoading={isLoading}
               error={error}
@@ -179,6 +183,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
           )}
           {activeView === 'venues' && (
             <VenuesView
+              key={`venues-${refreshKey}`}
               onCreateVenue={handleCreateVenue}
               selectedVenueId={selectedVenueId}
               onVenueClick={handleVenueClick}
@@ -189,6 +194,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
           )}
           {activeView === 'departments' && (
             <DepartmentsView
+              key={`departments-${refreshKey}`}
               onCreateDepartment={handleCreateDepartment}
               selectedDepartmentId={selectedDepartmentId}
               onDepartmentClick={handleDepartmentClick}
@@ -199,6 +205,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
           )}
           {activeView === 'crew' && (
             <CrewView
+              key={`crew-${refreshKey}`}
               onCreateCrew={handleCreateCrew}
               selectedCrewId={selectedCrewId}
               onCrewClick={handleCrewClick}

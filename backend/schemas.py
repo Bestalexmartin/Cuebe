@@ -47,6 +47,30 @@ class CrewRelationshipCreate(BaseModel):
     crew_user_id: UUID  # CHANGED TO UUID
     notes: Optional[str] = None
 
+class CrewMemberWithRelationship(BaseModel):
+    """User data combined with relationship notes for crew management"""
+    # User fields
+    userID: UUID
+    clerk_user_id: Optional[str] = None
+    emailAddress: str
+    fullnameFirst: str
+    fullnameLast: str
+    userName: Optional[str] = None
+    profileImgURL: Optional[str] = None
+    phoneNumber: Optional[str] = None
+    userStatus: str
+    userRole: str
+    createdBy: Optional[UUID] = None
+    isActive: bool
+    dateCreated: datetime
+    dateUpdated: datetime
+    
+    # Relationship fields
+    relationshipNotes: Optional[str] = None  # Notes from CrewRelationship
+    
+    class Config:
+        from_attributes = True
+
 # =============================================================================
 # VENUE SCHEMAS
 # =============================================================================
@@ -54,6 +78,8 @@ class CrewRelationshipCreate(BaseModel):
 class VenueBase(BaseModel):
     venueName: str
     address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
     capacity: Optional[int] = None
     venueType: Optional[str] = None
     contactName: Optional[str] = None
@@ -105,7 +131,7 @@ class Department(BaseModel):
 class ShowCreate(BaseModel):
     showName: str
     venueID: Optional[UUID] = None
-    showDate: Optional[date] = None
+    showDate: Optional[datetime] = None
     showNotes: Optional[str] = None
     deadline: Optional[datetime] = None
 
@@ -114,7 +140,7 @@ class Show(BaseModel):
     ownerID: UUID
     showName: str
     venue: Optional[Venue] = None
-    showDate: Optional[date] = None
+    showDate: Optional[datetime] = None
     showNotes: Optional[str] = None
     deadline: Optional[datetime] = None
     dateCreated: datetime
@@ -132,6 +158,7 @@ class Show(BaseModel):
 
 class ScriptCreate(BaseModel):
     scriptName: Optional[str] = None
+    scriptStatus: Optional[str] = None
 
 class Script(BaseModel):
     scriptID: UUID  # ALREADY UUID

@@ -1,19 +1,26 @@
 // frontend/src/EditVenuePage.tsx
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
-    FormControl, FormLabel, Input, Textarea, Select
+    FormControl, FormLabel, Input, Textarea, Select, Divider,
+    useToast
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from '@clerk/clerk-react';
 import { useVenue } from "./hooks/useVenue";
 import { useFormManager } from './hooks/useFormManager';
 import { AppIcon } from './components/AppIcon';
+import { ActionsMenu, ActionItem } from './components/ActionsMenu';
+import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
+import { toastConfig } from './ChakraTheme';
 
 // TypeScript interfaces
 interface VenueFormData {
     venueName: string;
     address: string;
+    city: string;
+    state: string;
     capacity: string;
     venueType: string;
     contactName: string;
@@ -35,6 +42,8 @@ interface VenueTypeOption {
 const INITIAL_FORM_STATE: VenueFormData = {
     venueName: '',
     address: '',
+    city: '',
+    state: '',
     capacity: '',
     venueType: '',
     contactName: '',
@@ -61,6 +70,12 @@ const VENUE_TYPE_OPTIONS: VenueTypeOption[] = [
 export const EditVenuePage: React.FC = () => {
     const { venueId } = useParams<{ venueId: string }>();
     const navigate = useNavigate();
+    const { getToken } = useAuth();
+    const toast = useToast();
+
+    // Delete confirmation modal state
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch the initial venue data
     const { venue, isLoading: isLoadingVenue, error: venueError } = useVenue(venueId);
@@ -80,6 +95,8 @@ export const EditVenuePage: React.FC = () => {
             setFormData({
                 venueName: venue.venueName || '',
                 address: venue.address || '',
+                city: venue.city || '',
+                state: venue.state || '',
                 capacity: venue.capacity?.toString() || '',
                 venueType: venue.venueType || '',
                 contactName: venue.contactName || '',
@@ -111,6 +128,8 @@ export const EditVenuePage: React.FC = () => {
             const updateData = {
                 venueName: formData.venueName,
                 address: formData.address || null,
+                city: formData.city || null,
+                state: formData.state || null,
                 capacity: formData.capacity ? parseInt(formData.capacity) : null,
                 venueType: formData.venueType || null,
                 contactName: formData.contactName || null,
@@ -159,6 +178,68 @@ export const EditVenuePage: React.FC = () => {
         return formData.venueName.trim().length > 0;
     };
 
+    // Handle venue deletion
+    const handleDeleteVenue = async () => {
+        if (!venueId || !venue) return;
+
+        setIsDeleting(true);
+        try {
+            const token = await getToken();
+            const response = await fetch(`/api/venues/${venueId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete venue');
+            }
+
+            toast({
+                title: 'Venue Deleted',
+                description: `"${venue.venueName}" has been deleted successfully`,
+                status: 'success',
+                duration: 5000,
+                isClosable: true,
+                ...toastConfig,
+            });
+
+            // Navigate back to dashboard
+            navigate('/dashboard', {
+                state: {
+                    view: 'venues',
+                    returnFromEdit: true
+                }
+            });
+
+        } catch (error) {
+            console.error('Error deleting venue:', error);
+            toast({
+                title: 'Delete Failed',
+                description: 'Failed to delete venue. Please try again.',
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+                ...toastConfig,
+            });
+        } finally {
+            setIsDeleting(false);
+            setIsDeleteModalOpen(false);
+        }
+    };
+
+    // Configure actions menu
+    const actions: ActionItem[] = [
+        {
+            id: 'delete-venue',
+            label: 'Delete Venue',
+            onClick: () => setIsDeleteModalOpen(true),
+            isDestructive: true,
+            isDisabled: isSubmitting || isDeleting
+        }
+    ];
+
     return (
         <Flex
             as="form"
@@ -178,6 +259,11 @@ export const EditVenuePage: React.FC = () => {
                     </Heading>
                 </HStack>
                 <HStack spacing="2">
+                    <ActionsMenu 
+                        actions={actions} 
+                        isDisabled={isLoadingVenue || !venue}
+                    />
+                    <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
                     <Button
                         onClick={handleClose}
                         size="xs"
@@ -261,6 +347,26 @@ export const EditVenuePage: React.FC = () => {
                                 rows={3}
                             />
                         </FormControl>
+
+                        <HStack spacing={4}>
+                            <FormControl>
+                                <FormLabel>City</FormLabel>
+                                <Input
+                                    value={formData.city}
+                                    onChange={(e) => handleChange('city', e.target.value)}
+                                    placeholder="Enter city"
+                                />
+                            </FormControl>
+                            <FormControl>
+                                <FormLabel>State</FormLabel>
+                                <Input
+                                    value={formData.state}
+                                    onChange={(e) => handleChange('state', e.target.value)}
+                                    placeholder="CA"
+                                    maxLength={2}
+                                />
+                            </FormControl>
+                        </HStack>
 
                         {/* Capacity and Technical Specs - All on one row */}
                         <HStack spacing={4}>
@@ -369,6 +475,16 @@ export const EditVenuePage: React.FC = () => {
                     </VStack>
                 )}
             </Box>
+
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleDeleteVenue}
+                isLoading={isDeleting}
+                entityType="Venue"
+                entityName={venue?.venueName || ''}
+            />
         </Flex>
     );
 };

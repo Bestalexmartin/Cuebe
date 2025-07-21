@@ -4,27 +4,22 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 
 // TypeScript interfaces
-interface Department {
-  departmentID: string;
-  departmentName: string;
-}
-
 interface Crew {
-  crewID: string;
-  crewFirstName: string;
-  crewLastName: string;
-  crewEmail?: string;
-  crewPhone?: string;
-  crewAddress?: string;
-  crewCity?: string;
-  crewState?: string;
-  crewZip?: string;
-  crewCountry?: string;
-  crewNotes?: string;
-  departmentID: string;
-  department?: Department;
+  userID: string;
+  clerk_user_id?: string;
+  emailAddress: string;
+  fullnameFirst: string;
+  fullnameLast: string;
+  userName?: string;
+  profileImgURL?: string;
+  phoneNumber?: string;
+  userStatus: string;
+  userRole: string;
+  createdBy?: string;
+  isActive: boolean;
   dateCreated: string;
   dateUpdated: string;
+  relationshipNotes?: string; // Notes from the relationship, not user notes
 }
 
 interface UseCrewReturn {

@@ -1,14 +1,19 @@
 // frontend/src/EditDepartmentPage.tsx
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
-    FormControl, FormLabel, Input, Textarea
+    FormControl, FormLabel, Input, Textarea, Divider, useToast
 } from "@chakra-ui/react";
+import { formatDateTimeLocal } from './utils/dateTimeUtils';
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from '@clerk/clerk-react';
 import { useDepartment } from "./hooks/useDepartment";
 import { useFormManager } from './hooks/useFormManager';
 import { AppIcon } from './components/AppIcon';
+import { ActionsMenu, ActionItem } from './components/ActionsMenu';
+import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
+import { toastConfig } from './ChakraTheme';
 
 // TypeScript interfaces
 interface DepartmentFormData {
@@ -43,6 +48,12 @@ const PRESET_COLORS: PresetColor[] = [
 export const EditDepartmentPage: React.FC = () => {
     const { departmentId } = useParams<{ departmentId: string }>();
     const navigate = useNavigate();
+    const { getToken } = useAuth();
+    const toast = useToast();
+
+    // Delete confirmation modal state
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch the initial department data
     const { department, isLoading: isLoadingDepartment, error: departmentError } = useDepartment(departmentId);
@@ -121,6 +132,68 @@ export const EditDepartmentPage: React.FC = () => {
         return formData.departmentName.trim().length > 0 && formData.departmentColor.trim().length > 0;
     };
 
+    // Handle department deletion
+    const handleDeleteDepartment = async () => {
+        if (!departmentId || !department) return;
+
+        setIsDeleting(true);
+        try {
+            const token = await getToken();
+            const response = await fetch(`/api/departments/${departmentId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete department');
+            }
+
+            toast({
+                title: 'Department Deleted',
+                description: `"${department.departmentName}" has been deleted successfully`,
+                status: 'success',
+                duration: 5000,
+                isClosable: true,
+                ...toastConfig,
+            });
+
+            // Navigate back to dashboard
+            navigate('/dashboard', {
+                state: {
+                    view: 'departments',
+                    returnFromEdit: true
+                }
+            });
+
+        } catch (error) {
+            console.error('Error deleting department:', error);
+            toast({
+                title: 'Delete Failed',
+                description: 'Failed to delete department. Please try again.',
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+                ...toastConfig,
+            });
+        } finally {
+            setIsDeleting(false);
+            setIsDeleteModalOpen(false);
+        }
+    };
+
+    // Configure actions menu
+    const actions: ActionItem[] = [
+        {
+            id: 'delete-department',
+            label: 'Delete Department',
+            onClick: () => setIsDeleteModalOpen(true),
+            isDestructive: true,
+            isDisabled: isSubmitting || isDeleting
+        }
+    ];
+
     return (
         <Flex
             as="form"
@@ -140,6 +213,11 @@ export const EditDepartmentPage: React.FC = () => {
                     </Heading>
                 </HStack>
                 <HStack spacing="2">
+                    <ActionsMenu 
+                        actions={actions} 
+                        isDisabled={isLoadingDepartment || !department}
+                    />
+                    <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
                     <Button
                         onClick={handleClose}
                         size="xs"
@@ -189,7 +267,49 @@ export const EditDepartmentPage: React.FC = () => {
 
                 {/* Form Content */}
                 {!isLoadingDepartment && department && (
-                    <VStack spacing={6} align="stretch">
+                    <VStack spacing={6} align="stretch" height="100%">
+                        {/* Department Profile Preview */}
+                        <Box
+                            p="4"
+                            bg="gray.50"
+                            _dark={{ bg: "gray.700" }}
+                            borderRadius="md"
+                        >
+                            <HStack spacing="3" align="start">
+                                <Box
+                                    w="48px"
+                                    h="48px"
+                                    borderRadius="full"
+                                    bg={formData.departmentColor}
+                                    border="2px solid"
+                                    borderColor="gray.300"
+                                    _dark={{ borderColor: "gray.600" }}
+                                    flexShrink={0}
+                                />
+                                <VStack align="start" spacing="1" flex="1">
+                                    <HStack spacing="2" align="center">
+                                        <Text fontWeight="medium">{formData.departmentName || 'Department Name'}</Text>
+                                    </HStack>
+                                    <HStack justify="space-between" width="100%">
+                                        <Text fontSize="sm" color="detail.text">
+                                            Crew Members: 0
+                                        </Text>
+                                        <Text fontSize="xs" color="detail.text">
+                                            Created: {formatDateTimeLocal(department.dateCreated)}
+                                        </Text>
+                                    </HStack>
+                                    <HStack justify="space-between" width="100%">
+                                        <Text fontSize="sm" color="detail.text">
+                                            Shows Assigned: 0
+                                        </Text>
+                                        <Text fontSize="xs" color="detail.text">
+                                            Updated: {formatDateTimeLocal(department.dateUpdated)}
+                                        </Text>
+                                    </HStack>
+                                </VStack>
+                            </HStack>
+                        </Box>
+
                         {/* Basic Information */}
                         <FormControl isRequired>
                             <FormLabel>Department Name</FormLabel>
@@ -224,9 +344,6 @@ export const EditDepartmentPage: React.FC = () => {
                                         maxWidth="120px"
                                         fontFamily="mono"
                                     />
-                                    <Text fontSize="sm" color="detail.text">
-                                        Click the color box or enter a hex value
-                                    </Text>
                                 </HStack>
 
                                 {/* Preset Color Options */}
@@ -252,30 +369,6 @@ export const EditDepartmentPage: React.FC = () => {
                                         ))}
                                     </HStack>
                                 </Box>
-
-                                {/* Color Preview */}
-                                <Box>
-                                    <Text fontSize="sm" fontWeight="medium" mb="2">Preview:</Text>
-                                    <HStack spacing="3" align="center">
-                                        <Box
-                                            w="60px"
-                                            h="60px"
-                                            borderRadius="full"
-                                            bg={formData.departmentColor}
-                                            border="2px solid"
-                                            borderColor="gray.300"
-                                            _dark={{ borderColor: "gray.600" }}
-                                        />
-                                        <VStack align="start" spacing="0">
-                                            <Text fontSize="sm" fontWeight="medium">
-                                                {formData.departmentName || 'Department Name'}
-                                            </Text>
-                                            <Text fontSize="xs" color="detail.text">
-                                                {formData.departmentColor.toUpperCase()}
-                                            </Text>
-                                        </VStack>
-                                    </HStack>
-                                </Box>
                             </VStack>
                         </FormControl>
 
@@ -290,48 +383,20 @@ export const EditDepartmentPage: React.FC = () => {
                                 resize="vertical"
                                 minHeight="120px"
                             />
-                            <Text fontSize="xs" color="detail.text" mt="1">
-                                This description will help crew members understand the department's purpose and responsibilities.
-                            </Text>
                         </FormControl>
-
-                        {/* Department Statistics (Read-only) */}
-                        <Box
-                            p="4"
-                            bg="gray.50"
-                            _dark={{ bg: "gray.700" }}
-                            borderRadius="md"
-                        >
-                            <Text fontWeight="semibold" mb="3">Department Statistics</Text>
-                            <VStack align="stretch" spacing="2" fontSize="sm" color="detail.text">
-                                <HStack justify="space-between">
-                                    <Text>Crew Members:</Text>
-                                    <Text fontWeight="medium">0</Text>
-                                </HStack>
-                                <HStack justify="space-between">
-                                    <Text>Shows Assigned:</Text>
-                                    <Text fontWeight="medium">0</Text>
-                                </HStack>
-                                <HStack justify="space-between">
-                                    <Text>Created:</Text>
-                                    <Text fontWeight="medium">
-                                        {new Date(department.dateCreated).toLocaleDateString()}
-                                    </Text>
-                                </HStack>
-                                <HStack justify="space-between">
-                                    <Text>Last Updated:</Text>
-                                    <Text fontWeight="medium">
-                                        {new Date(department.dateUpdated).toLocaleDateString()}
-                                    </Text>
-                                </HStack>
-                            </VStack>
-                            <Text fontSize="xs" color="detail.text" mt="3" fontStyle="italic">
-                                Crew member and show assignment counts will be updated when those features are implemented.
-                            </Text>
-                        </Box>
                     </VStack>
                 )}
             </Box>
+
+            {/* Delete Confirmation Modal */}
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleDeleteDepartment}
+                isLoading={isDeleting}
+                entityType="Department"
+                entityName={department?.departmentName || ''}
+            />
         </Flex>
     );
 };

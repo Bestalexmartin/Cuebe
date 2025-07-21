@@ -10,6 +10,8 @@ interface Venue {
   venueType?: string;
   capacity?: number;
   address?: string;
+  city?: string;
+  state?: string;
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;

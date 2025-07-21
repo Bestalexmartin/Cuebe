@@ -6,6 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 import enum
+from datetime import datetime, timezone
 
 Base = declarative_base()
 
@@ -64,7 +65,7 @@ class User(Base):
     
     # Guest user management - CHANGED TO UUID
     createdBy = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=True)  # Who created this guest user
-    invitedAt = Column(DateTime, nullable=True)  # When invitation was sent
+    invitedAt = Column(DateTime(timezone=True), nullable=True)  # When invitation was sent
     invitationToken = Column(String, unique=True, nullable=True)  # For invitation links
     
     # Internal notes (for guest users)
@@ -72,8 +73,8 @@ class User(Base):
     
     # Status and timestamps
     isActive = Column(Boolean, default=True)
-    dateCreated = Column(DateTime, server_default=func.now())
-    dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
+    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     shows = relationship("Show", back_populates="showOwner")
@@ -103,8 +104,8 @@ class CrewRelationship(Base):
     # Status and metadata
     isActive = Column(Boolean, default=True, nullable=False)
     notes = Column(Text, nullable=True)
-    dateCreated = Column(DateTime, server_default=func.now())
-    dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
+    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
     manager = relationship("User", foreign_keys=[manager_user_id], back_populates="managed_crew")
@@ -127,6 +128,8 @@ class Venue(Base):
     
     # Location Information
     address = Column(Text, nullable=True)
+    city = Column(String, nullable=True)
+    state = Column(String, nullable=True)
     
     # Venue Details
     capacity = Column(Integer, nullable=True)
@@ -153,8 +156,8 @@ class Venue(Base):
     minimumRental = Column(Integer, nullable=True)  # Minimum rental amount
     
     # Timestamps
-    dateCreated = Column(DateTime, server_default=func.now())
-    dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
+    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     owner = relationship("User", foreign_keys=[ownerID])
@@ -178,8 +181,8 @@ class Department(Base):
     ownerID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)
     
     # Timestamps
-    dateCreated = Column(DateTime, server_default=func.now())
-    dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
+    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
     owner = relationship("User", foreign_keys=[ownerID])
@@ -197,17 +200,17 @@ class Show(Base):
 
     # Core show information
     showName = Column(String, index=True, nullable=False)
-    showDate = Column(Date, nullable=True)
+    showDate = Column(DateTime(timezone=True), nullable=True)
     showNotes = Column(Text, nullable=True)
-    deadline = Column(DateTime, nullable=True)
+    deadline = Column(DateTime(timezone=True), nullable=True)
     
     # Foreign keys - CHANGED TO UUID
     venueID = Column(UUID(as_uuid=True), ForeignKey("venuesTable.venueID"), nullable=True)
     ownerID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)
     
     # Timestamps
-    dateCreated = Column(DateTime, server_default=func.now())
-    dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
+    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     showOwner = relationship("User", back_populates="shows", foreign_keys=[ownerID])
@@ -235,7 +238,7 @@ class CrewAssignment(Base):
     
     # Assignment status and timestamps
     isActive = Column(Boolean, default=True, nullable=False)
-    dateAssigned = Column(DateTime, server_default=func.now())
+    dateAssigned = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
     user = relationship("User", back_populates="crew_assignments")
@@ -271,8 +274,8 @@ class Script(Base):
     ownerID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)
     
     # Timestamps
-    dateCreated = Column(DateTime, server_default=func.now())
-    dateUpdated = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
+    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     owner = relationship("User", foreign_keys=[ownerID])
@@ -330,7 +333,7 @@ class GuestAccessLink(Base):
 
     # Optional metadata
     linkName = Column(String, nullable=True)  # e.g., "Guest Mic 1"
-    expiresAt = Column(DateTime, nullable=True)
+    expiresAt = Column(DateTime(timezone=True), nullable=True)
     
     # Timestamps
     dateCreated = Column(DateTime, server_default=func.now())
