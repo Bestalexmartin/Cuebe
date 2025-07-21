@@ -14,6 +14,7 @@ import {
     Avatar
 } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
+import { formatDateTimeLocal } from './utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface CrewMember {
@@ -152,7 +153,7 @@ export const CrewCard: React.FC<CrewCardProps> = ({
                                 {crewMember.emailAddress}
                             </Text>
                             <Text fontSize="xs">
-                                Updated: {new Date(crewMember.dateUpdated).toLocaleDateString()}
+                                Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
                             </Text>
                         </HStack>
                     )
@@ -165,7 +166,7 @@ export const CrewCard: React.FC<CrewCardProps> = ({
                             {crewMember.phoneNumber}
                         </Text>
                         <Text fontSize="xs">
-                            Updated: {new Date(crewMember.dateUpdated).toLocaleDateString()}
+                            Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
                         </Text>
                     </HStack>
                 )}
@@ -174,7 +175,7 @@ export const CrewCard: React.FC<CrewCardProps> = ({
                 {!crewMember.emailAddress && !crewMember.phoneNumber && (
                     <Flex justify="flex-end">
                         <Text fontSize="xs">
-                            Updated: {new Date(crewMember.dateUpdated).toLocaleDateString()}
+                            Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
                         </Text>
                     </Flex>
                 )}
@@ -199,7 +200,7 @@ export const CrewCard: React.FC<CrewCardProps> = ({
                     {/* Created Date */}
                     <Flex justify="flex-end">
                         <Text fontSize="xs" color="detail.text">
-                            Created: {new Date(crewMember.dateCreated || crewMember.dateUpdated).toLocaleDateString()}
+                            Created: {formatDateTimeLocal(crewMember.dateCreated || crewMember.dateUpdated)}
                         </Text>
                     </Flex>
                 </VStack>

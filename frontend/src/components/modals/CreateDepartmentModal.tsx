@@ -56,10 +56,10 @@ const PRESET_COLORS: PresetColor[] = [
     { name: 'Yellow', value: '#ECC94B' },
 ];
 
-export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({ 
-    isOpen, 
-    onClose, 
-    onDepartmentCreated 
+export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
+    isOpen,
+    onClose,
+    onDepartmentCreated
 }) => {
     const {
         formData,
@@ -193,7 +193,7 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
 
                 <ModalFooter>
                     <Button
-                        size="xs"
+                        size="sm"
                         mr={3}
                         onClick={handleModalClose}
                         _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
@@ -203,7 +203,7 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
                     <Button
                         bg="blue.400"
                         color="white"
-                        size="xs"
+                        size="sm"
                         type="submit"
                         isLoading={isSubmitting}
                         isDisabled={!isFormValid()}

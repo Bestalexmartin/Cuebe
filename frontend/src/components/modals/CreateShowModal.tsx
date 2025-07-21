@@ -50,10 +50,10 @@ const INITIAL_FORM_STATE: ShowFormData = {
   deadline: '',
 };
 
-export const CreateShowModal: React.FC<CreateShowModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onShowCreated 
+export const CreateShowModal: React.FC<CreateShowModalProps> = ({
+  isOpen,
+  onClose,
+  onShowCreated
 }) => {
   const toast = useToast();
   const [isAddingNewVenue, setIsAddingNewVenue] = useState<boolean>(false);
@@ -74,7 +74,7 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
     isLoading: isLoadingVenues,
     createResource: createVenue,
     refetch: refetchVenues,
-  } = useResource<Venue[]>('/api/me/venues', {
+  } = useResource<Venue>('/api/me/venues', {
     fetchOnMount: false,
   });
 
@@ -109,7 +109,8 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
         toast({
           title: 'Venue Created',
           description: `"${newVenueName}" has been added to your venues`,
-          status: 'success',
+          duration: 5000,
+          isClosable: true,
           ...toastConfig,
         });
       }
@@ -181,7 +182,7 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
                   onChange={handleVenueSelectChange}
                   disabled={isLoadingVenues}
                 >
-                  {venues.map((venue) => (
+                  {venues?.map((venue) => (
                     <option key={venue.venueID} value={venue.venueID}>
                       {venue.venueName}
                     </option>
@@ -230,7 +231,7 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
 
         <ModalFooter>
           <Button
-            size="xs"
+            size="sm"
             mr={3}
             onClick={handleModalClose}
             _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
@@ -240,7 +241,7 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
           <Button
             bg="blue.400"
             color="white"
-            size="xs"
+            size="sm"
             type="submit"
             isLoading={isSubmitting}
             isDisabled={!isFormValid()}

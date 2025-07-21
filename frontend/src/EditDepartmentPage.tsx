@@ -153,7 +153,6 @@ export const EditDepartmentPage: React.FC = () => {
             toast({
                 title: 'Department Deleted',
                 description: `"${department.departmentName}" has been deleted successfully`,
-                status: 'success',
                 duration: 5000,
                 isClosable: true,
                 ...toastConfig,
@@ -172,7 +171,6 @@ export const EditDepartmentPage: React.FC = () => {
             toast({
                 title: 'Delete Failed',
                 description: 'Failed to delete department. Please try again.',
-                status: 'error',
                 duration: 5000,
                 isClosable: true,
                 ...toastConfig,
@@ -249,7 +247,7 @@ export const EditDepartmentPage: React.FC = () => {
                 borderRadius="md"
                 flexGrow={1}
                 overflowY="auto"
-                className="hide-scrollbar"
+                className="hide-scrollbar edit-form-container"
             >
                 {/* Loading State */}
                 {isLoadingDepartment && (
@@ -267,7 +265,7 @@ export const EditDepartmentPage: React.FC = () => {
 
                 {/* Form Content */}
                 {!isLoadingDepartment && department && (
-                    <VStack spacing={6} align="stretch" height="100%">
+                    <VStack spacing={6} align="stretch">
                         {/* Department Profile Preview */}
                         <Box
                             p="4"
@@ -373,13 +371,12 @@ export const EditDepartmentPage: React.FC = () => {
                         </FormControl>
 
                         {/* Department Description */}
-                        <FormControl display="flex" flexDirection="column" flexGrow={1}>
+                        <FormControl>
                             <FormLabel>Department Description</FormLabel>
                             <Textarea
                                 value={formData.departmentDescription}
                                 onChange={(e) => handleChange('departmentDescription', e.target.value)}
                                 placeholder="Describe this department's role and responsibilities"
-                                flexGrow={1}
                                 resize="vertical"
                                 minHeight="120px"
                             />

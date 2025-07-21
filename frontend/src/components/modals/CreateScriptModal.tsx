@@ -45,11 +45,11 @@ const INITIAL_FORM_STATE: ScriptFormData = {
     scriptStatus: 'DRAFT',
 };
 
-export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({ 
-    isOpen, 
-    onClose, 
-    showId, 
-    onScriptCreated 
+export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
+    isOpen,
+    onClose,
+    showId,
+    onScriptCreated
 }) => {
     const {
         formData,
@@ -133,7 +133,7 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
 
                 <ModalFooter>
                     <Button
-                        size="xs"
+                        size="sm"
                         mr={3}
                         onClick={handleModalClose}
                         _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
@@ -143,7 +143,7 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
                     <Button
                         bg="blue.400"
                         color="white"
-                        size="xs"
+                        size="sm"
                         type="submit"
                         isLoading={isSubmitting}
                         isDisabled={!isFormValid()}

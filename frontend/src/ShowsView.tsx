@@ -46,6 +46,9 @@ interface ShowsViewProps {
     handleScriptClick: (scriptId: string) => void;
     onCreateScript: (showId: string) => void;
     onSaveNavigationState: () => void;
+    sortBy: SortBy;
+    sortDirection: SortDirection;
+    onSortChange: (sortBy: SortBy, sortDirection: SortDirection) => void;
 }
 
 type SortBy = 'showName' | 'showDate' | 'dateUpdated';
@@ -65,18 +68,18 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
     handleScriptClick,
     onCreateScript,
     onSaveNavigationState,
+    sortBy,
+    sortDirection,
+    onSortChange,
 }) => {
-    // Shows-specific sorting state
-    const [sortBy, setSortBy] = useState<SortBy>('dateUpdated');
-    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-
     // Shows-specific sorting logic
     const handleSortClick = (newSortBy: SortBy): void => {
         if (sortBy === newSortBy) {
-            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+            const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            onSortChange(newSortBy, newDirection);
         } else {
-            setSortBy(newSortBy);
-            setSortDirection(newSortBy === 'dateUpdated' ? 'desc' : 'asc');
+            const newDirection = newSortBy === 'dateUpdated' ? 'desc' : 'asc';
+            onSortChange(newSortBy, newDirection);
         }
     };
 

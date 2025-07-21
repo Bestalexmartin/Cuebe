@@ -56,12 +56,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
     handleCrewClick,
     showCardRefs,
     shows: safeShows,
-    currentView,
     handleViewChange: hookHandleViewChange,
-    saveNavigationState,
     saveCurrentNavigationState,
-    restoreNavigationState,
-    clearNavigationState,
+    sortState,
+    updateSortState,
   } = useDashboardState(shows);
 
   // Use local state for activeView, initialized from currentView
@@ -179,6 +177,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
               handleScriptClick={handleScriptClick}
               onCreateScript={handleCreateScript}
               onSaveNavigationState={saveCurrentNavigationState}
+              sortBy={sortState.shows.sortBy}
+              sortDirection={sortState.shows.sortDirection}
+              onSortChange={(sortBy, sortDirection) => updateSortState('shows', sortBy, sortDirection)}
             />
           )}
           {activeView === 'venues' && (
@@ -190,6 +191,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
               hoveredCardId={hoveredCardId}
               setHoveredCardId={setHoveredCardId}
               onSaveNavigationState={saveCurrentNavigationState}
+              sortBy={sortState.venues.sortBy}
+              sortDirection={sortState.venues.sortDirection}
+              onSortChange={(sortBy, sortDirection) => updateSortState('venues', sortBy, sortDirection)}
             />
           )}
           {activeView === 'departments' && (
@@ -201,6 +205,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
               hoveredCardId={hoveredCardId}
               setHoveredCardId={setHoveredCardId}
               onSaveNavigationState={saveCurrentNavigationState}
+              sortBy={sortState.departments.sortBy}
+              sortDirection={sortState.departments.sortDirection}
+              onSortChange={(sortBy, sortDirection) => updateSortState('departments', sortBy, sortDirection)}
             />
           )}
           {activeView === 'crew' && (
@@ -212,6 +219,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
               hoveredCardId={hoveredCardId}
               setHoveredCardId={setHoveredCardId}
               onSaveNavigationState={saveCurrentNavigationState}
+              sortBy={sortState.crew.sortBy}
+              sortDirection={sortState.crew.sortDirection}
+              onSortChange={(sortBy, sortDirection) => updateSortState('crew', sortBy, sortDirection)}
             />
           )}
         </Box>

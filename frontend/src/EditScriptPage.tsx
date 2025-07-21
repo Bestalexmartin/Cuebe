@@ -180,7 +180,8 @@ export const EditScriptPage: React.FC = () => {
             toast({
                 title: 'Script Deleted',
                 description: `"${script?.scriptName}" has been permanently deleted`,
-                status: 'success',
+                duration: 5000,
+                isClosable: true,
                 ...toastConfig,
             });
 
@@ -198,7 +199,8 @@ export const EditScriptPage: React.FC = () => {
             toast({
                 title: 'Error',
                 description: 'Failed to delete script. Please try again.',
-                status: 'error',
+                duration: 5000,
+                isClosable: true,
                 ...toastConfig,
             });
         } finally {
@@ -270,10 +272,11 @@ export const EditScriptPage: React.FC = () => {
                 border="1px solid"
                 borderColor="container.border"
                 p="4"
+                pb="8"
                 borderRadius="md"
                 flexGrow={1}
                 overflowY="auto"
-                className="hide-scrollbar"
+                className="hide-scrollbar edit-form-container"
             >
                 {/* Loading State */}
                 {isLoadingScript && (
@@ -291,7 +294,7 @@ export const EditScriptPage: React.FC = () => {
 
                 {/* Form Content */}
                 {!isLoadingScript && script && (
-                    <VStack spacing={4} align="stretch" height="100%">
+                    <VStack spacing={4} align="stretch">
                         <FormControl isRequired>
                             <FormLabel>Script Name</FormLabel>
                             <Input
@@ -325,18 +328,18 @@ export const EditScriptPage: React.FC = () => {
                             />
                         </FormControl>
 
-                        {/* Script Content Section - takes remaining space */}
+                        {/* Script Content Section */}
                         <Box
                             p="4"
                             bg="gray.50"
                             _dark={{ bg: "gray.700" }}
                             borderRadius="md"
-                            flexGrow={1}
+                            minHeight="200px"
                             display="flex"
                             flexDirection="column"
                         >
                             <Text fontWeight="semibold" mb="2">Script Content</Text>
-                            <Box flexGrow={1} display="flex" alignItems="center" justifyContent="center">
+                            <Box minHeight="150px" display="flex" alignItems="center" justifyContent="center">
                                 <Text fontSize="sm" color="detail.text" fontStyle="italic" textAlign="center">
                                     Script content editing will be implemented in a future version.
                                     For now, you can manage the script metadata above.

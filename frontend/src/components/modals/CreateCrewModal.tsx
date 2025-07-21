@@ -64,10 +64,10 @@ const ROLE_OPTIONS: RoleOption[] = [
     { value: 'admin', label: 'Administrator' },
 ];
 
-export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({ 
-    isOpen, 
-    onClose, 
-    onCrewCreated 
+export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
+    isOpen,
+    onClose,
+    onCrewCreated
 }) => {
     const { getToken } = useAuth();
 
@@ -151,7 +151,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
                 border="2px solid"
                 borderColor="gray.600"
             >
-                <ModalHeader>Add New Crew Member</ModalHeader>
+                <ModalHeader>Add New Crew</ModalHeader>
                 <ModalCloseButton />
                 <ModalBody pb={6}>
                     <VStack spacing={4} align="stretch">
@@ -203,7 +203,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
 
                 <ModalFooter>
                     <Button
-                        size="xs"
+                        size="sm"
                         mr={3}
                         onClick={handleModalClose}
                         _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
@@ -213,13 +213,13 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
                     <Button
                         bg="blue.400"
                         color="white"
-                        size="xs"
+                        size="sm"
                         type="submit"
                         isLoading={isSubmitting}
                         isDisabled={!isFormValid()}
                         _hover={{ bg: 'orange.400' }}
                     >
-                        Add Crew Member
+                        Add Crew
                     </Button>
                 </ModalFooter>
             </ModalContent>
