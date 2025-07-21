@@ -295,7 +295,7 @@ export const EditDepartmentPage: React.FC = () => {
                                             Crew Members: 0
                                         </Text>
                                         <Text fontSize="xs" color="detail.text">
-                                            Created: {formatDateTimeLocal(department.dateCreated)}
+                                            Updated: {formatDateTimeLocal(department.dateUpdated)}
                                         </Text>
                                     </HStack>
                                     <HStack justify="space-between" width="100%">
@@ -303,7 +303,7 @@ export const EditDepartmentPage: React.FC = () => {
                                             Shows Assigned: 0
                                         </Text>
                                         <Text fontSize="xs" color="detail.text">
-                                            Updated: {formatDateTimeLocal(department.dateUpdated)}
+                                            Created: {formatDateTimeLocal(department.dateCreated)}
                                         </Text>
                                     </HStack>
                                 </VStack>

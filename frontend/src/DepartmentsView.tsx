@@ -7,6 +7,7 @@ import { AppIcon } from './components/AppIcon';
 import { DepartmentCard } from './DepartmentCard';
 import { useDepartments } from './hooks/useDepartments';
 
+
 // TypeScript interfaces
 interface DepartmentsViewProps {
     onCreateDepartment: () => void;
@@ -101,13 +102,29 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
                     </HStack>
                     <HStack spacing="2">
                         <Menu>
-                            <MenuButton as={Button} size="xs" rightIcon={<AppIcon name="openmenu" />}>
-                                Sort by: {sortBy === 'departmentName' ? 'Name' : sortBy === 'departmentColor' ? 'Color' : 'Date Added'}
-                            </MenuButton>
+                            <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
                             <MenuList>
-                                <MenuItem onClick={() => handleSortClick('departmentName')}>Name</MenuItem>
-                                <MenuItem onClick={() => handleSortClick('departmentColor')}>Color</MenuItem>
-                                <MenuItem onClick={() => handleSortClick('dateCreated')}>Date Added</MenuItem>
+                                <MenuItem
+                                    onClick={() => handleSortClick('departmentName')}
+                                    color={sortBy === 'departmentName' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'departmentName' ? 'bold' : 'normal'}
+                                >
+                                    Name
+                                </MenuItem>
+                                <MenuItem
+                                    onClick={() => handleSortClick('departmentColor')}
+                                    color={sortBy === 'departmentColor' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'departmentColor' ? 'bold' : 'normal'}
+                                >
+                                    Color
+                                </MenuItem>
+                                <MenuItem
+                                    onClick={() => handleSortClick('dateCreated')}
+                                    color={sortBy === 'dateCreated' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
+                                >
+                                    Date Added
+                                </MenuItem>
                             </MenuList>
                         </Menu>
                         <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />

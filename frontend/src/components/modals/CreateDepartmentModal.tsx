@@ -133,17 +133,6 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
                         </FormControl>
 
                         <FormControl>
-                            <FormLabel>Description</FormLabel>
-                            <Textarea
-                                placeholder="Describe the department's role and responsibilities"
-                                value={formData.departmentDescription}
-                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateField('departmentDescription', e.target.value)}
-                                rows={3}
-                                resize="vertical"
-                            />
-                        </FormControl>
-
-                        <FormControl>
                             <FormLabel>Department Color</FormLabel>
                             <VStack align="stretch" spacing={3}>
                                 <HStack>
@@ -163,7 +152,6 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
                                         flex="1"
                                     />
                                 </HStack>
-
                                 <Box>
                                     <Text fontSize="sm" color="gray.500" mb={2}>
                                         Quick Colors:
@@ -186,23 +174,20 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
                                         ))}
                                     </HStack>
                                 </Box>
-
-                                <HStack>
-                                    <Text fontSize="sm" color="gray.500">Preview:</Text>
-                                    <Box
-                                        width="100px"
-                                        height="30px"
-                                        backgroundColor={formData.departmentColor}
-                                        border="1px solid"
-                                        borderColor="gray.300"
-                                        borderRadius="md"
-                                    />
-                                    <Text fontSize="sm" fontWeight="bold" color={formData.departmentColor}>
-                                        {formData.departmentName || 'Department Name'}
-                                    </Text>
-                                </HStack>
                             </VStack>
                         </FormControl>
+
+                        <FormControl>
+                            <FormLabel>Description</FormLabel>
+                            <Textarea
+                                placeholder="Describe the department's role and responsibilities"
+                                value={formData.departmentDescription}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateField('departmentDescription', e.target.value)}
+                                rows={3}
+                                resize="vertical"
+                            />
+                        </FormControl>
+
                     </VStack>
                 </ModalBody>
 

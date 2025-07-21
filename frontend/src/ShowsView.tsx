@@ -7,45 +7,45 @@ import { ShowCard } from "./ShowCard";
 
 // TypeScript interfaces
 interface Venue {
-  venueID: string;
-  venueName: string;
+    venueID: string;
+    venueName: string;
 }
 
 interface Script {
-  scriptID: string;
-  scriptName: string;
-  scriptStatus: string;
-  showID: string;
-  startTime: string;
-  dateCreated: string;
-  dateUpdated: string;
-  lastUsed?: string;
+    scriptID: string;
+    scriptName: string;
+    scriptStatus: string;
+    showID: string;
+    startTime: string;
+    dateCreated: string;
+    dateUpdated: string;
+    lastUsed?: string;
 }
 
 interface Show {
-  showID: string;
-  showName: string;
-  showDate?: string;
-  dateCreated: string;
-  dateUpdated: string;
-  venue?: Venue;
-  scripts: Script[];
+    showID: string;
+    showName: string;
+    showDate?: string;
+    dateCreated: string;
+    dateUpdated: string;
+    venue?: Venue;
+    scripts: Script[];
 }
 
 interface ShowsViewProps {
-  shows: Show[];
-  isLoading: boolean;
-  error: string | null;
-  onCreateShow: () => void;
-  selectedShowId: string | null;
-  hoveredCardId: string | null;
-  setHoveredCardId: (id: string | null) => void;
-  handleShowClick: (showId: string) => void;
-  showCardRefs: React.MutableRefObject<{[key: string]: HTMLElement | null}>;
-  selectedScriptId: string | null;
-  handleScriptClick: (scriptId: string) => void;
-  onCreateScript: (showId: string) => void;
-  onSaveNavigationState: () => void;
+    shows: Show[];
+    isLoading: boolean;
+    error: string | null;
+    onCreateShow: () => void;
+    selectedShowId: string | null;
+    hoveredCardId: string | null;
+    setHoveredCardId: (id: string | null) => void;
+    handleShowClick: (showId: string) => void;
+    showCardRefs: React.MutableRefObject<{ [key: string]: HTMLElement | null }>;
+    selectedScriptId: string | null;
+    handleScriptClick: (scriptId: string) => void;
+    onCreateScript: (showId: string) => void;
+    onSaveNavigationState: () => void;
 }
 
 type SortBy = 'showName' | 'showDate' | 'dateUpdated';
@@ -100,16 +100,6 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
         return showsToSort;
     }, [shows, sortBy, sortDirection]);
 
-    // Create the sort button text
-    const getSortButtonText = (): string => {
-        switch (sortBy) {
-            case 'showName': return 'Name';
-            case 'showDate': return 'Show Date';
-            case 'dateUpdated': return 'Updated';
-            default: return 'Updated';
-        }
-    };
-
     return (
         <Flex direction="column" height="100%">
             {/* Header Section */}
@@ -120,13 +110,29 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                 </HStack>
                 <HStack spacing="2">
                     <Menu>
-                        <MenuButton as={Button} size="xs" rightIcon={<AppIcon name="openmenu" />}>
-                            Sort by: {getSortButtonText()}
-                        </MenuButton>
+                        <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
                         <MenuList>
-                            <MenuItem onClick={() => handleSortClick('showName')}>Name</MenuItem>
-                            <MenuItem onClick={() => handleSortClick('showDate')}>Show Date</MenuItem>
-                            <MenuItem onClick={() => handleSortClick('dateUpdated')}>Updated</MenuItem>
+                            <MenuItem
+                                onClick={() => handleSortClick('showName')}
+                                color={sortBy === 'showName' ? 'blue.400' : 'inherit'}
+                                fontWeight={sortBy === 'showName' ? 'bold' : 'normal'}
+                            >
+                                Name
+                            </MenuItem>
+                            <MenuItem
+                                onClick={() => handleSortClick('showDate')}
+                                color={sortBy === 'showDate' ? 'blue.400' : 'inherit'}
+                                fontWeight={sortBy === 'showDate' ? 'bold' : 'normal'}
+                            >
+                                Show Date
+                            </MenuItem>
+                            <MenuItem
+                                onClick={() => handleSortClick('dateUpdated')}
+                                color={sortBy === 'dateUpdated' ? 'blue.400' : 'inherit'}
+                                fontWeight={sortBy === 'dateUpdated' ? 'bold' : 'normal'}
+                            >
+                                Updated
+                            </MenuItem>
                         </MenuList>
                     </Menu>
                     <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
@@ -172,7 +178,7 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                     sortedShows.length > 0 ? (
                         <VStack spacing={4} align="stretch">
                             {sortedShows.map(show => (
-                                <div key={show.showID} ref={el => showCardRefs.current[show.showID] = el}>
+                                <div key={show.showID} ref={el => { showCardRefs.current[show.showID] = el; }}>
                                     <ShowCard
                                         show={show}
                                         sortBy={sortBy}

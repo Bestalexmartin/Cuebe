@@ -9,19 +9,22 @@ import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
 import { FaMasksTheater } from "react-icons/fa6";
 import { EditIcon } from "@chakra-ui/icons";
+import { GoSortAsc, GoSortDesc } from "react-icons/go";
 
 // TypeScript interfaces
-type IconName = 
-  | 'openmenu' 
-  | 'hamburger' 
-  | 'edit' 
+type IconName =
+  | 'openmenu'
+  | 'hamburger'
+  | 'edit'
   | 'delete'
   | 'warning'
-  | 'pinned' 
-  | 'show' 
-  | 'venue' 
-  | 'department' 
-  | 'crew';
+  | 'pinned'
+  | 'show'
+  | 'venue'
+  | 'department'
+  | 'crew'
+  | 'asc'
+  | 'desc';
 
 interface AppIconProps extends Omit<IconProps, 'as'> {
   name: IconName;
@@ -49,6 +52,10 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={BiSolidMegaphone} {...props} />;
     case 'crew':
       return <Icon as={IoPeopleSharp} {...props} />;
+    case 'asc':
+      return <Icon as={GoSortAsc} {...props} />;
+    case 'desc':
+      return <Icon as={GoSortDesc} {...props} />;
     default:
       return null;
   }

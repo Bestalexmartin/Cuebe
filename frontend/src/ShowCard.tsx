@@ -151,25 +151,6 @@ export const ShowCard: React.FC<ShowCardProps> = ({
           >
             Edit
           </Button>
-          <Divider
-            orientation="vertical"
-            height="20px"
-            borderColor="gray.400"
-            mx="2"
-          />
-          <Button
-            bg="blue.400"
-            size="xs"
-            color="white"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              onCreateScriptClick(show.showID);
-            }}
-            _hover={{ bg: "orange.400" }}
-            _focus={{ boxShadow: "none" }}
-          >
-            Create Script
-          </Button>
         </HStack>
       </Flex>
       <Text fontSize="sm" color="detail.text" mt={2} ml={4}>
@@ -198,9 +179,24 @@ export const ShowCard: React.FC<ShowCardProps> = ({
         >
           {/* Scripts Section */}
           <Box>
-            <Text fontWeight="semibold" mb={4}>
-              Scripts
-            </Text>
+            <Flex justify="space-between" align="center" flexShrink={0} mb={4}>
+              <Text fontWeight="semibold">
+                Scripts
+              </Text>
+              <Button
+                bg="blue.400"
+                size="xs"
+                color="white"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  onCreateScriptClick(show.showID);
+                }}
+                _hover={{ bg: "orange.400" }}
+                _focus={{ boxShadow: "none" }}
+              >
+                Create Script
+              </Button>
+            </Flex>
             <Box pl="4">
               {sortedScripts.length > 0 ? (
                 <VStack spacing={2} align="stretch">
@@ -237,8 +233,8 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                             {script.scriptStatus.toUpperCase()}
                           </Badge>
                           <Text>
-                            Created:{" "}
-                            {formatDateTimeLocal(script.dateCreated)}
+                            Updated:{" "}
+                            {formatDateTimeLocal(script.dateUpdated)}
                           </Text>
                         </HStack>
                         <HStack
@@ -252,8 +248,8 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                             {formatTimeLocal(script.startTime)}
                           </Text>
                           <Text>
-                            Updated:{" "}
-                            {formatDateTimeLocal(script.dateUpdated)}
+                            Created:{" "}
+                            {formatDateTimeLocal(script.dateCreated)}
                           </Text>
                         </HStack>
                         {script.lastUsed && (
@@ -294,6 +290,6 @@ export const ShowCard: React.FC<ShowCardProps> = ({
           </Flex>
         </VStack>
       </Collapse>
-    </Box>
+    </Box >
   );
 };
