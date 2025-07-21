@@ -112,17 +112,22 @@ export const VenueCard: React.FC<VenueCardProps> = ({
 
             {/* Quick Info Rows */}
             <VStack align="stretch" spacing="1" color="detail.text" fontSize="sm" ml={4}>
-                <HStack spacing="4">
-                    {venue.venueType && (
-                        <Badge variant="outline" colorScheme="green">
-                            {venue.venueType}
-                        </Badge>
-                    )}
-                    {venue.capacity && (
-                        <Text>
-                            Capacity: {formatCapacity(venue.capacity)}
-                        </Text>
-                    )}
+                <HStack justify="space-between">
+                    <HStack spacing="4">
+                        {venue.venueType && (
+                            <Badge variant="outline" colorScheme="green">
+                                {venue.venueType}
+                            </Badge>
+                        )}
+                        {venue.capacity && (
+                            <Text>
+                                Capacity: {formatCapacity(venue.capacity)}
+                            </Text>
+                        )}
+                    </HStack>
+                    <Text fontSize="xs">
+                        Created: {formatDateTimeLocal(venue.dateCreated || venue.dateUpdated)}
+                    </Text>
                 </HStack>
                 <HStack justify="space-between">
                     {venue.address ? (
@@ -201,12 +206,6 @@ export const VenueCard: React.FC<VenueCardProps> = ({
                         </Box>
                     )}
 
-                    {/* Created Date */}
-                    <Flex justify="flex-end">
-                        <Text fontSize="xs" color="detail.text">
-                            Created: {formatDateTimeLocal(venue.dateCreated || venue.dateUpdated)}
-                        </Text>
-                    </Flex>
                 </VStack>
             </Collapse>
         </Box>

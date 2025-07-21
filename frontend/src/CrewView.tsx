@@ -15,9 +15,9 @@ interface CrewViewProps {
     hoveredCardId?: string | null;
     setHoveredCardId: (id: string | null) => void;
     onSaveNavigationState?: () => void;
-    sortBy: 'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated';
+    sortBy: 'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated' | 'dateUpdated';
     sortDirection: 'asc' | 'desc';
-    onSortChange: (sortBy: 'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated', sortDirection: 'asc' | 'desc') => void;
+    onSortChange: (sortBy: 'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated' | 'dateUpdated', sortDirection: 'asc' | 'desc') => void;
 }
 
 export const CrewView: React.FC<CrewViewProps> = ({
@@ -40,7 +40,7 @@ export const CrewView: React.FC<CrewViewProps> = ({
             const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
             onSortChange(newSortBy, newDirection);
         } else {
-            const newDirection = newSortBy === 'dateCreated' ? 'desc' : 'asc';
+            const newDirection = (newSortBy === 'dateCreated' || newSortBy === 'dateUpdated') ? 'desc' : 'asc';
             onSortChange(newSortBy, newDirection);
         }
     };
@@ -67,8 +67,10 @@ export const CrewView: React.FC<CrewViewProps> = ({
                 const aEmail = a.emailAddress || 'zzz';
                 const bEmail = b.emailAddress || 'zzz';
                 comparison = aEmail.localeCompare(bEmail);
-            } else {
+            } else if (sortBy === 'dateCreated') {
                 comparison = new Date(b.dateCreated || b.dateUpdated).getTime() - new Date(a.dateCreated || a.dateUpdated).getTime();
+            } else {
+                comparison = new Date(b.dateUpdated || b.dateCreated).getTime() - new Date(a.dateUpdated || a.dateCreated).getTime();
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
@@ -132,6 +134,13 @@ export const CrewView: React.FC<CrewViewProps> = ({
                                     fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
                                 >
                                     Date Added
+                                </MenuItem>
+                                <MenuItem
+                                    onClick={() => handleSortClick('dateUpdated')}
+                                    color={sortBy === 'dateUpdated' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'dateUpdated' ? 'bold' : 'normal'}
+                                >
+                                    Updated
                                 </MenuItem>
                             </MenuList>
                         </Menu>

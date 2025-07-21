@@ -2,7 +2,6 @@
 
 import os
 import time
-import secrets
 from typing import Dict
 from uuid import UUID
 import logging
@@ -159,14 +158,14 @@ async def create_guest_user_with_relationship(
 # CREW ENDPOINTS
 # =============================================================================
 
-@app.get("/api/me/crews", response_model=list[schemas.User])
+@app.get("/api/me/crews", response_model=list[schemas.CrewMemberWithRelationship])
 async def read_crew_members(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get crews for the current user (themselves + users they manage)."""
-    # Show current user + users they manage via CrewRelationship
-    my_crew = db.query(models.User).filter(
+    """Get crews for the current user (themselves + users they manage) with relationship data."""
+    # Get all crew members (current user + users they manage)
+    crew_members = db.query(models.User).filter(
         or_(
             models.User.userID == user.userID,  # Show yourself
             models.User.userID.in_(  # Show users you manage
@@ -177,7 +176,43 @@ async def read_crew_members(
         )
     ).all()
     
-    return my_crew
+    # Build response with relationship data
+    crew_response = []
+    for crew_member in crew_members:
+        # Get relationship data if this is not the current user
+        relationship = None
+        if crew_member.userID != user.userID:
+            relationship = db.query(models.CrewRelationship).filter(
+                models.CrewRelationship.manager_user_id == user.userID,
+                models.CrewRelationship.crew_user_id == crew_member.userID,
+                models.CrewRelationship.isActive == True
+            ).first()
+        
+        # Create response data combining user data with relationship notes
+        crew_data = {
+            # User fields
+            "userID": crew_member.userID,
+            "clerk_user_id": crew_member.clerk_user_id,
+            "emailAddress": crew_member.emailAddress,
+            "fullnameFirst": crew_member.fullnameFirst,
+            "fullnameLast": crew_member.fullnameLast,
+            "userName": crew_member.userName,
+            "profileImgURL": crew_member.profileImgURL,
+            "phoneNumber": crew_member.phoneNumber,
+            "userStatus": crew_member.userStatus.value if crew_member.userStatus else "guest",
+            "userRole": crew_member.userRole,
+            "createdBy": crew_member.createdBy,
+            "notes": crew_member.notes,  # Notes from User table
+            "isActive": crew_member.isActive,
+            "dateCreated": crew_member.dateCreated,
+            "dateUpdated": crew_member.dateUpdated,
+            # Include both user notes and relationship notes
+            "relationshipNotes": relationship.notes if relationship else None
+        }
+        
+        crew_response.append(schemas.CrewMemberWithRelationship(**crew_data))
+    
+    return crew_response
 
 @app.get("/api/crew/{crew_id}", response_model=schemas.CrewMemberWithRelationship)
 async def get_crew_member(
@@ -224,11 +259,12 @@ async def get_crew_member(
         "userStatus": crew_member.userStatus.value if crew_member.userStatus else "guest",
         "userRole": crew_member.userRole,
         "createdBy": crew_member.createdBy,
+        "notes": crew_member.notes,  # Notes from User table
         "isActive": crew_member.isActive,
         "dateCreated": crew_member.dateCreated,
         "dateUpdated": crew_member.dateUpdated,
-        # Notes field - use relationship notes for manager access, user notes for self access
-        "relationshipNotes": relationship.notes if relationship else crew_member.notes
+        # Include relationship notes separately
+        "relationshipNotes": relationship.notes if relationship else None
     }
     
     return schemas.CrewMemberWithRelationship(**crew_data)
@@ -597,18 +633,12 @@ async def delete_department(
         models.ScriptElement.departmentID == department_id
     ).count()
     
-    guest_links = db.query(models.GuestAccessLink).filter(
-        models.GuestAccessLink.departmentID == department_id
-    ).count()
-    
     # If there are dependencies, prevent deletion and inform user
     dependencies = []
     if crew_assignments > 0:
         dependencies.append(f"{crew_assignments} crew assignment(s)")
     if script_elements > 0:
         dependencies.append(f"{script_elements} script element(s)")
-    if guest_links > 0:
-        dependencies.append(f"{guest_links} guest access link(s)")
     
     if dependencies:
         dependency_list = ", ".join(dependencies)
@@ -920,76 +950,6 @@ async def delete_script(
             detail=f"Failed to delete script: {str(e)}"
         )
 
-# =============================================================================
-# GUEST ACCESS ENDPOINTS
-# =============================================================================
-
-@app.post("/api/shows/{show_id}/guest-links")
-def create_guest_link_for_show(
-    show_id: UUID,
-    request: schemas.GuestLinkCreate,
-    user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Create a guest access link for a specific show and department."""
-    # Verify the show exists and user owns it
-    show = db.query(models.Show).filter(models.Show.showID == show_id).first()
-    if not show:
-        raise HTTPException(status_code=404, detail="Show not found")
-    
-    if show.ownerID != user.userID: # type: ignore
-        raise HTTPException(status_code=403, detail="Not authorized to create guest links for this show")
-    
-    # Verify the department exists
-    department = db.query(models.Department).filter(models.Department.departmentID == request.departmentID).first()
-    if not department:
-        raise HTTPException(status_code=404, detail="Department not found")
-    
-    # Generate a secure, URL-safe token
-    token = secrets.token_urlsafe(32)
-    
-    new_link = models.GuestAccessLink(
-        accessToken=token,
-        showID=show_id,
-        departmentID=request.departmentID,
-        linkName=request.linkName
-    )
-    db.add(new_link)
-    db.commit()
-    db.refresh(new_link)
-    
-    return {"guest_access_url": f"/guest/{token}"}
-
-@app.get("/api/guest/{access_token}", response_model=list[schemas.ScriptElement])
-def get_script_for_guest(access_token: str, db: Session = Depends(get_db)):
-    """Get script elements for a guest user via access token."""
-    # Find the link in the database
-    link = db.query(models.GuestAccessLink).filter(models.GuestAccessLink.accessToken == access_token).first()
-    
-    if not link:
-        raise HTTPException(status_code=404, detail="Access link not found or invalid")
-    
-    # Check if link is expired
-    if link.expiresAt and link.expiresAt < datetime.now(): # type: ignore
-        raise HTTPException(status_code=403, detail="Access link has expired")
-        
-    # Find the "live" script for the show this link belongs to
-    script = db.query(models.Script).filter(
-        models.Script.showID == link.showID,
-        models.Script.scriptStatus == 'live'
-    ).first()
-
-    if not script:
-        raise HTTPException(status_code=404, detail="Live script for this show not found")
-
-    # Fetch only the active calls for the department associated with this link
-    elements = db.query(models.ScriptElement).filter(
-        models.ScriptElement.scriptID == script.scriptID,
-        models.ScriptElement.departmentID == link.departmentID,
-        models.ScriptElement.isActive == True
-    ).order_by(models.ScriptElement.elementOrder).all()
-
-    return elements
 
 # =============================================================================
 # CLERK WEBHOOK

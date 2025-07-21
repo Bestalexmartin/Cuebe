@@ -26,10 +26,10 @@ interface Show {
 }
 
 interface SortState {
-  shows: { sortBy: 'showName' | 'showDate' | 'dateUpdated'; sortDirection: 'asc' | 'desc' };
-  venues: { sortBy: 'venueName' | 'capacity' | 'venueType' | 'dateCreated'; sortDirection: 'asc' | 'desc' };
-  crew: { sortBy: 'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated'; sortDirection: 'asc' | 'desc' };
-  departments: { sortBy: 'departmentName' | 'departmentColor' | 'dateCreated'; sortDirection: 'asc' | 'desc' };
+  shows: { sortBy: 'showName' | 'showDate' | 'dateUpdated' | 'dateCreated'; sortDirection: 'asc' | 'desc' };
+  venues: { sortBy: 'venueName' | 'capacity' | 'venueType' | 'dateCreated' | 'dateUpdated'; sortDirection: 'asc' | 'desc' };
+  crew: { sortBy: 'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated' | 'dateUpdated'; sortDirection: 'asc' | 'desc' };
+  departments: { sortBy: 'departmentName' | 'departmentColor' | 'dateCreated' | 'dateUpdated'; sortDirection: 'asc' | 'desc' };
 }
 
 interface SelectedState {

@@ -313,31 +313,3 @@ class ScriptElement(Base):
     script = relationship("Script", back_populates="elements")
     department = relationship("Department")
 
-# =============================================================================
-# GUEST ACCESS MODELS
-# =============================================================================
-
-class GuestAccessLink(Base):
-    """Secure links for guest users to access their call information"""
-    __tablename__ = "guestAccessLinksTable"
-    
-    # Primary key - CHANGED TO UUID
-    linkID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    
-    # Access token
-    accessToken = Column(String, unique=True, index=True, nullable=False)
-    
-    # What this link provides access to - ALREADY UUID
-    showID = Column(UUID(as_uuid=True), ForeignKey("showsTable.showID"), nullable=False)
-    departmentID = Column(UUID(as_uuid=True), ForeignKey("departmentsTable.departmentID"), nullable=False)
-
-    # Optional metadata
-    linkName = Column(String, nullable=True)  # e.g., "Guest Mic 1"
-    expiresAt = Column(DateTime(timezone=True), nullable=True)
-    
-    # Timestamps
-    dateCreated = Column(DateTime, server_default=func.now())
-
-    # Relationships
-    show = relationship("Show")
-    department = relationship("Department")

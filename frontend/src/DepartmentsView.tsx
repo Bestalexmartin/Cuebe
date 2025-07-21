@@ -16,9 +16,9 @@ interface DepartmentsViewProps {
     hoveredCardId?: string | null;
     setHoveredCardId: (id: string | null) => void;
     onSaveNavigationState?: () => void;
-    sortBy: 'departmentName' | 'departmentColor' | 'dateCreated';
+    sortBy: 'departmentName' | 'departmentColor' | 'dateCreated' | 'dateUpdated';
     sortDirection: 'asc' | 'desc';
-    onSortChange: (sortBy: 'departmentName' | 'departmentColor' | 'dateCreated', sortDirection: 'asc' | 'desc') => void;
+    onSortChange: (sortBy: 'departmentName' | 'departmentColor' | 'dateCreated' | 'dateUpdated', sortDirection: 'asc' | 'desc') => void;
 }
 
 export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
@@ -76,8 +76,10 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
                     return hue < 0 ? hue + 360 : hue;
                 };
                 comparison = getHue(a.departmentColor) - getHue(b.departmentColor);
-            } else {
+            } else if (sortBy === 'dateCreated') {
                 comparison = new Date(b.dateCreated || b.dateUpdated).getTime() - new Date(a.dateCreated || a.dateUpdated).getTime();
+            } else {
+                comparison = new Date(b.dateUpdated || b.dateCreated).getTime() - new Date(a.dateUpdated || a.dateCreated).getTime();
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
@@ -127,6 +129,13 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
                                     fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
                                 >
                                     Date Added
+                                </MenuItem>
+                                <MenuItem
+                                    onClick={() => handleSortClick('dateUpdated')}
+                                    color={sortBy === 'dateUpdated' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'dateUpdated' ? 'bold' : 'normal'}
+                                >
+                                    Updated
                                 </MenuItem>
                             </MenuList>
                         </Menu>

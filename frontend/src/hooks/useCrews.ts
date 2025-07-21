@@ -14,7 +14,9 @@ interface CrewMember {
     userStatus?: string;
     isActive?: boolean;
     profileImgURL?: string;
-    notes?: string;
+    notes?: string; // User table notes
+    relationshipNotes?: string; // Relationship table notes
+    clerk_user_id?: string; // To identify current user
     dateCreated: string;
     dateUpdated: string;
 }

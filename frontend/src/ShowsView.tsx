@@ -51,7 +51,7 @@ interface ShowsViewProps {
     onSortChange: (sortBy: SortBy, sortDirection: SortDirection) => void;
 }
 
-type SortBy = 'showName' | 'showDate' | 'dateUpdated';
+type SortBy = 'showName' | 'showDate' | 'dateUpdated' | 'dateCreated';
 type SortDirection = 'asc' | 'desc';
 
 export const ShowsView: React.FC<ShowsViewProps> = ({
@@ -95,6 +95,8 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                 if (!a.showDate) return 1;
                 if (!b.showDate) return -1;
                 comparison = new Date(a.showDate).getTime() - new Date(b.showDate).getTime();
+            } else if (sortBy === 'dateCreated') {
+                comparison = new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime();
             } else {
                 comparison = new Date(b.dateUpdated).getTime() - new Date(a.dateUpdated).getTime();
             }
@@ -128,6 +130,13 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                                 fontWeight={sortBy === 'showDate' ? 'bold' : 'normal'}
                             >
                                 Show Date
+                            </MenuItem>
+                            <MenuItem
+                                onClick={() => handleSortClick('dateCreated')}
+                                color={sortBy === 'dateCreated' ? 'blue.400' : 'inherit'}
+                                fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
+                            >
+                                Date Added
                             </MenuItem>
                             <MenuItem
                                 onClick={() => handleSortClick('dateUpdated')}

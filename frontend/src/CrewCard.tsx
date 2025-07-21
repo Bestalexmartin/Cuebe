@@ -13,6 +13,7 @@ import {
     Heading,
     Avatar
 } from "@chakra-ui/react";
+import { useUser } from '@clerk/clerk-react';
 import { AppIcon } from './components/AppIcon';
 import { formatDateTimeLocal } from './utils/dateTimeUtils';
 
@@ -27,7 +28,9 @@ interface CrewMember {
     userStatus?: string;
     isActive?: boolean;
     profileImgURL?: string;
-    notes?: string;
+    notes?: string; // User table notes
+    relationshipNotes?: string; // Relationship table notes
+    clerk_user_id?: string; // To identify if this is the current user
     dateCreated: string;
     dateUpdated: string;
 }
@@ -51,6 +54,7 @@ export const CrewCard: React.FC<CrewCardProps> = ({
     onHover,
     onSaveNavigationState
 }) => {
+    const { user: clerkUser } = useUser();
     const borderColor = isHovered ? 'orange.400' : isSelected ? 'blue.400' : 'gray.600';
 
     const handleEditClick = (e: React.MouseEvent) => {
@@ -87,6 +91,17 @@ export const CrewCard: React.FC<CrewCardProps> = ({
                 {isVerified ? "Verified" : "Guest"}
             </Badge>
         );
+    };
+
+    const getNotesToShow = (): string | undefined => {
+        // If this is the current user viewing their own card, always show user notes
+        const isCurrentUser = clerkUser && crewMember.clerk_user_id === clerkUser.id;
+        if (isCurrentUser) {
+            return crewMember.notes; // User table notes
+        }
+
+        // For all other users (both verified and guest): show relationship notes
+        return crewMember.relationshipNotes; // Relationship table notes
     };
 
     return (
@@ -139,45 +154,75 @@ export const CrewCard: React.FC<CrewCardProps> = ({
                     )}
                 </HStack>
 
-                {/* Email - always show if present */}
-                {crewMember.emailAddress && (
-                    crewMember.phoneNumber ? (
-                        // Has both email and phone - email gets its own line
-                        <Text isTruncated>
-                            {crewMember.emailAddress}
-                        </Text>
-                    ) : (
-                        // Has email but no phone - email gets the updated date
+                {/* Handle different combinations of email and phone with dates */}
+                {crewMember.emailAddress && crewMember.phoneNumber ? (
+                    // Both email and phone present
+                    <>
                         <HStack justify="space-between">
                             <Text isTruncated>
                                 {crewMember.emailAddress}
                             </Text>
                             <Text fontSize="xs">
+                                Created: {formatDateTimeLocal(crewMember.dateCreated)}
+                            </Text>
+                        </HStack>
+                        <HStack justify="space-between">
+                            <Text isTruncated>
+                                {crewMember.phoneNumber}
+                            </Text>
+                            <Text fontSize="xs">
                                 Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
                             </Text>
                         </HStack>
-                    )
-                )}
-
-                {/* Phone - always gets updated date if it's the last item */}
-                {crewMember.phoneNumber && (
-                    <HStack justify="space-between">
-                        <Text isTruncated>
-                            {crewMember.phoneNumber}
-                        </Text>
-                        <Text fontSize="xs">
-                            Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
-                        </Text>
-                    </HStack>
-                )}
-
-                {/* If neither email nor phone, put updated date on badges row */}
-                {!crewMember.emailAddress && !crewMember.phoneNumber && (
-                    <Flex justify="flex-end">
-                        <Text fontSize="xs">
-                            Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
-                        </Text>
-                    </Flex>
+                    </>
+                ) : crewMember.emailAddress ? (
+                    // Only email present - need another line for both dates
+                    <>
+                        <HStack justify="space-between">
+                            <Text isTruncated>
+                                {crewMember.emailAddress}
+                            </Text>
+                            <Text fontSize="xs">
+                                Created: {formatDateTimeLocal(crewMember.dateCreated)}
+                            </Text>
+                        </HStack>
+                        <HStack justify="flex-end">
+                            <Text fontSize="xs">
+                                Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
+                            </Text>
+                        </HStack>
+                    </>
+                ) : crewMember.phoneNumber ? (
+                    // Only phone present - need another line for both dates
+                    <>
+                        <HStack justify="space-between">
+                            <Text isTruncated>
+                                {crewMember.phoneNumber}
+                            </Text>
+                            <Text fontSize="xs">
+                                Created: {formatDateTimeLocal(crewMember.dateCreated)}
+                            </Text>
+                        </HStack>
+                        <HStack justify="flex-end">
+                            <Text fontSize="xs">
+                                Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
+                            </Text>
+                        </HStack>
+                    </>
+                ) : (
+                    // Neither email nor phone - dates align with badges row and a spacer
+                    <>
+                        <HStack justify="flex-end">
+                            <Text fontSize="xs">
+                                Created: {formatDateTimeLocal(crewMember.dateCreated)}
+                            </Text>
+                        </HStack>
+                        <HStack justify="flex-end">
+                            <Text fontSize="xs">
+                                Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
+                            </Text>
+                        </HStack>
+                    </>
                 )}
             </VStack>
 
@@ -186,23 +231,17 @@ export const CrewCard: React.FC<CrewCardProps> = ({
                 <VStack align="stretch" spacing="3" mt="4" pt="3" borderTop="1px solid" borderColor="ui.border">
 
                     {/* Notes Section */}
-                    {crewMember.notes && (
+                    {getNotesToShow() && (
                         <Box>
                             <Text fontWeight="semibold" mb={2}>Notes</Text>
                             <Text fontSize="sm" color="detail.text" ml={4}>
-                                {crewMember.notes}
+                                {getNotesToShow()}
                             </Text>
                         </Box>
                     )}
 
                     {/* TODO: Show Assignments section will be added later */}
 
-                    {/* Created Date */}
-                    <Flex justify="flex-end">
-                        <Text fontSize="xs" color="detail.text">
-                            Created: {formatDateTimeLocal(crewMember.dateCreated || crewMember.dateUpdated)}
-                        </Text>
-                    </Flex>
                 </VStack>
             </Collapse>
         </Box>
