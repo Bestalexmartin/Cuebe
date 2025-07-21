@@ -15,6 +15,9 @@ interface CrewViewProps {
     hoveredCardId?: string | null;
     setHoveredCardId: (id: string | null) => void;
     onSaveNavigationState?: () => void;
+    sortBy: 'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated';
+    sortDirection: 'asc' | 'desc';
+    onSortChange: (sortBy: 'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated', sortDirection: 'asc' | 'desc') => void;
 }
 
 export const CrewView: React.FC<CrewViewProps> = ({
@@ -23,22 +26,22 @@ export const CrewView: React.FC<CrewViewProps> = ({
     onCrewClick,
     hoveredCardId,
     setHoveredCardId,
-    onSaveNavigationState
+    onSaveNavigationState,
+    sortBy,
+    sortDirection,
+    onSortChange
 }) => {
     const navigate = useNavigate();
     const { crews, isLoading, error } = useCrews();
 
-    // Crew-specific sorting state  
-    const [sortBy, setSortBy] = useState<'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated'>('fullnameFirst');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-
     // Crew-specific sorting logic
     const handleSortClick = (newSortBy: typeof sortBy) => {
         if (sortBy === newSortBy) {
-            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+            const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            onSortChange(newSortBy, newDirection);
         } else {
-            setSortBy(newSortBy);
-            setSortDirection(newSortBy === 'dateCreated' ? 'desc' : 'asc');
+            const newDirection = newSortBy === 'dateCreated' ? 'desc' : 'asc';
+            onSortChange(newSortBy, newDirection);
         }
     };
 

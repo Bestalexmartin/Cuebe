@@ -8,8 +8,6 @@ import { toastConfig } from '../ChakraTheme';
 // TypeScript interfaces
 interface UseResourceOptions {
   fetchOnMount?: boolean;
-  showErrorToast?: boolean;
-  dependencies?: any[];
 }
 
 interface UseResourceReturn<T> {
@@ -32,8 +30,6 @@ export const useResource = <T = any>(
 
     const {
         fetchOnMount = true,
-        showErrorToast = true,
-        dependencies = []
     } = options;
 
     const fetchData = async (): Promise<void> => {
@@ -61,14 +57,13 @@ export const useResource = <T = any>(
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
             setError(errorMessage);
-            if (showErrorToast) {
-                toast({
-                    title: 'Error Loading Data',
-                    description: errorMessage,
-                    status: 'error',
-                    ...toastConfig,
-                });
-            }
+            toast({
+                title: 'Error Loading Data',
+                description: errorMessage,
+                duration: 5000,
+                isClosable: true,
+                ...toastConfig,
+            });
         } finally {
             setIsLoading(false);
         }
@@ -106,7 +101,7 @@ export const useResource = <T = any>(
         if (fetchOnMount) {
             fetchData();
         }
-    }, [endpoint, fetchOnMount, ...dependencies]);
+    }, [endpoint, fetchOnMount]);
 
     return {
         data,

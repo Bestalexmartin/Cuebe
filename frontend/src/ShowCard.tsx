@@ -8,7 +8,6 @@ import {
   HStack,
   Heading,
   Button,
-  Divider,
   Text,
   Collapse,
   Badge,

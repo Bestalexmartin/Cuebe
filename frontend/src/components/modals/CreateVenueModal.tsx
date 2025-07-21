@@ -37,10 +37,10 @@ const INITIAL_FORM_STATE: VenueFormData = {
     state: '',
 };
 
-export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({ 
-    isOpen, 
-    onClose, 
-    onVenueCreated 
+export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
+    isOpen,
+    onClose,
+    onVenueCreated
 }) => {
     const {
         formData,
@@ -132,7 +132,7 @@ export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
 
                 <ModalFooter>
                     <Button
-                        size="xs"
+                        size="sm"
                         mr={3}
                         onClick={handleModalClose}
                         _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
@@ -142,7 +142,7 @@ export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
                     <Button
                         bg="blue.400"
                         color="white"
-                        size="xs"
+                        size="sm"
                         type="submit"
                         isLoading={isSubmitting}
                         isDisabled={!isFormValid()}

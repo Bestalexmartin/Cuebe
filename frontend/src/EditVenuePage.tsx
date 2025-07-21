@@ -199,7 +199,6 @@ export const EditVenuePage: React.FC = () => {
             toast({
                 title: 'Venue Deleted',
                 description: `"${venue.venueName}" has been deleted successfully`,
-                status: 'success',
                 duration: 5000,
                 isClosable: true,
                 ...toastConfig,
@@ -218,7 +217,6 @@ export const EditVenuePage: React.FC = () => {
             toast({
                 title: 'Delete Failed',
                 description: 'Failed to delete venue. Please try again.',
-                status: 'error',
                 duration: 5000,
                 isClosable: true,
                 ...toastConfig,
@@ -291,10 +289,11 @@ export const EditVenuePage: React.FC = () => {
                 border="1px solid"
                 borderColor="container.border"
                 p="4"
+                pb="8"
                 borderRadius="md"
                 flexGrow={1}
                 overflowY="auto"
-                className="hide-scrollbar"
+                className="hide-scrollbar edit-form-container"
             >
                 {/* Loading State */}
                 {isLoadingVenue && (
@@ -312,7 +311,7 @@ export const EditVenuePage: React.FC = () => {
 
                 {/* Form Content */}
                 {!isLoadingVenue && venue && (
-                    <VStack spacing={4} align="stretch" height="100%">
+                    <VStack spacing={4} align="stretch">
                         {/* Basic Information */}
                         <FormControl isRequired>
                             <FormLabel>Venue Name</FormLabel>
@@ -462,13 +461,13 @@ export const EditVenuePage: React.FC = () => {
                         </HStack>
 
                         {/* Expandable notes textarea */}
-                        <FormControl display="flex" flexDirection="column" flexGrow={1}>
+                        <FormControl>
                             <FormLabel>Notes</FormLabel>
                             <Textarea
                                 value={formData.notes}
                                 onChange={(e) => handleChange('notes', e.target.value)}
                                 placeholder="Additional venue information, equipment, special requirements, etc."
-                                flexGrow={1}
+                                minHeight="120px"
                                 resize="vertical"
                             />
                         </FormControl>

@@ -108,3 +108,15 @@ button:focus-visible {
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* Edit page scroll behavior improvements */
+.edit-form-container {
+  scroll-padding-bottom: 2rem;
+  scroll-behavior: smooth;
+}
+
+.edit-form-container input:focus,
+.edit-form-container textarea:focus,
+.edit-form-container select:focus {
+  scroll-margin-bottom: 2rem;
+}

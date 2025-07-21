@@ -15,6 +15,9 @@ interface VenuesViewProps {
     hoveredCardId?: string | null;
     setHoveredCardId: (id: string | null) => void;
     onSaveNavigationState?: () => void;
+    sortBy: 'venueName' | 'capacity' | 'venueType' | 'dateCreated';
+    sortDirection: 'asc' | 'desc';
+    onSortChange: (sortBy: 'venueName' | 'capacity' | 'venueType' | 'dateCreated', sortDirection: 'asc' | 'desc') => void;
 }
 
 export const VenuesView: React.FC<VenuesViewProps> = ({
@@ -23,22 +26,22 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
     onVenueClick,
     hoveredCardId,
     setHoveredCardId,
-    onSaveNavigationState
+    onSaveNavigationState,
+    sortBy,
+    sortDirection,
+    onSortChange
 }) => {
     const navigate = useNavigate();
     const { venues, isLoading } = useVenues();
 
-    // Venue-specific sorting state  
-    const [sortBy, setSortBy] = useState<'venueName' | 'capacity' | 'venueType' | 'dateCreated'>('venueName');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-
     // Venue-specific sorting logic
     const handleSortClick = (newSortBy: typeof sortBy) => {
         if (sortBy === newSortBy) {
-            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+            const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            onSortChange(newSortBy, newDirection);
         } else {
-            setSortBy(newSortBy);
-            setSortDirection(newSortBy === 'venueName' ? 'asc' : 'desc');
+            const newDirection = newSortBy === 'venueName' ? 'asc' : 'desc';
+            onSortChange(newSortBy, newDirection);
         }
     };
 

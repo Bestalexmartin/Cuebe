@@ -7,6 +7,9 @@ interface ToastConfig {
     color: string;
     width: string;
     maxWidth: string;
+    border: string;
+    borderColor: string;
+    boxShadow: string;
   };
 }
 
@@ -42,6 +45,22 @@ const semanticTokens = {
     'container.border': {
       _light: 'gray.600',
       _dark: 'gray.300',
+    },
+    'toast.bg': {
+      _light: '#6495ED',
+      _dark: '#6495ED',
+    },
+    'toast.color': {
+      _light: 'white',
+      _dark: 'white',
+    },
+    'toast.border': {
+      _light: '#4169E1',
+      _dark: 'transparent',
+    },
+    'toast.shadow': {
+      _light: '0 4px 12px rgba(100, 149, 237, 0.15)',
+      _dark: '0 4px 12px rgba(0, 0, 0, 0.3)',
     }
   },
 };
@@ -63,13 +82,16 @@ const components = {
   },
 };
 
-// Toast configuration - use this for consistent toast styling
+// Toast configuration - distinct styling for light/dark modes with same colors
 export const toastConfig: ToastConfig = {
   containerStyle: {
-    bg: 'blue.400',
-    color: 'white',
+    bg: 'toast.bg',
+    color: 'toast.color',
     width: '400px',
     maxWidth: '400px',
+    border: '2px solid',
+    borderColor: 'toast.border',
+    boxShadow: 'toast.shadow',
   },
 };
 

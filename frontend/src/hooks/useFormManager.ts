@@ -73,7 +73,8 @@ export const useFormManager = <T extends FormData>(initialState: T = {} as T): U
             toast({
                 title: 'Success',
                 description: successMessage,
-                status: 'success',
+                duration: 5000,
+                isClosable: true,
                 ...toastConfig,
             });
 
@@ -83,7 +84,8 @@ export const useFormManager = <T extends FormData>(initialState: T = {} as T): U
             toast({
                 title: 'Error',
                 description: errorMessage,
-                status: 'error',
+                duration: 5000,
+                isClosable: true,
                 ...toastConfig,
             });
             throw error;

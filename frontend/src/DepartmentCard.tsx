@@ -12,6 +12,7 @@ import {
     Heading
 } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
+import { formatDateTimeLocal } from './utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface Department {
@@ -108,7 +109,7 @@ export const DepartmentCard: React.FC<DepartmentCardProps> = ({
                 <HStack justify="space-between">
                     <Text>0 shows assigned</Text>
                     <Text fontSize="xs">
-                        Updated: {new Date(department.dateUpdated || department.dateCreated).toLocaleDateString()}
+                        Updated: {formatDateTimeLocal(department.dateUpdated || department.dateCreated)}
                     </Text>
                 </HStack>
             </VStack>
@@ -156,7 +157,7 @@ export const DepartmentCard: React.FC<DepartmentCardProps> = ({
                     {/* Created Date */}
                     <Flex justify="flex-end">
                         <Text fontSize="xs" color="detail.text">
-                            Created: {new Date(department.dateCreated || department.dateUpdated).toLocaleDateString()}
+                            Created: {formatDateTimeLocal(department.dateCreated || department.dateUpdated)}
                         </Text>
                     </Flex>
                 </VStack>

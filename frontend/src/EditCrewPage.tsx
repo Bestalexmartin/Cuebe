@@ -15,6 +15,7 @@ import { ActionsMenu, ActionItem } from './components/ActionsMenu';
 import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
 import { FinalDeleteConfirmationModal } from './components/modals/FinalDeleteConfirmationModal';
 import { toastConfig } from './ChakraTheme';
+import { formatDateTimeLocal } from './utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface CrewFormData {
@@ -211,7 +212,8 @@ export const EditCrewPage: React.FC = () => {
             toast({
                 title: 'Crew Removed',
                 description: `"${getFullName()}" has been removed from your crew`,
-                status: 'success',
+                duration: 5000,
+                isClosable: true,
                 ...toastConfig,
             });
 
@@ -228,7 +230,8 @@ export const EditCrewPage: React.FC = () => {
             toast({
                 title: 'Error',
                 description: 'Failed to remove crew. Please try again.',
-                status: 'error',
+                duration: 5000,
+                isClosable: true,
                 ...toastConfig,
             });
         } finally {
@@ -322,10 +325,11 @@ export const EditCrewPage: React.FC = () => {
                 border="1px solid"
                 borderColor="container.border"
                 p="4"
+                pb="8"
                 borderRadius="md"
                 flexGrow={1}
                 overflowY="auto"
-                className="hide-scrollbar"
+                className="hide-scrollbar edit-form-container"
             >
                 {/* Loading State */}
                 {isLoadingCrew && (
@@ -343,7 +347,7 @@ export const EditCrewPage: React.FC = () => {
 
                 {/* Form Content */}
                 {!isLoadingCrew && crew && (
-                    <VStack spacing={6} align="stretch" height="100%">
+                    <VStack spacing={6} align="stretch">
                         {/* Profile Preview */}
                         <Box
                             p="4"
@@ -372,7 +376,7 @@ export const EditCrewPage: React.FC = () => {
                                             {formatRole(formData.userRole)}
                                         </Text>
                                          <Text fontSize="xs" color="detail.text">
-                                            Updated: {new Date(crew.dateUpdated).toLocaleDateString()}
+                                            Updated: {formatDateTimeLocal(crew.dateUpdated)}
                                         </Text>
                                     </HStack>
                                     <HStack justify="space-between" width="100%">
@@ -380,7 +384,7 @@ export const EditCrewPage: React.FC = () => {
                                             {formData.emailAddress}
                                         </Text>
                                         <Text fontSize="xs" color="detail.text">
-                                            Created: {new Date(crew.dateCreated).toLocaleDateString()}
+                                            Created: {formatDateTimeLocal(crew.dateCreated)}
                                         </Text>
                                     </HStack>
                                 </VStack>
@@ -489,13 +493,12 @@ export const EditCrewPage: React.FC = () => {
 
                         {/* Personal Notes Section - Only for self-edit */}
                         {isSelfEdit() && (
-                            <FormControl display="flex" flexDirection="column" flexGrow={1}>
+                            <FormControl>
                                 <FormLabel>Personal Notes</FormLabel>
                                 <Textarea
                                     value={formData.notes}
                                     onChange={(e) => handleChange('notes', e.target.value)}
                                     placeholder="Your personal notes"
-                                    flexGrow={1}
                                     resize="vertical"
                                     minHeight="100px"
                                 />

@@ -13,6 +13,7 @@ import {
     Heading
 } from "@chakra-ui/react";
 import { AppIcon } from './components/AppIcon';
+import { formatDateTimeLocal } from './utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface Venue {
@@ -132,7 +133,7 @@ export const VenueCard: React.FC<VenueCardProps> = ({
                         <Box />
                     )}
                     <Text fontSize="xs">
-                        Updated: {new Date(venue.dateUpdated || venue.dateCreated).toLocaleDateString()}
+                        Updated: {formatDateTimeLocal(venue.dateUpdated || venue.dateCreated)}
                     </Text>
                 </HStack>
             </VStack>
@@ -203,7 +204,7 @@ export const VenueCard: React.FC<VenueCardProps> = ({
                     {/* Created Date */}
                     <Flex justify="flex-end">
                         <Text fontSize="xs" color="detail.text">
-                            Created: {new Date(venue.dateCreated || venue.dateUpdated).toLocaleDateString()}
+                            Created: {formatDateTimeLocal(venue.dateCreated || venue.dateUpdated)}
                         </Text>
                     </Flex>
                 </VStack>

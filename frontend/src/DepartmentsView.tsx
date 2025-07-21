@@ -16,6 +16,9 @@ interface DepartmentsViewProps {
     hoveredCardId?: string | null;
     setHoveredCardId: (id: string | null) => void;
     onSaveNavigationState?: () => void;
+    sortBy: 'departmentName' | 'departmentColor' | 'dateCreated';
+    sortDirection: 'asc' | 'desc';
+    onSortChange: (sortBy: 'departmentName' | 'departmentColor' | 'dateCreated', sortDirection: 'asc' | 'desc') => void;
 }
 
 export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
@@ -24,22 +27,22 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
     onDepartmentClick,
     hoveredCardId,
     setHoveredCardId,
-    onSaveNavigationState
+    onSaveNavigationState,
+    sortBy,
+    sortDirection,
+    onSortChange
 }) => {
     const navigate = useNavigate();
     const { departments, isLoading, error } = useDepartments();
 
-    // Department-specific sorting state  
-    const [sortBy, setSortBy] = useState<'departmentName' | 'departmentColor' | 'dateCreated'>('departmentName');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-
     // Department-specific sorting logic
     const handleSortClick = (newSortBy: typeof sortBy) => {
         if (sortBy === newSortBy) {
-            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+            const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            onSortChange(newSortBy, newDirection);
         } else {
-            setSortBy(newSortBy);
-            setSortDirection(newSortBy === 'departmentName' ? 'asc' : 'desc');
+            const newDirection = newSortBy === 'departmentName' ? 'asc' : 'desc';
+            onSortChange(newSortBy, newDirection);
         }
     };
 

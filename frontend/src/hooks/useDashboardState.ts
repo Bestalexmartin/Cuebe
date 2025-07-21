@@ -25,13 +25,24 @@ interface Show {
   }>;
 }
 
+interface SortState {
+  shows: { sortBy: 'showName' | 'showDate' | 'dateUpdated'; sortDirection: 'asc' | 'desc' };
+  venues: { sortBy: 'venueName' | 'capacity' | 'venueType' | 'dateCreated'; sortDirection: 'asc' | 'desc' };
+  crew: { sortBy: 'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated'; sortDirection: 'asc' | 'desc' };
+  departments: { sortBy: 'departmentName' | 'departmentColor' | 'dateCreated'; sortDirection: 'asc' | 'desc' };
+}
+
+interface SelectedState {
+  shows: { selectedShowId: string | null; selectedScriptId: string | null };
+  venues: { selectedVenueId: string | null };
+  departments: { selectedDepartmentId: string | null };
+  crew: { selectedCrewId: string | null };
+}
+
 interface NavigationState {
   view: string;
-  selectedShowId: string | null;
-  selectedScriptId: string | null;
-  selectedVenueId: string | null;
-  selectedDepartmentId: string | null;
-  selectedCrewId: string | null;
+  selectedState: SelectedState;
+  sortState: SortState;
   timestamp: number;
 }
 
@@ -45,8 +56,15 @@ interface UseDashboardStateReturn {
   hoveredCardId: string | null;
   setHoveredCardId: (id: string | null) => void;
   showCardRefs: MutableRefObject<Record<string, HTMLElement | null>>;
-  currentView: string;
   shows: Show[];
+
+  // Selected state
+  selectedState: SelectedState;
+  updateSelectedState: (view: keyof SelectedState, field: string, value: string | null) => void;
+
+  // Sort state
+  sortState: SortState;
+  updateSortState: (view: keyof SortState, sortBy: string, sortDirection: 'asc' | 'desc') => void;
 
   // Handlers
   handleShowClick: (showId: string) => void;
@@ -57,10 +75,7 @@ interface UseDashboardStateReturn {
   handleViewChange: (newView: string) => void;
 
   // Navigation state management
-  saveNavigationState: (view: string) => void;
   saveCurrentNavigationState: () => void;
-  restoreNavigationState: () => void;
-  clearNavigationState: () => void;
 }
 
 const SCROLL_DELAY = 100; // Configurable scroll delay
@@ -68,14 +83,41 @@ const SCROLL_DELAY = 100; // Configurable scroll delay
 export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateReturn => {
   const [currentView, setCurrentView] = useState<string>('shows');
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
-  const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
-  const [selectedScriptId, setSelectedScriptId] = useState<string | null>(null);
-  const [selectedVenueId, setSelectedVenueId] = useState<string | null>(null);
-  const [selectedDepartmentId, setSelectedDepartmentId] = useState<string | null>(null);
-  const [selectedCrewId, setSelectedCrewId] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState<boolean>(false);
   const [hasInitialized, setHasInitialized] = useState<boolean>(false);
   const showCardRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  // Selected state - organized by view
+  const [selectedState, setSelectedState] = useState<SelectedState>({
+    shows: { selectedShowId: null, selectedScriptId: null },
+    venues: { selectedVenueId: null },
+    departments: { selectedDepartmentId: null },
+    crew: { selectedCrewId: null },
+  });
+
+  // Sort state - default all to most recently updated/created first
+  const [sortState, setSortState] = useState<SortState>({
+    shows: { sortBy: 'dateUpdated', sortDirection: 'desc' },
+    venues: { sortBy: 'dateCreated', sortDirection: 'desc' },
+    crew: { sortBy: 'dateCreated', sortDirection: 'desc' },
+    departments: { sortBy: 'dateCreated', sortDirection: 'desc' },
+  });
+
+  // Selected state management
+  const updateSelectedState = useCallback((view: keyof SelectedState, field: string, value: string | null) => {
+    setSelectedState(prev => ({
+      ...prev,
+      [view]: { ...prev[view], [field]: value }
+    }));
+  }, []);
+
+  // Sort state management
+  const updateSortState = useCallback((view: keyof SortState, sortBy: string, sortDirection: 'asc' | 'desc') => {
+    setSortState(prev => ({
+      ...prev,
+      [view]: { sortBy, sortDirection }
+    }));
+  }, []);
 
   // Enhanced navigation memory functions
   const saveNavigationState = useCallback((view: string) => {
@@ -83,17 +125,14 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
 
     const navigationState: NavigationState = {
       view,
-      selectedShowId,
-      selectedScriptId,
-      selectedVenueId,
-      selectedDepartmentId,
-      selectedCrewId,
+      selectedState,
+      sortState,
       timestamp: Date.now()
     };
 
     sessionStorage.setItem('dashboardNavigationState', JSON.stringify(navigationState));
     setCurrentView(view);
-  }, [isRestoring, hasInitialized, selectedShowId, selectedScriptId, selectedVenueId, selectedDepartmentId, selectedCrewId]);
+  }, [isRestoring, hasInitialized, selectedState, sortState]);
 
   // Function to save current state immediately (for navigation)
   const saveCurrentNavigationState = useCallback(() => {
@@ -101,16 +140,20 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
 
     const navigationState: NavigationState = {
       view: currentView,
-      selectedShowId,
-      selectedScriptId,
-      selectedVenueId,
-      selectedDepartmentId,
-      selectedCrewId,
+      selectedState,
+      sortState,
       timestamp: Date.now()
     };
 
     sessionStorage.setItem('dashboardNavigationState', JSON.stringify(navigationState));
-  }, [currentView, selectedShowId, selectedScriptId, selectedVenueId, selectedDepartmentId, selectedCrewId, hasInitialized]);
+  }, [currentView, selectedState, sortState, hasInitialized]);
+
+  // Computed values for backward compatibility
+  const selectedShowId = selectedState.shows.selectedShowId;
+  const selectedScriptId = selectedState.shows.selectedScriptId;
+  const selectedVenueId = selectedState.venues.selectedVenueId;
+  const selectedDepartmentId = selectedState.departments.selectedDepartmentId;
+  const selectedCrewId = selectedState.crew.selectedCrewId;
 
   const restoreNavigationState = useCallback(() => {
     try {
@@ -119,21 +162,26 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
         setIsRestoring(true);
         const state: NavigationState = JSON.parse(savedState);
 
-        // Restore ALL selections
+        // Restore ALL selections and sort state
         setCurrentView(state.view);
-        setSelectedShowId(state.selectedShowId || null);
-        setSelectedScriptId(state.selectedScriptId || null);
-        setSelectedVenueId(state.selectedVenueId || null);
-        setSelectedDepartmentId(state.selectedDepartmentId || null);
-        setSelectedCrewId(state.selectedCrewId || null);
+        
+        // Restore selected state if available
+        if (state.selectedState) {
+          setSelectedState(state.selectedState);
+        }
+        
+        // Restore sort state if available
+        if (state.sortState) {
+          setSortState(state.sortState);
+        }
 
         // Scroll to the selected item in the current view after a delay
         setTimeout(() => {
           const currentSelection =
-            state.view === 'shows' ? state.selectedShowId :
-              state.view === 'venues' ? state.selectedVenueId :
-                state.view === 'departments' ? state.selectedDepartmentId :
-                  state.view === 'crew' ? state.selectedCrewId : null;
+            state.view === 'shows' ? state.selectedState?.shows.selectedShowId :
+              state.view === 'venues' ? state.selectedState?.venues.selectedVenueId :
+                state.view === 'departments' ? state.selectedState?.departments.selectedDepartmentId :
+                  state.view === 'crew' ? state.selectedState?.crew.selectedCrewId : null;
 
           if (currentSelection) {
             const targetRef = showCardRefs.current[currentSelection];
@@ -163,11 +211,12 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
   const clearNavigationState = useCallback(() => {
     sessionStorage.removeItem('dashboardNavigationState');
     // Also clear all current selections
-    setSelectedShowId(null);
-    setSelectedScriptId(null);
-    setSelectedVenueId(null);
-    setSelectedDepartmentId(null);
-    setSelectedCrewId(null);
+    setSelectedState({
+      shows: { selectedShowId: null, selectedScriptId: null },
+      venues: { selectedVenueId: null },
+      departments: { selectedDepartmentId: null },
+      crew: { selectedCrewId: null },
+    });
     setHasInitialized(true);
   }, []);
 
@@ -183,7 +232,7 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
     if (hasInitialized && !isRestoring) {
       saveNavigationState(currentView);
     }
-  }, [selectedShowId, selectedScriptId, selectedVenueId, selectedDepartmentId, selectedCrewId, currentView, saveNavigationState, hasInitialized, isRestoring]);
+  }, [selectedState, currentView, saveNavigationState, hasInitialized, isRestoring]);
 
   // Save state when component unmounts (dashboard navigation away)
   useEffect(() => {
@@ -196,8 +245,8 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
 
   const handleShowClick = (showId: string) => {
     const newSelectedShowId = selectedShowId === showId ? null : showId;
-    setSelectedShowId(newSelectedShowId);
-    setSelectedScriptId(null);
+    updateSelectedState('shows', 'selectedShowId', newSelectedShowId);
+    updateSelectedState('shows', 'selectedScriptId', null);
 
     // Scroll logic
     setTimeout(() => {
@@ -213,12 +262,12 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
 
   const handleScriptClick = (scriptId: string) => {
     const newSelectedScriptId = selectedScriptId === scriptId ? null : scriptId;
-    setSelectedScriptId(newSelectedScriptId);
+    updateSelectedState('shows', 'selectedScriptId', newSelectedScriptId);
   };
 
   const handleVenueClick = (venueId: string) => {
     const newSelectedVenueId = selectedVenueId === venueId ? null : venueId;
-    setSelectedVenueId(newSelectedVenueId);
+    updateSelectedState('venues', 'selectedVenueId', newSelectedVenueId);
 
     // Scroll logic
     setTimeout(() => {
@@ -234,7 +283,7 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
 
   const handleDepartmentClick = (departmentId: string) => {
     const newSelectedDepartmentId = selectedDepartmentId === departmentId ? null : departmentId;
-    setSelectedDepartmentId(newSelectedDepartmentId);
+    updateSelectedState('departments', 'selectedDepartmentId', newSelectedDepartmentId);
 
     // Scroll logic
     setTimeout(() => {
@@ -250,7 +299,7 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
 
   const handleCrewClick = (crewId: string) => {
     const newSelectedCrewId = selectedCrewId === crewId ? null : crewId;
-    setSelectedCrewId(newSelectedCrewId);
+    updateSelectedState('crew', 'selectedCrewId', newSelectedCrewId);
 
     // Scroll logic
     setTimeout(() => {
@@ -276,7 +325,7 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
   }, [shows]);
 
   return {
-    // Existing state
+    // State
     selectedShowId,
     selectedScriptId,
     selectedVenueId,
@@ -285,10 +334,17 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
     hoveredCardId,
     setHoveredCardId,
     showCardRefs,
-    currentView,
     shows: safeShows,
 
-    // Existing handlers
+    // Selected state
+    selectedState,
+    updateSelectedState,
+
+    // Sort state
+    sortState,
+    updateSortState,
+
+    // Handlers
     handleShowClick,
     handleScriptClick,
     handleVenueClick,
@@ -297,9 +353,6 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
     handleViewChange,
 
     // Navigation state management
-    saveNavigationState,
     saveCurrentNavigationState,
-    restoreNavigationState,
-    clearNavigationState,
   };
 };

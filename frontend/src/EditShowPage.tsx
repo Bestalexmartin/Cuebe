@@ -172,7 +172,8 @@ export const EditShowPage: React.FC = () => {
             toast({
                 title: 'Show Deleted',
                 description: `"${show?.showName}" and all associated scripts have been permanently deleted`,
-                status: 'success',
+                duration: 5000,
+                isClosable: true,
                 ...toastConfig,
             });
 
@@ -186,7 +187,8 @@ export const EditShowPage: React.FC = () => {
             toast({
                 title: 'Error',
                 description: 'Failed to delete show. Please try again.',
-                status: 'error',
+                duration: 5000,
+                isClosable: true,
                 ...toastConfig,
             });
         } finally {
@@ -260,10 +262,11 @@ export const EditShowPage: React.FC = () => {
                 border="1px solid"
                 borderColor="container.border"
                 p="4"
+                pb="8"
                 borderRadius="md"
                 flexGrow={1}
                 overflowY="auto"
-                className="hide-scrollbar"
+                className="hide-scrollbar edit-form-container"
             >
                 {/* Loading State */}
                 {isLoading && (
@@ -281,7 +284,7 @@ export const EditShowPage: React.FC = () => {
 
                 {/* Form Content */}
                 {!isLoading && show && (
-                    <VStack spacing={4} align="stretch" height="100%">
+                    <VStack spacing={4} align="stretch">
                         <FormControl isRequired>
                             <FormLabel>Show Name</FormLabel>
                             <Input
@@ -328,13 +331,13 @@ export const EditShowPage: React.FC = () => {
                         </HStack>
 
                         {/* Expandable notes textarea */}
-                        <FormControl display="flex" flexDirection="column" flexGrow={1}>
+                        <FormControl>
                             <FormLabel>Notes</FormLabel>
                             <Textarea
                                 value={formData.showNotes}
                                 onChange={(e) => handleChange('showNotes', e.target.value)}
                                 placeholder="Additional show information, special requirements, etc."
-                                flexGrow={1}
+                                minHeight="120px"
                                 resize="vertical"
                             />
                         </FormControl>
