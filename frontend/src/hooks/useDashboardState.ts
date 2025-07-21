@@ -219,16 +219,49 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
   const handleVenueClick = (venueId: string) => {
     const newSelectedVenueId = selectedVenueId === venueId ? null : venueId;
     setSelectedVenueId(newSelectedVenueId);
+
+    // Scroll logic
+    setTimeout(() => {
+      const targetRef = showCardRefs.current[venueId];
+      if (targetRef) {
+        targetRef.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest'
+        });
+      }
+    }, SCROLL_DELAY);
   };
 
   const handleDepartmentClick = (departmentId: string) => {
     const newSelectedDepartmentId = selectedDepartmentId === departmentId ? null : departmentId;
     setSelectedDepartmentId(newSelectedDepartmentId);
+
+    // Scroll logic
+    setTimeout(() => {
+      const targetRef = showCardRefs.current[departmentId];
+      if (targetRef) {
+        targetRef.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest'
+        });
+      }
+    }, SCROLL_DELAY);
   };
 
   const handleCrewClick = (crewId: string) => {
     const newSelectedCrewId = selectedCrewId === crewId ? null : crewId;
     setSelectedCrewId(newSelectedCrewId);
+
+    // Scroll logic
+    setTimeout(() => {
+      const targetRef = showCardRefs.current[crewId];
+      if (targetRef) {
+        targetRef.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest'
+        });
+      }
+    }, SCROLL_DELAY);
   };
 
   // View change handler

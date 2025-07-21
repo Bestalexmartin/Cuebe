@@ -117,16 +117,6 @@ export const DepartmentCard: React.FC<DepartmentCardProps> = ({
             <Collapse in={isSelected} animateOpacity>
                 <VStack align="stretch" spacing="3" mt="4" pt="3" borderTop="1px solid" borderColor="ui.border">
 
-                    {/* Full Description */}
-                    {department.departmentDescription && (
-                        <Box>
-                            <Text fontWeight="semibold" mb={2}>Description</Text>
-                            <Text fontSize="sm" color="detail.text" ml={4}>
-                                {department.departmentDescription}
-                            </Text>
-                        </Box>
-                    )}
-
                     {/* Color Information */}
                     {department.departmentColor && (
                         <Box>
@@ -150,6 +140,16 @@ export const DepartmentCard: React.FC<DepartmentCardProps> = ({
                                     </Text>
                                 </VStack>
                             </HStack>
+                        </Box>
+                    )}
+
+                    {/* Full Description */}
+                    {department.departmentDescription && (
+                        <Box>
+                            <Text fontWeight="semibold" mb={2}>Description</Text>
+                            <Text fontSize="sm" color="detail.text" ml={4}>
+                                {department.departmentDescription}
+                            </Text>
                         </Box>
                     )}
 

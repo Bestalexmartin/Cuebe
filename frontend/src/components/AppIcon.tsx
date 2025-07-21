@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Icon, IconProps } from "@chakra-ui/react";
-import { ChevronDownIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, DeleteIcon, WarningIcon } from '@chakra-ui/icons';
 import { TiPin } from "react-icons/ti";
 import { IoPeopleSharp } from "react-icons/io5";
 import { CiMenuBurger } from "react-icons/ci";
@@ -15,6 +15,8 @@ type IconName =
   | 'openmenu' 
   | 'hamburger' 
   | 'edit' 
+  | 'delete'
+  | 'warning'
   | 'pinned' 
   | 'show' 
   | 'venue' 
@@ -33,6 +35,10 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={CiMenuBurger} {...props} />;
     case 'edit':
       return <Icon as={EditIcon} {...props} />;
+    case 'delete':
+      return <Icon as={DeleteIcon} {...props} />;
+    case 'warning':
+      return <Icon as={WarningIcon} {...props} />;
     case 'pinned':
       return <Icon as={TiPin} {...props} />;
     case 'show':

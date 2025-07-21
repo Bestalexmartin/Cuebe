@@ -24,6 +24,8 @@ interface Show {
   showID: string;
   showName: string;
   showDate?: string;
+  showNotes?: string;
+  deadline?: string;
   dateCreated: string;
   dateUpdated: string;
   venue?: Venue;

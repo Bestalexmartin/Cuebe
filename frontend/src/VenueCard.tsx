@@ -179,16 +179,6 @@ export const VenueCard: React.FC<VenueCardProps> = ({
                         </Box>
                     )}
 
-                    {/* Notes */}
-                    {venue.notes && (
-                        <Box>
-                            <Text fontWeight="semibold" mb={2}>Notes</Text>
-                            <Text fontSize="sm" color="detail.text" ml={4}>
-                                {venue.notes}
-                            </Text>
-                        </Box>
-                    )}
-
                     {/* Rental Information */}
                     {(venue.rentalRate || venue.minimumRental) && (
                         <Box>
@@ -197,6 +187,16 @@ export const VenueCard: React.FC<VenueCardProps> = ({
                                 {venue.rentalRate && <Text>Daily Rate: ${venue.rentalRate}</Text>}
                                 {venue.minimumRental && <Text>Minimum: ${venue.minimumRental}</Text>}
                             </HStack>
+                        </Box>
+                    )}
+
+                    {/* Notes */}
+                    {venue.notes && (
+                        <Box>
+                            <Text fontWeight="semibold" mb={2}>Notes</Text>
+                            <Text fontSize="sm" color="detail.text" ml={4}>
+                                {venue.notes}
+                            </Text>
                         </Box>
                     )}
 

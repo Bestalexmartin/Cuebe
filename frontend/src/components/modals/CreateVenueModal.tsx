@@ -132,23 +132,23 @@ export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
 
                 <ModalFooter>
                     <Button
+                        size="xs"
+                        mr={3}
+                        onClick={handleModalClose}
+                        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
                         bg="blue.400"
                         color="white"
                         size="xs"
-                        mr={3}
                         type="submit"
                         isLoading={isSubmitting}
                         isDisabled={!isFormValid()}
                         _hover={{ bg: 'orange.400' }}
                     >
                         Create Venue
-                    </Button>
-                    <Button
-                        size="xs"
-                        onClick={handleModalClose}
-                        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
-                    >
-                        Cancel
                     </Button>
                 </ModalFooter>
             </ModalContent>

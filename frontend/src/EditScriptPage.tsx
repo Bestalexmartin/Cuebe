@@ -1,6 +1,6 @@
 // frontend/src/EditScriptPage.tsx
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Flex,
     Box,
@@ -13,12 +13,20 @@ import {
     FormControl,
     FormLabel,
     Input,
-    Select
+    Select,
+    Divider,
+    useToast
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from '@clerk/clerk-react';
 import { useFormManager } from './hooks/useFormManager';
 import { useScript } from './hooks/useScript';
 import { AppIcon } from './components/AppIcon';
+import { ActionsMenu, ActionItem } from './components/ActionsMenu';
+import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
+import { FinalDeleteConfirmationModal } from './components/modals/FinalDeleteConfirmationModal';
+import { toastConfig } from './ChakraTheme';
+import { convertUTCToLocal, convertLocalToUTC } from './utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface ScriptFormData {
@@ -50,6 +58,13 @@ const SCRIPT_STATUS_OPTIONS: ScriptStatusOption[] = [
 export const EditScriptPage: React.FC = () => {
     const { scriptId } = useParams<{ scriptId: string }>();
     const navigate = useNavigate();
+    const toast = useToast();
+    const { getToken } = useAuth();
+
+    // Delete state management
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isFinalDeleteModalOpen, setIsFinalDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch the initial script data
     const { script, isLoading: isLoadingScript, error: scriptError } = useScript(scriptId);
@@ -69,9 +84,7 @@ export const EditScriptPage: React.FC = () => {
             setFormData({
                 scriptName: script.scriptName || '',
                 scriptStatus: script.scriptStatus || 'DRAFT',
-                startTime: script.startTime
-                    ? script.startTime.substring(0, 16)
-                    : '',
+                startTime: convertUTCToLocal(script.startTime),
             });
         }
     }, [script, setFormData]);
@@ -92,7 +105,7 @@ export const EditScriptPage: React.FC = () => {
             const updateData = {
                 scriptName: formData.scriptName,
                 scriptStatus: formData.scriptStatus,
-                startTime: formData.startTime || null,
+                startTime: convertLocalToUTC(formData.startTime),
             };
 
             await submitForm(
@@ -132,6 +145,83 @@ export const EditScriptPage: React.FC = () => {
         return formData.scriptName.trim().length > 0;
     };
 
+    // Delete functionality
+    const handleDeleteClick = () => {
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleInitialDeleteConfirm = () => {
+        setIsDeleteModalOpen(false);
+        setIsFinalDeleteModalOpen(true);
+    };
+
+    const handleFinalDeleteConfirm = async () => {
+        if (!scriptId) return;
+
+        setIsDeleting(true);
+        try {
+            const token = await getToken();
+            if (!token) {
+                throw new Error('Authentication token not available');
+            }
+
+            const response = await fetch(`/api/scripts/${scriptId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete script');
+            }
+
+            toast({
+                title: 'Script Deleted',
+                description: `"${script?.scriptName}" has been permanently deleted`,
+                status: 'success',
+                ...toastConfig,
+            });
+
+            // Navigate back to dashboard shows view
+            navigate('/dashboard', {
+                state: {
+                    view: 'shows',
+                    selectedShowId: script?.showID,
+                    returnFromEdit: true
+                }
+            });
+
+        } catch (error) {
+            console.error('Error deleting script:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to delete script. Please try again.',
+                status: 'error',
+                ...toastConfig,
+            });
+        } finally {
+            setIsDeleting(false);
+            setIsFinalDeleteModalOpen(false);
+        }
+    };
+
+    const handleDeleteCancel = () => {
+        setIsDeleteModalOpen(false);
+        setIsFinalDeleteModalOpen(false);
+    };
+
+    // Actions menu items
+    const actionItems: ActionItem[] = [
+        {
+            id: 'delete',
+            label: 'Delete Script',
+            onClick: handleDeleteClick,
+            isDestructive: true
+        }
+    ];
+
     return (
         <Flex
             as="form"
@@ -151,6 +241,8 @@ export const EditScriptPage: React.FC = () => {
                     </Heading>
                 </HStack>
                 <HStack spacing="2">
+                    <ActionsMenu actions={actionItems} />
+                    <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
                     <Button
                         onClick={handleClose}
                         size="xs"
@@ -231,9 +323,6 @@ export const EditScriptPage: React.FC = () => {
                                 onChange={(e) => handleChange('startTime', e.target.value)}
                                 placeholder="Select start time"
                             />
-                            <Text fontSize="sm" color="detail.text" mt="1">
-                                When this script is scheduled to begin
-                            </Text>
                         </FormControl>
 
                         {/* Script Content Section - takes remaining space */}
@@ -257,6 +346,25 @@ export const EditScriptPage: React.FC = () => {
                     </VStack>
                 )}
             </Box>
+
+            {/* Delete Confirmation Modals */}
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={handleDeleteCancel}
+                onConfirm={handleInitialDeleteConfirm}
+                entityType="Script"
+                entityName={script?.scriptName || ''}
+            />
+
+            <FinalDeleteConfirmationModal
+                isOpen={isFinalDeleteModalOpen}
+                onClose={handleDeleteCancel}
+                onConfirm={handleFinalDeleteConfirm}
+                isLoading={isDeleting}
+                entityType="Script"
+                entityName={script?.scriptName || ''}
+                warningMessage="Deleting this script will permanently remove all script elements and cannot be undone."
+            />
         </Flex>
     );
 };

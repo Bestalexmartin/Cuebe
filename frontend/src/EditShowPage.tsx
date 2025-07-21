@@ -1,15 +1,21 @@
 // frontend/src/EditShowPage.tsx
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
-    FormControl, FormLabel, Input, Textarea, Select
+    FormControl, FormLabel, Input, Textarea, Select, useToast, Divider
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useAuth } from '@clerk/clerk-react';
 import { useShow } from "./hooks/useShow";
 import { useFormManager } from './hooks/useFormManager';
 import { useResource } from './hooks/useResource';
 import { AppIcon } from './components/AppIcon';
+import { ActionsMenu, ActionItem } from './components/ActionsMenu';
+import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
+import { FinalDeleteConfirmationModal } from './components/modals/FinalDeleteConfirmationModal';
+import { toastConfig } from './ChakraTheme';
+import { convertUTCToLocal, convertLocalToUTC } from './utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface ShowFormData {
@@ -36,6 +42,13 @@ const INITIAL_FORM_STATE: ShowFormData = {
 export const EditShowPage: React.FC = () => {
     const { showId } = useParams<{ showId: string }>();
     const navigate = useNavigate();
+    const toast = useToast();
+    const { getToken } = useAuth();
+
+    // Delete state management
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isFinalDeleteModalOpen, setIsFinalDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch the initial show data
     const { show, isLoading: isLoadingShow, error: showError } = useShow(showId);
@@ -44,7 +57,7 @@ export const EditShowPage: React.FC = () => {
     const {
         data: venues,
         isLoading: isLoadingVenues
-    } = useResource<Venue[]>('/api/me/venues');
+    } = useResource<Venue>('/api/me/venues');
 
     // Form management
     const {
@@ -61,8 +74,8 @@ export const EditShowPage: React.FC = () => {
             setFormData({
                 showName: show.showName || '',
                 showNotes: show.showNotes || '',
-                showDate: show.showDate ? show.showDate.split('T')[0] : '',
-                deadline: show.deadline ? show.deadline.substring(0, 16) : '',
+                showDate: convertUTCToLocal(show.showDate),
+                deadline: convertUTCToLocal(show.deadline),
                 venueID: show.venue?.venueID || ''
             });
         }
@@ -84,8 +97,8 @@ export const EditShowPage: React.FC = () => {
             const updateData = {
                 ...formData,
                 venueID: formData.venueID || null,
-                showDate: formData.showDate || null,
-                deadline: formData.deadline || null,
+                showDate: convertLocalToUTC(formData.showDate),
+                deadline: convertLocalToUTC(formData.deadline),
                 showNotes: formData.showNotes || null,
             };
 
@@ -124,6 +137,79 @@ export const EditShowPage: React.FC = () => {
         return formData.showName.trim().length > 0;
     };
 
+    // Delete functionality
+    const handleDeleteClick = () => {
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleInitialDeleteConfirm = () => {
+        setIsDeleteModalOpen(false);
+        setIsFinalDeleteModalOpen(true);
+    };
+
+    const handleFinalDeleteConfirm = async () => {
+        if (!showId) return;
+
+        setIsDeleting(true);
+        try {
+            const token = await getToken();
+            if (!token) {
+                throw new Error('Authentication token not available');
+            }
+
+            const response = await fetch(`/api/shows/${showId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete show');
+            }
+
+            toast({
+                title: 'Show Deleted',
+                description: `"${show?.showName}" and all associated scripts have been permanently deleted`,
+                status: 'success',
+                ...toastConfig,
+            });
+
+            // Navigate back to dashboard
+            navigate('/dashboard', {
+                state: { view: 'shows' }
+            });
+
+        } catch (error) {
+            console.error('Error deleting show:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to delete show. Please try again.',
+                status: 'error',
+                ...toastConfig,
+            });
+        } finally {
+            setIsDeleting(false);
+            setIsFinalDeleteModalOpen(false);
+        }
+    };
+
+    const handleDeleteCancel = () => {
+        setIsDeleteModalOpen(false);
+        setIsFinalDeleteModalOpen(false);
+    };
+
+    // Actions menu items
+    const actionItems: ActionItem[] = [
+        {
+            id: 'delete',
+            label: 'Delete Show',
+            onClick: handleDeleteClick,
+            isDestructive: true
+        }
+    ];
+
     const isLoading = isLoadingShow || isLoadingVenues;
 
     return (
@@ -145,6 +231,8 @@ export const EditShowPage: React.FC = () => {
                     </Heading>
                 </HStack>
                 <HStack spacing="2">
+                    <ActionsMenu actions={actionItems} />
+                    <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
                     <Button
                         onClick={handleClose}
                         size="xs"
@@ -224,7 +312,7 @@ export const EditShowPage: React.FC = () => {
                             <FormControl>
                                 <FormLabel>Show Date</FormLabel>
                                 <Input
-                                    type="date"
+                                    type="datetime-local"
                                     value={formData.showDate}
                                     onChange={(e) => handleChange('showDate', e.target.value)}
                                 />
@@ -253,6 +341,25 @@ export const EditShowPage: React.FC = () => {
                     </VStack>
                 )}
             </Box>
+
+            {/* Delete Confirmation Modals */}
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={handleDeleteCancel}
+                onConfirm={handleInitialDeleteConfirm}
+                entityType="Show"
+                entityName={show?.showName || ''}
+            />
+
+            <FinalDeleteConfirmationModal
+                isOpen={isFinalDeleteModalOpen}
+                onClose={handleDeleteCancel}
+                onConfirm={handleFinalDeleteConfirm}
+                isLoading={isDeleting}
+                entityType="Show"
+                entityName={show?.showName || ''}
+                warningMessage={`Deleting this show will also delete ${show?.scripts?.length || 0} ${(show?.scripts?.length || 0) === 1 ? 'script' : 'scripts'} and all related venue, department and crew assignments.`}
+            />
         </Flex>
     );
 };

@@ -13,6 +13,7 @@ import {
     FormControl,
     FormLabel,
     Input,
+    Select,
     VStack,
 } from '@chakra-ui/react';
 import { useFormManager } from '../../hooks/useFormManager';
@@ -20,7 +21,17 @@ import { useFormManager } from '../../hooks/useFormManager';
 // TypeScript interfaces
 interface ScriptFormData {
     scriptName: string;
+    scriptStatus: string;
 }
+
+// Script status options
+const SCRIPT_STATUS_OPTIONS = [
+    { value: 'DRAFT', label: 'Draft' },
+    { value: 'COPY', label: 'Copy' },
+    { value: 'WORKING', label: 'Working' },
+    { value: 'FINAL', label: 'Final' },
+    { value: 'BACKUP', label: 'Backup' },
+];
 
 interface CreateScriptModalProps {
     isOpen: boolean;
@@ -31,6 +42,7 @@ interface CreateScriptModalProps {
 
 const INITIAL_FORM_STATE: ScriptFormData = {
     scriptName: '',
+    scriptStatus: 'DRAFT',
 };
 
 export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({ 
@@ -52,7 +64,8 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
 
         try {
             const scriptData = {
-                scriptName: formData.scriptName
+                scriptName: formData.scriptName,
+                scriptStatus: formData.scriptStatus
             };
 
             await submitForm(
@@ -101,28 +114,42 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
                                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('scriptName', e.target.value)}
                             />
                         </FormControl>
+
+                        <FormControl>
+                            <FormLabel>Script Status</FormLabel>
+                            <Select
+                                value={formData.scriptStatus}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('scriptStatus', e.target.value)}
+                            >
+                                {SCRIPT_STATUS_OPTIONS.map(option => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </Select>
+                        </FormControl>
                     </VStack>
                 </ModalBody>
 
                 <ModalFooter>
                     <Button
+                        size="xs"
+                        mr={3}
+                        onClick={handleModalClose}
+                        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
                         bg="blue.400"
                         color="white"
                         size="xs"
-                        mr={3}
                         type="submit"
                         isLoading={isSubmitting}
                         isDisabled={!isFormValid()}
                         _hover={{ bg: 'orange.400' }}
                     >
                         Create Script
-                    </Button>
-                    <Button
-                        size="xs"
-                        onClick={handleModalClose}
-                        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
-                    >
-                        Cancel
                     </Button>
                 </ModalFooter>
             </ModalContent>

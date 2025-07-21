@@ -15,6 +15,7 @@ import {
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { AppIcon } from "./components/AppIcon";
+import { formatDateFriendly, formatTimeLocal, formatDateTimeLocal } from "./utils/dateTimeUtils";
 
 // TypeScript interfaces
 interface Venue {
@@ -172,8 +173,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
         </HStack>
       </Flex>
       <Text fontSize="sm" color="detail.text" mt={2} ml={4}>
-        {venueName} • Date:{" "}
-        {show.showDate ? new Date(show.showDate).toLocaleDateString() : "N/A"}
+        {venueName} • {formatDateFriendly(show.showDate)}
       </Text>
       <HStack
         justify="space-between"
@@ -184,7 +184,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
       >
         <Text>Scripts: {show.scripts ? show.scripts.length : 0}</Text>
         <Text fontSize="xs">
-          Updated: {new Date(show.dateUpdated).toLocaleDateString()}
+          Updated: {formatDateTimeLocal(show.dateUpdated)}
         </Text>
       </HStack>
       <Collapse in={isSelected} animateOpacity>
@@ -238,7 +238,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                           </Badge>
                           <Text>
                             Created:{" "}
-                            {new Date(script.dateCreated).toLocaleDateString()}
+                            {formatDateTimeLocal(script.dateCreated)}
                           </Text>
                         </HStack>
                         <HStack
@@ -249,19 +249,11 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                         >
                           <Text>
                             Start Time:{" "}
-                            {script.startTime
-                              ? new Date(script.startTime).toLocaleTimeString(
-                                  [],
-                                  {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  },
-                                )
-                              : "Not set"}
+                            {formatTimeLocal(script.startTime)}
                           </Text>
                           <Text>
                             Updated:{" "}
-                            {new Date(script.dateUpdated).toLocaleDateString()}
+                            {formatDateTimeLocal(script.dateUpdated)}
                           </Text>
                         </HStack>
                         {script.lastUsed && (
@@ -272,7 +264,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                           >
                             <Text>
                               Last Used:{" "}
-                              {new Date(script.lastUsed).toLocaleDateString()}
+                              {formatDateTimeLocal(script.lastUsed)}
                             </Text>
                           </HStack>
                         )}
@@ -297,9 +289,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
           <Flex justify="flex-end" mt="3">
             <Text fontSize="xs" color="detail.text">
               Created:{" "}
-              {new Date(
-                show.dateCreated || show.dateUpdated,
-              ).toLocaleDateString()}
+              {formatDateTimeLocal(show.dateCreated || show.dateUpdated)}
             </Text>
           </Flex>
         </VStack>
