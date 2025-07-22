@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { useToast } from '@chakra-ui/react';
-import { toastConfig } from '../ChakraTheme';
+import { useEnhancedToast } from '../utils/toastUtils';
 
 // TypeScript interfaces
 interface UseResourceOptions {
@@ -26,7 +25,7 @@ export const useResource = <T = any>(
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const { getToken } = useAuth();
-    const toast = useToast();
+    const { showSuccess, showError } = useEnhancedToast();
 
     const {
         fetchOnMount = true,
@@ -57,13 +56,7 @@ export const useResource = <T = any>(
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
             setError(errorMessage);
-            toast({
-                title: 'Error Loading Data',
-                description: errorMessage,
-                duration: 5000,
-                isClosable: true,
-                ...toastConfig,
-            });
+            showError('Error Loading Data', errorMessage);
         } finally {
             setIsLoading(false);
         }

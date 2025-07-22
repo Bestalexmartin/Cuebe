@@ -1,12 +1,15 @@
 // frontend/src/QuickAccessPanel.tsx
 
 import React from "react";
-import { Flex, Box, VStack, Heading, Button, Text, HStack } from "@chakra-ui/react";
+import { Flex, Box, VStack, Heading, Button, Text, HStack, Menu, MenuButton, MenuList, MenuItem, MenuDivider } from "@chakra-ui/react";
+import { useNavigate } from 'react-router-dom';
 import { AppIcon } from './components/AppIcon';
 
 // TypeScript interfaces
+type IconName = 'openmenu' | 'hamburger' | 'edit' | 'delete' | 'warning' | 'pinned' | 'show' | 'venue' | 'department' | 'crew' | 'asc' | 'desc';
+
 interface NavigationItemProps {
-  icon: string;
+  icon: IconName;
   title: string;
   description: string;
   isActive: boolean;
@@ -15,7 +18,7 @@ interface NavigationItemProps {
 
 interface NavigationItem {
   id: string;
-  icon: string;
+  icon: IconName;
   title: string;
   description: string;
 }
@@ -23,6 +26,7 @@ interface NavigationItem {
 interface QuickAccessPanelProps {
   activeView: string;
   setActiveView: (view: string) => void;
+  onSaveNavigationState?: () => void;
 }
 
 const NavigationItem: React.FC<NavigationItemProps> = ({ icon, title, description, isActive, onClick }) => {
@@ -61,7 +65,8 @@ const NavigationItem: React.FC<NavigationItemProps> = ({ icon, title, descriptio
   );
 };
 
-export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({ activeView, setActiveView }) => {
+export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({ activeView, setActiveView, onSaveNavigationState }) => {
+  const navigate = useNavigate();
   const navigationItems: NavigationItem[] = [
     {
       id: 'shows',
@@ -93,18 +98,46 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({ activeView, 
     setActiveView(viewId);
   };
 
+  const handleNavigateToHelp = () => {
+    // Save current navigation state before navigating away
+    if (onSaveNavigationState) {
+      onSaveNavigationState();
+    }
+    navigate('/error-test');
+  };
+
   return (
     <>
       <Flex justify="flex-end" align="center">
-        <Button
-          bg="blue.400"
-          color="white"
-          size="xs"
-          _hover={{ bg: 'orange.400' }}
-          _focus={{ boxShadow: 'none' }}
-        >
-          Options
-        </Button>
+        <Menu>
+          <MenuButton
+            as={Button}
+            bg="blue.400"
+            color="white"
+            size="xs"
+            _hover={{ bg: 'orange.400' }}
+            _focus={{ boxShadow: 'none' }}
+            _active={{ bg: 'orange.400' }}
+          >
+            Options
+          </MenuButton>
+          <MenuList>
+            <MenuItem
+              onClick={handleNavigateToHelp}
+              icon={<AppIcon name="warning" boxSize="14px" />}
+            >
+              <VStack align="start" spacing={0}>
+                <Text fontSize="sm" fontWeight="semibold">Help & Tutorial</Text>
+              </VStack>
+            </MenuItem>
+            <MenuDivider />
+            <MenuItem isDisabled>
+              <HStack spacing={2}>
+                <Text fontSize="sm" color="gray.400">More options coming soon...</Text>
+              </HStack>
+            </MenuItem>
+          </MenuList>
+        </Menu>
       </Flex>
 
       <Box

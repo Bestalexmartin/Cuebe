@@ -25,7 +25,7 @@ import { AppIcon } from './components/AppIcon';
 import { ActionsMenu, ActionItem } from './components/ActionsMenu';
 import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
 import { FinalDeleteConfirmationModal } from './components/modals/FinalDeleteConfirmationModal';
-import { toastConfig } from './ChakraTheme';
+import { useEnhancedToast } from './utils/toastUtils';
 import { convertUTCToLocal, convertLocalToUTC } from './utils/dateTimeUtils';
 
 // TypeScript interfaces
@@ -58,7 +58,7 @@ const SCRIPT_STATUS_OPTIONS: ScriptStatusOption[] = [
 export const EditScriptPage: React.FC = () => {
     const { scriptId } = useParams<{ scriptId: string }>();
     const navigate = useNavigate();
-    const toast = useToast();
+    const { showSuccess, showError } = useEnhancedToast();
     const { getToken } = useAuth();
 
     // Delete state management
@@ -177,13 +177,7 @@ export const EditScriptPage: React.FC = () => {
                 throw new Error('Failed to delete script');
             }
 
-            toast({
-                title: 'Script Deleted',
-                description: `"${script?.scriptName}" has been permanently deleted`,
-                duration: 5000,
-                isClosable: true,
-                ...toastConfig,
-            });
+            showSuccess('Script Deleted', `"${script?.scriptName}" has been permanently deleted`);
 
             // Navigate back to dashboard shows view
             navigate('/dashboard', {
@@ -196,13 +190,7 @@ export const EditScriptPage: React.FC = () => {
 
         } catch (error) {
             console.error('Error deleting script:', error);
-            toast({
-                title: 'Error',
-                description: 'Failed to delete script. Please try again.',
-                duration: 5000,
-                isClosable: true,
-                ...toastConfig,
-            });
+            showError('Failed to delete script. Please try again.');
         } finally {
             setIsDeleting(false);
             setIsFinalDeleteModalOpen(false);

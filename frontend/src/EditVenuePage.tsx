@@ -3,8 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import {
     Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
-    FormControl, FormLabel, Input, Textarea, Select, Divider,
-    useToast
+    FormControl, FormLabel, Input, Textarea, Select, Divider
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
@@ -13,7 +12,7 @@ import { useFormManager } from './hooks/useFormManager';
 import { AppIcon } from './components/AppIcon';
 import { ActionsMenu, ActionItem } from './components/ActionsMenu';
 import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
-import { toastConfig } from './ChakraTheme';
+import { useEnhancedToast } from './utils/toastUtils';
 
 // TypeScript interfaces
 interface VenueFormData {
@@ -71,7 +70,7 @@ export const EditVenuePage: React.FC = () => {
     const { venueId } = useParams<{ venueId: string }>();
     const navigate = useNavigate();
     const { getToken } = useAuth();
-    const toast = useToast();
+    const { showSuccess, showError } = useEnhancedToast();
 
     // Delete confirmation modal state
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -196,13 +195,7 @@ export const EditVenuePage: React.FC = () => {
                 throw new Error('Failed to delete venue');
             }
 
-            toast({
-                title: 'Venue Deleted',
-                description: `"${venue.venueName}" has been deleted successfully`,
-                duration: 5000,
-                isClosable: true,
-                ...toastConfig,
-            });
+            showSuccess('Venue Deleted', `"${venue.venueName}" has been deleted successfully`);
 
             // Navigate back to dashboard
             navigate('/dashboard', {
@@ -214,13 +207,7 @@ export const EditVenuePage: React.FC = () => {
 
         } catch (error) {
             console.error('Error deleting venue:', error);
-            toast({
-                title: 'Delete Failed',
-                description: 'Failed to delete venue. Please try again.',
-                duration: 5000,
-                isClosable: true,
-                ...toastConfig,
-            });
+            showError('Failed to delete venue. Please try again.');
         } finally {
             setIsDeleting(false);
             setIsDeleteModalOpen(false);

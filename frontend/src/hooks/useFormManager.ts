@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { useToast } from '@chakra-ui/react';
-import { toastConfig } from '../ChakraTheme';
+import { useEnhancedToast } from '../utils/toastUtils';
 
 // TypeScript interfaces
 interface FormData {
@@ -28,7 +27,7 @@ export const useFormManager = <T extends FormData>(initialState: T = {} as T): U
     const [formData, setFormData] = useState<T>(initialState);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const { getToken } = useAuth();
-    const toast = useToast();
+    const { showSuccess, showError } = useEnhancedToast();
 
     const updateField = (field: keyof T, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -70,24 +69,12 @@ export const useFormManager = <T extends FormData>(initialState: T = {} as T): U
 
             const result = await response.json();
 
-            toast({
-                title: 'Success',
-                description: successMessage,
-                duration: 5000,
-                isClosable: true,
-                ...toastConfig,
-            });
+            showSuccess('Success', successMessage);
 
             return result;
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Something went wrong';
-            toast({
-                title: 'Error',
-                description: errorMessage,
-                duration: 5000,
-                isClosable: true,
-                ...toastConfig,
-            });
+            showError(errorMessage);
             throw error;
         } finally {
             setIsSubmitting(false);

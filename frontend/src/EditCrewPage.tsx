@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import {
     Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
-    FormControl, FormLabel, Input, Textarea, Select, Badge, Avatar, useToast, Divider
+    FormControl, FormLabel, Input, Textarea, Select, Badge, Avatar, Divider
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
@@ -14,7 +14,7 @@ import { AppIcon } from './components/AppIcon';
 import { ActionsMenu, ActionItem } from './components/ActionsMenu';
 import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
 import { FinalDeleteConfirmationModal } from './components/modals/FinalDeleteConfirmationModal';
-import { toastConfig } from './ChakraTheme';
+import { useEnhancedToast } from './utils/toastUtils';
 import { formatDateTimeLocal } from './utils/dateTimeUtils';
 
 // TypeScript interfaces
@@ -68,7 +68,7 @@ const USER_ROLE_OPTIONS: UserRoleOption[] = [
 export const EditCrewPage: React.FC = () => {
     const { crewId } = useParams<{ crewId: string }>();
     const navigate = useNavigate();
-    const toast = useToast();
+    const { showSuccess, showError } = useEnhancedToast();
     const { getToken } = useAuth();
     const { user: clerkUser } = useUser();
 
@@ -209,13 +209,7 @@ export const EditCrewPage: React.FC = () => {
                 throw new Error('Failed to remove crew');
             }
 
-            toast({
-                title: 'Crew Removed',
-                description: `"${getFullName()}" has been removed from your crew`,
-                duration: 5000,
-                isClosable: true,
-                ...toastConfig,
-            });
+            showSuccess('Crew Removed', `"${getFullName()}" has been removed from your crew`);
 
             // Navigate back to dashboard crew view
             navigate('/dashboard', {
@@ -227,13 +221,7 @@ export const EditCrewPage: React.FC = () => {
 
         } catch (error) {
             console.error('Error removing crew:', error);
-            toast({
-                title: 'Error',
-                description: 'Failed to remove crew. Please try again.',
-                duration: 5000,
-                isClosable: true,
-                ...toastConfig,
-            });
+            showError('Failed to remove crew. Please try again.');
         } finally {
             setIsDeleting(false);
             setIsFinalDeleteModalOpen(false);

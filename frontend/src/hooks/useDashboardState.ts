@@ -335,6 +335,7 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
     setHoveredCardId,
     showCardRefs,
     shows: safeShows,
+    currentView,
 
     // Selected state
     selectedState,

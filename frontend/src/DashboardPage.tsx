@@ -60,28 +60,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
     saveCurrentNavigationState,
     sortState,
     updateSortState,
+    currentView,
   } = useDashboardState(shows);
 
-  // Use local state for activeView, initialized from currentView
-  const [activeView, setActiveView] = useState('shows');
-
-  // Sync activeView with currentView from hook
+  // Sync with navigation state from route
   useEffect(() => {
     const state = location.state as LocationState;
     if (state?.returnFromEdit) {
       const { view } = state;
       if (view) {
-        setActiveView(view);
         hookHandleViewChange(view);
       }
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
-
-  const handleViewChange = (newView: string) => {
-    setActiveView(newView);
-    hookHandleViewChange(newView);
-  };
+  }, [location.state, hookHandleViewChange]);
 
   // Modal handlers
   const handleCreateShow = () => openModal(MODAL_TYPES.CREATE_SHOW);
@@ -161,7 +153,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
           height={{ base: '100vh', lg: 'auto' }}
           overflowY={{ base: 'auto', lg: 'visible' }}
         >
-          {activeView === 'shows' && (
+          {currentView === 'shows' && (
             <ShowsView
               key={`shows-${refreshKey}`}
               shows={shows}
@@ -182,7 +174,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
               onSortChange={(sortBy, sortDirection) => updateSortState('shows', sortBy, sortDirection)}
             />
           )}
-          {activeView === 'venues' && (
+          {currentView === 'venues' && (
             <VenuesView
               key={`venues-${refreshKey}`}
               onCreateVenue={handleCreateVenue}
@@ -196,7 +188,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
               onSortChange={(sortBy, sortDirection) => updateSortState('venues', sortBy, sortDirection)}
             />
           )}
-          {activeView === 'departments' && (
+          {currentView === 'departments' && (
             <DepartmentsView
               key={`departments-${refreshKey}`}
               onCreateDepartment={handleCreateDepartment}
@@ -210,7 +202,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
               onSortChange={(sortBy, sortDirection) => updateSortState('departments', sortBy, sortDirection)}
             />
           )}
-          {activeView === 'crew' && (
+          {currentView === 'crew' && (
             <CrewView
               key={`crew-${refreshKey}`}
               onCreateCrew={handleCreateCrew}
@@ -231,7 +223,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
           display={{ base: 'none', lg: 'flex' }}
           flexDirection="column"
         >
-          <QuickAccessPanel activeView={activeView} setActiveView={handleViewChange} />
+          <QuickAccessPanel 
+            activeView={currentView} 
+            setActiveView={hookHandleViewChange} 
+            onSaveNavigationState={saveCurrentNavigationState}
+          />
         </Box>
       </Flex>
 
@@ -250,7 +246,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
           />
           <DrawerHeader>Quick•Access</DrawerHeader>
           <DrawerBody>
-            <QuickAccessPanel activeView={activeView} setActiveView={handleViewChange} />
+            <QuickAccessPanel 
+            activeView={currentView} 
+            setActiveView={hookHandleViewChange} 
+            onSaveNavigationState={saveCurrentNavigationState}
+          />
           </DrawerBody>
         </DrawerContent>
       </Drawer>
