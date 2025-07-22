@@ -14,12 +14,12 @@ import {
     FormLabel,
     Input,
     Select,
-    Divider,
-    useToast
+    Divider
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
-import { useFormManager } from './hooks/useFormManager';
+import { useValidatedForm } from './hooks/useValidatedForm';
+import { ValidationRules, FormValidationConfig } from './types/validation';
 import { useScript } from './hooks/useScript';
 import { AppIcon } from './components/AppIcon';
 import { ActionsMenu, ActionItem } from './components/ActionsMenu';
@@ -46,6 +46,25 @@ const INITIAL_FORM_STATE: ScriptFormData = {
     startTime: '',
 };
 
+const VALIDATION_CONFIG: FormValidationConfig = {
+    scriptName: {
+        required: false,
+        rules: [
+            {
+                validator: (value: string) => {
+                    if (!value || value.trim().length === 0) {
+                        return true; // Empty is valid
+                    }
+                    return value.trim().length >= 4; // Must have 4+ chars if not empty
+                },
+                message: 'Script name must be at least 4 characters',
+                code: 'MIN_LENGTH'
+            },
+            ValidationRules.maxLength(100, 'Script name must be no more than 100 characters')
+        ]
+    }
+};
+
 // Script status options - updated workflow states
 const SCRIPT_STATUS_OPTIONS: ScriptStatusOption[] = [
     { value: 'DRAFT', label: 'Draft' },
@@ -70,28 +89,27 @@ export const EditScriptPage: React.FC = () => {
     const { script, isLoading: isLoadingScript, error: scriptError } = useScript(scriptId);
 
     // Form management
-    const {
-        formData,
-        isSubmitting,
-        updateField,
-        setFormData,
-        submitForm,
-    } = useFormManager<ScriptFormData>(INITIAL_FORM_STATE);
+    const form = useValidatedForm<ScriptFormData>(INITIAL_FORM_STATE, {
+        validationConfig: VALIDATION_CONFIG,
+        validateOnChange: true,
+        validateOnBlur: true,
+        showFieldErrorsInToast: false
+    });
 
     // Populate form when script data loads
     useEffect(() => {
         if (script) {
-            setFormData({
+            form.setFormData({
                 scriptName: script.scriptName || '',
                 scriptStatus: script.scriptStatus || 'DRAFT',
                 startTime: convertUTCToLocal(script.startTime),
             });
         }
-    }, [script, setFormData]);
+    }, [script, form.setFormData]);
 
     // Handle form field changes
     const handleChange = (field: keyof ScriptFormData, value: string) => {
-        updateField(field, value);
+        form.updateField(field, value);
     };
 
     // Handle form submission
@@ -103,15 +121,15 @@ export const EditScriptPage: React.FC = () => {
         try {
             // Prepare data for API
             const updateData = {
-                scriptName: formData.scriptName,
-                scriptStatus: formData.scriptStatus,
-                startTime: convertLocalToUTC(formData.startTime),
+                scriptName: form.formData.scriptName,
+                scriptStatus: form.formData.scriptStatus,
+                startTime: convertLocalToUTC(form.formData.startTime),
             };
 
-            await submitForm(
+            await form.submitForm(
                 `/api/scripts/${scriptId}`,
                 'PATCH',
-                `"${formData.scriptName}" has been updated successfully`,
+                `"${form.formData.scriptName}" has been updated successfully`,
                 updateData
             );
 
@@ -142,7 +160,7 @@ export const EditScriptPage: React.FC = () => {
     };
 
     const isFormValid = (): boolean => {
-        return formData.scriptName.trim().length > 0;
+        return form.fieldErrors.length === 0 && form.formData.scriptName.trim().length >= 4;
     };
 
     // Delete functionality
@@ -246,7 +264,7 @@ export const EditScriptPage: React.FC = () => {
                         size="xs"
                         _hover={{ bg: 'orange.400' }}
                         type="submit"
-                        isLoading={isSubmitting}
+                        isLoading={form.isSubmitting}
                         isDisabled={!isFormValid()}
                     >
                         Save Changes
@@ -286,8 +304,9 @@ export const EditScriptPage: React.FC = () => {
                         <FormControl isRequired>
                             <FormLabel>Script Name</FormLabel>
                             <Input
-                                value={formData.scriptName}
+                                value={form.formData.scriptName}
                                 onChange={(e) => handleChange('scriptName', e.target.value)}
+                                onBlur={() => form.validateField('scriptName')}
                                 placeholder="Enter script name"
                             />
                         </FormControl>
@@ -295,7 +314,7 @@ export const EditScriptPage: React.FC = () => {
                         <FormControl isRequired>
                             <FormLabel>Script Status</FormLabel>
                             <Select
-                                value={formData.scriptStatus}
+                                value={form.formData.scriptStatus}
                                 onChange={(e) => handleChange('scriptStatus', e.target.value)}
                             >
                                 {SCRIPT_STATUS_OPTIONS.map(option => (
@@ -310,7 +329,7 @@ export const EditScriptPage: React.FC = () => {
                             <FormLabel>Start Time</FormLabel>
                             <Input
                                 type="datetime-local"
-                                value={formData.startTime}
+                                value={form.formData.startTime}
                                 onChange={(e) => handleChange('startTime', e.target.value)}
                                 placeholder="Select start time"
                             />
@@ -337,6 +356,30 @@ export const EditScriptPage: React.FC = () => {
                     </VStack>
                 )}
             </Box>
+            
+            {/* Floating Validation Error Panel */}
+            {form.fieldErrors.length > 0 && (
+                <Box
+                    mt="4"
+                    bg="red.500"
+                    color="white"
+                    p={4}
+                    borderRadius="md"
+                    boxShadow="lg"
+                    flexShrink={0}
+                >
+                    <Text fontWeight="semibold" fontSize="sm" display="inline">
+                        Validation Errors: 
+                    </Text>
+                    <Text fontSize="sm" display="inline" ml={1}>
+                        {form.fieldErrors.map((error, i) => (
+                            <Text key={i} as="span">
+                                {i > 0 && '; '}{error.message}
+                            </Text>
+                        ))}
+                    </Text>
+                </Box>
+            )}
 
             {/* Delete Confirmation Modals */}
             <DeleteConfirmationModal

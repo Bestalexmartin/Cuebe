@@ -14,7 +14,8 @@ import { EditScriptPage } from './EditScriptPage';
 import { EditVenuePage } from './EditVenuePage';
 import { EditDepartmentPage } from './EditDepartmentPage';
 import { EditCrewPage } from './EditCrewPage';
-import { ErrorTestPage } from './ErrorTestPage';
+import { TutorialPage } from './TutorialPage';
+import { TestToolsPage } from './TestToolsPage';
 
 // TypeScript interfaces
 interface ProtectedRouteProps {
@@ -91,10 +92,16 @@ const App: React.FC = () => {
             </ProtectedRoute>
           } />
 
-          {/* Error Testing Route - Remove in production */}
-          <Route path="/error-test" element={
+          {/* Tutorial and Test Tools Routes */}
+          <Route path="/tutorial" element={
             <ProtectedRoute>
-              <ErrorTestPage />
+              <TutorialPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/test-tools" element={
+            <ProtectedRoute>
+              <TestToolsPage />
             </ProtectedRoute>
           } />
 

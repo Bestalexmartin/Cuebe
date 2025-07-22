@@ -15,8 +15,13 @@ import {
     Input,
     VStack,
     HStack,
+    Box,
+    Text,
 } from '@chakra-ui/react';
-import { useFormManager } from '../../hooks/useFormManager';
+import { useValidatedForm } from '../../hooks/useValidatedForm';
+import { ValidationRules, FormValidationConfig } from '../../types/validation';
+import { FormInput } from '../form/FormField';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 // TypeScript interfaces
 interface VenueFormData {
@@ -37,33 +42,62 @@ const INITIAL_FORM_STATE: VenueFormData = {
     state: '',
 };
 
+const VALIDATION_CONFIG: FormValidationConfig = {
+    venueName: {
+        required: false, // Handle required validation manually for button state
+        rules: [
+            {
+                validator: (value: string) => {
+                    if (!value || value.trim().length === 0) {
+                        return true; // Empty is valid
+                    }
+                    return value.trim().length >= 4; // Must have 4+ chars if not empty
+                },
+                message: 'Venue name must be at least 4 characters',
+                code: 'MIN_LENGTH'
+            },
+            ValidationRules.maxLength(100, 'Venue name must be no more than 100 characters')
+        ]
+    },
+    city: {
+        required: false,
+        rules: [
+            ValidationRules.maxLength(50, 'City must be no more than 50 characters')
+        ]
+    },
+    state: {
+        required: false,
+        rules: [
+            ValidationRules.maxLength(2, 'State must be no more than 2 characters')
+        ]
+    }
+};
+
 export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
     isOpen,
     onClose,
     onVenueCreated
 }) => {
-    const {
-        formData,
-        isSubmitting,
-        updateField,
-        resetForm,
-        submitForm,
-    } = useFormManager<VenueFormData>(INITIAL_FORM_STATE);
+    const form = useValidatedForm<VenueFormData>(INITIAL_FORM_STATE, {
+        validationConfig: VALIDATION_CONFIG,
+        validateOnBlur: true,
+        showFieldErrorsInToast: false // Only show validation errors in red alert box
+    });
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
         try {
             const venueData = {
-                venueName: formData.venueName,
-                ...(formData.city.trim() && { city: formData.city.trim() }),
-                ...(formData.state.trim() && { state: formData.state.trim() }),
+                venueName: form.formData.venueName,
+                ...(form.formData.city.trim() && { city: form.formData.city.trim() }),
+                ...(form.formData.state.trim() && { state: form.formData.state.trim() }),
             };
 
-            await submitForm(
+            await form.submitForm(
                 '/api/me/venues',
                 'POST',
-                `"${formData.venueName}" has been added to your venues`,
+                `"${form.formData.venueName}" has been added to your venues`,
                 venueData
             );
 
@@ -76,82 +110,93 @@ export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
     };
 
     const handleModalClose = () => {
-        resetForm();
+        form.resetForm();
         onClose();
     };
 
     const isFormValid = (): boolean => {
-        return formData.venueName.trim() !== '';
+        const hasRequiredFields = form.formData.venueName.trim() !== '';
+        const hasNoValidationErrors = form.fieldErrors.length === 0;
+        return hasRequiredFields && hasNoValidationErrors;
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={handleModalClose} onCloseComplete={resetForm}>
-            <ModalOverlay />
-            <ModalContent
-                as="form"
-                onSubmit={handleSubmit}
-                bg="page.background"
-                border="2px solid"
-                borderColor="gray.600"
-            >
-                <ModalHeader>Create New Venue</ModalHeader>
-                <ModalCloseButton />
-                <ModalBody pb={6}>
-                    <VStack spacing={4} align="stretch">
-                        <FormControl isRequired>
-                            <FormLabel>Venue Name</FormLabel>
-                            <Input
+        <ErrorBoundary context="CreateVenueModal">
+            <Modal isOpen={isOpen} onClose={handleModalClose} onCloseComplete={form.resetForm}>
+                <ModalOverlay />
+                <ModalContent
+                    as="form"
+                    onSubmit={handleSubmit}
+                    bg="page.background"
+                    border="2px solid"
+                    borderColor="gray.600"
+                >
+                    <ModalHeader>Create New Venue</ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody pb={6}>
+                        <VStack spacing={4} align="stretch">
+                            <FormInput
+                                form={form}
+                                name="venueName"
+                                label="Venue Name"
                                 placeholder="Enter venue name"
-                                value={formData.venueName}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('venueName', e.target.value)}
+                                isRequired
                             />
-                        </FormControl>
 
-                        <HStack spacing={4}>
-                            <FormControl>
-                                <FormLabel>City</FormLabel>
-                                <Input
+                            <HStack spacing={4}>
+                                <FormInput
+                                    form={form}
+                                    name="city"
+                                    label="City"
                                     placeholder="Enter city"
-                                    value={formData.city}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('city', e.target.value)}
                                 />
-                            </FormControl>
 
-                            <FormControl>
-                                <FormLabel>State</FormLabel>
-                                <Input
+                                <FormInput
+                                    form={form}
+                                    name="state"
+                                    label="State"
                                     placeholder="CA"
-                                    value={formData.state}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('state', e.target.value)}
                                     maxLength={2}
                                 />
-                            </FormControl>
-                        </HStack>
-                    </VStack>
-                </ModalBody>
+                            </HStack>
+                        </VStack>
+                    </ModalBody>
 
-                <ModalFooter>
-                    <Button
-                        size="sm"
-                        mr={3}
-                        onClick={handleModalClose}
-                        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        bg="blue.400"
-                        color="white"
-                        size="sm"
-                        type="submit"
-                        isLoading={isSubmitting}
-                        isDisabled={!isFormValid()}
-                        _hover={{ bg: 'orange.400' }}
-                    >
-                        Create Venue
-                    </Button>
-                </ModalFooter>
-            </ModalContent>
-        </Modal>
+                    <ModalFooter>
+                        <Button
+                            size="sm"
+                            mr={3}
+                            onClick={handleModalClose}
+                            _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            bg="blue.400"
+                            color="white"
+                            size="sm"
+                            type="submit"
+                            isLoading={form.isSubmitting}
+                            isDisabled={!isFormValid()}
+                            _hover={{ bg: 'orange.400' }}
+                        >
+                            Create Venue
+                        </Button>
+                    </ModalFooter>
+                    
+                    {/* Show form-level validation errors */}
+                    {form.fieldErrors.length > 0 && (
+                        <Box p={3} bg="red.500" color="white" borderRadius="md" mx={6} mb={6}>
+                            <Text fontWeight="semibold" mb={2}>Validation Errors:</Text>
+                            {form.fieldErrors.map((error, i) => (
+                                <Text key={i} fontSize="sm">
+                                    • {error.message}
+                                </Text>
+                            ))}
+                        </Box>
+                    )}
+                </ModalContent>
+            </Modal>
+        </ErrorBoundary>
     );
 };

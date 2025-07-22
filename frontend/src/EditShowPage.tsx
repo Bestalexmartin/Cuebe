@@ -3,13 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import {
     Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
-    FormControl, FormLabel, Input, Textarea, Select, useToast, Divider
+    FormControl, FormLabel, Input, Textarea, Select, Divider
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useShow } from "./hooks/useShow";
-import { useFormManager } from './hooks/useFormManager';
+import { useValidatedForm } from './hooks/useValidatedForm';
 import { useResource } from './hooks/useResource';
+import { ValidationRules, FormValidationConfig } from './types/validation';
 import { AppIcon } from './components/AppIcon';
 import { ActionsMenu, ActionItem } from './components/ActionsMenu';
 import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
@@ -39,6 +40,32 @@ const INITIAL_FORM_STATE: ShowFormData = {
     venueID: ''
 };
 
+const VALIDATION_CONFIG: FormValidationConfig = {
+    showName: {
+        required: false, // Handle through custom minLength rule
+        rules: [
+            // Custom minLength rule that requires at least 4 characters (empty is allowed)
+            {
+                validator: (value: string) => {
+                    if (!value || value.trim().length === 0) {
+                        return true; // Empty is valid
+                    }
+                    return value.trim().length >= 4; // Must have 4+ chars if not empty
+                },
+                message: 'Show name must be at least 4 characters',
+                code: 'MIN_LENGTH'
+            },
+            ValidationRules.maxLength(100, 'Show name must be no more than 100 characters')
+        ]
+    },
+    showNotes: {
+        required: false,
+        rules: [
+            ValidationRules.maxLength(500, 'Notes must be no more than 500 characters')
+        ]
+    }
+};
+
 export const EditShowPage: React.FC = () => {
     const { showId } = useParams<{ showId: string }>();
     const navigate = useNavigate();
@@ -60,18 +87,17 @@ export const EditShowPage: React.FC = () => {
     } = useResource<Venue>('/api/me/venues');
 
     // Form management
-    const {
-        formData,
-        isSubmitting,
-        updateField,
-        setFormData,
-        submitForm,
-    } = useFormManager<ShowFormData>(INITIAL_FORM_STATE);
+    const form = useValidatedForm<ShowFormData>(INITIAL_FORM_STATE, {
+        validationConfig: VALIDATION_CONFIG,
+        validateOnChange: true, // Re-enabled with fixed timing
+        validateOnBlur: true,
+        showFieldErrorsInToast: false
+    });
 
     // Populate form when show data loads
     useEffect(() => {
         if (show) {
-            setFormData({
+            form.setFormData({
                 showName: show.showName || '',
                 showNotes: show.showNotes || '',
                 showDate: convertUTCToLocal(show.showDate),
@@ -79,11 +105,19 @@ export const EditShowPage: React.FC = () => {
                 venueID: show.venue?.venueID || ''
             });
         }
-    }, [show, setFormData]);
+    }, [show, form.setFormData]);
 
     // Handle form field changes
     const handleChange = (field: keyof ShowFormData, value: string) => {
-        updateField(field, value);
+        form.updateField(field, value);
+    };
+    
+    // Handle paste events specifically
+    const handlePaste = (field: keyof ShowFormData) => {
+        // Use a small delay to ensure paste content is processed
+        setTimeout(() => {
+            form.validateField(field as string);
+        }, 10);
     };
 
     // Handle form submission
@@ -95,17 +129,17 @@ export const EditShowPage: React.FC = () => {
         try {
             // Prepare data for API (convert venueID to integer if provided)
             const updateData = {
-                ...formData,
-                venueID: formData.venueID || null,
-                showDate: convertLocalToUTC(formData.showDate),
-                deadline: convertLocalToUTC(formData.deadline),
-                showNotes: formData.showNotes || null,
+                ...form.formData,
+                venueID: form.formData.venueID || null,
+                showDate: convertLocalToUTC(form.formData.showDate),
+                deadline: convertLocalToUTC(form.formData.deadline),
+                showNotes: form.formData.showNotes || null,
             };
 
-            await submitForm(
+            await form.submitForm(
                 `/api/shows/${showId}`,
                 'PATCH',
-                `"${formData.showName}" has been updated successfully`,
+                `"${form.formData.showName}" has been updated successfully`,
                 updateData
             );
 
@@ -134,7 +168,8 @@ export const EditShowPage: React.FC = () => {
     };
 
     const isFormValid = (): boolean => {
-        return formData.showName.trim().length > 0;
+        // Now rely entirely on the validation system
+        return form.fieldErrors.length === 0 && form.formData.showName.trim().length >= 4;
     };
 
     // Delete functionality
@@ -236,7 +271,7 @@ export const EditShowPage: React.FC = () => {
                         size="xs"
                         _hover={{ bg: 'orange.400' }}
                         type="submit"
-                        isLoading={isSubmitting}
+                        isLoading={form.isSubmitting}
                         isDisabled={!isFormValid()}
                     >
                         Save Changes
@@ -276,8 +311,9 @@ export const EditShowPage: React.FC = () => {
                         <FormControl isRequired>
                             <FormLabel>Show Name</FormLabel>
                             <Input
-                                value={formData.showName}
+                                value={form.formData.showName}
                                 onChange={(e) => handleChange('showName', e.target.value)}
+                                onPaste={() => handlePaste('showName')}
                                 placeholder="Enter show title"
                             />
                         </FormControl>
@@ -285,7 +321,7 @@ export const EditShowPage: React.FC = () => {
                         <FormControl>
                             <FormLabel>Venue</FormLabel>
                             <Select
-                                value={formData.venueID}
+                                value={form.formData.venueID}
                                 onChange={(e) => handleChange('venueID', e.target.value)}
                                 placeholder={isLoadingVenues ? "Loading venues..." : "Select venue"}
                                 disabled={isLoadingVenues}
@@ -304,7 +340,7 @@ export const EditShowPage: React.FC = () => {
                                 <FormLabel>Show Date</FormLabel>
                                 <Input
                                     type="datetime-local"
-                                    value={formData.showDate}
+                                    value={form.formData.showDate}
                                     onChange={(e) => handleChange('showDate', e.target.value)}
                                 />
                             </FormControl>
@@ -312,7 +348,7 @@ export const EditShowPage: React.FC = () => {
                                 <FormLabel>Script Deadline</FormLabel>
                                 <Input
                                     type="datetime-local"
-                                    value={formData.deadline}
+                                    value={form.formData.deadline}
                                     onChange={(e) => handleChange('deadline', e.target.value)}
                                 />
                             </FormControl>
@@ -322,8 +358,9 @@ export const EditShowPage: React.FC = () => {
                         <FormControl>
                             <FormLabel>Notes</FormLabel>
                             <Textarea
-                                value={formData.showNotes}
+                                value={form.formData.showNotes}
                                 onChange={(e) => handleChange('showNotes', e.target.value)}
+                                onBlur={() => form.validateField('showNotes')}
                                 placeholder="Additional show information, special requirements, etc."
                                 minHeight="120px"
                                 resize="vertical"
@@ -332,6 +369,30 @@ export const EditShowPage: React.FC = () => {
                     </VStack>
                 )}
             </Box>
+            
+            {/* Floating Validation Error Panel */}
+            {form.fieldErrors.length > 0 && (
+                <Box
+                    mt="4"
+                    bg="red.500"
+                    color="white"
+                    p={4}
+                    borderRadius="md"
+                    boxShadow="lg"
+                    flexShrink={0}
+                >
+                    <Text fontWeight="semibold" fontSize="sm" display="inline">
+                        Validation Errors: 
+                    </Text>
+                    <Text fontSize="sm" display="inline" ml={1}>
+                        {form.fieldErrors.map((error, i) => (
+                            <Text key={i} as="span">
+                                {i > 0 && '; '}{error.message}
+                            </Text>
+                        ))}
+                    </Text>
+                </Box>
+            )}
 
             {/* Delete Confirmation Modals */}
             <DeleteConfirmationModal

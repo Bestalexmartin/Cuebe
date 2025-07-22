@@ -98,12 +98,20 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({ activeView, 
     setActiveView(viewId);
   };
 
-  const handleNavigateToHelp = () => {
+  const handleNavigateToTutorial = () => {
     // Save current navigation state before navigating away
     if (onSaveNavigationState) {
       onSaveNavigationState();
     }
-    navigate('/error-test');
+    navigate('/tutorial');
+  };
+
+  const handleNavigateToTestTools = () => {
+    // Save current navigation state before navigating away
+    if (onSaveNavigationState) {
+      onSaveNavigationState();
+    }
+    navigate('/test-tools');
   };
 
   return (
@@ -123,11 +131,19 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({ activeView, 
           </MenuButton>
           <MenuList>
             <MenuItem
-              onClick={handleNavigateToHelp}
+              onClick={handleNavigateToTutorial}
+              icon={<AppIcon name="tutorial" boxSize="14px" />}
+            >
+              <VStack align="start" spacing={0}>
+                <Text fontSize="sm" fontWeight="semibold">Tutorial</Text>
+              </VStack>
+            </MenuItem>
+            <MenuItem
+              onClick={handleNavigateToTestTools}
               icon={<AppIcon name="warning" boxSize="14px" />}
             >
               <VStack align="start" spacing={0}>
-                <Text fontSize="sm" fontWeight="semibold">Help & Tutorial</Text>
+                <Text fontSize="sm" fontWeight="semibold">Test Tools</Text>
               </VStack>
             </MenuItem>
             <MenuDivider />

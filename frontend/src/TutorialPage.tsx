@@ -1,4 +1,4 @@
-// frontend/src/ErrorTestPage.tsx
+// frontend/src/TutorialPage.tsx
 
 import React from 'react';
 import {
@@ -19,10 +19,9 @@ import {
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { ErrorTestComponent } from './components/ErrorTestComponent';
 import { AppIcon } from './components/AppIcon';
 
-export const ErrorTestPage: React.FC = () => {
+export const TutorialPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleClose = () => {
@@ -30,7 +29,7 @@ export const ErrorTestPage: React.FC = () => {
   };
 
   return (
-    <ErrorBoundary context="Help & Tutorial Page">
+    <ErrorBoundary context="Tutorial Page">
       <Box
         width="100%"
         height="100%"
@@ -42,9 +41,9 @@ export const ErrorTestPage: React.FC = () => {
         {/* Header Section */}
         <Box flexShrink={0}>
           <HStack spacing="2" align="center">
-            <AppIcon name="warning" boxSize="20px" />
+            <AppIcon name="tutorial" boxSize="20px" />
             <Heading as="h2" size="md">
-              Help & Tutorial Center
+              Tutorial
             </Heading>
             <Button
               onClick={handleClose}
@@ -71,30 +70,9 @@ export const ErrorTestPage: React.FC = () => {
         >
           <VStack spacing={8} align="stretch">
 
-            {/* Error Testing Section */}
-            <Box
-              display="flex"
-              flexWrap="wrap"
-              gap={4}
-              alignItems="flex-start"
-            >
-              <Box
-                p={4}
-                border="1px solid"
-                borderColor="gray.600"
-                borderRadius="md"
-                flex="0 0 auto"
-                maxW="600px"
-                width="100%"
-              >
-                <ErrorTestComponent />
-              </Box>
-            </Box>
-
             <Box>
               <HStack spacing={2} mb={4}>
                 <Badge colorScheme="gray" fontSize="sm" px={2} py={1}>COMING SOON</Badge>
-                <Heading size="sm">More Help Topics</Heading>
               </HStack>
 
               <VStack spacing={3} align="stretch">
