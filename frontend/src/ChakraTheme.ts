@@ -1,16 +1,21 @@
 import { extendTheme } from '@chakra-ui/react';
 
 // TypeScript interfaces
-interface ToastConfig {
-  containerStyle: {
-    bg: string;
-    color: string;
-    width: string;
-    maxWidth: string;
-    border: string;
-    borderColor: string;
-    boxShadow: string;
-  };
+interface ToastStyle {
+  bg: string;
+  color: string;
+  width: string;
+  maxWidth: string;
+  border: string;
+  borderColor: string;
+  boxShadow: string;
+}
+
+interface ToastConfigs {
+  success: { containerStyle: ToastStyle };
+  error: { containerStyle: ToastStyle };
+  warning: { containerStyle: ToastStyle };
+  info: { containerStyle: ToastStyle };
 }
 
 // Chakra Config
@@ -46,20 +51,72 @@ const semanticTokens = {
       _light: 'gray.600',
       _dark: 'gray.300',
     },
-    'toast.bg': {
+    // Success/Info Toast (default blue)
+    'toast.success.bg': {
       _light: '#6495ED',
       _dark: '#6495ED',
     },
-    'toast.color': {
+    'toast.success.color': {
       _light: 'white',
       _dark: 'white',
     },
-    'toast.border': {
+    'toast.success.border': {
       _light: '#4169E1',
       _dark: 'transparent',
     },
-    'toast.shadow': {
+    'toast.success.shadow': {
       _light: '0 4px 12px rgba(100, 149, 237, 0.15)',
+      _dark: '0 4px 12px rgba(0, 0, 0, 0.3)',
+    },
+    // Error Toast (red)
+    'toast.error.bg': {
+      _light: '#E53E3E',
+      _dark: '#E53E3E',
+    },
+    'toast.error.color': {
+      _light: 'white',
+      _dark: 'white',
+    },
+    'toast.error.border': {
+      _light: '#C53030',
+      _dark: 'transparent',
+    },
+    'toast.error.shadow': {
+      _light: '0 4px 12px rgba(229, 62, 62, 0.15)',
+      _dark: '0 4px 12px rgba(0, 0, 0, 0.3)',
+    },
+    // Warning Toast (orange)
+    'toast.warning.bg': {
+      _light: '#DD6B20',
+      _dark: '#DD6B20',
+    },
+    'toast.warning.color': {
+      _light: 'white',
+      _dark: 'white',
+    },
+    'toast.warning.border': {
+      _light: '#C05621',
+      _dark: 'transparent',
+    },
+    'toast.warning.shadow': {
+      _light: '0 4px 12px rgba(221, 107, 32, 0.15)',
+      _dark: '0 4px 12px rgba(0, 0, 0, 0.3)',
+    },
+    // Info Toast (teal)
+    'toast.info.bg': {
+      _light: '#319795',
+      _dark: '#319795',
+    },
+    'toast.info.color': {
+      _light: 'white',
+      _dark: 'white',
+    },
+    'toast.info.border': {
+      _light: '#2C7A7B',
+      _dark: 'transparent',
+    },
+    'toast.info.shadow': {
+      _light: '0 4px 12px rgba(49, 151, 149, 0.15)',
       _dark: '0 4px 12px rgba(0, 0, 0, 0.3)',
     }
   },
@@ -82,16 +139,51 @@ const components = {
   },
 };
 
-// Toast configuration - distinct styling for light/dark modes with same colors
-export const toastConfig: ToastConfig = {
-  containerStyle: {
-    bg: 'toast.bg',
-    color: 'toast.color',
-    width: '400px',
-    maxWidth: '400px',
-    border: '2px solid',
-    borderColor: 'toast.border',
-    boxShadow: 'toast.shadow',
+// Toast configuration - distinct styling for different severities
+export const toastConfigs: ToastConfigs = {
+  success: {
+    containerStyle: {
+      bg: 'toast.success.bg',
+      color: 'toast.success.color',
+      width: '400px',
+      maxWidth: '400px',
+      border: '2px solid',
+      borderColor: 'toast.success.border',
+      boxShadow: 'toast.success.shadow',
+    },
+  },
+  error: {
+    containerStyle: {
+      bg: 'toast.error.bg',
+      color: 'toast.error.color',
+      width: '400px',
+      maxWidth: '400px',
+      border: '2px solid',
+      borderColor: 'toast.error.border',
+      boxShadow: 'toast.error.shadow',
+    },
+  },
+  warning: {
+    containerStyle: {
+      bg: 'toast.warning.bg',
+      color: 'toast.warning.color',
+      width: '400px',
+      maxWidth: '400px',
+      border: '2px solid',
+      borderColor: 'toast.warning.border',
+      boxShadow: 'toast.warning.shadow',
+    },
+  },
+  info: {
+    containerStyle: {
+      bg: 'toast.info.bg',
+      color: 'toast.info.color',
+      width: '400px',
+      maxWidth: '400px',
+      border: '2px solid',
+      borderColor: 'toast.info.border',
+      boxShadow: 'toast.info.shadow',
+    },
   },
 };
 

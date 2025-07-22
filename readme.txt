@@ -73,3 +73,4 @@ Monday Jul 29, 2025
 2) Refactored sort controls and general visual improvements
 3) Cleanup of scrolling on edit pages and minor UI fixes
 4) General UI/UX cleanup, pruned unused endpoints
+5) Major update... enhanced error handling system, added centralized smart form validation, enhanced and unified modals, added initial help page and improved navigation state persistence

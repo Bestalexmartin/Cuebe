@@ -14,7 +14,7 @@ import { AppIcon } from './components/AppIcon';
 import { ActionsMenu, ActionItem } from './components/ActionsMenu';
 import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
 import { FinalDeleteConfirmationModal } from './components/modals/FinalDeleteConfirmationModal';
-import { toastConfig } from './ChakraTheme';
+import { useEnhancedToast } from './utils/toastUtils';
 import { convertUTCToLocal, convertLocalToUTC } from './utils/dateTimeUtils';
 
 // TypeScript interfaces
@@ -42,7 +42,7 @@ const INITIAL_FORM_STATE: ShowFormData = {
 export const EditShowPage: React.FC = () => {
     const { showId } = useParams<{ showId: string }>();
     const navigate = useNavigate();
-    const toast = useToast();
+    const { showSuccess, showError } = useEnhancedToast();
     const { getToken } = useAuth();
 
     // Delete state management
@@ -51,7 +51,7 @@ export const EditShowPage: React.FC = () => {
     const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch the initial show data
-    const { show, isLoading: isLoadingShow, error: showError } = useShow(showId);
+    const { show, isLoading: isLoadingShow, error: showLoadError } = useShow(showId);
 
     // Fetch venues for the dropdown
     const {
@@ -169,13 +169,7 @@ export const EditShowPage: React.FC = () => {
                 throw new Error('Failed to delete show');
             }
 
-            toast({
-                title: 'Show Deleted',
-                description: `"${show?.showName}" and all associated scripts have been permanently deleted`,
-                duration: 5000,
-                isClosable: true,
-                ...toastConfig,
-            });
+            showSuccess('Show Deleted', `"${show?.showName}" and all associated scripts have been permanently deleted`);
 
             // Navigate back to dashboard
             navigate('/dashboard', {
@@ -184,13 +178,7 @@ export const EditShowPage: React.FC = () => {
 
         } catch (error) {
             console.error('Error deleting show:', error);
-            toast({
-                title: 'Error',
-                description: 'Failed to delete show. Please try again.',
-                duration: 5000,
-                isClosable: true,
-                ...toastConfig,
-            });
+            showError('Failed to delete show. Please try again.');
         } finally {
             setIsDeleting(false);
             setIsFinalDeleteModalOpen(false);
@@ -276,9 +264,9 @@ export const EditShowPage: React.FC = () => {
                 )}
 
                 {/* Error State */}
-                {showError && (
+                {showLoadError && (
                     <Text color="red.500" textAlign="center" p="4">
-                        {showError}
+                        {showLoadError}
                     </Text>
                 )}
 

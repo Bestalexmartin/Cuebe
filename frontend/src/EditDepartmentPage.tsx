@@ -13,7 +13,7 @@ import { useFormManager } from './hooks/useFormManager';
 import { AppIcon } from './components/AppIcon';
 import { ActionsMenu, ActionItem } from './components/ActionsMenu';
 import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
-import { toastConfig } from './ChakraTheme';
+import { useEnhancedToast } from './utils/toastUtils';
 
 // TypeScript interfaces
 interface DepartmentFormData {
@@ -49,7 +49,7 @@ export const EditDepartmentPage: React.FC = () => {
     const { departmentId } = useParams<{ departmentId: string }>();
     const navigate = useNavigate();
     const { getToken } = useAuth();
-    const toast = useToast();
+    const { showSuccess, showError } = useEnhancedToast();
 
     // Delete confirmation modal state
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -150,13 +150,7 @@ export const EditDepartmentPage: React.FC = () => {
                 throw new Error('Failed to delete department');
             }
 
-            toast({
-                title: 'Department Deleted',
-                description: `"${department.departmentName}" has been deleted successfully`,
-                duration: 5000,
-                isClosable: true,
-                ...toastConfig,
-            });
+            showSuccess('Department Deleted', `"${department.departmentName}" has been deleted successfully`);
 
             // Navigate back to dashboard
             navigate('/dashboard', {
@@ -168,13 +162,7 @@ export const EditDepartmentPage: React.FC = () => {
 
         } catch (error) {
             console.error('Error deleting department:', error);
-            toast({
-                title: 'Delete Failed',
-                description: 'Failed to delete department. Please try again.',
-                duration: 5000,
-                isClosable: true,
-                ...toastConfig,
-            });
+            showError('Failed to delete department. Please try again.');
         } finally {
             setIsDeleting(false);
             setIsDeleteModalOpen(false);

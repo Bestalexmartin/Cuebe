@@ -15,8 +15,13 @@ import {
     Input,
     Select,
     VStack,
+    Box,
+    Text,
 } from '@chakra-ui/react';
-import { useFormManager } from '../../hooks/useFormManager';
+import { useValidatedForm } from '../../hooks/useValidatedForm';
+import { ValidationRules, FormValidationConfig } from '../../types/validation';
+import { FormInput } from '../form/FormField';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 // TypeScript interfaces
 interface ScriptFormData {
@@ -45,33 +50,41 @@ const INITIAL_FORM_STATE: ScriptFormData = {
     scriptStatus: 'DRAFT',
 };
 
+const VALIDATION_CONFIG: FormValidationConfig = {
+    scriptName: {
+        required: false, // Handle required validation manually for button state
+        rules: [
+            ValidationRules.minLength(2, 'Script name must be at least 2 characters'),
+            ValidationRules.maxLength(100, 'Script name must be no more than 100 characters')
+        ]
+    }
+};
+
 export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
     isOpen,
     onClose,
     showId,
     onScriptCreated
 }) => {
-    const {
-        formData,
-        isSubmitting,
-        updateField,
-        resetForm,
-        submitForm,
-    } = useFormManager<ScriptFormData>(INITIAL_FORM_STATE);
+    const form = useValidatedForm<ScriptFormData>(INITIAL_FORM_STATE, {
+        validationConfig: VALIDATION_CONFIG,
+        validateOnBlur: true,
+        showFieldErrorsInToast: false // Only show validation errors in red alert box
+    });
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
         try {
             const scriptData = {
-                scriptName: formData.scriptName,
-                scriptStatus: formData.scriptStatus
+                scriptName: form.formData.scriptName,
+                scriptStatus: form.formData.scriptStatus
             };
 
-            await submitForm(
+            await form.submitForm(
                 `/api/shows/${showId}/scripts/`,
                 'POST',
-                `"${formData.scriptName}" has been created successfully`,
+                `"${form.formData.scriptName}" has been created successfully`,
                 scriptData
             );
 
@@ -84,16 +97,17 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
     };
 
     const handleModalClose = () => {
-        resetForm();
+        form.resetForm();
         onClose();
     };
 
     const isFormValid = (): boolean => {
-        return formData.scriptName.trim() !== '';
+        return form.formData.scriptName.trim() !== '';
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={handleModalClose} onCloseComplete={resetForm}>
+        <ErrorBoundary context="CreateScriptModal">
+            <Modal isOpen={isOpen} onClose={handleModalClose} onCloseComplete={form.resetForm}>
             <ModalOverlay />
             <ModalContent
                 as="form"
@@ -106,20 +120,19 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
                 <ModalCloseButton />
                 <ModalBody pb={6}>
                     <VStack spacing={4} align="stretch">
-                        <FormControl isRequired>
-                            <FormLabel>Script Name</FormLabel>
-                            <Input
-                                placeholder="Enter script name"
-                                value={formData.scriptName}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateField('scriptName', e.target.value)}
-                            />
-                        </FormControl>
+                        <FormInput
+                            form={form}
+                            name="scriptName"
+                            label="Script Name"
+                            placeholder="Enter script name"
+                            isRequired
+                        />
 
                         <FormControl>
                             <FormLabel>Script Status</FormLabel>
                             <Select
-                                value={formData.scriptStatus}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateField('scriptStatus', e.target.value)}
+                                value={form.formData.scriptStatus}
+                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => form.updateField('scriptStatus', e.target.value)}
                             >
                                 {SCRIPT_STATUS_OPTIONS.map(option => (
                                     <option key={option.value} value={option.value}>
@@ -128,6 +141,18 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
                                 ))}
                             </Select>
                         </FormControl>
+
+                        {/* Show form-level validation errors */}
+                        {form.fieldErrors.length > 0 && (
+                            <Box p={3} bg="red.500" color="white" borderRadius="md">
+                                <Text fontWeight="semibold">Validation Errors:</Text>
+                                {form.fieldErrors.map((error, i) => (
+                                    <Text key={i} fontSize="sm">
+                                        • {error.field}: {error.message}
+                                    </Text>
+                                ))}
+                            </Box>
+                        )}
                     </VStack>
                 </ModalBody>
 
@@ -145,7 +170,7 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
                         color="white"
                         size="sm"
                         type="submit"
-                        isLoading={isSubmitting}
+                        isLoading={form.isSubmitting}
                         isDisabled={!isFormValid()}
                         _hover={{ bg: 'orange.400' }}
                     >
@@ -154,5 +179,6 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
                 </ModalFooter>
             </ModalContent>
         </Modal>
+        </ErrorBoundary>
     );
 };
