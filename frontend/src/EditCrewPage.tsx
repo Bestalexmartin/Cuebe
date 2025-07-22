@@ -9,7 +9,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useCrew } from "./hooks/useCrew";
 import { useUser } from '@clerk/clerk-react';
-import { useFormManager } from './hooks/useFormManager';
+import { useValidatedForm } from './hooks/useValidatedForm';
+import { ValidationRules, FormValidationConfig } from './types/validation';
 import { AppIcon } from './components/AppIcon';
 import { ActionsMenu, ActionItem } from './components/ActionsMenu';
 import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
@@ -39,6 +40,59 @@ const INITIAL_FORM_STATE: CrewFormData = {
     phoneNumber: '',
     userRole: '',
     notes: ''
+};
+
+const VALIDATION_CONFIG: FormValidationConfig = {
+    fullnameFirst: {
+        required: false,
+        rules: [
+            {
+                validator: (value: string) => {
+                    if (!value || value.trim().length === 0) {
+                        return true; // Empty is valid
+                    }
+                    return value.trim().length >= 4; // Must have 4+ chars if not empty
+                },
+                message: 'First name must be at least 4 characters',
+                code: 'MIN_LENGTH'
+            },
+            ValidationRules.maxLength(50, 'First name must be no more than 50 characters')
+        ]
+    },
+    fullnameLast: {
+        required: false,
+        rules: [
+            {
+                validator: (value: string) => {
+                    if (!value || value.trim().length === 0) {
+                        return true; // Empty is valid
+                    }
+                    return value.trim().length >= 4; // Must have 4+ chars if not empty
+                },
+                message: 'Last name must be at least 4 characters',
+                code: 'MIN_LENGTH'
+            },
+            ValidationRules.maxLength(50, 'Last name must be no more than 50 characters')
+        ]
+    },
+    emailAddress: {
+        required: false,
+        rules: [
+            ValidationRules.email('Please enter a valid email address')
+        ]
+    },
+    phoneNumber: {
+        required: false,
+        rules: [
+            ValidationRules.phone('Please enter a valid phone number')
+        ]
+    },
+    notes: {
+        required: false,
+        rules: [
+            ValidationRules.maxLength(1000, 'Notes must be no more than 1000 characters')
+        ]
+    }
 };
 
 // User role options based on typical theatre crew roles
@@ -81,18 +135,17 @@ export const EditCrewPage: React.FC = () => {
     const { crew, isLoading: isLoadingCrew, error: crewError } = useCrew(crewId);
 
     // Form management
-    const {
-        formData,
-        isSubmitting,
-        updateField,
-        setFormData,
-        submitForm,
-    } = useFormManager<CrewFormData>(INITIAL_FORM_STATE);
+    const form = useValidatedForm<CrewFormData>(INITIAL_FORM_STATE, {
+        validationConfig: VALIDATION_CONFIG,
+        validateOnChange: true,
+        validateOnBlur: true,
+        showFieldErrorsInToast: false
+    });
 
     // Populate form when crew data loads
     useEffect(() => {
         if (crew) {
-            setFormData({
+            form.setFormData({
                 fullnameFirst: crew.fullnameFirst || '',
                 fullnameLast: crew.fullnameLast || '',
                 emailAddress: crew.emailAddress || '',
@@ -101,11 +154,11 @@ export const EditCrewPage: React.FC = () => {
                 notes: crew.relationshipNotes || '' // Use relationship notes, not user notes
             });
         }
-    }, [crew, setFormData]);
+    }, [crew, form.setFormData]);
 
     // Handle form field changes
     const handleChange = (field: keyof CrewFormData, value: string) => {
-        updateField(field, value);
+        form.updateField(field, value);
     };
 
     // Handle form submission
@@ -117,18 +170,18 @@ export const EditCrewPage: React.FC = () => {
         try {
             // Prepare data for API
             const updateData = {
-                fullnameFirst: formData.fullnameFirst,
-                fullnameLast: formData.fullnameLast,
-                emailAddress: formData.emailAddress,
-                phoneNumber: formData.phoneNumber || null,
-                userRole: formData.userRole,
-                notes: formData.notes || null,
+                fullnameFirst: form.formData.fullnameFirst,
+                fullnameLast: form.formData.fullnameLast,
+                emailAddress: form.formData.emailAddress,
+                phoneNumber: form.formData.phoneNumber || null,
+                userRole: form.formData.userRole,
+                notes: form.formData.notes || null,
             };
 
-            await submitForm(
+            await form.submitForm(
                 `/api/crew/${crewId}`,
                 'PATCH',
-                `"${formData.fullnameFirst} ${formData.fullnameLast}" has been updated successfully`,
+                `"${form.formData.fullnameFirst} ${form.formData.fullnameLast}" has been updated successfully`,
                 updateData
             );
 
@@ -157,14 +210,15 @@ export const EditCrewPage: React.FC = () => {
     };
 
     const isFormValid = (): boolean => {
-        return formData.fullnameFirst.trim().length > 0 &&
-            formData.fullnameLast.trim().length > 0 &&
-            formData.emailAddress.trim().length > 0 &&
-            formData.userRole.trim().length > 0;
+        return form.fieldErrors.length === 0 && 
+            form.formData.fullnameFirst.trim().length >= 4 &&
+            form.formData.fullnameLast.trim().length >= 4 &&
+            form.formData.emailAddress.trim().length > 0 &&
+            form.formData.userRole.trim().length > 0;
     };
 
     const getFullName = (): string => {
-        return `${formData.fullnameFirst} ${formData.fullnameLast}`.trim() || 'Crew';
+        return `${form.formData.fullnameFirst} ${form.formData.fullnameLast}`.trim() || 'Crew';
     };
 
     const isVerifiedUser = (): boolean => {
@@ -299,7 +353,7 @@ export const EditCrewPage: React.FC = () => {
                         size="xs"
                         _hover={{ bg: 'orange.400' }}
                         type="submit"
-                        isLoading={isSubmitting}
+                        isLoading={form.isSubmitting}
                         isDisabled={!isFormValid()}
                     >
                         Save Changes
@@ -361,7 +415,7 @@ export const EditCrewPage: React.FC = () => {
                                     </HStack>
                                     <HStack justify="space-between" width="100%">
                                         <Text fontSize="sm" color="detail.text">
-                                            {formatRole(formData.userRole)}
+                                            {formatRole(form.formData.userRole)}
                                         </Text>
                                          <Text fontSize="xs" color="detail.text">
                                             Updated: {formatDateTimeLocal(crew.dateUpdated)}
@@ -369,7 +423,7 @@ export const EditCrewPage: React.FC = () => {
                                     </HStack>
                                     <HStack justify="space-between" width="100%">
                                         <Text fontSize="sm" color="detail.text">
-                                            {formData.emailAddress}
+                                            {form.formData.emailAddress}
                                         </Text>
                                         <Text fontSize="xs" color="detail.text">
                                             Created: {formatDateTimeLocal(crew.dateCreated)}
@@ -384,8 +438,9 @@ export const EditCrewPage: React.FC = () => {
                             <FormControl>
                                 <FormLabel>Manager Notes</FormLabel>
                                 <Textarea
-                                    value={formData.notes}
+                                    value={form.formData.notes}
                                     onChange={(e) => handleChange('notes', e.target.value)}
+                                    onBlur={() => form.validateField('notes')}
                                     placeholder="Your private notes about this crew"
                                     resize="vertical"
                                     minHeight="100px"
@@ -411,8 +466,9 @@ export const EditCrewPage: React.FC = () => {
                             <FormControl isRequired={!(isVerifiedUser() && !isSelfEdit())}>
                                 <FormLabel>First Name</FormLabel>
                                 <Input
-                                    value={formData.fullnameFirst}
+                                    value={form.formData.fullnameFirst}
                                     onChange={(e) => handleChange('fullnameFirst', e.target.value)}
+                                    onBlur={() => form.validateField('fullnameFirst')}
                                     placeholder="Enter first name"
                                     isDisabled={isVerifiedUser() && !isSelfEdit()}
                                     bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
@@ -422,8 +478,9 @@ export const EditCrewPage: React.FC = () => {
                             <FormControl isRequired={!(isVerifiedUser() && !isSelfEdit())}>
                                 <FormLabel>Last Name</FormLabel>
                                 <Input
-                                    value={formData.fullnameLast}
+                                    value={form.formData.fullnameLast}
                                     onChange={(e) => handleChange('fullnameLast', e.target.value)}
+                                    onBlur={() => form.validateField('fullnameLast')}
                                     placeholder="Enter last name"
                                     isDisabled={isVerifiedUser() && !isSelfEdit()}
                                     bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
@@ -438,8 +495,9 @@ export const EditCrewPage: React.FC = () => {
                                 <FormLabel>Email Address</FormLabel>
                                 <Input
                                     type="email"
-                                    value={formData.emailAddress}
+                                    value={form.formData.emailAddress}
                                     onChange={(e) => handleChange('emailAddress', e.target.value)}
+                                    onBlur={() => form.validateField('emailAddress')}
                                     placeholder="crew@example.com"
                                     isDisabled={isVerifiedUser() && !isSelfEdit()}
                                     bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
@@ -450,8 +508,9 @@ export const EditCrewPage: React.FC = () => {
                                 <FormLabel>Phone Number</FormLabel>
                                 <Input
                                     type="tel"
-                                    value={formData.phoneNumber}
+                                    value={form.formData.phoneNumber}
                                     onChange={(e) => handleChange('phoneNumber', e.target.value)}
+                                    onBlur={() => form.validateField('phoneNumber')}
                                     placeholder="(555) 123-4567"
                                     isDisabled={isVerifiedUser() && !isSelfEdit()}
                                     bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
@@ -464,7 +523,7 @@ export const EditCrewPage: React.FC = () => {
                         <FormControl isRequired={!(isVerifiedUser() && !isSelfEdit())}>
                             <FormLabel>Role</FormLabel>
                             <Select
-                                value={formData.userRole}
+                                value={form.formData.userRole}
                                 onChange={(e) => handleChange('userRole', e.target.value)}
                                 placeholder="Select role"
                                 isDisabled={isVerifiedUser() && !isSelfEdit()}
@@ -484,18 +543,42 @@ export const EditCrewPage: React.FC = () => {
                             <FormControl>
                                 <FormLabel>Personal Notes</FormLabel>
                                 <Textarea
-                                    value={formData.notes}
+                                    value={form.formData.notes}
                                     onChange={(e) => handleChange('notes', e.target.value)}
+                                    onBlur={() => form.validateField('notes')}
                                     placeholder="Your personal notes"
                                     resize="vertical"
                                     minHeight="100px"
                                 />
                             </FormControl>
                         )}
-
                     </VStack>
                 )}
             </Box>
+            
+            {/* Floating Validation Error Panel */}
+            {form.fieldErrors.length > 0 && (
+                <Box
+                    mt="4"
+                    bg="red.500"
+                    color="white"
+                    p={4}
+                    borderRadius="md"
+                    boxShadow="lg"
+                    flexShrink={0}
+                >
+                    <Text fontWeight="semibold" fontSize="sm" display="inline">
+                        Validation Errors: 
+                    </Text>
+                    <Text fontSize="sm" display="inline" ml={1}>
+                        {form.fieldErrors.map((error, i) => (
+                            <Text key={i} as="span">
+                                {i > 0 && '; '}{error.message}
+                            </Text>
+                        ))}
+                    </Text>
+                </Box>
+            )}
 
             {/* Delete Confirmation Modals */}
             <DeleteConfirmationModal

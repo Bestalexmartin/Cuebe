@@ -80,7 +80,7 @@ interface UseDashboardStateReturn {
 
 const SCROLL_DELAY = 100; // Configurable scroll delay
 
-export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateReturn => {
+export const useDashboardState = (shows: Show[] | undefined, skipSessionRestore: boolean = false): UseDashboardStateReturn => {
   const [currentView, setCurrentView] = useState<string>('shows');
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState<boolean>(false);
@@ -220,19 +220,24 @@ export const useDashboardState = (shows: Show[] | undefined): UseDashboardStateR
     setHasInitialized(true);
   }, []);
 
-  // Restore navigation state on mount - ONLY ONCE
+  // Restore navigation state on mount - ONLY ONCE, unless we're returning from edit
   useEffect(() => {
     if (!hasInitialized) {
-      restoreNavigationState();
+      if (skipSessionRestore) {
+        // If we're returning from edit, just mark as initialized
+        setHasInitialized(true);
+      } else {
+        restoreNavigationState();
+      }
     }
-  }, [restoreNavigationState, hasInitialized]);
+  }, [restoreNavigationState, hasInitialized, skipSessionRestore]);
 
   // Save state whenever any selection changes - BUT NOT during restoration OR before initialization
   useEffect(() => {
     if (hasInitialized && !isRestoring) {
-      saveNavigationState(currentView);
+      saveCurrentNavigationState(); // Use the save-only function, not the save+restore function
     }
-  }, [selectedState, currentView, saveNavigationState, hasInitialized, isRestoring]);
+  }, [selectedState, currentView, saveCurrentNavigationState, hasInitialized, isRestoring]);
 
   // Save state when component unmounts (dashboard navigation away)
   useEffect(() => {

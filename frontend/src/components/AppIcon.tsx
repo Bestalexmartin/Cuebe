@@ -8,6 +8,7 @@ import { IoPeopleSharp } from "react-icons/io5";
 import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
 import { FaMasksTheater } from "react-icons/fa6";
+import { FaLightbulb } from "react-icons/fa";
 import { EditIcon } from "@chakra-ui/icons";
 import { GoSortAsc, GoSortDesc } from "react-icons/go";
 
@@ -24,7 +25,8 @@ type IconName =
   | 'department'
   | 'crew'
   | 'asc'
-  | 'desc';
+  | 'desc'
+  | 'tutorial';
 
 interface AppIconProps extends Omit<IconProps, 'as'> {
   name: IconName;
@@ -56,6 +58,8 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={GoSortAsc} {...props} />;
     case 'desc':
       return <Icon as={GoSortDesc} {...props} />;
+    case 'tutorial':
+      return <Icon as={FaLightbulb} {...props} />;
     default:
       return null;
   }

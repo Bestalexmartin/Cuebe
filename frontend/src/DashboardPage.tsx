@@ -41,6 +41,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
   // Simple refresh key to force re-mounting/re-fetching
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Check if we're returning from edit to skip session storage restoration
+  const state = location.state as LocationState;
+  const skipSessionRestore = Boolean(state?.returnFromEdit);
+
   const {
     selectedShowId,
     selectedScriptId,
@@ -61,7 +65,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
     sortState,
     updateSortState,
     currentView,
-  } = useDashboardState(shows);
+  } = useDashboardState(shows, skipSessionRestore);
 
   // Sync with navigation state from route
   useEffect(() => {
@@ -73,7 +77,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
       }
       window.history.replaceState({}, document.title);
     }
-  }, [location.state, hookHandleViewChange]);
+  }, [location.state]); // Removed hookHandleViewChange from dependencies to prevent loop
 
   // Modal handlers
   const handleCreateShow = () => openModal(MODAL_TYPES.CREATE_SHOW);

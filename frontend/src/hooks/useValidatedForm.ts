@@ -76,11 +76,11 @@ export const useValidatedForm = <T extends FormData>(
   const { handleError } = useErrorHandler();
 
   // Validate a single field
-  const validateField = useCallback(async (field: string): Promise<string[]> => {
+  const validateField = useCallback(async (field: string, newValue?: any): Promise<string[]> => {
     const config = validationConfig[field];
     if (!config) return [];
 
-    const value = formData[field as keyof T];
+    const value = newValue !== undefined ? newValue : formData[field as keyof T];
     const fieldErrors: string[] = [];
 
     // Check required
@@ -113,8 +113,8 @@ export const useValidatedForm = <T extends FormData>(
     return fieldErrors;
   }, [formData, validationConfig]);
 
-  // Validate entire form
-  const validate = useCallback(async (fields?: string[]): Promise<FormValidationResult> => {
+  // Validate entire form with optional new values for specific fields
+  const validate = useCallback(async (fields?: string[], fieldValues?: Record<string, any>): Promise<FormValidationResult> => {
     const fieldsToValidate = fields || Object.keys(validationConfig);
     const newErrors: ValidationErrors = { ...errors };
     const newFieldErrors: FieldError[] = [];
@@ -126,7 +126,8 @@ export const useValidatedForm = <T extends FormData>(
 
     // Validate each field
     for (const field of fieldsToValidate) {
-      const fieldErrorMessages = await validateField(field);
+      const newValue = fieldValues?.[field];
+      const fieldErrorMessages = await validateField(field, newValue);
       if (fieldErrorMessages.length > 0) {
         newErrors[field] = fieldErrorMessages;
         fieldErrorMessages.forEach(message => {
@@ -150,9 +151,9 @@ export const useValidatedForm = <T extends FormData>(
   const updateField = useCallback(async (field: keyof T, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
 
-    // Validate on change if enabled
+    // Validate on change if enabled - pass new value directly to avoid timing issues
     if (validateOnChange && validationConfig[field as string]) {
-      await validate([field as string]);
+      await validate([field as string], { [field as string]: value });
     }
   }, [validateOnChange, validationConfig, validate]);
 

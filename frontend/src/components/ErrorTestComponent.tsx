@@ -209,18 +209,18 @@ export const ErrorTestComponent: React.FC = () => {
             <VStack spacing={4} align="stretch">
               <FormInput
                 form={form}
-                name="email"
-                label="Email"
-                type="email"
-                placeholder="Enter your email"
+                name="name"
+                label="Name"
+                placeholder="Enter your name"
                 isRequired
               />
 
               <FormInput
                 form={form}
-                name="name"
-                label="Name"
-                placeholder="Enter your name"
+                name="email"
+                label="Email"
+                type="email"
+                placeholder="Enter your email"
                 isRequired
               />
 
