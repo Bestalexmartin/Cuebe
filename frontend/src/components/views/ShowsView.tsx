@@ -121,6 +121,7 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                                 onClick={() => handleSortClick('showName')}
                                 color={sortBy === 'showName' ? 'blue.400' : 'inherit'}
                                 fontWeight={sortBy === 'showName' ? 'bold' : 'normal'}
+                                _hover={{ borderColor: 'orange.400' }}
                             >
                                 Name
                             </MenuItem>
@@ -128,6 +129,7 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                                 onClick={() => handleSortClick('showDate')}
                                 color={sortBy === 'showDate' ? 'blue.400' : 'inherit'}
                                 fontWeight={sortBy === 'showDate' ? 'bold' : 'normal'}
+                                _hover={{ borderColor: 'orange.400' }}
                             >
                                 Show Date
                             </MenuItem>
@@ -135,6 +137,7 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                                 onClick={() => handleSortClick('dateCreated')}
                                 color={sortBy === 'dateCreated' ? 'blue.400' : 'inherit'}
                                 fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
+                                _hover={{ borderColor: 'orange.400' }}
                             >
                                 Date Added
                             </MenuItem>
@@ -142,6 +145,7 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                                 onClick={() => handleSortClick('dateUpdated')}
                                 color={sortBy === 'dateUpdated' ? 'blue.400' : 'inherit'}
                                 fontWeight={sortBy === 'dateUpdated' ? 'bold' : 'normal'}
+                                _hover={{ borderColor: 'orange.400' }}
                             >
                                 Updated
                             </MenuItem>

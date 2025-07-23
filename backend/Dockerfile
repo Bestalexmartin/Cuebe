@@ -9,9 +9,15 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y build-essential
 # --- END OF BLOCK ---
 
+# Upgrade pip to latest version and suppress root warnings
+RUN pip install --upgrade pip --no-warn-script-location --root-user-action=ignore
+
 COPY ./requirements.txt /app/requirements.txt
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt --no-warn-script-location --root-user-action=ignore
+
+# Install testing dependencies
+RUN pip install pytest pytest-asyncio faker --no-warn-script-location --root-user-action=ignore
 
 RUN pip list
 

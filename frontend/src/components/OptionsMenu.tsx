@@ -28,8 +28,12 @@ export const OptionsMenu: React.FC<OptionsMenuProps> = ({ onSaveNavigationState 
   const getMenuItemStyle = (path: string) => {
     return isCurrentPage(path) ? {
       color: 'blue.500',
-      fontWeight: 'bold'
-    } : {};
+      fontWeight: 'bold',
+      _hover: { borderColor: 'orange.400' }
+    } : {
+      fontWeight: 'normal',
+      _hover: { borderColor: 'orange.400' }
+    };
   };
 
   return (
@@ -51,9 +55,7 @@ export const OptionsMenu: React.FC<OptionsMenuProps> = ({ onSaveNavigationState 
           icon={<AppIcon name="show" boxSize="14px" />}
           {...getMenuItemStyle('/dashboard')}
         >
-          <VStack align="start" spacing={0}>
-            <Text fontSize="sm" fontWeight={isCurrentPage('/dashboard') ? 'bold' : 'semibold'}>Dashboard</Text>
-          </VStack>
+          Dashboard
         </MenuItem>
         <MenuDivider />
         <MenuItem
@@ -61,27 +63,21 @@ export const OptionsMenu: React.FC<OptionsMenuProps> = ({ onSaveNavigationState 
           icon={<AppIcon name="tutorial" boxSize="14px" />}
           {...getMenuItemStyle('/tutorial')}
         >
-          <VStack align="start" spacing={0}>
-            <Text fontSize="sm" fontWeight={isCurrentPage('/tutorial') ? 'bold' : 'semibold'}>Tutorial</Text>
-          </VStack>
+          Tutorial
         </MenuItem>
         <MenuItem
           onClick={() => handleNavigateToPage('/test-tools')}
           icon={<AppIcon name="warning" boxSize="14px" />}
           {...getMenuItemStyle('/test-tools')}
         >
-          <VStack align="start" spacing={0}>
-            <Text fontSize="sm" fontWeight={isCurrentPage('/test-tools') ? 'bold' : 'semibold'}>Test Tools</Text>
-          </VStack>
+          Test Tools
         </MenuItem>
         <MenuItem
           onClick={() => handleNavigateToPage('/api-documentation')}
           icon={<AppIcon name="api-docs" boxSize="14px" />}
           {...getMenuItemStyle('/api-documentation')}
         >
-          <VStack align="start" spacing={0}>
-            <Text fontSize="sm" fontWeight={isCurrentPage('/api-documentation') ? 'bold' : 'semibold'}>API Documentation</Text>
-          </VStack>
+          API Documentation
         </MenuItem>
         <MenuDivider />
         <MenuItem isDisabled>

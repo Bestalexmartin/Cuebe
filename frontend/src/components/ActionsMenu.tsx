@@ -69,9 +69,9 @@ export const ActionsMenu: React.FC<ActionsMenuProps> = ({
                         key={action.id}
                         onClick={action.onClick}
                         isDisabled={action.isDisabled}
-                        color="red.500"
-                        _hover={{ bg: 'red.50', _dark: { bg: 'red.900' } }}
-                        _focus={{ bg: 'red.50', _dark: { bg: 'red.900' } }}
+                        color="white"
+                        _hover={{ bg: 'red.500', color: 'white', _dark: { bg: 'red.600', color: 'white' } }}
+                        _focus={{ bg: 'red.500', color: 'white', _dark: { bg: 'red.600', color: 'white' } }}
                     >
                         {action.label}
                     </MenuItem>

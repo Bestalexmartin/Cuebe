@@ -14,7 +14,7 @@ class TestCriticalEndpoints:
     def setup_method(self):
         """Set up authentication mocking for all tests in this class"""
         self.auth_patcher = patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
-        self.jwt_patcher = patch('main.jwt.decode')
+        self.jwt_patcher = patch('routers.auth.jwt.decode')
         
         self.auth_patcher.start()
         self.mock_jwt = self.jwt_patcher.start()
@@ -51,7 +51,7 @@ class TestCrewManagement(TestCriticalEndpoints):
     """Test crew relationship management - most complex authorization logic"""
     
     @patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
-    @patch('main.jwt.decode')
+    @patch('routers.auth.jwt.decode')
     def test_get_my_crews_empty(self, mock_jwt_decode, client, db_session):
         """Test getting crews when user has no crew relationships"""
         # Mock JWT to return our test user's clerk_user_id
@@ -71,7 +71,7 @@ class TestCrewManagement(TestCriticalEndpoints):
         assert crew_data[0]["clerk_user_id"] == "test_user_123"
     
     @patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
-    @patch('main.jwt.decode')
+    @patch('routers.auth.jwt.decode')
     def test_create_guest_with_relationship(self, mock_jwt_decode, client, db_session):
         """Test the complex atomic operation of creating guest user with crew relationship"""
         # Mock JWT to return our test user's clerk_user_id
@@ -123,7 +123,7 @@ class TestCrewManagement(TestCriticalEndpoints):
         assert guest_user["fullnameLast"] == "Guest"
     
     @patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
-    @patch('main.jwt.decode')
+    @patch('routers.auth.jwt.decode')
     def test_create_guest_duplicate_email(self, mock_jwt_decode, client, db_session):
         """Test creating guest user with duplicate email fails"""
         mock_jwt_decode.return_value = {
@@ -159,7 +159,7 @@ class TestCrewManagement(TestCriticalEndpoints):
         assert "User with this email already exists" in response.json()["detail"]
     
     @patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
-    @patch('main.jwt.decode')
+    @patch('routers.auth.jwt.decode')
     def test_create_guest_invalid_data(self, mock_jwt_decode, client, db_session):
         """Test creating guest with invalid data fails validation"""
         mock_jwt_decode.return_value = {
@@ -190,7 +190,7 @@ class TestDataOwnership(TestCriticalEndpoints):
     """Test owner-scoped data access patterns"""
     
     @patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
-    @patch('main.jwt.decode')
+    @patch('routers.auth.jwt.decode')
     def test_venues_only_show_owned(self, mock_jwt_decode, client, db_session):
         """Test that venues endpoint only returns user's own venues"""
         mock_jwt_decode.return_value = {
@@ -226,7 +226,7 @@ class TestDataOwnership(TestCriticalEndpoints):
         assert "Other Venue" not in venue_names
     
     @patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
-    @patch('main.jwt.decode')
+    @patch('routers.auth.jwt.decode')
     def test_cannot_access_other_users_venue(self, mock_jwt_decode, client, db_session):
         """Test that user cannot access venue they don't own"""
         mock_jwt_decode.return_value = {
@@ -251,7 +251,7 @@ class TestDataOwnership(TestCriticalEndpoints):
         assert response.status_code == 404  # Should not find venue (owner-scoped query)
     
     @patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
-    @patch('main.jwt.decode')
+    @patch('routers.auth.jwt.decode')
     def test_cannot_update_other_users_venue(self, mock_jwt_decode, client, db_session):
         """Test that user cannot update venue they don't own"""
         mock_jwt_decode.return_value = {
@@ -281,7 +281,7 @@ class TestCascadeOperations(TestCriticalEndpoints):
     """Test cascade delete operations that maintain data integrity"""
     
     @patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
-    @patch('main.jwt.decode')
+    @patch('routers.auth.jwt.decode')
     def test_venue_delete_with_shows_fails(self, mock_jwt_decode, client, db_session):
         """Test that deleting venue with shows fails gracefully"""
         mock_jwt_decode.return_value = {
@@ -312,7 +312,7 @@ class TestCascadeOperations(TestCriticalEndpoints):
         assert response.status_code == 204  # Successful deletion
     
     @patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
-    @patch('main.jwt.decode')
+    @patch('routers.auth.jwt.decode')
     def test_show_delete_cascades_to_scripts(self, mock_jwt_decode, client, db_session):
         """Test that deleting show properly handles script cleanup"""
         mock_jwt_decode.return_value = {

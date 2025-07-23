@@ -7,7 +7,6 @@ import {
   Text,
   VStack,
   HStack,
-  Button,
   Badge,
   Code,
   Accordion,
@@ -18,11 +17,16 @@ import {
   IconButton,
   useClipboard
 } from '@chakra-ui/react';
-import { ToastTest } from '../components/ToastTest';
-import { FormValidationTest } from '../components/FormValidationTest';
-import { ErrorBoundaryTest } from '../components/ErrorBoundaryTest';
-import { EnvironmentTest } from '../components/EnvironmentTest';
-import { ApiTest } from '../components/ApiTest';
+import { ToastTest } from '../components/test-tools/ToastTest';
+import { FormValidationTest } from '../components/test-tools/FormValidationTest';
+import { ErrorBoundaryTest } from '../components/test-tools/ErrorBoundaryTest';
+import { EnvironmentTest } from '../components/test-tools/EnvironmentTest';
+import { ApiTest } from '../components/test-tools/ApiTest';
+import { FilesystemPermissionsTest } from '../components/test-tools/FilesystemPermissionsTest';
+import { DatabaseTest } from '../components/test-tools/DatabaseTest';
+import { NetworkConnectivityTest } from '../components/test-tools/NetworkConnectivityTest';
+import { AuthenticationTest } from '../components/test-tools/AuthenticationTest';
+import { PerformanceTest } from '../components/test-tools/PerformanceTest';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AppIcon } from '../components/AppIcon';
 import { OptionsMenu } from '../components/OptionsMenu';
@@ -58,30 +62,30 @@ export const TestToolsPage: React.FC = () => {
       const customEvent = event as CustomEvent;
       runTestSuite(customEvent.detail);
     };
-    
-    const handleResetEnvironment = async (event: Event) => {
+
+    const handleResetEnvironment = async (_event: Event) => {
       setIsProcessingEnvironment(true);
       setCurrentEnvironmentOperation('reset');
       setEnvironmentResults(null);
-      
+
       try {
         showInfo('Resetting Environment', 'Performing comprehensive environment reset...');
-        
+
         // Clear browser storage (except auth)
         const currentAuth = localStorage.getItem('authToken');
         const currentUser = localStorage.getItem('currentUser');
-        
+
         // Clear all storage
         localStorage.clear();
         sessionStorage.clear();
-        
+
         // Restore auth data
         if (currentAuth) localStorage.setItem('authToken', currentAuth);
         if (currentUser) localStorage.setItem('currentUser', currentUser);
-        
+
         // Reset test states
         setTestResults(null);
-        
+
         // Install/verify dependencies
         const response = await fetch('/api/dev/run-tests?test_suite=setup', {
           method: 'POST',
@@ -89,20 +93,20 @@ export const TestToolsPage: React.FC = () => {
             'Content-Type': 'application/json',
           }
         });
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const result: TestResult = await response.json();
         setEnvironmentResults(result);
-        
+
         if (result.success) {
           showSuccess('Environment Reset Complete', 'System has been reset and is ready for testing!');
         } else {
           showError('Reset Issues Detected', { description: 'Environment reset completed with some issues. Check output below.' });
         }
-        
+
       } catch (error) {
         const errorResult: TestResult = {
           test_suite: 'environment-reset',
@@ -120,21 +124,21 @@ export const TestToolsPage: React.FC = () => {
         setCurrentEnvironmentOperation('');
       }
     };
-    
-    const handleClearTestResults = async (event: Event) => {
+
+    const handleClearTestResults = async (_event: Event) => {
       setIsProcessingEnvironment(true);
       setCurrentEnvironmentOperation('clear');
-      
+
       try {
         showInfo('Clearing Results', 'Clearing all test results and resetting test states...');
-        
+
         // Clear all test results
         setTestResults(null);
         setEnvironmentResults(null);
-        
+
         // Small delay for user feedback
         await new Promise(resolve => setTimeout(resolve, 500));
-        
+
         const clearResult: TestResult = {
           test_suite: 'clear-results',
           exit_code: 0,
@@ -143,10 +147,10 @@ export const TestToolsPage: React.FC = () => {
           success: true,
           summary: { total: 1, passed: 1, failed: 0, errors: 0 }
         };
-        
+
         setEnvironmentResults(clearResult);
         showSuccess('Results Cleared', 'All test results have been cleared successfully!');
-        
+
       } catch (error) {
         showError('Clear Failed', { description: `Failed to clear results: ${error}` });
         console.error('Clear results error:', error);
@@ -155,7 +159,7 @@ export const TestToolsPage: React.FC = () => {
         setCurrentEnvironmentOperation('');
       }
     };
-    
+
     window.addEventListener('runTestSuite', handleRunTestSuite as EventListener);
     window.addEventListener('resetEnvironment', handleResetEnvironment as EventListener);
     window.addEventListener('clearTestResults', handleClearTestResults as EventListener);
@@ -224,7 +228,7 @@ export const TestToolsPage: React.FC = () => {
     return { total, passed, failed, errors, skipped };
   };
 
-  const TestResultsDisplay: React.FC<{ results: TestResult }> = ({ results }) => {
+  const TestResultsDisplay: React.FC<{ results: TestResult; onClear: () => void }> = ({ results, onClear }) => {
     const parsedCounts = parsePytestOutput(results.stdout || '', results.stderr || '');
     const { onCopy: copyStdout, hasCopied: hasCopiedStdout } = useClipboard(results.stdout || '');
     const { onCopy: copyStderr, hasCopied: hasCopiedStderr } = useClipboard(results.stderr || '');
@@ -233,9 +237,19 @@ export const TestToolsPage: React.FC = () => {
       <Box mt={4} p={4} border="1px solid" borderColor="gray.300" borderRadius="md">
         <HStack justify="space-between" mb={3}>
           <Heading size="sm">Test Results: {results.test_suite}</Heading>
-          <Badge colorScheme={results.success ? "green" : "red"}>
-            {results.success ? "PASSED" : "FAILED"}
-          </Badge>
+          <HStack spacing={2}>
+            <Badge colorScheme={results.success ? "green" : "red"}>
+              {results.success ? "PASSED" : "FAILED"}
+            </Badge>
+            <IconButton
+              aria-label="Clear results"
+              icon={<AppIcon name="delete" />}
+              size="xs"
+              variant="ghost"
+              onClick={onClear}
+              _hover={{ bg: "red.100" }}
+            />
+          </HStack>
         </HStack>
 
         <HStack spacing={2} mb={3} flexWrap="wrap">
@@ -323,6 +337,7 @@ export const TestToolsPage: React.FC = () => {
   };
 
   return (
+    // Page-level ErrorBoundary as safety net - individual test components are properly extracted
     <ErrorBoundary context="Test Tools Page">
       <Box
         width="100%"
@@ -389,10 +404,7 @@ export const TestToolsPage: React.FC = () => {
                 >
                   <ToastTest />
                 </Box>
-              </VStack>
 
-              {/* Right Column: Error Boundary, Environment & API Testing */}
-              <VStack spacing={4} align="stretch">
                 {/* Error Boundary */}
                 <Box
                   p={4}
@@ -404,6 +416,64 @@ export const TestToolsPage: React.FC = () => {
                   <ErrorBoundaryTest />
                 </Box>
 
+                {/* Authentication System */}
+                <Box
+                  p={4}
+                  border="1px solid"
+                  borderColor="gray.600"
+                  borderRadius="md"
+                  height="fit-content"
+                >
+                  <AuthenticationTest />
+                </Box>
+              </VStack>
+
+              {/* Right Column: System Tests, Environment & API Testing */}
+              <VStack spacing={4} align="stretch">
+                {/* File System */}
+                <Box
+                  p={4}
+                  border="1px solid"
+                  borderColor="gray.600"
+                  borderRadius="md"
+                  height="fit-content"
+                >
+                  <FilesystemPermissionsTest />
+                </Box>
+
+                {/* Database Connectivity */}
+                <Box
+                  p={4}
+                  border="1px solid"
+                  borderColor="gray.600"
+                  borderRadius="md"
+                  height="fit-content"
+                >
+                  <DatabaseTest />
+                </Box>
+
+                {/* Network Connectivity */}
+                <Box
+                  p={4}
+                  border="1px solid"
+                  borderColor="gray.600"
+                  borderRadius="md"
+                  height="fit-content"
+                >
+                  <NetworkConnectivityTest />
+                </Box>
+
+                {/* Performance Testing */}
+                <Box
+                  p={4}
+                  border="1px solid"
+                  borderColor="gray.600"
+                  borderRadius="md"
+                  height="fit-content"
+                >
+                  <PerformanceTest />
+                </Box>
+
                 {/* Environment Tools */}
                 <Box
                   p={4}
@@ -412,10 +482,11 @@ export const TestToolsPage: React.FC = () => {
                   borderRadius="md"
                   height="fit-content"
                 >
-                  <EnvironmentTest 
+                  <EnvironmentTest
                     environmentResults={environmentResults}
                     isProcessingEnvironment={isProcessingEnvironment}
                     currentEnvironmentOperation={currentEnvironmentOperation}
+                    onClearEnvironmentResults={() => setEnvironmentResults(null)}
                   />
                 </Box>
 
@@ -433,6 +504,7 @@ export const TestToolsPage: React.FC = () => {
                     currentTestSuite={currentTestSuite}
                     onRunTestSuite={runTestSuite}
                     TestResultsDisplay={TestResultsDisplay}
+                    onClearTestResults={() => setTestResults(null)}
                   />
                 </Box>
               </VStack>

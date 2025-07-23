@@ -104,6 +104,7 @@ export const CrewView: React.FC<CrewViewProps> = ({
                                     onClick={() => handleSortClick('fullnameFirst')}
                                     color={sortBy === 'fullnameFirst' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'fullnameFirst' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     First Name
                                 </MenuItem>
@@ -111,6 +112,7 @@ export const CrewView: React.FC<CrewViewProps> = ({
                                     onClick={() => handleSortClick('fullnameLast')}
                                     color={sortBy === 'fullnameLast' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'fullnameLast' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Last Name
                                 </MenuItem>
@@ -118,6 +120,7 @@ export const CrewView: React.FC<CrewViewProps> = ({
                                     onClick={() => handleSortClick('userRole')}
                                     color={sortBy === 'userRole' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'userRole' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Role
                                 </MenuItem>
@@ -125,6 +128,7 @@ export const CrewView: React.FC<CrewViewProps> = ({
                                     onClick={() => handleSortClick('emailAddress')}
                                     color={sortBy === 'emailAddress' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'emailAddress' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Email
                                 </MenuItem>
@@ -132,6 +136,7 @@ export const CrewView: React.FC<CrewViewProps> = ({
                                     onClick={() => handleSortClick('dateCreated')}
                                     color={sortBy === 'dateCreated' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Date Added
                                 </MenuItem>
@@ -139,6 +144,7 @@ export const CrewView: React.FC<CrewViewProps> = ({
                                     onClick={() => handleSortClick('dateUpdated')}
                                     color={sortBy === 'dateUpdated' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'dateUpdated' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Updated
                                 </MenuItem>

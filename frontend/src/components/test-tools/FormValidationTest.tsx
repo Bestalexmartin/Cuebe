@@ -10,10 +10,10 @@ import {
   Text,
   Badge
 } from '@chakra-ui/react';
-import { useValidatedForm } from '../hooks/useValidatedForm';
-import { ValidationRules } from '../types/validation';
-import { FormInput, FormNumberInput } from './form/FormField';
-import { useEnhancedToast } from '../utils/toastUtils';
+import { useValidatedForm } from '../../hooks/useValidatedForm';
+import { ValidationRules } from '../../types/validation';
+import { FormInput, FormNumberInput } from '../form/FormField';
+import { useEnhancedToast } from '../../utils/toastUtils';
 
 export const FormValidationTest: React.FC = () => {
   const { showSuccess, showError } = useEnhancedToast();
@@ -49,17 +49,17 @@ export const FormValidationTest: React.FC = () => {
   // Test form validation
   const testFormValidation = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Manually trigger form validation
     const isValid = await form.validate();
-    
+
     if (isValid) {
       // Form is valid - show success
       showSuccess(
-        'Form Validation Passed!', 
+        'Form Validation Passed!',
         `All fields are valid! Name: "${form.formData.name}", Email: "${form.formData.email}"${form.formData.age ? `, Age: ${form.formData.age}` : ''}`
       );
-      
+
       // Optionally reset the form after successful submission
       setTimeout(() => {
         form.resetForm();
@@ -76,7 +76,7 @@ export const FormValidationTest: React.FC = () => {
   return (
     <VStack spacing={6} align="stretch">
       <HStack spacing={2}>
-        <Badge colorScheme="green" fontSize="sm" px={2} py={1}>FORM VALIDATION</Badge>
+        <Badge colorScheme="blue" fontSize="sm" px={2} py={1}>FORM VALIDATION</Badge>
       </HStack>
 
       <Text color="gray.600" fontSize="md">

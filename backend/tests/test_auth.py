@@ -6,7 +6,7 @@ from jose import jwt
 import time
 from fastapi import HTTPException
 
-from main import get_current_user_claims, get_current_user
+from routers.auth import get_current_user_claims, get_current_user
 from models import User
 
 
@@ -20,7 +20,7 @@ class TestAuthentication:
         assert response.json() == {"status": "ok"}
     
     @patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
-    @patch('main.jwt.decode')
+    @patch('routers.auth.jwt.decode')
     def test_valid_token_authentication(self, mock_jwt_decode, client):
         """Test successful token authentication"""
         mock_jwt_decode.return_value = {
@@ -39,7 +39,7 @@ class TestAuthentication:
         assert "User not found" in response.json()["detail"]
     
     @patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
-    @patch('main.jwt.decode')
+    @patch('routers.auth.jwt.decode')
     def test_expired_token_rejection(self, mock_jwt_decode, client):
         """Test that expired tokens are rejected"""
         mock_jwt_decode.return_value = {
@@ -55,7 +55,7 @@ class TestAuthentication:
         assert response.json()["detail"] == "Invalid authentication credentials"
     
     @patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
-    @patch('main.jwt.decode')
+    @patch('routers.auth.jwt.decode')
     def test_future_token_rejection(self, mock_jwt_decode, client):
         """Test that tokens with future nbf are rejected"""
         mock_jwt_decode.return_value = {
@@ -96,7 +96,7 @@ class TestUserAuthorization:
     def test_user_not_found_in_database(self, client, db_session):
         """Test behavior when token is valid but user doesn't exist in database"""
         with patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'}):
-            with patch('main.jwt.decode') as mock_jwt_decode:
+            with patch('routers.auth.jwt.decode') as mock_jwt_decode:
                 mock_jwt_decode.return_value = {
                     "sub": "nonexistent_user_id",
                     "exp": int(time.time()) + 3600,
@@ -114,7 +114,7 @@ class TestUserAuthorization:
 def mock_valid_auth():
     """Fixture to mock valid authentication for other tests"""
     with patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'}):
-        with patch('main.jwt.decode') as mock_jwt_decode:
+        with patch('routers.auth.jwt.decode') as mock_jwt_decode:
             mock_jwt_decode.return_value = {
                 "sub": "test_user_123",
                 "exp": int(time.time()) + 3600,

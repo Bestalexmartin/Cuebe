@@ -8,9 +8,9 @@ import { IoPeopleSharp } from "react-icons/io5";
 import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
 import { FaMasksTheater } from "react-icons/fa6";
-import { FaLightbulb } from "react-icons/fa";
+import { FaCompass } from "react-icons/fa";
 import { EditIcon } from "@chakra-ui/icons";
-import { GoSortAsc, GoSortDesc } from "react-icons/go";
+import { GoSortAsc, GoSortDesc, GoAlertFill } from "react-icons/go";
 import { MdOutlineMenuBook } from "react-icons/md";
 
 // TypeScript interfaces
@@ -46,7 +46,7 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
     case 'delete':
       return <Icon as={DeleteIcon} {...props} />;
     case 'warning':
-      return <Icon as={WarningIcon} {...props} />;
+      return <Icon as={GoAlertFill} {...props} />;
     case 'pinned':
       return <Icon as={TiPin} {...props} />;
     case 'show':
@@ -62,7 +62,7 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
     case 'desc':
       return <Icon as={GoSortDesc} {...props} />;
     case 'tutorial':
-      return <Icon as={FaLightbulb} {...props} />;
+      return <Icon as={FaCompass} {...props} />;
     case 'copy':
       return <Icon as={CopyIcon} {...props} />;
     case 'api-docs':
