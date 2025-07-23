@@ -7,13 +7,13 @@ import {
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
-import { useVenue } from "./hooks/useVenue";
-import { useValidatedForm } from './hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from './types/validation';
-import { AppIcon } from './components/AppIcon';
-import { ActionsMenu, ActionItem } from './components/ActionsMenu';
-import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
-import { useEnhancedToast } from './utils/toastUtils';
+import { useVenue } from "../../hooks/useVenue";
+import { useValidatedForm } from '../../hooks/useValidatedForm';
+import { ValidationRules, FormValidationConfig } from '../../types/validation';
+import { AppIcon } from '../../components/AppIcon';
+import { ActionsMenu, ActionItem } from '../../components/ActionsMenu';
+import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmationModal';
+import { useEnhancedToast } from '../../utils/toastUtils';
 
 // TypeScript interfaces
 interface VenueFormData {

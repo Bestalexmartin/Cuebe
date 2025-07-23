@@ -13,8 +13,8 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
-import { AppIcon } from "./components/AppIcon";
-import { formatDateFriendly, formatTimeLocal, formatDateTimeLocal } from "./utils/dateTimeUtils";
+import { AppIcon } from "../AppIcon";
+import { formatDateFriendly, formatTimeLocal, formatDateTimeLocal } from "../../utils/dateTimeUtils";
 
 // TypeScript interfaces
 interface Venue {

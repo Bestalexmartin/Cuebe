@@ -5,16 +5,16 @@ import {
     Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
     FormControl, FormLabel, Input, Textarea, Divider
 } from "@chakra-ui/react";
-import { formatDateTimeLocal } from './utils/dateTimeUtils';
+import { formatDateTimeLocal } from '../../utils/dateTimeUtils';
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
-import { useDepartment } from "./hooks/useDepartment";
-import { useValidatedForm } from './hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from './types/validation';
-import { AppIcon } from './components/AppIcon';
-import { ActionsMenu, ActionItem } from './components/ActionsMenu';
-import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
-import { useEnhancedToast } from './utils/toastUtils';
+import { useDepartment } from "../../hooks/useDepartment";
+import { useValidatedForm } from '../../hooks/useValidatedForm';
+import { ValidationRules, FormValidationConfig } from '../../types/validation';
+import { AppIcon } from '../../components/AppIcon';
+import { ActionsMenu, ActionItem } from '../../components/ActionsMenu';
+import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmationModal';
+import { useEnhancedToast } from '../../utils/toastUtils';
 
 // TypeScript interfaces
 interface DepartmentFormData {

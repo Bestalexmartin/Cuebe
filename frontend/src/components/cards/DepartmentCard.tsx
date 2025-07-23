@@ -11,8 +11,8 @@ import {
     Button,
     Heading
 } from "@chakra-ui/react";
-import { AppIcon } from './components/AppIcon';
-import { formatDateTimeLocal } from './utils/dateTimeUtils';
+import { AppIcon } from '../AppIcon';
+import { formatDateTimeLocal } from '../../utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface Department {

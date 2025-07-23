@@ -6,21 +6,21 @@ import {
   Drawer, DrawerBody, DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton
 } from "@chakra-ui/react";
 import { useLocation } from 'react-router-dom';
-import { ShowsView } from './ShowsView';
-import { VenuesView } from './VenuesView';
-import { DepartmentsView } from './DepartmentsView';
-import { CrewView } from './CrewView';
-import { QuickAccessPanel } from './QuickAccessPanel';
-import { useShows } from "./hooks/useShows";
-import { useDashboardState } from './hooks/useDashboardState';
-import { useModalManager, MODAL_TYPES } from './hooks/useModalManager';
+import { ShowsView } from '../components/views/ShowsView';
+import { VenuesView } from '../components/views/VenuesView';
+import { DepartmentsView } from '../components/views/DepartmentsView';
+import { CrewView } from '../components/views/CrewView';
+import { QuickAccessPanel } from '../components/layout/QuickAccessPanel';
+import { useShows } from "../hooks/useShows";
+import { useDashboardState } from '../hooks/useDashboardState';
+import { useModalManager, MODAL_TYPES } from '../hooks/useModalManager';
 
 // Import all modals
-import { CreateShowModal } from "./components/modals/CreateShowModal";
-import { CreateScriptModal } from "./components/modals/CreateScriptModal";
-import { CreateVenueModal } from "./components/modals/CreateVenueModal";
-import { CreateDepartmentModal } from "./components/modals/CreateDepartmentModal";
-import { CreateCrewModal } from "./components/modals/CreateCrewModal";
+import { CreateShowModal } from "../components/modals/CreateShowModal";
+import { CreateScriptModal } from "../components/modals/CreateScriptModal";
+import { CreateVenueModal } from "../components/modals/CreateVenueModal";
+import { CreateDepartmentModal } from "../components/modals/CreateDepartmentModal";
+import { CreateCrewModal } from "../components/modals/CreateCrewModal";
 
 // TypeScript interfaces
 interface DashboardPageProps {

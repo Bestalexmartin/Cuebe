@@ -33,7 +33,7 @@ const semanticTokens = {
   colors: {
     'page.background': {
       _light: 'gray.50',
-      _dark: 'gray.800',
+      _dark: 'gray.900',
     },
     'page.text': {
       _light: 'gray.800',

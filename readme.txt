@@ -77,3 +77,4 @@ Monday Jul 20, 2025
 
 Tuesday Jul 22, 2025
 1) Separated test tools from future tutorial content, fixed duplicate state restoration code in QuickAccess navigation, added form validation to edit pages, fixed useValidatedForm hook for consistenty
+2) Added environment reset and API testing to test tools, styling review of all test tools, filesystem reorganization, restructured routing files, added OpenAPI docs to Options menu

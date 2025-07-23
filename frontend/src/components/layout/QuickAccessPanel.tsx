@@ -1,9 +1,9 @@
 // frontend/src/QuickAccessPanel.tsx
 
 import React from "react";
-import { Flex, Box, VStack, Heading, Button, Text, HStack, Menu, MenuButton, MenuList, MenuItem, MenuDivider } from "@chakra-ui/react";
-import { useNavigate } from 'react-router-dom';
-import { AppIcon } from './components/AppIcon';
+import { Flex, Box, VStack, Heading, Button, Text, HStack } from "@chakra-ui/react";
+import { AppIcon } from '../AppIcon';
+import { OptionsMenu } from '../OptionsMenu';
 
 // TypeScript interfaces
 type IconName = 'openmenu' | 'hamburger' | 'edit' | 'delete' | 'warning' | 'pinned' | 'show' | 'venue' | 'department' | 'crew' | 'asc' | 'desc';
@@ -66,7 +66,6 @@ const NavigationItem: React.FC<NavigationItemProps> = ({ icon, title, descriptio
 };
 
 export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({ activeView, setActiveView, onSaveNavigationState }) => {
-  const navigate = useNavigate();
   const navigationItems: NavigationItem[] = [
     {
       id: 'shows',
@@ -98,62 +97,10 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({ activeView, 
     setActiveView(viewId);
   };
 
-  const handleNavigateToTutorial = () => {
-    // Save current navigation state before navigating away
-    if (onSaveNavigationState) {
-      onSaveNavigationState();
-    }
-    navigate('/tutorial');
-  };
-
-  const handleNavigateToTestTools = () => {
-    // Save current navigation state before navigating away
-    if (onSaveNavigationState) {
-      onSaveNavigationState();
-    }
-    navigate('/test-tools');
-  };
-
   return (
     <>
       <Flex justify="flex-end" align="center">
-        <Menu>
-          <MenuButton
-            as={Button}
-            bg="blue.400"
-            color="white"
-            size="xs"
-            _hover={{ bg: 'orange.400' }}
-            _focus={{ boxShadow: 'none' }}
-            _active={{ bg: 'orange.400' }}
-          >
-            Options
-          </MenuButton>
-          <MenuList>
-            <MenuItem
-              onClick={handleNavigateToTutorial}
-              icon={<AppIcon name="tutorial" boxSize="14px" />}
-            >
-              <VStack align="start" spacing={0}>
-                <Text fontSize="sm" fontWeight="semibold">Tutorial</Text>
-              </VStack>
-            </MenuItem>
-            <MenuItem
-              onClick={handleNavigateToTestTools}
-              icon={<AppIcon name="warning" boxSize="14px" />}
-            >
-              <VStack align="start" spacing={0}>
-                <Text fontSize="sm" fontWeight="semibold">Test Tools</Text>
-              </VStack>
-            </MenuItem>
-            <MenuDivider />
-            <MenuItem isDisabled>
-              <HStack spacing={2}>
-                <Text fontSize="sm" color="gray.400">More options coming soon...</Text>
-              </HStack>
-            </MenuItem>
-          </MenuList>
-        </Menu>
+        <OptionsMenu onSaveNavigationState={onSaveNavigationState} />
       </Flex>
 
       <Box

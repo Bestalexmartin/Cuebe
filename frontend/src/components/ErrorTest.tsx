@@ -19,7 +19,7 @@ import { ValidationRules } from '../types/validation';
 import { FormInput, FormNumberInput } from './form/FormField';
 import { createApiError } from '../types/errorTypes';
 
-export const ErrorTestComponent: React.FC = () => {
+export const ErrorTest: React.FC = () => {
   const { showSuccess, showError, showWarning, showInfo } = useEnhancedToast();
   const { executeWithRetry, handleError } = useErrorHandler();
   const [crashComponent, setCrashComponent] = useState(false);
@@ -152,8 +152,7 @@ export const ErrorTestComponent: React.FC = () => {
     <VStack spacing={6} align="stretch">
 
       <HStack spacing={2}>
-        <Badge colorScheme="blue" fontSize="sm" px={2} py={1}>TESTING TOOLS</Badge>
-        <Heading size="sm">Error Handling Test Component</Heading>
+        <Badge colorScheme="green" fontSize="sm" px={2} py={1}>ERROR HANDLING</Badge>
       </HStack>
 
       <Text color="gray.600">
@@ -161,7 +160,7 @@ export const ErrorTestComponent: React.FC = () => {
         handles them. This includes network errors, validation errors, server errors, and component crashes.
       </Text>
 
-      <Divider my={2} />
+      <Divider />
 
       {/* Toast Type Tests */}
       <Box>
@@ -169,12 +168,58 @@ export const ErrorTestComponent: React.FC = () => {
         <Text mb={3} fontSize="sm" color="gray.600">
           Test all toast notification styles (success, error, warning, info)
         </Text>
-        <Button colorScheme="blue" onClick={testToastTypes}>
-          Show All Toast Types
-        </Button>
+        <Box>
+          <HStack spacing={2} flexWrap="wrap">
+            <Button
+              size="sm"
+              bg="blue.400"
+              color="white"
+              _hover={{ bg: 'orange.400' }}
+              onClick={() => showSuccess('Quick Success', 'Operation completed!')}
+            >
+              Success
+            </Button>
+            <Button
+              size="sm"
+              bg="blue.400"
+              color="white"
+              _hover={{ bg: 'orange.400' }}
+              onClick={() => showError('Quick Error', { description: 'Something went wrong!' })}
+            >
+              Error
+            </Button>
+            <Button
+              size="sm"
+              bg="blue.400"
+              color="white"
+              _hover={{ bg: 'orange.400' }}
+              onClick={() => showWarning('Quick Warning', 'Please check this!')}
+            >
+              Warning
+            </Button>
+            <Button
+              size="sm"
+              bg="blue.400"
+              color="white"
+              _hover={{ bg: 'orange.400' }}
+              onClick={() => showInfo('Quick Info', 'Just so you know...')}
+            >
+              Info
+            </Button>
+            <Button
+              size="sm"
+              bg="blue.400"
+              color="white"
+              _hover={{ bg: 'orange.400' }}
+              onClick={testToastTypes}
+            >
+              Show All Toast Types
+            </Button>
+          </HStack>
+        </Box>
       </Box>
 
-      <Divider my={2} />
+      <Divider />
 
       {/* Error Category Tests */}
       <Box>
@@ -183,19 +228,37 @@ export const ErrorTestComponent: React.FC = () => {
           Test different error types with appropriate color-coded styling
         </Text>
         <HStack spacing={3} flexWrap="wrap">
-          <Button colorScheme="red" onClick={testErrorTypes}>
+          <Button
+            size="sm"
+            bg="blue.400"
+            color="white"
+            _hover={{ bg: 'orange.400' }}
+            onClick={testErrorTypes}
+          >
             Show Error Types
           </Button>
-          <Button colorScheme="orange" onClick={testApiErrorWithRetry}>
+          <Button
+            size="sm"
+            bg="blue.400"
+            color="white"
+            _hover={{ bg: 'orange.400' }}
+            onClick={testApiErrorWithRetry}
+          >
             Network Error Demo
           </Button>
-          <Button colorScheme="teal" onClick={testNetworkRetry}>
+          <Button
+            size="sm"
+            bg="blue.400"
+            color="white"
+            _hover={{ bg: 'orange.400' }}
+            onClick={testNetworkRetry}
+          >
             Retry Logic Test
           </Button>
         </HStack>
       </Box>
 
-      <Divider my={2} />
+      <Divider />
 
       {/* Form Validation Test */}
       <Box>
@@ -234,6 +297,7 @@ export const ErrorTestComponent: React.FC = () => {
 
               <HStack justify="flex-end">
                 <Button
+                  size="sm"
                   variant="outline"
                   onClick={() => form.resetForm()}
                   _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
@@ -241,6 +305,7 @@ export const ErrorTestComponent: React.FC = () => {
                   Reset
                 </Button>
                 <Button
+                  size="sm"
                   type="submit"
                   bg="blue.400"
                   color="white"
@@ -266,7 +331,7 @@ export const ErrorTestComponent: React.FC = () => {
         </Box>
       </Box>
 
-      <Divider my={2} />
+      <Divider />
 
       {/* Error Boundary Test */}
       <Box>
@@ -277,10 +342,24 @@ export const ErrorTestComponent: React.FC = () => {
 
         <VStack spacing={3} align="start">
           <HStack spacing={3} flexWrap="wrap">
-            <Button colorScheme="red" onClick={() => setCrashComponent(true)} isDisabled={crashComponent}>
+            <Button
+              size="sm"
+              bg="blue.400"
+              color="white"
+              _hover={{ bg: 'orange.400' }}
+              onClick={() => setCrashComponent(true)}
+              isDisabled={crashComponent}
+            >
               Crash Component
             </Button>
-            <Button variant="outline" onClick={() => setCrashComponent(false)} isDisabled={!crashComponent}>
+            <Button
+              size="sm"
+              bg="blue.400"
+              color="white"
+              _hover={{ bg: 'orange.400' }}
+              onClick={() => setCrashComponent(false)}
+              isDisabled={!crashComponent}
+            >
               Reset Component
             </Button>
             <Box
@@ -289,11 +368,11 @@ export const ErrorTestComponent: React.FC = () => {
               alignItems="center"
               justifyContent="center"
               px={4}
-              py={2}
+              py={0}
               bg="gray.100"
               _dark={{ bg: "gray.600" }}
               borderRadius="md"
-              minH="40px"
+              minH="32px"
               minW="120px"
               fontSize="sm"
             >
@@ -301,27 +380,6 @@ export const ErrorTestComponent: React.FC = () => {
             </Box>
           </HStack>
         </VStack>
-      </Box>
-
-      <Divider my={2} />
-
-      {/* Quick Test Buttons */}
-      <Box>
-        <Heading size="md" mb={3}>Quick Tests</Heading>
-        <HStack spacing={2} flexWrap="wrap">
-          <Button size="sm" onClick={() => showSuccess('Quick Success', 'Operation completed!')}>
-            <Badge colorScheme="blue" mr={2}>S</Badge> Success
-          </Button>
-          <Button size="sm" onClick={() => showError('Quick Error', { description: 'Something went wrong!' })}>
-            <Badge colorScheme="red" mr={2}>E</Badge> Error
-          </Button>
-          <Button size="sm" onClick={() => showWarning('Quick Warning', 'Please check this!')}>
-            <Badge colorScheme="orange" mr={2}>W</Badge> Warning
-          </Button>
-          <Button size="sm" onClick={() => showInfo('Quick Info', 'Just so you know...')}>
-            <Badge colorScheme="teal" mr={2}>I</Badge> Info
-          </Button>
-        </HStack>
       </Box>
 
     </VStack>

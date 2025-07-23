@@ -3,9 +3,9 @@
 import React, { useState, useMemo } from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import { useNavigate } from 'react-router-dom';
-import { AppIcon } from './components/AppIcon';
-import { DepartmentCard } from './DepartmentCard';
-import { useDepartments } from './hooks/useDepartments';
+import { AppIcon } from '../AppIcon';
+import { DepartmentCard } from '../cards/DepartmentCard';
+import { useDepartments } from '../../hooks/useDepartments';
 
 
 // TypeScript interfaces
