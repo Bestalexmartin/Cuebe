@@ -29,7 +29,7 @@ export const useEnhancedToast = () => {
       status: severity === 'error' ? 'error' : severity === 'warning' ? 'warning' : 'info',
       duration: baseOptions.duration ?? (severity === 'error' ? 6000 : 4000),
       isClosable: baseOptions.isClosable ?? true,
-      position: 'bottom',
+      position: 'bottom-right',
       ...config
     });
   };
