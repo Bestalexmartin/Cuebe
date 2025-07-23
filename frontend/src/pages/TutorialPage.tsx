@@ -1,104 +1,87 @@
 // frontend/src/TutorialPage.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
-  Container,
-  Heading,
-  Text,
   VStack,
-  HStack,
-  Button,
-  Badge,
-  Divider,
   Alert,
   AlertIcon,
   AlertTitle,
-  AlertDescription,
-  Code
+  AlertDescription
 } from '@chakra-ui/react';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { AppIcon } from '../components/AppIcon';
-import { OptionsMenu } from '../components/OptionsMenu';
+import { UnifiedPageLayout } from '../components/layout/UnifiedPageLayout';
 
-export const TutorialPage: React.FC = () => {
+interface TutorialPageProps {
+  isMenuOpen: boolean;
+  onMenuClose: () => void;
+}
+
+export const TutorialPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuClose }) => {
+  const [selectedTutorial, setSelectedTutorial] = useState<string | null>(null);
+
+  // Default overview content
+  const defaultContent = (
+    <VStack spacing={6} align="stretch">
+
+      <Alert status="info" borderRadius="md">
+        <AlertIcon />
+        <Box>
+          <AlertTitle>Coming Soon!</AlertTitle>
+          <AlertDescription>
+            We're currently developing comprehensive tutorials to help you get the most out of Call•Master.
+            Check back soon for step-by-step guides and video tutorials.
+          </AlertDescription>
+        </Box>
+      </Alert>
+
+    </VStack>
+  );
+
+  // QuickAccess items (all disabled/stubs for now)
+  const quickAccessItems = [
+    {
+      id: 'features',
+      title: 'Feature Tutorials',
+      description: 'Step-by-step guides for core features',
+      isDisabled: true,
+      onClick: () => setSelectedTutorial('features')
+    },
+    {
+      id: 'quickstart',
+      title: 'Quick Start',
+      description: 'Get started in 5 minutes',
+      isDisabled: true,
+      onClick: () => setSelectedTutorial('quickstart')
+    },
+    {
+      id: 'faq',
+      title: 'FAQ & Support',
+      description: 'Common questions and solutions',
+      isDisabled: true,
+      onClick: () => setSelectedTutorial('faq')
+    },
+    {
+      id: 'settings',
+      title: 'Settings Guide',
+      description: 'Customize your experience',
+      isDisabled: true,
+      onClick: () => setSelectedTutorial('settings')
+    }
+  ];
 
   return (
     <ErrorBoundary context="Tutorial Page">
-      <Box
-        width="100%"
-        height="100%"
-        p="2rem"
-        display="flex"
-        flexDirection="column"
-        boxSizing="border-box"
-      >
-        {/* Header Section */}
-        <Box flexShrink={0}>
-          <HStack spacing="2" align="center">
-            <AppIcon name="tutorial" boxSize="20px" />
-            <Heading as="h2" size="md">
-              Tutorial
-            </Heading>
-            <Box ml="auto">
-              <OptionsMenu />
-            </Box>
-          </HStack>
-        </Box>
-
-        {/* Scrollable Content Box */}
-        <Box
-          mt="4"
-          border="1px solid"
-          borderColor="container.border"
-          p="4"
-          pb="8"
-          borderRadius="md"
-          flexGrow={1}
-          overflowY="auto"
-          className="hide-scrollbar edit-form-container"
-        >
-          <VStack spacing={8} align="stretch">
-
-            <Box>
-              <HStack spacing={2} mb={4}>
-                <Badge colorScheme="gray" fontSize="sm" px={2} py={1}>COMING SOON</Badge>
-              </HStack>
-
-              <VStack spacing={3} align="stretch">
-                <Box p={4} border="1px solid" borderColor="gray.600" borderRadius="md" opacity={0.6}>
-                  <Text fontWeight="semibold" mb={2}>Feature Tutorials</Text>
-                  <Text fontSize="sm" color="gray.600">
-                    Step-by-step guides for creating shows, managing crew, and organizing departments
-                  </Text>
-                </Box>
-
-                <Box p={4} border="1px solid" borderColor="gray.600" borderRadius="md" opacity={0.6}>
-                  <Text fontWeight="semibold" mb={2}>Quick Start Guide</Text>
-                  <Text fontSize="sm" color="gray.600">
-                    Get up and running with CallMaster in 5 minutes
-                  </Text>
-                </Box>
-
-                <Box p={4} border="1px solid" borderColor="gray.600" borderRadius="md" opacity={0.6}>
-                  <Text fontWeight="semibold" mb={2}>FAQ & Troubleshooting</Text>
-                  <Text fontSize="sm" color="gray.600">
-                    Common questions and solutions for typical issues
-                  </Text>
-                </Box>
-
-                <Box p={4} border="1px solid" borderColor="gray.600" borderRadius="md" opacity={0.6}>
-                  <Text fontWeight="semibold" mb={2}>Settings & Preferences</Text>
-                  <Text fontSize="sm" color="gray.600">
-                    Customize your CallMaster experience
-                  </Text>
-                </Box>
-              </VStack>
-            </Box>
-
-          </VStack>
-        </Box>
-      </Box>
+      <UnifiedPageLayout
+        pageTitle="Tutorial"
+        pageIcon="warning"
+        defaultContent={defaultContent}
+        selectedContent={null} // No content selected since buttons are stubs
+        quickAccessItems={quickAccessItems}
+        activeItemId={selectedTutorial || undefined}
+        isMenuOpen={isMenuOpen}
+        onMenuClose={onMenuClose}
+      />
     </ErrorBoundary>
   );
 };

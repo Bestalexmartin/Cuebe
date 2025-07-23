@@ -3,10 +3,10 @@
 import React, { useState } from 'react';
 import {
   Box,
-  Heading,
   Text,
   VStack,
   HStack,
+  Heading,
   Badge,
   Code,
   Accordion,
@@ -17,6 +17,7 @@ import {
   IconButton,
   useClipboard
 } from '@chakra-ui/react';
+import { AppIcon } from '../components/AppIcon';
 import { ToastTest } from '../components/test-tools/ToastTest';
 import { FormValidationTest } from '../components/test-tools/FormValidationTest';
 import { ErrorBoundaryTest } from '../components/test-tools/ErrorBoundaryTest';
@@ -25,8 +26,7 @@ import { AuthenticationTest } from '../components/test-tools/AuthenticationTest'
 import { PerformanceTest } from '../components/test-tools/PerformanceTest';
 import { EnvironmentTest } from '../components/test-tools/EnvironmentTest';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { AppIcon } from '../components/AppIcon';
-import { OptionsMenu } from '../components/OptionsMenu';
+import { UnifiedPageLayout } from '../components/layout/UnifiedPageLayout';
 import { useEnhancedToast } from '../utils/toastUtils';
 
 interface TestResult {
@@ -43,8 +43,25 @@ interface TestResult {
   };
 }
 
-export const TestToolsPage: React.FC = () => {
+interface TestToolsPageProps {
+  isMenuOpen: boolean;
+  onMenuClose: () => void;
+}
+
+export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenuClose }) => {
   const { showSuccess, showError, showInfo } = useEnhancedToast();
+  
+  // Initialize with session storage or default to 'performance'
+  const [selectedTest, setSelectedTest] = useState<string>(() => {
+    const saved = sessionStorage.getItem('testToolsSelectedTest');
+    return saved || 'performance';
+  });
+
+  // Save selection to session storage whenever it changes
+  const handleTestSelection = (testId: string) => {
+    setSelectedTest(testId);
+    sessionStorage.setItem('testToolsSelectedTest', testId);
+  };
 
   const [testResults, setTestResults] = useState<TestResult | null>(null);
   const [isRunningTests, setIsRunningTests] = useState(false);
@@ -297,150 +314,138 @@ export const TestToolsPage: React.FC = () => {
     );
   };
 
-  return (
-    // Page-level ErrorBoundary as safety net - individual test components are properly extracted
-    <ErrorBoundary context="Test Tools Page">
+  // No default content needed since we always have a test selected
+
+  // Render individual test component with card wrapper
+  const renderTestComponent = () => {
+
+    const cardWrapper = (component: React.ReactNode) => (
       <Box
-        width="100%"
-        height="100%"
-        p="2rem"
-        display="flex"
-        flexDirection="column"
-        boxSizing="border-box"
+        maxWidth="620px"
+        mx="auto"
+        mt={0}
       >
-        {/* Header Section */}
-        <Box flexShrink={0}>
-          <HStack spacing="2" align="center">
-            <AppIcon name="warning" boxSize="20px" />
-            <Heading as="h2" size="md">
-              Test Tools
-            </Heading>
-            <Box ml="auto">
-              <OptionsMenu />
-            </Box>
-          </HStack>
-        </Box>
-
-        {/* Scrollable Content Box */}
         <Box
-          mt="4"
-          border="1px solid"
-          borderColor="container.border"
-          p="4"
-          pb="8"
+          p={4}
+          borderWidth="2px"
+          borderColor="gray.600"
           borderRadius="md"
-          flexGrow={1}
-          overflowY="auto"
-          className="hide-scrollbar edit-form-container"
+          height="fit-content"
         >
-          <VStack spacing={8} align="stretch">
-
-            {/* Testing Components Section - Two Column Layout */}
-            <Box
-              display="grid"
-              gridTemplateColumns={{ base: "1fr", lg: "1fr 1fr" }}
-              gap={4}
-              alignItems="start"
-            >
-              {/* Left Column: Form Validation & Toast Testing */}
-              <VStack spacing={4} align="stretch">
-                {/* Form Validation */}
-                <Box
-                  p={4}
-                  border="1px solid"
-                  borderColor="gray.600"
-                  borderRadius="md"
-                  height="fit-content"
-                >
-                  <FormValidationTest />
-                </Box>
-
-                {/* Toast & Notifications */}
-                <Box
-                  p={4}
-                  border="1px solid"
-                  borderColor="gray.600"
-                  borderRadius="md"
-                  height="fit-content"
-                >
-                  <ToastTest />
-                </Box>
-
-                {/* Error Boundary */}
-                <Box
-                  p={4}
-                  border="1px solid"
-                  borderColor="gray.600"
-                  borderRadius="md"
-                  height="fit-content"
-                >
-                  <ErrorBoundaryTest />
-                </Box>
-
-                {/* Authentication System */}
-                <Box
-                  p={4}
-                  border="1px solid"
-                  borderColor="gray.600"
-                  borderRadius="md"
-                  height="fit-content"
-                >
-                  <AuthenticationTest />
-                </Box>
-              </VStack>
-
-              {/* Right Column: System Tests & API Testing */}
-              <VStack spacing={4} align="stretch">
-                {/* Performance & Connectivity */}
-                <Box
-                  p={4}
-                  border="1px solid"
-                  borderColor="gray.600"
-                  borderRadius="md"
-                  height="fit-content"
-                >
-                  <PerformanceTest />
-                </Box>
-
-                {/* System & Environment */}
-                <Box
-                  p={4}
-                  border="1px solid"
-                  borderColor="gray.600"
-                  borderRadius="md"
-                  height="fit-content"
-                >
-                  <EnvironmentTest
-                    environmentResults={environmentResults}
-                    isProcessingEnvironment={isProcessingEnvironment}
-                    currentEnvironmentOperation={currentEnvironmentOperation}
-                    onClearEnvironmentResults={() => setEnvironmentResults(null)}
-                  />
-                </Box>
-
-                {/* API Test Runner */}
-                <Box
-                  p={4}
-                  border="1px solid"
-                  borderColor="gray.600"
-                  borderRadius="md"
-                  height="fit-content"
-                >
-                  <ApiTest
-                    testResults={testResults}
-                    isRunningTests={isRunningTests}
-                    currentTestSuite={currentTestSuite}
-                    onRunTestSuite={runTestSuite}
-                    TestResultsDisplay={TestResultsDisplay}
-                    onClearTestResults={() => setTestResults(null)}
-                  />
-                </Box>
-              </VStack>
-            </Box>
-
-          </VStack>
+          {component}
         </Box>
       </Box>
+    );
+
+    switch (selectedTest) {
+      case 'performance':
+        return cardWrapper(<PerformanceTest />);
+      case 'environment':
+        return cardWrapper(
+          <EnvironmentTest
+            environmentResults={environmentResults}
+            isProcessingEnvironment={isProcessingEnvironment}
+            currentEnvironmentOperation={currentEnvironmentOperation}
+            onClearEnvironmentResults={() => setEnvironmentResults(null)}
+          />
+        );
+      case 'api':
+        return cardWrapper(
+          <ApiTest
+            testResults={testResults}
+            isRunningTests={isRunningTests}
+            currentTestSuite={currentTestSuite}
+            onRunTestSuite={runTestSuite}
+            TestResultsDisplay={TestResultsDisplay}
+            onClearTestResults={() => setTestResults(null)}
+          />
+        );
+      case 'authentication':
+        return cardWrapper(<AuthenticationTest />);
+      case 'error-boundary':
+        return cardWrapper(<ErrorBoundaryTest />);
+      case 'toast':
+        return cardWrapper(<ToastTest />);
+      case 'form-validation':
+        return cardWrapper(<FormValidationTest />);
+      default:
+        return cardWrapper(<PerformanceTest />); // Fallback to performance
+    }
+  };
+
+  // QuickAccess items ordered as requested: Performance first, then by priority
+  // Using badge titles and colors from the actual test components
+  const quickAccessItems = [
+    {
+      id: 'performance',
+      title: 'Performance',
+      description: 'Test database, network, and system performance',
+      badgeTitle: 'PERFORMANCE',
+      badgeColorScheme: 'blue',
+      onClick: () => handleTestSelection('performance')
+    },
+    {
+      id: 'environment',
+      title: 'Environment',
+      description: 'Test filesystem and environment setup',
+      badgeTitle: 'ENVIRONMENT',
+      badgeColorScheme: 'purple',
+      onClick: () => handleTestSelection('environment')
+    },
+    {
+      id: 'api',
+      title: 'API Testing',
+      description: 'Test API endpoints and connectivity',
+      badgeTitle: 'API TESTING',
+      badgeColorScheme: 'cyan',
+      onClick: () => handleTestSelection('api')
+    },
+    {
+      id: 'authentication',
+      title: 'Authentication',
+      description: 'Test login and session management',
+      badgeTitle: 'AUTHENTICATION',
+      badgeColorScheme: 'purple',
+      onClick: () => handleTestSelection('authentication')
+    },
+    {
+      id: 'error-boundary',
+      title: 'Error Boundary',
+      description: 'Test error handling and recovery',
+      badgeTitle: 'ERROR BOUNDARY',
+      badgeColorScheme: 'red',
+      onClick: () => handleTestSelection('error-boundary')
+    },
+    {
+      id: 'toast',
+      title: 'Notifications',
+      description: 'Test toast notifications and alerts',
+      badgeTitle: 'NOTIFICATIONS',
+      badgeColorScheme: 'orange',
+      onClick: () => handleTestSelection('toast')
+    },
+    {
+      id: 'form-validation',
+      title: 'Form Validation',
+      description: 'Test form validation and input handling',
+      badgeTitle: 'FORM VALIDATION',
+      badgeColorScheme: 'blue',
+      onClick: () => handleTestSelection('form-validation')
+    }
+  ];
+
+  return (
+    <ErrorBoundary context="Test Tools Page">
+      <UnifiedPageLayout
+        pageTitle="Test Tools"
+        pageIcon="warning"
+        defaultContent={null}
+        selectedContent={renderTestComponent()}
+        quickAccessItems={quickAccessItems}
+        activeItemId={selectedTest}
+        isMenuOpen={isMenuOpen}
+        onMenuClose={onMenuClose}
+      />
     </ErrorBoundary>
   );
 };
