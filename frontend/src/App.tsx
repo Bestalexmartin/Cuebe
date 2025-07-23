@@ -96,19 +96,19 @@ const App: React.FC = () => {
           {/* Tutorial and Test Tools Routes */}
           <Route path="/tutorial" element={
             <ProtectedRoute>
-              <TutorialPage />
+              <TutorialPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
             </ProtectedRoute>
           } />
 
           <Route path="/test-tools" element={
             <ProtectedRoute>
-              <TestToolsPage />
+              <TestToolsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
             </ProtectedRoute>
           } />
 
           <Route path="/api-documentation" element={
             <ProtectedRoute>
-              <ApiDocumentationPage />
+              <ApiDocumentationPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
             </ProtectedRoute>
           } />
 

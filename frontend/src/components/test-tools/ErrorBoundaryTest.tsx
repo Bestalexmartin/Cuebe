@@ -122,8 +122,9 @@ export const ErrorBoundaryTest: React.FC = () => {
             _hover={{ bg: 'green.500' }}
             onClick={resetErrorBoundary}
             isDisabled={!testScenario}
+            px={6}
           >
-            Reset Boundary
+            Reset
           </Button>
         </HStack>
 
@@ -154,7 +155,7 @@ export const ErrorBoundaryTest: React.FC = () => {
                     The component crashed but was caught by the Error Boundary.
                   </Text>
                   <Text fontSize="xs" mt={1} color="gray.600">
-                    Click "Reset Boundary" to test again.
+                    Click "Reset" to test again.
                   </Text>
                 </Box>
               </Alert>
