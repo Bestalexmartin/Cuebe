@@ -20,13 +20,10 @@ import {
 import { ToastTest } from '../components/test-tools/ToastTest';
 import { FormValidationTest } from '../components/test-tools/FormValidationTest';
 import { ErrorBoundaryTest } from '../components/test-tools/ErrorBoundaryTest';
-import { EnvironmentTest } from '../components/test-tools/EnvironmentTest';
 import { ApiTest } from '../components/test-tools/ApiTest';
-import { FilesystemPermissionsTest } from '../components/test-tools/FilesystemPermissionsTest';
-import { DatabaseTest } from '../components/test-tools/DatabaseTest';
-import { NetworkConnectivityTest } from '../components/test-tools/NetworkConnectivityTest';
 import { AuthenticationTest } from '../components/test-tools/AuthenticationTest';
 import { PerformanceTest } from '../components/test-tools/PerformanceTest';
+import { EnvironmentTest } from '../components/test-tools/EnvironmentTest';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AppIcon } from '../components/AppIcon';
 import { OptionsMenu } from '../components/OptionsMenu';
@@ -125,48 +122,12 @@ export const TestToolsPage: React.FC = () => {
       }
     };
 
-    const handleClearTestResults = async (_event: Event) => {
-      setIsProcessingEnvironment(true);
-      setCurrentEnvironmentOperation('clear');
-
-      try {
-        showInfo('Clearing Results', 'Clearing all test results and resetting test states...');
-
-        // Clear all test results
-        setTestResults(null);
-        setEnvironmentResults(null);
-
-        // Small delay for user feedback
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const clearResult: TestResult = {
-          test_suite: 'clear-results',
-          exit_code: 0,
-          stdout: 'All test results cleared successfully\nTest tool states reset\nReady for new testing',
-          stderr: '',
-          success: true,
-          summary: { total: 1, passed: 1, failed: 0, errors: 0 }
-        };
-
-        setEnvironmentResults(clearResult);
-        showSuccess('Results Cleared', 'All test results have been cleared successfully!');
-
-      } catch (error) {
-        showError('Clear Failed', { description: `Failed to clear results: ${error}` });
-        console.error('Clear results error:', error);
-      } finally {
-        setIsProcessingEnvironment(false);
-        setCurrentEnvironmentOperation('');
-      }
-    };
 
     window.addEventListener('runTestSuite', handleRunTestSuite as EventListener);
     window.addEventListener('resetEnvironment', handleResetEnvironment as EventListener);
-    window.addEventListener('clearTestResults', handleClearTestResults as EventListener);
     return () => {
       window.removeEventListener('runTestSuite', handleRunTestSuite as EventListener);
       window.removeEventListener('resetEnvironment', handleResetEnvironment as EventListener);
-      window.removeEventListener('clearTestResults', handleClearTestResults as EventListener);
     };
   }, [showInfo, showError]);
 
@@ -428,42 +389,9 @@ export const TestToolsPage: React.FC = () => {
                 </Box>
               </VStack>
 
-              {/* Right Column: System Tests, Environment & API Testing */}
+              {/* Right Column: System Tests & API Testing */}
               <VStack spacing={4} align="stretch">
-                {/* File System */}
-                <Box
-                  p={4}
-                  border="1px solid"
-                  borderColor="gray.600"
-                  borderRadius="md"
-                  height="fit-content"
-                >
-                  <FilesystemPermissionsTest />
-                </Box>
-
-                {/* Database Connectivity */}
-                <Box
-                  p={4}
-                  border="1px solid"
-                  borderColor="gray.600"
-                  borderRadius="md"
-                  height="fit-content"
-                >
-                  <DatabaseTest />
-                </Box>
-
-                {/* Network Connectivity */}
-                <Box
-                  p={4}
-                  border="1px solid"
-                  borderColor="gray.600"
-                  borderRadius="md"
-                  height="fit-content"
-                >
-                  <NetworkConnectivityTest />
-                </Box>
-
-                {/* Performance Testing */}
+                {/* Performance & Connectivity */}
                 <Box
                   p={4}
                   border="1px solid"
@@ -474,7 +402,7 @@ export const TestToolsPage: React.FC = () => {
                   <PerformanceTest />
                 </Box>
 
-                {/* Environment Tools */}
+                {/* System & Environment */}
                 <Box
                   p={4}
                   border="1px solid"
