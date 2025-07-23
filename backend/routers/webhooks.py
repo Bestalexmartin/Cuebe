@@ -170,12 +170,12 @@ async def run_tests(
     backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     try:
-        # Find working Python executable
-        python_exec = "python3"  # Default for most Docker containers
+        # Use container's Python - pytest is pre-installed in Docker image
+        python_exec = "python3"
         
         test_commands = {
-            "setup": [python_exec, "-m", "pip", "install", "-r", "requirements.txt"],
-            "diagnostics": ["echo", "Running diagnostics..."],
+            "setup": [python_exec, "-m", "pip", "install", "-r", "requirements.txt", "--no-warn-script-location", "--root-user-action=ignore"],
+            "diagnostics": [python_exec, "-c", "import sys, pytest; print(f'Python: {sys.executable}'); print(f'Pytest: {pytest.__version__}')"],
             "all": [python_exec, "-m", "pytest", "tests/", "-v", "--tb=short"],
             "auth": [python_exec, "-m", "pytest", "tests/test_auth.py", "-v", "--tb=short"],  
             "critical": [python_exec, "-m", "pytest", "tests/test_api_critical.py", "-v", "--tb=short"],

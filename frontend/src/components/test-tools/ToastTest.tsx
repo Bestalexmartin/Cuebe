@@ -11,9 +11,9 @@ import {
   Divider,
   Badge
 } from '@chakra-ui/react';
-import { useEnhancedToast } from '../utils/toastUtils';
-import { useErrorHandler } from '../hooks/useErrorHandler';
-import { createApiError } from '../types/errorTypes';
+import { useEnhancedToast } from '../../utils/toastUtils';
+import { useErrorHandler } from '../../hooks/useErrorHandler';
+import { createApiError } from '../../types/errorTypes';
 
 export const ToastTest: React.FC = () => {
   const { showSuccess, showError, showWarning, showInfo } = useEnhancedToast();
@@ -102,7 +102,7 @@ export const ToastTest: React.FC = () => {
   return (
     <VStack spacing={6} align="stretch">
       <HStack spacing={2}>
-        <Badge colorScheme="green" fontSize="sm" px={2} py={1}>NOTIFICATIONS</Badge>
+        <Badge colorScheme="orange" fontSize="sm" px={2} py={1}>NOTIFICATIONS</Badge>
       </HStack>
 
       <Text color="gray.600" fontSize="md">

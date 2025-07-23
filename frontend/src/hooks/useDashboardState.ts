@@ -220,17 +220,45 @@ export const useDashboardState = (shows: Show[] | undefined, skipSessionRestore:
     setHasInitialized(true);
   }, []);
 
+  // Function to restore only selections without scrolling side effects
+  const restoreSelectionsOnly = useCallback(() => {
+    try {
+      const savedState = sessionStorage.getItem('dashboardNavigationState');
+      if (savedState) {
+        const state: NavigationState = JSON.parse(savedState);
+
+        // Restore view and selections without side effects
+        setCurrentView(state.view);
+        
+        if (state.selectedState) {
+          setSelectedState(state.selectedState);
+        }
+        
+        if (state.sortState) {
+          setSortState(state.sortState);
+        }
+
+        setHasInitialized(true);
+      } else {
+        setHasInitialized(true);
+      }
+    } catch (error) {
+      console.error('Error restoring selections only:', error);
+      setHasInitialized(true);
+    }
+  }, []);
+
   // Restore navigation state on mount - ONLY ONCE, unless we're returning from edit
   useEffect(() => {
     if (!hasInitialized) {
       if (skipSessionRestore) {
-        // If we're returning from edit, just mark as initialized
-        setHasInitialized(true);
+        // If we're returning from edit, restore selections but skip scrolling
+        restoreSelectionsOnly();
       } else {
         restoreNavigationState();
       }
     }
-  }, [restoreNavigationState, hasInitialized, skipSessionRestore]);
+  }, [restoreNavigationState, restoreSelectionsOnly, hasInitialized, skipSessionRestore]);
 
   // Save state whenever any selection changes - BUT NOT during restoration OR before initialization
   useEffect(() => {

@@ -24,7 +24,7 @@ import {
   AlertDescription,
   Spinner
 } from '@chakra-ui/react';
-import { AppIcon } from './AppIcon';
+import { AppIcon } from '../AppIcon';
 
 interface TestResult {
   test_suite: string;
@@ -44,9 +44,10 @@ interface EnvironmentTestProps {
   environmentResults: TestResult | null;
   isProcessingEnvironment: boolean;
   currentEnvironmentOperation: string;
+  onClearEnvironmentResults: () => void;
 }
 
-const CommandResultsDisplay: React.FC<{ results: TestResult }> = ({ results }) => {
+const CommandResultsDisplay: React.FC<{ results: TestResult; onClear: () => void }> = ({ results, onClear }) => {
   const { onCopy: copyStdout, hasCopied: hasCopiedStdout } = useClipboard(results.stdout || '');
   const { onCopy: copyStderr, hasCopied: hasCopiedStderr } = useClipboard(results.stderr || '');
 
@@ -54,9 +55,19 @@ const CommandResultsDisplay: React.FC<{ results: TestResult }> = ({ results }) =
     <Box mt={4} p={4} border="1px solid" borderColor="gray.300" borderRadius="md">
       <HStack justify="space-between" mb={3}>
         <Heading size="sm">Command Results: {results.test_suite}</Heading>
-        <Badge colorScheme={results.success ? "green" : "red"}>
-          {results.success ? "SUCCESS" : "FAILED"}
-        </Badge>
+        <HStack spacing={2}>
+          <Badge colorScheme={results.success ? "green" : "red"}>
+            {results.success ? "SUCCESS" : "FAILED"}
+          </Badge>
+          <IconButton
+            aria-label="Clear results"
+            icon={<AppIcon name="delete" />}
+            size="xs"
+            variant="ghost"
+            onClick={onClear}
+            _hover={{ bg: "red.100" }}
+          />
+        </HStack>
       </HStack>
 
       <Accordion allowToggle>
@@ -136,17 +147,18 @@ const CommandResultsDisplay: React.FC<{ results: TestResult }> = ({ results }) =
 export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
   environmentResults,
   isProcessingEnvironment,
-  currentEnvironmentOperation
+  currentEnvironmentOperation,
+  onClearEnvironmentResults
 }) => {
 
   return (
     <VStack spacing={6} align="stretch">
       <HStack spacing={2}>
-        <Badge colorScheme="green" fontSize="sm" px={2} py={1}>ENVIRONMENT</Badge>
+        <Badge colorScheme="teal" fontSize="sm" px={2} py={1}>ENVIRONMENT</Badge>
       </HStack>
 
       <Text color="gray.600">
-        Comprehensive system reset and test result management. Reset clears browser storage (except auth) and reinstalls dependencies.
+        Comprehensive system reset and test result management. Reset clears browser storage (except auth) and reinstalls Python dependencies.
       </Text>
 
       <Box>
@@ -201,7 +213,7 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
         </Alert>
       )}
 
-      {environmentResults && <CommandResultsDisplay results={environmentResults} />}
+      {environmentResults && <CommandResultsDisplay results={environmentResults} onClear={onClearEnvironmentResults} />}
     </VStack>
   );
 };

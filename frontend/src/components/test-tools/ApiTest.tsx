@@ -36,7 +36,8 @@ interface ApiTestProps {
   isRunningTests: boolean;
   currentTestSuite: string;
   onRunTestSuite: (testSuite: string) => void;
-  TestResultsDisplay: React.FC<{ results: TestResult }>;
+  TestResultsDisplay: React.FC<{ results: TestResult; onClear: () => void }>;
+  onClearTestResults: () => void;
 }
 
 export const ApiTest: React.FC<ApiTestProps> = ({
@@ -44,12 +45,13 @@ export const ApiTest: React.FC<ApiTestProps> = ({
   isRunningTests,
   currentTestSuite,
   onRunTestSuite,
-  TestResultsDisplay
+  TestResultsDisplay,
+  onClearTestResults
 }) => {
   return (
     <VStack spacing={6} align="stretch">
       <HStack spacing={2}>
-        <Badge colorScheme="green" fontSize="sm" px={2} py={1}>API TESTING</Badge>
+        <Badge colorScheme="cyan" fontSize="sm" px={2} py={1}>API TESTING</Badge>
       </HStack>
 
       <Text color="gray.600">
@@ -120,7 +122,7 @@ export const ApiTest: React.FC<ApiTestProps> = ({
         </Alert>
       )}
 
-      {testResults && <TestResultsDisplay results={testResults} />}
+      {testResults && <TestResultsDisplay results={testResults} onClear={onClearTestResults} />}
     </VStack>
   );
 };

@@ -12,7 +12,7 @@ import {
   AlertIcon,
   AlertDescription
 } from '@chakra-ui/react';
-import { ErrorBoundary } from './ErrorBoundary';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 export const ErrorBoundaryTest: React.FC = () => {
   const [testScenario, setTestScenario] = useState<string | null>(null);
@@ -64,7 +64,7 @@ export const ErrorBoundaryTest: React.FC = () => {
   return (
     <VStack spacing={6} align="stretch">
       <HStack spacing={2}>
-        <Badge colorScheme="green" fontSize="sm" px={2} py={1}>ERROR BOUNDARY</Badge>
+        <Badge colorScheme="red" fontSize="sm" px={2} py={1}>ERROR BOUNDARY</Badge>
       </HStack>
 
       <Text color="gray.600" fontSize="md">

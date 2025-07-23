@@ -99,6 +99,7 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
                                     onClick={() => handleSortClick('venueName')}
                                     color={sortBy === 'venueName' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'venueName' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Name
                                 </MenuItem>
@@ -106,6 +107,7 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
                                     onClick={() => handleSortClick('capacity')}
                                     color={sortBy === 'capacity' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'capacity' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Capacity
                                 </MenuItem>
@@ -113,6 +115,7 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
                                     onClick={() => handleSortClick('venueType')}
                                     color={sortBy === 'venueType' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'venueType' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Type
                                 </MenuItem>
@@ -120,6 +123,7 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
                                     onClick={() => handleSortClick('dateCreated')}
                                     color={sortBy === 'dateCreated' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Date Added
                                 </MenuItem>
@@ -127,6 +131,7 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
                                     onClick={() => handleSortClick('dateUpdated')}
                                     color={sortBy === 'dateUpdated' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'dateUpdated' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Updated
                                 </MenuItem>

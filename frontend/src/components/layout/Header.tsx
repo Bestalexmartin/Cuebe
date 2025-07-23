@@ -7,7 +7,7 @@ import { MoonIcon, SunIcon } from '@chakra-ui/icons';
 import { CiMenuBurger } from 'react-icons/ci';
 
 // TypeScript interfaces
-interface DarkModeSwitchProps {}
+interface DarkModeSwitchProps { }
 
 interface HeaderProps {
   onMenuOpen: () => void;
@@ -16,7 +16,7 @@ interface HeaderProps {
 
 const DarkModeSwitch: React.FC<DarkModeSwitchProps> = () => {
   const { colorMode, toggleColorMode } = useColorMode();
-  
+
   const handleToggle = (): void => {
     toggleColorMode();
   };
@@ -45,10 +45,11 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
       width="100%"
       align="center"
       justify="space-between"
-      borderBottom="1px"
+      borderBottom="0px"
       borderColor="ui.border"
       paddingX="4"
-      paddingY="2"
+      paddingY="0"
+      paddingTop="2"
       boxSizing="border-box"
     >
       <Flex align="center" gap="3">

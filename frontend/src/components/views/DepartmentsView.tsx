@@ -113,6 +113,7 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
                                     onClick={() => handleSortClick('departmentName')}
                                     color={sortBy === 'departmentName' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'departmentName' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Name
                                 </MenuItem>
@@ -120,6 +121,7 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
                                     onClick={() => handleSortClick('departmentColor')}
                                     color={sortBy === 'departmentColor' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'departmentColor' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Color
                                 </MenuItem>
@@ -127,6 +129,7 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
                                     onClick={() => handleSortClick('dateCreated')}
                                     color={sortBy === 'dateCreated' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Date Added
                                 </MenuItem>
@@ -134,6 +137,7 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
                                     onClick={() => handleSortClick('dateUpdated')}
                                     color={sortBy === 'dateUpdated' ? 'blue.400' : 'inherit'}
                                     fontWeight={sortBy === 'dateUpdated' ? 'bold' : 'normal'}
+                                    _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Updated
                                 </MenuItem>
