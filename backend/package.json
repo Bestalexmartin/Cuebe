@@ -1,0 +1,16 @@
+{
+  "name": "callmaster-backend",
+  "version": "1.0.0",
+  "description": "CallMaster backend development scripts",
+  "scripts": {
+    "dev": "./start-server.sh",
+    "test": "./run-tests.sh",
+    "test:watch": "./run-tests.sh --watch",
+    "test:coverage": "./run-tests.sh --cov=. --cov-report=html",
+    "install-deps": "source venv/bin/activate && pip install -r requirements.txt",
+    "shell": "source venv/bin/activate && bash"
+  },
+  "keywords": ["fastapi", "python", "backend"],
+  "author": "Your Name",
+  "private": true
+}

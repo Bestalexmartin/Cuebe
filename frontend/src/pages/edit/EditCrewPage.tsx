@@ -7,16 +7,16 @@ import {
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
-import { useCrew } from "./hooks/useCrew";
+import { useCrew } from "../../hooks/useCrew";
 import { useUser } from '@clerk/clerk-react';
-import { useValidatedForm } from './hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from './types/validation';
-import { AppIcon } from './components/AppIcon';
-import { ActionsMenu, ActionItem } from './components/ActionsMenu';
-import { DeleteConfirmationModal } from './components/modals/DeleteConfirmationModal';
-import { FinalDeleteConfirmationModal } from './components/modals/FinalDeleteConfirmationModal';
-import { useEnhancedToast } from './utils/toastUtils';
-import { formatDateTimeLocal } from './utils/dateTimeUtils';
+import { useValidatedForm } from '../../hooks/useValidatedForm';
+import { ValidationRules, FormValidationConfig } from '../../types/validation';
+import { AppIcon } from '../../components/AppIcon';
+import { ActionsMenu, ActionItem } from '../../components/ActionsMenu';
+import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmationModal';
+import { FinalDeleteConfirmationModal } from '../../components/modals/FinalDeleteConfirmationModal';
+import { useEnhancedToast } from '../../utils/toastUtils';
+import { formatDateTimeLocal } from '../../utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface CrewFormData {

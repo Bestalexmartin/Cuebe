@@ -2,8 +2,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
-import { AppIcon } from './components/AppIcon';
-import { ShowCard } from "./ShowCard";
+import { AppIcon } from '../AppIcon';
+import { ShowCard } from "../cards/ShowCard";
 
 // TypeScript interfaces
 interface Venue {

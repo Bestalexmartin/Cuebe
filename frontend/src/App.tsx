@@ -4,18 +4,19 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { useDisclosure, Box } from '@chakra-ui/react';
-import Header from './Header';
-import DashboardPage from './DashboardPage';
-import SignInPage from "./SignInPage";
-import SignUpPage from "./SignUpPage";
-import UserProfilePage from "./UserProfilePage";
-import { EditShowPage } from './EditShowPage';
-import { EditScriptPage } from './EditScriptPage';
-import { EditVenuePage } from './EditVenuePage';
-import { EditDepartmentPage } from './EditDepartmentPage';
-import { EditCrewPage } from './EditCrewPage';
-import { TutorialPage } from './TutorialPage';
-import { TestToolsPage } from './TestToolsPage';
+import Header from './components/layout/Header';
+import DashboardPage from './pages/DashboardPage';
+import SignInPage from "./pages/auth/SignInPage";
+import SignUpPage from "./pages/auth/SignUpPage";
+import UserProfilePage from "./pages/UserProfilePage";
+import { EditShowPage } from './pages/edit/EditShowPage';
+import { EditScriptPage } from './pages/edit/EditScriptPage';
+import { EditVenuePage } from './pages/edit/EditVenuePage';
+import { EditDepartmentPage } from './pages/edit/EditDepartmentPage';
+import { EditCrewPage } from './pages/edit/EditCrewPage';
+import { TutorialPage } from './pages/TutorialPage';
+import { TestToolsPage } from './pages/TestToolsPage';
+import { ApiDocumentationPage } from './pages/ApiDocumentationPage';
 
 // TypeScript interfaces
 interface ProtectedRouteProps {
@@ -102,6 +103,12 @@ const App: React.FC = () => {
           <Route path="/test-tools" element={
             <ProtectedRoute>
               <TestToolsPage />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/api-documentation" element={
+            <ProtectedRoute>
+              <ApiDocumentationPage />
             </ProtectedRoute>
           } />
 

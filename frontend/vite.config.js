@@ -13,6 +13,21 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/docs': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/redoc': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/openapi.json': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 });

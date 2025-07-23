@@ -14,8 +14,8 @@ import {
     Avatar
 } from "@chakra-ui/react";
 import { useUser } from '@clerk/clerk-react';
-import { AppIcon } from './components/AppIcon';
-import { formatDateTimeLocal } from './utils/dateTimeUtils';
+import { AppIcon } from '../AppIcon';
+import { formatDateTimeLocal } from '../../utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface CrewMember {

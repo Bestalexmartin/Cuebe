@@ -3,9 +3,9 @@
 import React, { useState, useMemo } from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import { useNavigate } from 'react-router-dom';
-import { AppIcon } from './components/AppIcon';
-import { CrewCard } from './CrewCard';
-import { useCrews } from './hooks/useCrews';
+import { AppIcon } from '../AppIcon';
+import { CrewCard } from '../cards/CrewCard';
+import { useCrews } from '../../hooks/useCrews';
 
 // TypeScript interfaces
 interface CrewViewProps {

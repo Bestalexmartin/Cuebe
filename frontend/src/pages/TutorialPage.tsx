@@ -17,16 +17,11 @@ import {
   AlertDescription,
   Code
 } from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { AppIcon } from './components/AppIcon';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import { AppIcon } from '../components/AppIcon';
+import { OptionsMenu } from '../components/OptionsMenu';
 
 export const TutorialPage: React.FC = () => {
-  const navigate = useNavigate();
-
-  const handleClose = () => {
-    navigate('/dashboard');
-  };
 
   return (
     <ErrorBoundary context="Tutorial Page">
@@ -45,14 +40,9 @@ export const TutorialPage: React.FC = () => {
             <Heading as="h2" size="md">
               Tutorial
             </Heading>
-            <Button
-              onClick={handleClose}
-              size="xs"
-              ml="auto"
-              _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
-            >
-              Back to Dashboard
-            </Button>
+            <Box ml="auto">
+              <OptionsMenu />
+            </Box>
           </HStack>
         </Box>
 
