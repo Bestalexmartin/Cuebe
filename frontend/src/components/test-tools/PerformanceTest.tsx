@@ -431,17 +431,12 @@ export const PerformanceTest: React.FC = () => {
       </HStack>
       
       {results.speedTestError && (
-        <Alert status="warning">
+        <Alert status="warning" bg="orange.50" _dark={{ bg: "orange.900", borderColor: "orange.700" }} border="1px solid" borderColor="orange.200">
           <AlertIcon />
           <Box>
             <AlertTitle>Speed Test Limitation</AlertTitle>
             <AlertDescription>
               {results.speedTestError}
-              <br />
-              <Text fontSize="xs" mt={2} opacity={0.8}>
-                Note: Server-based speed tests have limited accuracy due to network restrictions. 
-                For precise measurements, use dedicated speed test tools like Speedtest.net or Fast.com on your device.
-              </Text>
             </AlertDescription>
           </Box>
         </Alert>
