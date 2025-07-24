@@ -27,7 +27,6 @@ DATABASE_URL = "postgresql://{user}:{password}@{host}:{port}/{db}".format(
     db=os.getenv("POSTGRES_DB"),
 )
 
-print(f"DEBUG: Connecting with URL: {DATABASE_URL}")
 
 # 3. Add your model's MetaData object for 'autogenerate' support
 from models import Base

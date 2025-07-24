@@ -15,6 +15,7 @@ import { AppIcon } from '../../components/AppIcon';
 import { ActionsMenu, ActionItem } from '../../components/ActionsMenu';
 import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmationModal';
 import { useEnhancedToast } from '../../utils/toastUtils';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 // TypeScript interfaces
 interface DepartmentFormData {
@@ -218,15 +219,16 @@ export const EditDepartmentPage: React.FC = () => {
     ];
 
     return (
-        <Flex
-            as="form"
-            onSubmit={handleSubmit}
-            width="100%"
-            height="100%"
-            p="2rem"
-            flexDirection="column"
-            boxSizing="border-box"
-        >
+        <ErrorBoundary context="Edit Department Page">
+            <Flex
+                as="form"
+                onSubmit={handleSubmit}
+                width="100%"
+                height="100%"
+                p="2rem"
+                flexDirection="column"
+                boxSizing="border-box"
+            >
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
                 <HStack spacing="2" align="center">
@@ -446,6 +448,7 @@ export const EditDepartmentPage: React.FC = () => {
                 entityType="Department"
                 entityName={department?.departmentName || ''}
             />
-        </Flex>
+            </Flex>
+        </ErrorBoundary>
     );
 };

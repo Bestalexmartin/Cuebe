@@ -204,12 +204,21 @@ export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenu
     const { onCopy: copyStderr, hasCopied: hasCopiedStderr } = useClipboard(results.stderr || '');
 
     return (
-      <Box mt={4} p={4} border="1px solid" borderColor="gray.300" borderRadius="md">
+      <Box mt={4} p={4} border="1px solid" borderColor="gray.300" borderRadius="md" bg="white" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
         <HStack justify="space-between" mb={3}>
-          <Heading size="sm">Test Results: {results.test_suite}</Heading>
+          <Badge colorScheme="cyan" fontSize="sm" px={2} py={1} textTransform="uppercase">
+            {results.test_suite}
+          </Badge>
           <HStack spacing={2}>
+            <Badge colorScheme="blue">Total: {parsedCounts.total}</Badge>
+            <Badge colorScheme="green">Passed: {parsedCounts.passed}</Badge>
+            <Badge colorScheme="red">Failed: {parsedCounts.failed}</Badge>
+            <Badge colorScheme="orange">Errors: {parsedCounts.errors}</Badge>
+            {parsedCounts.skipped > 0 && (
+              <Badge colorScheme="gray">Skipped: {parsedCounts.skipped}</Badge>
+            )}
             <Badge colorScheme={results.success ? "green" : "red"}>
-              {results.success ? "PASSED" : "FAILED"}
+              {results.success ? "SUCCESS" : "FAILED"}
             </Badge>
             <IconButton
               aria-label="Clear results"
@@ -220,16 +229,6 @@ export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenu
               _hover={{ bg: "red.100" }}
             />
           </HStack>
-        </HStack>
-
-        <HStack spacing={2} mb={3} flexWrap="wrap">
-          <Badge colorScheme="blue">Total: {parsedCounts.total}</Badge>
-          <Badge colorScheme="green">Passed: {parsedCounts.passed}</Badge>
-          <Badge colorScheme="red">Failed: {parsedCounts.failed}</Badge>
-          <Badge colorScheme="orange">Errors: {parsedCounts.errors}</Badge>
-          {parsedCounts.skipped > 0 && (
-            <Badge colorScheme="gray">Skipped: {parsedCounts.skipped}</Badge>
-          )}
         </HStack>
 
         <Accordion allowToggle>

@@ -23,17 +23,24 @@ export const ToastTest: React.FC = () => {
   const testToastTypes = () => {
     showSuccess('Success Toast', 'This is what a success message looks like!');
 
-    setTimeout(() => {
-      showError('Error Toast', { description: 'This is what an error message looks like!' });
-    }, 1000);
+    const timeouts = [
+      setTimeout(() => {
+        showError('Error Toast', { description: 'This is what an error message looks like!' });
+      }, 1000),
 
-    setTimeout(() => {
-      showWarning('Warning Toast', 'This is what a warning message looks like!');
-    }, 2000);
+      setTimeout(() => {
+        showWarning('Warning Toast', 'This is what a warning message looks like!');
+      }, 2000),
 
-    setTimeout(() => {
-      showInfo('Info Toast', 'This is what an info message looks like!');
-    }, 3000);
+      setTimeout(() => {
+        showInfo('Info Toast', 'This is what an info message looks like!');
+      }, 3000)
+    ];
+
+    // Return cleanup function
+    return () => {
+      timeouts.forEach(clearTimeout);
+    };
   };
 
   // Test API error with retry
@@ -47,36 +54,48 @@ export const ToastTest: React.FC = () => {
     showError(retryableError);
 
     // Show follow-up info about retry capability
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       showInfo('Retry Capability', 'In a real scenario, this error would have automatic retry logic!');
     }, 2000);
+
+    // Return cleanup function
+    return () => {
+      clearTimeout(timeout);
+    };
   };
 
   // Test different error types
   const testErrorTypes = () => {
-    // Network error
-    setTimeout(() => {
-      const networkError = createApiError('Unable to connect to server', 0);
-      showError(networkError);
-    }, 0);
+    const timeouts = [
+      // Network error
+      setTimeout(() => {
+        const networkError = createApiError('Unable to connect to server', 0);
+        showError(networkError);
+      }, 0),
 
-    // Validation error
-    setTimeout(() => {
-      const validationError = createApiError('Please check your input', 400);
-      showError(validationError);
-    }, 1500);
+      // Validation error
+      setTimeout(() => {
+        const validationError = createApiError('Please check your input', 400);
+        showError(validationError);
+      }, 1500),
 
-    // Auth error
-    setTimeout(() => {
-      const authError = createApiError('Please sign in to continue', 401);
-      showError(authError);
-    }, 3000);
+      // Auth error
+      setTimeout(() => {
+        const authError = createApiError('Please sign in to continue', 401);
+        showError(authError);
+      }, 3000),
 
-    // Server error
-    setTimeout(() => {
-      const serverError = createApiError('Internal server error occurred', 500);
-      showError(serverError);
-    }, 4500);
+      // Server error
+      setTimeout(() => {
+        const serverError = createApiError('Internal server error occurred', 500);
+        showError(serverError);
+      }, 4500)
+    ];
+
+    // Return cleanup function
+    return () => {
+      timeouts.forEach(clearTimeout);
+    };
   };
 
   // Test network operation with retry
@@ -95,7 +114,6 @@ export const ToastTest: React.FC = () => {
       );
     } catch (error) {
       // Error will be automatically handled and displayed
-      console.log('Network retry test completed');
     }
   };
 

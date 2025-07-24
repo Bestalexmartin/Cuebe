@@ -17,6 +17,7 @@ import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmat
 import { FinalDeleteConfirmationModal } from '../../components/modals/FinalDeleteConfirmationModal';
 import { useEnhancedToast } from '../../utils/toastUtils';
 import { convertUTCToLocal, convertLocalToUTC } from '../../utils/dateTimeUtils';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 // TypeScript interfaces
 interface ShowFormData {
@@ -238,15 +239,16 @@ export const EditShowPage: React.FC = () => {
     const isLoading = isLoadingShow || isLoadingVenues;
 
     return (
-        <Flex
-            as="form"
-            onSubmit={handleSubmit}
-            width="100%"
-            height="100%"
-            p="2rem"
-            flexDirection="column"
-            boxSizing="border-box"
-        >
+        <ErrorBoundary context="Edit Show Page">
+            <Flex
+                as="form"
+                onSubmit={handleSubmit}
+                width="100%"
+                height="100%"
+                p="2rem"
+                flexDirection="column"
+                boxSizing="border-box"
+            >
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
                 <HStack spacing="2" align="center">
@@ -412,6 +414,7 @@ export const EditShowPage: React.FC = () => {
                 entityName={show?.showName || ''}
                 warningMessage={`Deleting this show will also delete ${show?.scripts?.length || 0} ${(show?.scripts?.length || 0) === 1 ? 'script' : 'scripts'} and all related venue, department and crew assignments.`}
             />
-        </Flex>
+            </Flex>
+        </ErrorBoundary>
     );
 };

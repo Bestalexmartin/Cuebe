@@ -81,3 +81,4 @@ pytest-json-report==1.5.0
 faker==22.0.0
 psutil==6.1.1
 redis==5.2.1
+slowapi==0.1.9  # Optional: Enables API rate limiting

@@ -14,6 +14,7 @@ import { QuickAccessPanel } from '../components/layout/QuickAccessPanel';
 import { useShows } from "../hooks/useShows";
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useModalManager, MODAL_TYPES } from '../hooks/useModalManager';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // Import all modals
 import { CreateShowModal } from "../components/modals/CreateShowModal";
@@ -141,7 +142,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
   };
 
   return (
-    <>
+    <ErrorBoundary context="Dashboard Page">
       <Flex
         width="100%"
         height="100%"
@@ -258,7 +259,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
           </DrawerBody>
         </DrawerContent>
       </Drawer>
-    </>
+    </ErrorBoundary>
   );
 };
 

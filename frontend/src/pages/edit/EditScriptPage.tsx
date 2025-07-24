@@ -27,6 +27,7 @@ import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmat
 import { FinalDeleteConfirmationModal } from '../../components/modals/FinalDeleteConfirmationModal';
 import { useEnhancedToast } from '../../utils/toastUtils';
 import { convertUTCToLocal, convertLocalToUTC } from '../../utils/dateTimeUtils';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 // TypeScript interfaces
 interface ScriptFormData {
@@ -231,15 +232,16 @@ export const EditScriptPage: React.FC = () => {
     ];
 
     return (
-        <Flex
-            as="form"
-            onSubmit={handleSubmit}
-            width="100%"
-            height="100%"
-            p="2rem"
-            flexDirection="column"
-            boxSizing="border-box"
-        >
+        <ErrorBoundary context="Edit Script Page">
+            <Flex
+                as="form"
+                onSubmit={handleSubmit}
+                width="100%"
+                height="100%"
+                p="2rem"
+                flexDirection="column"
+                boxSizing="border-box"
+            >
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
                 <HStack spacing="2" align="center">
@@ -399,6 +401,7 @@ export const EditScriptPage: React.FC = () => {
                 entityName={script?.scriptName || ''}
                 warningMessage="Deleting this script will permanently remove all script elements and cannot be undone."
             />
-        </Flex>
+            </Flex>
+        </ErrorBoundary>
     );
 };

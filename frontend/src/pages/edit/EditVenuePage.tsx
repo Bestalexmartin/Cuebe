@@ -14,6 +14,7 @@ import { AppIcon } from '../../components/AppIcon';
 import { ActionsMenu, ActionItem } from '../../components/ActionsMenu';
 import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmationModal';
 import { useEnhancedToast } from '../../utils/toastUtils';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 // TypeScript interfaces
 interface VenueFormData {
@@ -273,15 +274,16 @@ export const EditVenuePage: React.FC = () => {
     ];
 
     return (
-        <Flex
-            as="form"
-            onSubmit={handleSubmit}
-            width="100%"
-            height="100%"
-            p="2rem"
-            flexDirection="column"
-            boxSizing="border-box"
-        >
+        <ErrorBoundary context="Edit Venue Page">
+            <Flex
+                as="form"
+                onSubmit={handleSubmit}
+                width="100%"
+                height="100%"
+                p="2rem"
+                flexDirection="column"
+                boxSizing="border-box"
+            >
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
                 <HStack spacing="2" align="center">
@@ -547,6 +549,7 @@ export const EditVenuePage: React.FC = () => {
                 entityType="Venue"
                 entityName={venue?.venueName || ''}
             />
-        </Flex>
+            </Flex>
+        </ErrorBoundary>
     );
 };

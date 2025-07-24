@@ -17,6 +17,7 @@ import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmat
 import { FinalDeleteConfirmationModal } from '../../components/modals/FinalDeleteConfirmationModal';
 import { useEnhancedToast } from '../../utils/toastUtils';
 import { formatDateTimeLocal } from '../../utils/dateTimeUtils';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 // TypeScript interfaces
 interface CrewFormData {
@@ -320,15 +321,16 @@ export const EditCrewPage: React.FC = () => {
     };
 
     return (
-        <Flex
-            as="form"
-            onSubmit={handleSubmit}
-            width="100%"
-            height="100%"
-            p="2rem"
-            flexDirection="column"
-            boxSizing="border-box"
-        >
+        <ErrorBoundary context="Edit Crew Page">
+            <Flex
+                as="form"
+                onSubmit={handleSubmit}
+                width="100%"
+                height="100%"
+                p="2rem"
+                flexDirection="column"
+                boxSizing="border-box"
+            >
             {/* Header Section */}
             <Flex justify="space-between" align="center" flexShrink={0}>
                 <HStack spacing="2" align="center">
@@ -598,6 +600,7 @@ export const EditCrewPage: React.FC = () => {
                 entityName={getFullName()}
                 warningMessage={`Removing this crew will delete their relationship to your account and remove them from any show assignments.`}
             />
-        </Flex>
+            </Flex>
+        </ErrorBoundary>
     );
 };
