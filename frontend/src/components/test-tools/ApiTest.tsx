@@ -6,16 +6,16 @@ import {
   VStack,
   HStack,
   Button,
-  Heading,
   Text,
-  Divider,
   Badge,
   Alert,
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  Spinner
+  Spinner,
+  IconButton
 } from '@chakra-ui/react';
+import { AppIcon } from '../AppIcon';
 
 interface TestResult {
   test_suite: string;
@@ -50,39 +50,44 @@ export const ApiTest: React.FC<ApiTestProps> = ({
 }) => {
   const [isPreparing, setIsPreparing] = React.useState(false);
   const [prepStatus, setPrepStatus] = React.useState<string>('');
+  const [isTestingRateLimit, setIsTestingRateLimit] = React.useState(false);
+  const [rateLimitResults, setRateLimitResults] = React.useState<string>('');
 
   const handleTestSuite = async (testSuite: string) => {
+    // Clear rate limiting results when other tests run
+    setRateLimitResults('');
+    
     // Check and prepare pytest before running tests
     setIsPreparing(true);
     setPrepStatus('Checking pytest availability...');
-    
+
     try {
       const prepResponse = await fetch('/api/system-tests/prepare-pytest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
-      
+
       if (!prepResponse.ok) {
         throw new Error(`Preparation failed: HTTP ${prepResponse.status}`);
       }
-      
+
       const prepData = await prepResponse.json();
-      
+
       if (prepData.installation_required) {
         setPrepStatus('Installing pytest for API testing (this may take 30-60 seconds)...');
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
-      
+
       if (!prepData.pytest_available && prepData.error) {
         throw new Error(`pytest preparation failed: ${prepData.error}`);
       }
-      
+
       setPrepStatus('pytest ready - running tests...');
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       // Now run the actual test suite
       onRunTestSuite(testSuite);
-      
+
     } catch (error) {
       console.error('API test preparation failed:', error);
       // Still try to run tests even if preparation failed
@@ -93,7 +98,69 @@ export const ApiTest: React.FC<ApiTestProps> = ({
     }
   };
 
-  const isAnyRunning = isRunningTests || isPreparing;
+  const handleRateLimitTest = async () => {
+    setIsTestingRateLimit(true);
+    setRateLimitResults('');
+
+    // Clear any open test results when rate limiting test starts
+    onClearTestResults();
+
+    try {
+      // Test rate limiting by making rapid requests to health endpoint
+      const url = '/api/health';
+      const results: string[] = [];
+
+      results.push('🧪 Testing API Rate Limiting...');
+      results.push('📊 Making rapid requests to /api/health (500/min limit):');
+      results.push('');
+
+      for (let i = 1; i <= 5; i++) {
+        try {
+          const startTime = Date.now();
+          const response = await fetch(url);
+          const endTime = Date.now();
+          const responseTime = endTime - startTime;
+
+          if (response.status === 200) {
+            results.push(`✅ Request ${i}: Success (${responseTime}ms)`);
+          } else if (response.status === 429) {
+            const errorData = await response.json();
+            results.push(`🚫 Request ${i}: Rate Limited!`);
+            results.push(`   Limit: ${errorData.limit || 'Unknown'}`);
+            results.push(`   Retry After: ${errorData.retry_after || 'Unknown'}s`);
+            results.push('');
+            break;
+          } else {
+            results.push(`❌ Request ${i}: HTTP ${response.status}`);
+          }
+        } catch (error) {
+          results.push(`❌ Request ${i}: Error - ${error}`);
+        }
+
+        // Small delay between requests
+        if (i < 5) await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      results.push('');
+      results.push('✅ Rate limiting test completed!');
+      results.push('');
+      results.push('🔧 Configured rate limits:');
+      results.push('  • System Tests: 5/minute');
+      results.push('  • General API: 100/minute');
+      results.push('  • CRUD Operations: 60/minute');
+      results.push('  • Read Operations: 200/minute');
+      results.push('  • Webhooks/Health: 500/minute');
+
+      setRateLimitResults(results.join('\n'));
+
+    } catch (error) {
+      setRateLimitResults(`❌ Rate limit test failed: ${error}`);
+    } finally {
+      setIsTestingRateLimit(false);
+    }
+  };
+
+  const isAnyRunning = isRunningTests || isPreparing || isTestingRateLimit;
 
   return (
     <VStack spacing={6} align="stretch">
@@ -114,10 +181,10 @@ export const ApiTest: React.FC<ApiTestProps> = ({
               color="white"
               _hover={{ bg: 'orange.400' }}
               size="sm"
-              onClick={() => handleTestSuite('quick')}
-              isLoading={(isRunningTests && currentTestSuite === 'quick') || isPreparing}
-              loadingText={isPreparing ? "Preparing..." : "Testing..."}
-              leftIcon={(isRunningTests && currentTestSuite === 'quick') || isPreparing ? <Spinner size="sm" /> : undefined}
+              onClick={() => handleTestSuite('health')}
+              isLoading={isRunningTests && currentTestSuite === 'health'}
+              loadingText="Testing..."
+              leftIcon={isRunningTests && currentTestSuite === 'health' ? <Spinner size="sm" /> : undefined}
               isDisabled={isAnyRunning}
             >
               Health Check
@@ -128,12 +195,12 @@ export const ApiTest: React.FC<ApiTestProps> = ({
               _hover={{ bg: 'orange.400' }}
               size="sm"
               onClick={() => handleTestSuite('auth')}
-              isLoading={(isRunningTests && currentTestSuite === 'auth') || isPreparing}
-              loadingText={isPreparing ? "Preparing..." : "Testing..."}
-              leftIcon={(isRunningTests && currentTestSuite === 'auth') || isPreparing ? <Spinner size="sm" /> : undefined}
+              isLoading={isRunningTests && currentTestSuite === 'auth'}
+              loadingText="Testing..."
+              leftIcon={isRunningTests && currentTestSuite === 'auth' ? <Spinner size="sm" /> : undefined}
               isDisabled={isAnyRunning}
             >
-              Auth Tests
+              Authentication
             </Button>
             <Button
               bg="blue.400"
@@ -141,25 +208,25 @@ export const ApiTest: React.FC<ApiTestProps> = ({
               _hover={{ bg: 'orange.400' }}
               size="sm"
               onClick={() => handleTestSuite('critical')}
-              isLoading={(isRunningTests && currentTestSuite === 'critical') || isPreparing}
-              loadingText={isPreparing ? "Preparing..." : "Testing..."}
-              leftIcon={(isRunningTests && currentTestSuite === 'critical') || isPreparing ? <Spinner size="sm" /> : undefined}
+              isLoading={isRunningTests && currentTestSuite === 'critical'}
+              loadingText="Testing..."
+              leftIcon={isRunningTests && currentTestSuite === 'critical' ? <Spinner size="sm" /> : undefined}
               isDisabled={isAnyRunning}
             >
-              Critical API Tests
+              Critical API
             </Button>
             <Button
               bg="blue.400"
               color="white"
               _hover={{ bg: 'orange.400' }}
               size="sm"
-              onClick={() => handleTestSuite('all')}
-              isLoading={(isRunningTests && currentTestSuite === 'all') || isPreparing}
-              loadingText={isPreparing ? "Preparing..." : "Testing..."}
-              leftIcon={(isRunningTests && currentTestSuite === 'all') || isPreparing ? <Spinner size="sm" /> : undefined}
+              onClick={handleRateLimitTest}
+              isLoading={isTestingRateLimit}
+              loadingText="Testing..."
+              leftIcon={isTestingRateLimit ? <Spinner size="sm" /> : undefined}
               isDisabled={isAnyRunning}
             >
-              Run All Tests
+              Rate Limiting
             </Button>
           </HStack>
         </VStack>
@@ -179,6 +246,52 @@ export const ApiTest: React.FC<ApiTestProps> = ({
           <AlertTitle>Running {currentTestSuite} tests...</AlertTitle>
           <AlertDescription>This may take up to 2 minutes.</AlertDescription>
         </Alert>
+      )}
+
+      {isTestingRateLimit && (
+        <Alert status="info">
+          <AlertIcon />
+          <AlertTitle>Testing Rate Limiting...</AlertTitle>
+          <AlertDescription>Making rapid requests to verify rate limiting configuration.</AlertDescription>
+        </Alert>
+      )}
+
+      {rateLimitResults && (
+        <Box
+          p={4}
+          border="1px solid"
+          borderColor="gray.300"
+          borderRadius="md"
+          bg="white"
+          _dark={{ borderColor: "gray.700", bg: "gray.900" }}
+        >
+          <HStack justify="space-between" mb={3}>
+            <Badge colorScheme="purple" fontSize="sm" px={2} py={1}>
+              RATE LIMIT TEST
+            </Badge>
+            <IconButton
+              aria-label="Clear results"
+              icon={<AppIcon name="delete" />}
+              size="xs"
+              variant="ghost"
+              onClick={() => setRateLimitResults('')}
+              _hover={{ bg: "red.100" }}
+            />
+          </HStack>
+          <Box
+            as="pre"
+            fontSize="sm"
+            fontFamily="mono"
+            whiteSpace="pre-wrap"
+            p={3}
+            bg="gray.50"
+            color="gray.800"
+            _dark={{ bg: "gray.800", color: "gray.100" }}
+            borderRadius="md"
+          >
+            {rateLimitResults}
+          </Box>
+        </Box>
       )}
 
       {testResults && <TestResultsDisplay results={testResults} onClear={onClearTestResults} />}

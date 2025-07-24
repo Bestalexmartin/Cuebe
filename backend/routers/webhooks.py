@@ -10,9 +10,26 @@ import logging
 import models
 from database import get_db
 
+# Optional rate limiting import
+try:
+    from utils.rate_limiter import limiter, RateLimitConfig
+    RATE_LIMITING_AVAILABLE = True
+except ImportError:
+    limiter = None
+    RateLimitConfig = None
+    RATE_LIMITING_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["webhooks", "development"])
+
+def rate_limit(limit_config):
+    """Decorator factory that conditionally applies rate limiting"""
+    def decorator(func):
+        if RATE_LIMITING_AVAILABLE and limiter and limit_config:
+            return limiter.limit(limit_config)(func)
+        return func
+    return decorator
 
 
 # =============================================================================
@@ -20,6 +37,7 @@ router = APIRouter(prefix="/api", tags=["webhooks", "development"])
 # =============================================================================
 
 @router.post("/webhooks/clerk")
+@rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE else None)
 async def handle_clerk_webhook(
     request: Request,
     db: Session = Depends(get_db)
@@ -107,7 +125,8 @@ async def handle_clerk_webhook(
 # =============================================================================
 
 @router.get("/dev/diagnostics")
-async def test_diagnostics():
+@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE else None)
+async def test_diagnostics(request: Request):
     """
     Diagnostic endpoint to check the testing environment
     """
@@ -159,7 +178,9 @@ async def test_diagnostics():
 
 
 @router.post("/dev/run-tests")
+@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE else None)
 async def run_tests(
+    request: Request,
     test_suite: str = "all"
     # TODO: Re-enable authentication: user: models.User = Depends(get_current_user)
 ):
@@ -179,7 +200,7 @@ async def run_tests(
             "all": [python_exec, "-m", "pytest", "tests/", "-v", "--tb=short"],
             "auth": [python_exec, "-m", "pytest", "tests/test_auth.py", "-v", "--tb=short"],  
             "critical": [python_exec, "-m", "pytest", "tests/test_api_critical.py", "-v", "--tb=short"],
-            "quick": [python_exec, "-m", "pytest", "tests/test_simple.py", "-v", "--tb=short"]
+            "health": [python_exec, "-m", "pytest", "tests/test_simple.py", "-v", "--tb=short"]
         }
         
         if test_suite not in test_commands:
@@ -224,5 +245,6 @@ async def run_tests(
 # =============================================================================
 
 @router.get("/health")
-async def read_root():
+@rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE else None)
+async def read_root(request: Request):
     return {"status": "ok"}

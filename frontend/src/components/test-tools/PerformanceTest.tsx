@@ -16,8 +16,10 @@ import {
   StatNumber,
   StatHelpText,
   Badge,
-  Divider
+  Divider,
+  IconButton
 } from '@chakra-ui/react';
+import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
 // TypeScript interfaces
@@ -96,16 +98,91 @@ export const PerformanceTest: React.FC = () => {
 
   const isAnyRunning = isRunningDatabase || isRunningAPI || isRunningSystem || isRunningNetwork;
 
+  // Unified results display component
+  const UnifiedResultsDisplay: React.FC<{
+    testType: string;
+    results: any;
+    success: boolean;
+    onClear: () => void
+  }> = ({ testType, results, success, onClear }) => {
+    const getTestTypeBadge = () => {
+      switch (testType) {
+        case 'database': return { color: 'orange', label: 'DATABASE' };
+        case 'api': return { color: 'cyan', label: 'API ENDPOINTS' };
+        case 'system': return { color: 'purple', label: 'SYSTEM' };
+        case 'network': return { color: 'blue', label: 'NETWORK' };
+        default: return { color: 'gray', label: testType.toUpperCase() };
+      }
+    };
+
+    const getPassFailCounts = () => {
+      if (testType === 'database' && Array.isArray(results)) {
+        const passed = (results as DatabaseConnectionResult[]).filter((r) => r.status === 'connected').length;
+        const failed = results.length - passed;
+        return { total: results.length, passed, failed };
+      }
+      if (testType === 'api' && Array.isArray(results)) {
+        const passed = (results as APITestResult[]).filter((r) => r.status === 'connected').length;
+        const failed = results.length - passed;
+        return { total: results.length, passed, failed };
+      }
+      // For system and network, just show success/failure
+      return { total: 1, passed: success ? 1 : 0, failed: success ? 0 : 1 };
+    };
+
+    const badge = getTestTypeBadge();
+    const counts = getPassFailCounts();
+
+    return (
+      <Box
+        mt={4}
+        p={4}
+        border="1px solid"
+        borderColor="gray.300"
+        borderRadius="md"
+        bg="white"
+        _dark={{ borderColor: "gray.700", bg: "gray.900" }}
+      >
+        <HStack justify="space-between" mb={3}>
+          <Badge colorScheme={badge.color} fontSize="sm" px={2} py={1}>
+            {badge.label}
+          </Badge>
+          <HStack spacing={2}>
+            <Badge colorScheme="blue">Total: {counts.total}</Badge>
+            <Badge colorScheme="green">Passed: {counts.passed}</Badge>
+            <Badge colorScheme="red">Failed: {counts.failed}</Badge>
+            <Badge colorScheme={success ? "green" : "red"}>
+              {success ? "SUCCESS" : "FAILED"}
+            </Badge>
+            <IconButton
+              aria-label="Clear results"
+              icon={<AppIcon name="delete" />}
+              size="xs"
+              variant="ghost"
+              onClick={onClear}
+              _hover={{ bg: "red.100" }}
+            />
+          </HStack>
+        </HStack>
+
+        {testType === 'database' && Array.isArray(results) && renderDatabaseResults(results)}
+        {testType === 'api' && Array.isArray(results) && renderAPIResults(results)}
+        {testType === 'system' && !Array.isArray(results) && renderSystemResults(results)}
+        {testType === 'network' && !Array.isArray(results) && renderNetworkResults(results)}
+      </Box>
+    );
+  };
+
   const runDatabaseTest = async () => {
     setIsRunningDatabase(true);
     setResults(null);
     setProgress(0);
-    
+
     try {
       showInfo('Testing Database', 'Checking database connectivity...');
       setCurrentTest('Connecting to backend API...');
       setProgress(10);
-      
+
       const response = await fetch('/api/system-tests/database-connectivity', {
         method: 'GET',
         headers: {
@@ -119,25 +196,25 @@ export const PerformanceTest: React.FC = () => {
 
       setProgress(50);
       setCurrentTest('Processing test results...');
-      
+
       const data = await response.json();
       setProgress(100);
 
       setResults(data);
-      
+
       const connectedCount = data.results.filter((r: any) => r.status === 'connected').length;
       const allSuccessful = connectedCount === data.results.length;
-      
+
       if (allSuccessful) {
         showSuccess('Database Test Complete', data.summary);
       } else {
         showError('Database Test Issues', data.summary);
       }
-      
+
     } catch (error) {
       console.error('Database test failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      showError('Database Test Failed', `Failed to connect to test API: ${errorMessage}`);
+      showError('Database Test Failed', { title: 'Database Test Failed', description: `Failed to connect to test API: ${errorMessage}` });
     } finally {
       setIsRunningDatabase(false);
       setCurrentTest('');
@@ -149,12 +226,12 @@ export const PerformanceTest: React.FC = () => {
     setIsRunningAPI(true);
     setResults(null);
     setProgress(0);
-    
+
     try {
       showInfo('Testing APIs', 'Checking API endpoint connectivity...');
       setCurrentTest('Testing API endpoints...');
       setProgress(10);
-      
+
       const response = await fetch('/api/system-tests/api-endpoints', {
         method: 'GET',
         headers: {
@@ -168,24 +245,24 @@ export const PerformanceTest: React.FC = () => {
 
       setProgress(50);
       setCurrentTest('Processing API test results...');
-      
+
       const data = await response.json();
       setProgress(100);
 
       setResults(data);
-      
+
       const successCount = data.results.filter((r: any) => r.status === 'connected').length;
-      
+
       if (successCount > 0) {
         showSuccess('API Test Complete', data.summary);
       } else {
         showError('API Test Issues', data.summary);
       }
-      
+
     } catch (error) {
       console.error('API test failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      showError('API Test Failed', `Failed to connect to test API: ${errorMessage}`);
+      showError('API Test Failed', { title: 'API Test Failed', description: `Failed to connect to test API: ${errorMessage}` });
     } finally {
       setIsRunningAPI(false);
       setCurrentTest('');
@@ -197,12 +274,12 @@ export const PerformanceTest: React.FC = () => {
     setIsRunningSystem(true);
     setResults(null);
     setProgress(0);
-    
+
     try {
       showInfo('Testing System', 'Checking system performance...');
       setCurrentTest('Gathering system metrics...');
       setProgress(10);
-      
+
       const response = await fetch('/api/system-tests/system-performance', {
         method: 'GET',
         headers: {
@@ -216,17 +293,17 @@ export const PerformanceTest: React.FC = () => {
 
       setProgress(50);
       setCurrentTest('Processing system metrics...');
-      
+
       const data = await response.json();
       setProgress(100);
 
       setResults(data);
       showSuccess('System Test Complete', data.summary);
-      
+
     } catch (error) {
       console.error('System test failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      showError('System Test Failed', `Failed to get system metrics: ${errorMessage}`);
+      showError('System Test Failed', { title: 'System Test Failed', description: `Failed to get system metrics: ${errorMessage}` });
     } finally {
       setIsRunningSystem(false);
       setCurrentTest('');
@@ -238,32 +315,32 @@ export const PerformanceTest: React.FC = () => {
     setIsRunningNetwork(true);
     setResults(null);
     setProgress(0);
-    
+
     try {
       // Step 1: Check speedtest-cli availability and install if needed
       showInfo('Preparing Network Test', 'Checking speed test dependencies...');
       setCurrentTest('Checking for speedtest-cli on host system...');
       setProgress(5);
-      
+
       const prepResponse = await fetch('/api/system-tests/prepare-speedtest', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         }
       });
-      
+
       if (!prepResponse.ok) {
         throw new Error(`Preparation failed: HTTP ${prepResponse.status}`);
       }
-      
+
       const prepData = await prepResponse.json();
       setProgress(15);
-      
+
       if (prepData.installation_required) {
         showInfo('Installing Dependencies', 'Installing speedtest-cli for accurate measurements...');
         setCurrentTest('Installing speedtest-cli on host system (this may take 30-60 seconds)...');
         setProgress(25);
-        
+
         // Wait a bit longer for installation
         await new Promise(resolve => setTimeout(resolve, 2000));
         setProgress(35);
@@ -271,17 +348,17 @@ export const PerformanceTest: React.FC = () => {
         setCurrentTest('speedtest-cli found - proceeding with test...');
         setProgress(20);
       }
-      
+
       // Step 2: Run ping tests
       showInfo('Testing Network', 'Testing network connectivity and latency...');
       setCurrentTest('Testing ping to DNS servers...');
       setProgress(40);
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Step 3: Run speed test
       setCurrentTest('Running download speed test (this may take 20-30 seconds)...');
       setProgress(50);
-      
+
       const response = await fetch('/api/system-tests/network-speed', {
         method: 'GET',
         headers: {
@@ -297,32 +374,32 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Measuring download speed...');
       setProgress(60);
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       setCurrentTest('Measuring upload speed...');
       setProgress(80);
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       setCurrentTest('Processing results...');
       setProgress(90);
-      
+
       const data = await response.json();
       setProgress(100);
 
       setResults(data);
-      
+
       // Enhanced success message based on speed test method
       const isHostLevel = data.results.speedTestError && data.results.speedTestError.includes('host-direct');
       const successTitle = isHostLevel ? 'High-Accuracy Network Test Complete' : 'Network Test Complete';
-      const successMessage = isHostLevel 
+      const successMessage = isHostLevel
         ? `${data.summary} (using host-level speed test for maximum accuracy)`
         : data.summary;
-      
+
       showSuccess(successTitle, successMessage);
-      
+
     } catch (error) {
       console.error('Network test failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      showError('Network Test Failed', `Failed to test network: ${errorMessage}`);
+      showError('Network Test Failed', { title: 'Network Test Failed', description: `Failed to test network: ${errorMessage}` });
     } finally {
       setIsRunningNetwork(false);
       setCurrentTest('');
@@ -333,7 +410,7 @@ export const PerformanceTest: React.FC = () => {
   const renderDatabaseResults = (results: DatabaseConnectionResult[]) => (
     <VStack spacing={3} align="stretch">
       {results.map((result, index) => (
-        <Box key={index} p={4} border="1px solid" borderColor="gray.200" borderRadius="md">
+        <Box key={index} p={4} border="1px solid" borderColor="gray.300" borderRadius="md" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
           <HStack justify="space-between" mb={2}>
             <Text fontWeight="semibold">{result.database}</Text>
             <Badge colorScheme={result.status === 'connected' ? 'green' : 'red'}>
@@ -357,7 +434,7 @@ export const PerformanceTest: React.FC = () => {
   const renderAPIResults = (results: APITestResult[]) => (
     <VStack spacing={3} align="stretch">
       {results.map((result, index) => (
-        <Box key={index} p={4} border="1px solid" borderColor="gray.200" borderRadius="md">
+        <Box key={index} p={4} border="1px solid" borderColor="gray.300" borderRadius="md" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
           <HStack justify="space-between" mb={2}>
             <Text fontWeight="semibold">{result.endpoint}</Text>
             <HStack>
@@ -386,50 +463,54 @@ export const PerformanceTest: React.FC = () => {
   );
 
   const renderSystemResults = (results: SystemPerformanceResult) => (
-    <HStack spacing={6} align="stretch">
-      <Stat>
-        <StatLabel>CPU Usage</StatLabel>
-        <StatNumber>{results.cpu.usage}%</StatNumber>
-        <StatHelpText>{results.cpu.cores} cores</StatHelpText>
-      </Stat>
-      <Stat>
-        <StatLabel>Memory Usage</StatLabel>
-        <StatNumber>{results.memory.percentage}%</StatNumber>
-        <StatHelpText>{results.memory.used.toFixed(1)} MB / {results.memory.total.toFixed(1)} MB</StatHelpText>
-      </Stat>
-      <Stat>
-        <StatLabel>Disk Usage</StatLabel>
-        <StatNumber>{results.disk.percentage}%</StatNumber>
-        <StatHelpText>{results.disk.used.toFixed(1)} GB / {results.disk.total.toFixed(1)} GB</StatHelpText>
-      </Stat>
-    </HStack>
+    <Box p={4} border="1px solid" borderColor="gray.300" borderRadius="md" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
+      <HStack spacing={6} align="stretch">
+        <Stat>
+          <StatLabel>CPU Usage</StatLabel>
+          <StatNumber>{results.cpu.usage}%</StatNumber>
+          <StatHelpText>{results.cpu.cores} cores</StatHelpText>
+        </Stat>
+        <Stat>
+          <StatLabel>Memory Usage</StatLabel>
+          <StatNumber>{results.memory.percentage}%</StatNumber>
+          <StatHelpText>{results.memory.used.toFixed(1)} MB / {results.memory.total.toFixed(1)} MB</StatHelpText>
+        </Stat>
+        <Stat>
+          <StatLabel>Disk Usage</StatLabel>
+          <StatNumber>{results.disk.percentage}%</StatNumber>
+          <StatHelpText>{results.disk.used.toFixed(1)} GB / {results.disk.total.toFixed(1)} GB</StatHelpText>
+        </Stat>
+      </HStack>
+    </Box>
   );
 
   const renderNetworkResults = (results: NetworkResult) => (
     <VStack spacing={4} align="stretch">
-      <HStack spacing={6} wrap="wrap">
-        <Stat>
-          <StatLabel>Average Ping</StatLabel>
-          <StatNumber>{results.ping}ms</StatNumber>
-        </Stat>
-        <Stat>
-          <StatLabel>Jitter</StatLabel>
-          <StatNumber>{results.jitter}ms</StatNumber>
-        </Stat>
-        <Stat>
-          <StatLabel>Download Speed</StatLabel>
-          <StatNumber>{results.downloadSpeed} Mbps</StatNumber>
-          <StatHelpText>
-            {results.speedTestStatus === 'success' ? 'Measured' : 'Unavailable'}
-          </StatHelpText>
-        </Stat>
-        <Stat>
-          <StatLabel>Upload Speed</StatLabel>
-          <StatNumber>{results.uploadSpeed} Mbps</StatNumber>
-          <StatHelpText>Estimated</StatHelpText>
-        </Stat>
-      </HStack>
-      
+      <Box p={4} border="1px solid" borderColor="gray.300" borderRadius="md" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
+        <HStack spacing={6} wrap="wrap">
+          <Stat>
+            <StatLabel>Average Ping</StatLabel>
+            <StatNumber>{results.ping}ms</StatNumber>
+          </Stat>
+          <Stat>
+            <StatLabel>Jitter</StatLabel>
+            <StatNumber>{results.jitter}ms</StatNumber>
+          </Stat>
+          <Stat>
+            <StatLabel>Download Speed</StatLabel>
+            <StatNumber>{results.downloadSpeed} Mbps</StatNumber>
+            <StatHelpText>
+              {results.speedTestStatus === 'success' ? 'Measured' : 'Unavailable'}
+            </StatHelpText>
+          </Stat>
+          <Stat>
+            <StatLabel>Upload Speed</StatLabel>
+            <StatNumber>{results.uploadSpeed} Mbps</StatNumber>
+            <StatHelpText>Estimated</StatHelpText>
+          </Stat>
+        </HStack>
+      </Box>
+
       {results.speedTestError && (
         <Alert status="warning" bg="orange.50" _dark={{ bg: "orange.900", borderColor: "orange.700" }} border="1px solid" borderColor="orange.200">
           <AlertIcon />
@@ -441,22 +522,23 @@ export const PerformanceTest: React.FC = () => {
           </Box>
         </Alert>
       )}
-      
-      <Divider />
-      <VStack spacing={2} align="stretch">
-        <Text fontWeight="semibold">Ping Test Results:</Text>
-        {results.pingResults.map((ping, index) => (
-          <HStack key={index} justify="space-between">
-            <Text>{ping.host}</Text>
-            <HStack>
-              <Text>{ping.ping > 0 ? `${ping.ping}ms` : 'Failed'}</Text>
-              <Badge colorScheme={ping.status === 'success' ? 'green' : 'red'}>
-                {ping.status.toUpperCase()}
-              </Badge>
+
+      <Box p={4} border="1px solid" borderColor="gray.300" borderRadius="md" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
+        <VStack spacing={2} align="stretch">
+          <Text fontWeight="semibold">Ping Test Results:</Text>
+          {results.pingResults.map((ping, index) => (
+            <HStack key={index} justify="space-between">
+              <Text>{ping.host}</Text>
+              <HStack>
+                <Text>{ping.ping > 0 ? `${ping.ping}ms` : 'Failed'}</Text>
+                <Badge colorScheme={ping.status === 'success' ? 'green' : 'red'}>
+                  {ping.status.toUpperCase()}
+                </Badge>
+              </HStack>
             </HStack>
-          </HStack>
-        ))}
-      </VStack>
+          ))}
+        </VStack>
+      </Box>
     </VStack>
   );
 
@@ -531,27 +613,17 @@ export const PerformanceTest: React.FC = () => {
       )}
 
       {results && (
-        <Box>
-          <Alert status="info" mb={4}>
-            <AlertIcon />
-            <Box>
-              <AlertTitle>Test Complete!</AlertTitle>
-              <AlertDescription>{results.summary}</AlertDescription>
-            </Box>
-          </Alert>
-
-          {results.testType === 'database' && Array.isArray(results.results) && 
-            renderDatabaseResults(results.results as DatabaseConnectionResult[])}
-          
-          {results.testType === 'api' && Array.isArray(results.results) && 
-            renderAPIResults(results.results as APITestResult[])}
-          
-          {results.testType === 'system' && !Array.isArray(results.results) && 
-            renderSystemResults(results.results as SystemPerformanceResult)}
-          
-          {results.testType === 'network' && !Array.isArray(results.results) && 
-            renderNetworkResults(results.results as NetworkResult)}
-        </Box>
+        <UnifiedResultsDisplay
+          testType={results.testType}
+          results={results.results}
+          success={results.testType === 'database' ?
+            Array.isArray(results.results) && (results.results as DatabaseConnectionResult[]).every((r) => r.status === 'connected') :
+            results.testType === 'api' ?
+              Array.isArray(results.results) && (results.results as APITestResult[]).some((r) => r.status === 'connected') :
+              true // System and network tests are considered successful if they complete
+          }
+          onClear={() => setResults(null)}
+        />
       )}
     </VStack>
   );

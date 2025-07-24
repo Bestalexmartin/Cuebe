@@ -81,7 +81,7 @@ const AuthResultsDisplay: React.FC<{ results: TestResults; onClear: () => void }
   }, [results]);
 
   return (
-    <Box ref={resultsRef} mt={4} p={4} border="1px solid" borderColor="gray.500" borderRadius="md">
+    <Box ref={resultsRef} mt={4} p={4} border="1px solid" borderColor="gray.300" borderRadius="md" bg="white" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
       <HStack justify="space-between" mb={3}>
         <Text fontWeight="semibold">Authentication Test Results</Text>
         <HStack spacing={2}>
@@ -284,12 +284,10 @@ export const AuthenticationTest: React.FC = () => {
           }
         }
         
-        // Log what we found for debugging
+        // Show user what we found
         if (authToken) {
-          console.log('Found authentication token:', authToken.substring(0, 20) + '...');
           showInfo('Token Found', `Authentication token located (${authToken.length} chars). Running authenticated tests...`);
         } else {
-          console.log('No authentication token found in any storage location');
           showInfo('No Token Found', 'No authentication token found. Will test as unauthenticated user.');
         }
       } else {

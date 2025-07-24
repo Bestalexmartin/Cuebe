@@ -17,6 +17,7 @@ import { EditCrewPage } from './pages/edit/EditCrewPage';
 import { TutorialPage } from './pages/TutorialPage';
 import { TestToolsPage } from './pages/TestToolsPage';
 import { ApiDocsPage } from './pages/ApiDocsPage';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 // TypeScript interfaces
 interface ProtectedRouteProps {
@@ -35,13 +36,14 @@ const App: React.FC = () => {
   const { isOpen: isMenuOpen, onOpen: onMenuOpen, onClose: onMenuClose } = useDisclosure();
 
   return (
-    <Box
-      display="grid"
-      gridTemplateRows="auto 1fr"
-      height="100vh"
-      width="100vw"
-      overflow="hidden"
-    >
+    <ErrorBoundary context="Application Root">
+      <Box
+        display="grid"
+        gridTemplateRows="auto 1fr"
+        height="100vh"
+        width="100vw"
+        overflow="hidden"
+      >
       <Header onMenuOpen={onMenuOpen} isMenuOpen={isMenuOpen} />
 
       <Box as="main" overflow="hidden">
@@ -121,7 +123,8 @@ const App: React.FC = () => {
 
         </Routes>
       </Box>
-    </Box>
+      </Box>
+    </ErrorBoundary>
   );
 };
 

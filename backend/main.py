@@ -6,6 +6,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.responses import HTMLResponse
 
+# Optional slowapi import for rate limiting
+try:
+    from slowapi.errors import RateLimitExceeded
+    from utils.rate_limiter import limiter, rate_limit_exceeded_handler
+    RATE_LIMITING_ENABLED = True
+except ImportError:
+    RateLimitExceeded = None
+    limiter = None
+    rate_limit_exceeded_handler = None
+    RATE_LIMITING_ENABLED = False
+
 # Import routers
 from routers import users, crews, venues, departments, shows, webhooks, system_tests
 
@@ -23,6 +34,17 @@ app = FastAPI(
     docs_url=None,  # Disable default docs
     redoc_url=None  # Disable default redoc
 )
+
+# Add rate limiting if available
+if RATE_LIMITING_ENABLED:
+    # Add rate limiter to app state
+    app.state.limiter = limiter
+    
+    # Add rate limit exception handler
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+    logger.info("Rate limiting enabled")
+else:
+    logger.warning("Rate limiting disabled - slowapi package not available")
 
 app.add_middleware(
     CORSMiddleware,
