@@ -48,6 +48,53 @@ export const ApiTest: React.FC<ApiTestProps> = ({
   TestResultsDisplay,
   onClearTestResults
 }) => {
+  const [isPreparing, setIsPreparing] = React.useState(false);
+  const [prepStatus, setPrepStatus] = React.useState<string>('');
+
+  const handleTestSuite = async (testSuite: string) => {
+    // Check and prepare pytest before running tests
+    setIsPreparing(true);
+    setPrepStatus('Checking pytest availability...');
+    
+    try {
+      const prepResponse = await fetch('/api/system-tests/prepare-pytest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!prepResponse.ok) {
+        throw new Error(`Preparation failed: HTTP ${prepResponse.status}`);
+      }
+      
+      const prepData = await prepResponse.json();
+      
+      if (prepData.installation_required) {
+        setPrepStatus('Installing pytest for API testing (this may take 30-60 seconds)...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
+      if (!prepData.pytest_available && prepData.error) {
+        throw new Error(`pytest preparation failed: ${prepData.error}`);
+      }
+      
+      setPrepStatus('pytest ready - running tests...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Now run the actual test suite
+      onRunTestSuite(testSuite);
+      
+    } catch (error) {
+      console.error('API test preparation failed:', error);
+      // Still try to run tests even if preparation failed
+      onRunTestSuite(testSuite);
+    } finally {
+      setIsPreparing(false);
+      setPrepStatus('');
+    }
+  };
+
+  const isAnyRunning = isRunningTests || isPreparing;
+
   return (
     <VStack spacing={6} align="stretch">
       <HStack spacing={2}>
@@ -67,10 +114,11 @@ export const ApiTest: React.FC<ApiTestProps> = ({
               color="white"
               _hover={{ bg: 'orange.400' }}
               size="sm"
-              onClick={() => onRunTestSuite('quick')}
-              isLoading={isRunningTests && currentTestSuite === 'quick'}
-              loadingText="Testing..."
-              leftIcon={isRunningTests && currentTestSuite === 'quick' ? <Spinner size="sm" /> : undefined}
+              onClick={() => handleTestSuite('quick')}
+              isLoading={(isRunningTests && currentTestSuite === 'quick') || isPreparing}
+              loadingText={isPreparing ? "Preparing..." : "Testing..."}
+              leftIcon={(isRunningTests && currentTestSuite === 'quick') || isPreparing ? <Spinner size="sm" /> : undefined}
+              isDisabled={isAnyRunning}
             >
               Health Check
             </Button>
@@ -79,10 +127,11 @@ export const ApiTest: React.FC<ApiTestProps> = ({
               color="white"
               _hover={{ bg: 'orange.400' }}
               size="sm"
-              onClick={() => onRunTestSuite('auth')}
-              isLoading={isRunningTests && currentTestSuite === 'auth'}
-              loadingText="Testing..."
-              leftIcon={isRunningTests && currentTestSuite === 'auth' ? <Spinner size="sm" /> : undefined}
+              onClick={() => handleTestSuite('auth')}
+              isLoading={(isRunningTests && currentTestSuite === 'auth') || isPreparing}
+              loadingText={isPreparing ? "Preparing..." : "Testing..."}
+              leftIcon={(isRunningTests && currentTestSuite === 'auth') || isPreparing ? <Spinner size="sm" /> : undefined}
+              isDisabled={isAnyRunning}
             >
               Auth Tests
             </Button>
@@ -91,10 +140,11 @@ export const ApiTest: React.FC<ApiTestProps> = ({
               color="white"
               _hover={{ bg: 'orange.400' }}
               size="sm"
-              onClick={() => onRunTestSuite('critical')}
-              isLoading={isRunningTests && currentTestSuite === 'critical'}
-              loadingText="Testing..."
-              leftIcon={isRunningTests && currentTestSuite === 'critical' ? <Spinner size="sm" /> : undefined}
+              onClick={() => handleTestSuite('critical')}
+              isLoading={(isRunningTests && currentTestSuite === 'critical') || isPreparing}
+              loadingText={isPreparing ? "Preparing..." : "Testing..."}
+              leftIcon={(isRunningTests && currentTestSuite === 'critical') || isPreparing ? <Spinner size="sm" /> : undefined}
+              isDisabled={isAnyRunning}
             >
               Critical API Tests
             </Button>
@@ -103,10 +153,11 @@ export const ApiTest: React.FC<ApiTestProps> = ({
               color="white"
               _hover={{ bg: 'orange.400' }}
               size="sm"
-              onClick={() => onRunTestSuite('all')}
-              isLoading={isRunningTests && currentTestSuite === 'all'}
-              loadingText="Testing..."
-              leftIcon={isRunningTests && currentTestSuite === 'all' ? <Spinner size="sm" /> : undefined}
+              onClick={() => handleTestSuite('all')}
+              isLoading={(isRunningTests && currentTestSuite === 'all') || isPreparing}
+              loadingText={isPreparing ? "Preparing..." : "Testing..."}
+              leftIcon={(isRunningTests && currentTestSuite === 'all') || isPreparing ? <Spinner size="sm" /> : undefined}
+              isDisabled={isAnyRunning}
             >
               Run All Tests
             </Button>
@@ -114,7 +165,15 @@ export const ApiTest: React.FC<ApiTestProps> = ({
         </VStack>
       </Box>
 
-      {isRunningTests && (
+      {isPreparing && (
+        <Alert status="info">
+          <AlertIcon />
+          <AlertTitle>Preparing API Tests</AlertTitle>
+          <AlertDescription>{prepStatus}</AlertDescription>
+        </Alert>
+      )}
+
+      {isRunningTests && !isPreparing && (
         <Alert status="info">
           <AlertIcon />
           <AlertTitle>Running {currentTestSuite} tests...</AlertTitle>

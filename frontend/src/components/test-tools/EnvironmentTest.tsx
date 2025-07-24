@@ -56,8 +56,20 @@ interface EnvironmentCommandResult {
   };
 }
 
+interface ExternalServiceResult {
+  service: string;
+  status: 'connected' | 'failed' | 'timeout' | 'misconfigured';
+  responseTime?: number;
+  error?: string;
+  details: {
+    endpoint?: string;
+    configurationStatus?: string;
+    lastChecked?: string;
+  };
+}
+
 interface CombinedSystemResults {
-  testType: 'filesystem' | 'environment';
+  testType: 'filesystem' | 'environment' | 'external-services';
   success: boolean;
   summary: string;
   totalTime?: number;
@@ -67,6 +79,9 @@ interface CombinedSystemResults {
   
   // Environment-specific results
   environmentResult?: EnvironmentCommandResult;
+  
+  // External services results
+  externalServicesResults?: ExternalServiceResult[];
 }
 
 const CombinedSystemResultsDisplay: React.FC<{ results: CombinedSystemResults; onClear: () => void }> = ({ results, onClear }) => {
@@ -101,6 +116,7 @@ const CombinedSystemResultsDisplay: React.FC<{ results: CombinedSystemResults; o
     switch (results.testType) {
       case 'filesystem': return 'orange';
       case 'environment': return 'teal';
+      case 'external-services': return 'green';
       default: return 'gray';
     }
   };
@@ -109,6 +125,7 @@ const CombinedSystemResultsDisplay: React.FC<{ results: CombinedSystemResults; o
     switch (results.testType) {
       case 'filesystem': return 'Filesystem Permissions';
       case 'environment': return 'Environment Reset';
+      case 'external-services': return 'External Services';
       default: return 'System';
     }
   };
@@ -192,6 +209,46 @@ const CombinedSystemResultsDisplay: React.FC<{ results: CombinedSystemResults; o
                       <Badge colorScheme="yellow" size="xs">{(result.sizeBytes / 1024).toFixed(1)} KB</Badge>
                     )}
                   </HStack>
+                )}
+              </VStack>
+            </Box>
+          ))}
+        </VStack>
+      )}
+
+      {/* External services results */}
+      {results.externalServicesResults && (
+        <VStack spacing={3} align="stretch" mb={4}>
+          {results.externalServicesResults.map((result, index) => (
+            <Box key={index} p={3} bg="white" borderRadius="md" border="1px solid" borderColor="gray.200" _dark={{ bg: "gray.900", borderColor: "gray.700" }}>
+              <VStack align="stretch" spacing={2}>
+                <HStack justify="space-between" align="start">
+                  <VStack align="start" spacing={1} flex={1}>
+                    <Text fontSize="sm" fontWeight="semibold">{result.service}</Text>
+                    {result.details.endpoint && (
+                      <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.400" }} fontFamily="mono">{result.details.endpoint}</Text>
+                    )}
+                    {result.error && (
+                      <Text fontSize="xs" color="red.600" _dark={{ color: "red.400" }}>{result.error}</Text>
+                    )}
+                  </VStack>
+                  <HStack spacing={1} flexWrap="wrap">
+                    <Badge colorScheme={
+                      result.status === 'connected' ? 'green' : 
+                      result.status === 'misconfigured' ? 'yellow' : 
+                      'red'
+                    } size="sm">
+                      {result.status.toUpperCase()}
+                    </Badge>
+                    {result.responseTime && (
+                      <Badge colorScheme="blue" size="sm">{result.responseTime}ms</Badge>
+                    )}
+                  </HStack>
+                </HStack>
+                {result.details.configurationStatus && (
+                  <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.400" }}>
+                    Config: {result.details.configurationStatus}
+                  </Text>
                 )}
               </VStack>
             </Box>
@@ -329,6 +386,7 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
 }) => {
   const [results, setResults] = useState<CombinedSystemResults | null>(null);
   const [isRunningFilesystem, setIsRunningFilesystem] = useState(false);
+  const [isRunningExternalServices, setIsRunningExternalServices] = useState(false);
   const { showSuccess, showError, showInfo } = useEnhancedToast();
 
   // Convert environment results to combined format when they change
@@ -404,6 +462,49 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
     }
   };
 
+  const runExternalServicesTest = async () => {
+    setIsRunningExternalServices(true);
+    setResults(null);
+    
+    try {
+      showInfo('Testing External Services', 'Checking connectivity to external services...');
+      
+      const response = await fetch('/api/system-tests/external-services', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      const finalResults: CombinedSystemResults = {
+        testType: 'external-services',
+        success: data.success,
+        summary: data.summary,
+        externalServicesResults: data.results
+      };
+      
+      setResults(finalResults);
+      
+      if (data.success) {
+        showSuccess('External Services Connected', 'All external services are accessible!');
+      } else {
+        showError('External Service Issues', { description: 'Some external services are not accessible. Check results below.' });
+      }
+      
+    } catch (error) {
+      showError('External Services Test Failed', { description: `Failed to test external services: ${error}` });
+      console.error('External services test error:', error);
+    } finally {
+      setIsRunningExternalServices(false);
+    }
+  };
+
   const clearResults = () => {
     setResults(null);
     onClearEnvironmentResults();
@@ -416,23 +517,10 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
       </HStack>
 
       <Text color="gray.600">
-        Test system-level functionality including filesystem permissions and development environment setup. Environment reset clears browser storage and reinstalls dependencies.
+        Test system-level functionality including external service connectivity, filesystem permissions, and development environment setup. Environment reset clears browser storage and resets test states.
       </Text>
 
-      <HStack spacing={3}>
-        <Button
-          bg="blue.400"
-          color="white"
-          _hover={{ bg: 'orange.400' }}
-          size="sm"
-          onClick={runFilesystemTest}
-          isLoading={isRunningFilesystem}
-          loadingText="Testing..."
-          leftIcon={isRunningFilesystem ? <Spinner size="sm" /> : undefined}
-        >
-          Test Filesystem
-        </Button>
-        
+      <HStack spacing={3} flexWrap="wrap">
         <Button
           bg="blue.400"
           color="white"
@@ -448,18 +536,50 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
         >
           Reset Environment
         </Button>
+        
+        <Button
+          bg="blue.400"
+          color="white"
+          _hover={{ bg: 'orange.400' }}
+          size="sm"
+          onClick={runExternalServicesTest}
+          isLoading={isRunningExternalServices}
+          loadingText="Testing..."
+          leftIcon={isRunningExternalServices ? <Spinner size="sm" /> : undefined}
+        >
+          External Services
+        </Button>
+        
+        <Button
+          bg="blue.400"
+          color="white"
+          _hover={{ bg: 'orange.400' }}
+          size="sm"
+          onClick={runFilesystemTest}
+          isLoading={isRunningFilesystem}
+          loadingText="Testing..."
+          leftIcon={isRunningFilesystem ? <Spinner size="sm" /> : undefined}
+        >
+          Test Filesystem
+        </Button>
       </HStack>
 
-      {(isRunningFilesystem || isProcessingEnvironment) && (
+      {(isRunningFilesystem || isProcessingEnvironment || isRunningExternalServices) && (
         <Alert status="info">
           <AlertIcon />
           <AlertTitle>
-            {isRunningFilesystem ? 'Testing filesystem permissions...' : 'Resetting environment...'}
+            {isRunningFilesystem 
+              ? 'Testing filesystem permissions...' 
+              : isRunningExternalServices 
+                ? 'Testing external services...'
+                : 'Resetting environment...'}
           </AlertTitle>
           <AlertDescription>
             {isRunningFilesystem 
               ? 'Checking file and directory access permissions.'
-              : 'This may take up to 2 minutes.'}
+              : isRunningExternalServices
+                ? 'Checking connectivity to Clerk authentication and CDN services.'
+                : 'This may take up to 2 minutes.'}
           </AlertDescription>
         </Alert>
       )}

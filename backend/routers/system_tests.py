@@ -920,3 +920,310 @@ def prepare_speedtest():
         logger.error(f"speedtest-cli preparation failed: {e}")
     
     return result
+
+
+@router.post("/prepare-pytest")
+def prepare_pytest():
+    """Check for pytest availability and install if necessary for API testing"""
+    import shutil
+    
+    result = {
+        "pytest_available": False,
+        "installation_required": False,
+        "installation_attempted": False,
+        "installation_successful": False,
+        "method_used": None,
+        "error": None
+    }
+    
+    try:
+        # Check if pytest is already available
+        pytest_locations = [
+            shutil.which('pytest'),  # Check PATH
+            '/usr/local/bin/pytest',
+            '/usr/bin/pytest',
+            '/opt/homebrew/bin/pytest'  # For macOS with Homebrew
+        ]
+        
+        # Check if pytest is already available
+        for location in pytest_locations:
+            if location and os.path.exists(location):
+                result["pytest_available"] = True
+                result["method_used"] = f"found at {location}"
+                logger.info(f"pytest found at {location}")
+                return result
+        
+        # Try to run pytest to see if it's available via Python
+        try:
+            test_result = subprocess.run(
+                ['pytest', '--version'], 
+                capture_output=True, 
+                text=True, 
+                timeout=5
+            )
+            if test_result.returncode == 0:
+                result["pytest_available"] = True
+                result["method_used"] = "available via Python PATH"
+                logger.info("pytest available via Python PATH")
+                return result
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+        
+        # Try to import pytest
+        try:
+            import pytest
+            result["pytest_available"] = True
+            result["method_used"] = "available as Python module"
+            logger.info("pytest available as Python module")
+            return result
+        except ImportError:
+            pass
+        
+        # pytest not found, attempt installation
+        logger.info("pytest not found, attempting installation for API testing")
+        result["installation_required"] = True
+        result["installation_attempted"] = True
+        
+        # Try different installation methods for pytest
+        installation_methods = [
+            # Method 1: Install via pip to system Python
+            ['pip3', 'install', 'pytest'],
+            ['pip', 'install', 'pytest'],
+            # Method 2: Try with user flag
+            ['pip3', 'install', '--user', 'pytest'],
+        ]
+        
+        for method in installation_methods:
+            try:
+                logger.info(f"Trying pytest installation method: {' '.join(method)}")
+                install_result = subprocess.run(
+                    method,
+                    capture_output=True,
+                    text=True,
+                    timeout=60  # Allow time for installation
+                )
+                
+                if install_result.returncode == 0:
+                    logger.info(f"pytest installation successful with method: {' '.join(method)}")
+                    result["installation_successful"] = True
+                    result["method_used"] = f"installed via {' '.join(method)}"
+                    
+                    # Verify installation worked
+                    verify_result = subprocess.run(
+                        ['pytest', '--version'],
+                        capture_output=True,
+                        text=True,
+                        timeout=5
+                    )
+                    
+                    if verify_result.returncode == 0:
+                        result["pytest_available"] = True
+                        logger.info("pytest installation verified successfully")
+                        return result
+                    else:
+                        logger.warning("pytest installation appeared successful but verification failed")
+                        
+                else:
+                    logger.debug(f"pytest installation method failed: {install_result.stderr}")
+                    continue
+                    
+            except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError) as e:
+                logger.debug(f"pytest installation method {' '.join(method)} failed: {str(e)}")
+                continue
+        
+        # All installation methods failed
+        result["error"] = "All pytest installation methods failed. pytest may need to be installed manually for API testing."
+        logger.warning("Failed to install pytest automatically")
+        
+    except Exception as e:
+        result["error"] = f"pytest preparation failed: {str(e)}"
+        logger.error(f"pytest preparation failed: {e}")
+    
+    return result
+
+
+@router.get("/external-services")
+def test_external_services():
+    """Test connectivity to external services required by CallMaster"""
+    import requests
+    import os
+    
+    results = []
+    overall_success = True
+    
+    # Test Clerk Authentication Service
+    try:
+        clerk_publishable_key = os.getenv('VITE_CLERK_PUBLISHABLE_KEY')
+        clerk_secret_key = os.getenv('CLERK_SECRET_KEY')
+        
+        if not clerk_publishable_key or not clerk_secret_key:
+            results.append({
+                "service": "Clerk Authentication",
+                "status": "misconfigured",
+                "error": "Missing Clerk API keys in environment",
+                "details": {
+                    "configurationStatus": "Missing VITE_CLERK_PUBLISHABLE_KEY or CLERK_SECRET_KEY",
+                    "endpoint": "clerk.com API"
+                }
+            })
+            overall_success = False
+        else:
+            # Test Clerk API connectivity
+            start_time = time.time()
+            try:
+                # Use Clerk's well-known endpoint to test connectivity
+                response = requests.get(
+                    f"https://api.clerk.com/v1/jwks",
+                    headers={"Authorization": f"Bearer {clerk_secret_key}"},
+                    timeout=10
+                )
+                end_time = time.time()
+                
+                if response.status_code in [200, 401]:  # 401 might be expected for JWKS endpoint
+                    results.append({
+                        "service": "Clerk Authentication",
+                        "status": "connected",
+                        "responseTime": round((end_time - start_time) * 1000, 2),
+                        "details": {
+                            "configurationStatus": "API keys configured",
+                            "endpoint": "https://api.clerk.com/v1/jwks"
+                        }
+                    })
+                else:
+                    results.append({
+                        "service": "Clerk Authentication",
+                        "status": "failed",
+                        "responseTime": round((end_time - start_time) * 1000, 2),
+                        "error": f"HTTP {response.status_code}",
+                        "details": {
+                            "configurationStatus": "API keys configured",
+                            "endpoint": "https://api.clerk.com/v1/jwks"
+                        }
+                    })
+                    overall_success = False
+                    
+            except requests.exceptions.RequestException as e:
+                results.append({
+                    "service": "Clerk Authentication",
+                    "status": "failed",
+                    "error": f"Connection failed: {str(e)}",
+                    "details": {
+                        "configurationStatus": "API keys configured",
+                        "endpoint": "https://api.clerk.com/v1/jwks"
+                    }
+                })
+                overall_success = False
+    except Exception as e:
+        results.append({
+            "service": "Clerk Authentication",
+            "status": "failed",
+            "error": f"Configuration error: {str(e)}",
+            "details": {
+                "configurationStatus": "Error checking configuration",
+                "endpoint": "clerk.com API"
+            }
+        })
+        overall_success = False
+    
+    # Test CDN Services (unpkg.com for Swagger UI)
+    try:
+        start_time = time.time()
+        response = requests.get(
+            "https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css",
+            timeout=10
+        )
+        end_time = time.time()
+        
+        if response.status_code == 200:
+            results.append({
+                "service": "unpkg.com CDN",
+                "status": "connected",
+                "responseTime": round((end_time - start_time) * 1000, 2),
+                "details": {
+                    "configurationStatus": "Available",
+                    "endpoint": "https://unpkg.com"
+                }
+            })
+        else:
+            results.append({
+                "service": "unpkg.com CDN",
+                "status": "failed",
+                "responseTime": round((end_time - start_time) * 1000, 2),
+                "error": f"HTTP {response.status_code}",
+                "details": {
+                    "configurationStatus": "Service error",
+                    "endpoint": "https://unpkg.com"
+                }
+            })
+            overall_success = False
+    except requests.exceptions.RequestException as e:
+        results.append({
+            "service": "unpkg.com CDN",
+            "status": "failed",
+            "error": f"Connection failed: {str(e)}",
+            "details": {
+                "configurationStatus": "Network error",
+                "endpoint": "https://unpkg.com"
+            }
+        })
+        overall_success = False
+    
+    # Test jsDelivr CDN (for ReDoc)
+    try:
+        start_time = time.time()
+        response = requests.get(
+            "https://cdn.jsdelivr.net/npm/redoc@2.1.2/bundles/redoc.standalone.js",
+            timeout=10
+        )
+        end_time = time.time()
+        
+        if response.status_code == 200:
+            results.append({
+                "service": "jsDelivr CDN",
+                "status": "connected",
+                "responseTime": round((end_time - start_time) * 1000, 2),
+                "details": {
+                    "configurationStatus": "Available",
+                    "endpoint": "https://cdn.jsdelivr.net"
+                }
+            })
+        else:
+            results.append({
+                "service": "jsDelivr CDN",
+                "status": "failed",
+                "responseTime": round((end_time - start_time) * 1000, 2),
+                "error": f"HTTP {response.status_code}",
+                "details": {
+                    "configurationStatus": "Service error",
+                    "endpoint": "https://cdn.jsdelivr.net"
+                }
+            })
+            overall_success = False
+    except requests.exceptions.RequestException as e:
+        results.append({
+            "service": "jsDelivr CDN",
+            "status": "failed",
+            "error": f"Connection failed: {str(e)}",
+            "details": {
+                "configurationStatus": "Network error",
+                "endpoint": "https://cdn.jsdelivr.net"
+            }
+        })
+        overall_success = False
+    
+    # Generate summary
+    connected_count = len([r for r in results if r["status"] == "connected"])
+    total_count = len(results)
+    
+    if overall_success:
+        summary = f"All {total_count} external services are accessible and properly configured."
+    else:
+        failed_count = total_count - connected_count
+        summary = f"{connected_count}/{total_count} external services accessible. {failed_count} service(s) have issues."
+    
+    return {
+        "testType": "external-services",
+        "success": overall_success,
+        "summary": summary,
+        "results": results
+    }
