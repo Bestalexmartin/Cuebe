@@ -9,6 +9,7 @@ export const MODAL_TYPES = {
     CREATE_SCRIPT: 'CREATE_SCRIPT',
     CREATE_VENUE: 'CREATE_VENUE',
     CREATE_DEPARTMENT: 'CREATE_DEPARTMENT',
+    CREATE_CREW: 'CREATE_CREW',
 } as const;
 
 // TypeScript interfaces

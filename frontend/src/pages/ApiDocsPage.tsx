@@ -1,4 +1,4 @@
-// frontend/src/pages/ApiDocumentationPage.tsx
+// frontend/src/pages/ApiDocsPage.tsx
 
 import React, { useState } from 'react';
 import {
@@ -12,12 +12,12 @@ import {
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { UnifiedPageLayout } from '../components/layout/UnifiedPageLayout';
 
-interface ApiDocumentationPageProps {
+interface ApiDocsPageProps {
   isMenuOpen: boolean;
   onMenuClose: () => void;
 }
 
-export const ApiDocumentationPage: React.FC<ApiDocumentationPageProps> = ({ isMenuOpen, onMenuClose }) => {
+export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClose }) => {
   // Initialize with session storage or default to 'swagger'
   const [selectedContent, setSelectedContent] = useState<string>(() => {
     const saved = sessionStorage.getItem('apiDocsSelectedContent');
@@ -211,18 +211,21 @@ export const ApiDocumentationPage: React.FC<ApiDocumentationPageProps> = ({ isMe
       id: 'swagger',
       title: 'API Explorer',
       description: 'Interactive API explorer',
+      icon: 'api-docs' as const,
       onClick: () => handleContentSelection('swagger')
     },
     {
       id: 'overview',
       title: 'API Overview',
       description: 'High-level endpoints overview',
+      icon: 'api-docs' as const,
       onClick: () => handleContentSelection('overview')
     },
     {
       id: 'redoc',
       title: 'ReDoc',
       description: 'Detailed documentation',
+      icon: 'api-docs' as const,
       onClick: () => handleContentSelection('redoc')
     }
   ];

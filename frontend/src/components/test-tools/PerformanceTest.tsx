@@ -1,38 +1,32 @@
-// frontend/src/components/test-tools/PerformanceTest.tsx
-
-import React, { useState, useRef, useEffect } from 'react';
+// Real Performance Test Component with actual API calls
+import React, { useState } from 'react';
 import {
   Box,
   VStack,
   HStack,
   Button,
   Text,
-  Badge,
+  Progress,
   Alert,
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  Code,
-  Spinner,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  AccordionIcon,
-  IconButton,
-  useClipboard,
-  Progress
+  Stat,
+  StatLabel,
+  StatNumber,
+  StatHelpText,
+  Badge,
+  Divider
 } from '@chakra-ui/react';
-import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
-// Combined interfaces for all test types
+// TypeScript interfaces
 interface DatabaseConnectionResult {
   database: string;
   status: 'connected' | 'failed' | 'timeout';
   responseTime: number;
   error?: string;
-  details?: {
+  details: {
     host: string;
     port: number;
     database: string;
@@ -40,340 +34,67 @@ interface DatabaseConnectionResult {
   };
 }
 
-interface NetworkConnectivityResult {
-  service: string;
-  status: 'connected' | 'failed' | 'timeout';
+interface APITestResult {
+  endpoint: string;
+  status: 'connected' | 'failed' | 'timeout' | 'skipped';
   responseTime: number;
-  statusCode?: number;
+  statusCode: number;
   error?: string;
-  url: string;
+  details: {
+    url: string;
+    method: string;
+  };
 }
 
-interface NetworkSpeedTestResult {
+interface SystemPerformanceResult {
+  cpu: {
+    usage: number;
+    cores: number;
+  };
+  memory: {
+    used: number;
+    total: number;
+    percentage: number;
+  };
+  disk: {
+    used: number;
+    total: number;
+    percentage: number;
+  };
+}
+
+interface NetworkResult {
+  ping: number;
+  pingResults: Array<{
+    host: string;
+    ping: number;
+    status: string;
+    error?: string;
+  }>;
+  jitter: number;
   downloadSpeed: number;
   uploadSpeed: number;
-  ping: number;
-  jitter: number;
-  server: string;
+  speedTestStatus: string;
+  speedTestError?: string;
 }
 
-interface PerformanceMetric {
-  name: string;
-  value: number;
-  unit: string;
-  status: 'good' | 'warning' | 'poor';
-  threshold?: {
-    good: number;
-    warning: number;
-  };
-}
-
-interface APIEndpointResult {
-  endpoint: string;
-  method: string;
-  responseTime: number;
-  status: number;
-  payloadSize: number;
-}
-
-interface CombinedTestResults {
-  testType: 'database' | 'network' | 'performance';
-  success: boolean;
+interface TestResults {
+  testType: string;
   summary: string;
-  totalTime: number;
-  
-  // Database-specific results
-  databaseConnections?: DatabaseConnectionResult[];
-  
-  // Network-specific results
-  networkConnections?: NetworkConnectivityResult[];
-  speedTest?: NetworkSpeedTestResult;
-  
-  // Performance-specific results
-  performanceMetrics?: PerformanceMetric[];
-  apiEndpoints?: APIEndpointResult[];
-  systemUsage?: {
-    peakCPU: number;
-    peakMemory: number;
-    memoryUnit: string;
-    duration: number;
-  };
+  results?: DatabaseConnectionResult[] | APITestResult[] | SystemPerformanceResult | NetworkResult;
 }
-
-const CombinedResultsDisplay: React.FC<{ results: CombinedTestResults; onClear: () => void }> = ({ results, onClear }) => {
-  const { onCopy, hasCopied } = useClipboard(JSON.stringify(results, null, 2));
-  const resultsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Scroll to show the complete results when they first appear
-    if (resultsRef.current) {
-      const container = document.querySelector('.edit-form-container');
-      if (container) {
-        const resultsRect = resultsRef.current.getBoundingClientRect();
-        const containerRect = container.getBoundingClientRect();
-        
-        const isBottomCutOff = resultsRect.bottom > containerRect.bottom;
-        const isTopCutOff = resultsRect.top < containerRect.top;
-        
-        if (isBottomCutOff || isTopCutOff) {
-          resultsRef.current.scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest',
-            inline: 'nearest'
-          });
-        }
-      }
-    }
-  }, [results]);
-
-  const getBadgeColor = () => {
-    switch (results.testType) {
-      case 'database': return 'green';
-      case 'network': return 'cyan';
-      case 'performance': return 'yellow';
-      default: return 'gray';
-    }
-  };
-
-  const getTestTypeName = () => {
-    switch (results.testType) {
-      case 'database': return 'Database Connectivity';
-      case 'network': return 'Network Connectivity';
-      case 'performance': return 'Performance';
-      default: return 'System';
-    }
-  };
-
-  return (
-    <Box ref={resultsRef} mt={4} p={4} border="1px solid" borderColor="gray.500" borderRadius="md">
-      <HStack justify="space-between" mb={3}>
-        <HStack spacing={2}>
-          <Badge colorScheme={getBadgeColor()} fontSize="sm" px={2} py={1}>
-            {results.testType.toUpperCase()}
-          </Badge>
-          <Text fontWeight="semibold">{getTestTypeName()} Results</Text>
-        </HStack>
-        <HStack spacing={2}>
-          <Badge colorScheme={results.success ? "green" : "red"}>
-            {results.success ? "ALL PASSED" : "ISSUES DETECTED"}
-          </Badge>
-          <IconButton
-            aria-label="Clear results"
-            icon={<AppIcon name="delete" />}
-            size="xs"
-            variant="ghost"
-            onClick={onClear}
-            _hover={{ bg: "red.100" }}
-          />
-        </HStack>
-      </HStack>
-
-      <Text fontSize="sm" color="gray.600" mb={3}>
-        {results.summary} | Total test time: {results.totalTime}ms
-      </Text>
-
-      {/* Performance System Usage */}
-      {results.systemUsage && (
-        <Box mb={4} p={3} bg="purple.50" borderRadius="md" _dark={{ bg: "purple.900" }}>
-          <Text fontWeight="semibold" mb={2} color="purple.700" _dark={{ color: "purple.200" }}>
-            Peak System Usage
-          </Text>
-          <HStack spacing={4} flexWrap="wrap">
-            <VStack spacing={1}>
-              <Text fontSize="xs" color="gray.600">CPU</Text>
-              <Badge colorScheme={results.systemUsage.peakCPU > 80 ? 'red' : results.systemUsage.peakCPU > 60 ? 'orange' : 'green'} fontSize="sm">
-                {results.systemUsage.peakCPU.toFixed(1)}%
-              </Badge>
-            </VStack>
-            <VStack spacing={1}>
-              <Text fontSize="xs" color="gray.600">Memory</Text>
-              <Badge colorScheme={results.systemUsage.peakMemory > 80 ? 'red' : results.systemUsage.peakMemory > 60 ? 'orange' : 'green'} fontSize="sm">
-                {results.systemUsage.peakMemory.toFixed(1)} {results.systemUsage.memoryUnit}
-              </Badge>
-            </VStack>
-            <VStack spacing={1}>
-              <Text fontSize="xs" color="gray.600">Duration</Text>
-              <Badge colorScheme="blue" fontSize="sm">{results.systemUsage.duration}ms</Badge>
-            </VStack>
-          </HStack>
-        </Box>
-      )}
-
-      {/* Network Speed Test Results */}
-      {results.speedTest && (
-        <Box mb={4} p={3} bg="blue.50" borderRadius="md" _dark={{ bg: "blue.900" }}>
-          <Text fontWeight="semibold" mb={2} color="blue.700" _dark={{ color: "blue.200" }}>
-            Internet Speed Test Results
-          </Text>
-          <HStack spacing={4} flexWrap="wrap">
-            <VStack spacing={1}>
-              <Text fontSize="xs" color="gray.600">Download</Text>
-              <Badge colorScheme="green" fontSize="sm">{results.speedTest.downloadSpeed.toFixed(1)} Mbps</Badge>
-            </VStack>
-            <VStack spacing={1}>
-              <Text fontSize="xs" color="gray.600">Upload</Text>
-              <Badge colorScheme="blue" fontSize="sm">{results.speedTest.uploadSpeed.toFixed(1)} Mbps</Badge>
-            </VStack>
-            <VStack spacing={1}>
-              <Text fontSize="xs" color="gray.600">Ping</Text>
-              <Badge colorScheme="orange" fontSize="sm">{results.speedTest.ping}ms</Badge>
-            </VStack>
-            <VStack spacing={1}>
-              <Text fontSize="xs" color="gray.600">Jitter</Text>
-              <Badge colorScheme="purple" fontSize="sm">{results.speedTest.jitter}ms</Badge>
-            </VStack>
-          </HStack>
-          <Text fontSize="xs" color="gray.500" mt={2}>
-            Server: {results.speedTest.server}
-          </Text>
-        </Box>
-      )}
-
-      {/* Connection Results (Database or Network) */}
-      {(results.databaseConnections || results.networkConnections) && (
-        <VStack spacing={2} align="stretch" mb={4}>
-          <Text fontWeight="semibold" fontSize="sm">
-            {results.databaseConnections ? 'Database Connections' : 'Network Connections'}
-          </Text>
-          {(results.databaseConnections || results.networkConnections)?.map((connection, index) => {
-            const isDatabase = 'database' in connection;
-            const name = isDatabase ? (connection as DatabaseConnectionResult).database : (connection as NetworkConnectivityResult).service;
-            const details = isDatabase 
-              ? `${(connection as DatabaseConnectionResult).details?.host}:${(connection as DatabaseConnectionResult).details?.port}/${(connection as DatabaseConnectionResult).details?.database}`
-              : (connection as NetworkConnectivityResult).url;
-            
-            return (
-              <HStack key={index} justify="space-between" p={3} bg="gray.800" borderRadius="sm">
-                <VStack align="start" spacing={1}>
-                  <Text fontSize="sm" fontFamily="mono" color="white" fontWeight="bold">
-                    {name}
-                  </Text>
-                  <Text fontSize="xs" color="gray.300">
-                    {details}
-                  </Text>
-                </VStack>
-                <HStack spacing={2}>
-                  <Badge colorScheme={connection.status === 'connected' ? "green" : connection.status === 'timeout' ? "orange" : "red"} size="sm">
-                    {connection.status.toUpperCase()}
-                  </Badge>
-                  {connection.status === 'connected' && (
-                    <Badge colorScheme="blue" size="sm">
-                      {connection.responseTime}ms
-                    </Badge>
-                  )}
-                  {!isDatabase && (connection as NetworkConnectivityResult).statusCode && (
-                    <Badge colorScheme="gray" size="sm">
-                      {(connection as NetworkConnectivityResult).statusCode}
-                    </Badge>
-                  )}
-                </HStack>
-              </HStack>
-            );
-          })}
-        </VStack>
-      )}
-
-      {/* Performance Metrics */}
-      {results.performanceMetrics && (
-        <VStack spacing={2} align="stretch" mb={4}>
-          <Text fontWeight="semibold" fontSize="sm">Performance Metrics</Text>
-          {results.performanceMetrics.map((metric, index) => (
-            <HStack key={index} justify="space-between" p={3} bg="gray.800" borderRadius="sm">
-              <VStack align="start" spacing={1}>
-                <Text fontSize="sm" fontFamily="mono" color="white" fontWeight="bold">
-                  {metric.name}
-                </Text>
-              </VStack>
-              <HStack spacing={2}>
-                <Badge colorScheme={metric.status === 'good' ? "green" : metric.status === 'warning' ? "orange" : "red"} size="sm">
-                  {metric.status.toUpperCase()}
-                </Badge>
-                <Badge colorScheme="blue" size="sm">
-                  {metric.value}{metric.unit}
-                </Badge>
-              </HStack>
-            </HStack>
-          ))}
-        </VStack>
-      )}
-
-      {/* API Endpoint Results */}
-      {results.apiEndpoints && results.apiEndpoints.length > 0 && (
-        <VStack spacing={2} align="stretch" mb={4}>
-          <Text fontWeight="semibold" fontSize="sm">API Endpoint Performance</Text>
-          {results.apiEndpoints.map((endpoint, index) => (
-            <HStack key={index} justify="space-between" p={3} bg="gray.800" borderRadius="sm">
-              <VStack align="start" spacing={1}>
-                <Text fontSize="sm" fontFamily="mono" color="white" fontWeight="bold">
-                  {endpoint.method} {endpoint.endpoint}
-                </Text>
-                <Text fontSize="xs" color="gray.300">
-                  Payload: {endpoint.payloadSize} bytes
-                </Text>
-              </VStack>
-              <HStack spacing={2}>
-                <Badge colorScheme={endpoint.status === 200 ? "green" : "red"} size="sm">
-                  {endpoint.status}
-                </Badge>
-                <Badge colorScheme={endpoint.responseTime < 100 ? "green" : endpoint.responseTime < 500 ? "orange" : "red"} size="sm">
-                  {endpoint.responseTime}ms
-                </Badge>
-              </HStack>
-            </HStack>
-          ))}
-        </VStack>
-      )}
-
-      <Accordion allowToggle>
-        <AccordionItem>
-          <AccordionButton>
-            <Box flex="1" textAlign="left">
-              <Text fontWeight="semibold">Detailed Results (JSON)</Text>
-            </Box>
-            <AccordionIcon />
-          </AccordionButton>
-          <AccordionPanel pb={4}>
-            <HStack justify="space-between" align="center" mb={2}>
-              <Text fontSize="sm" color="gray.600">Complete test data</Text>
-              <IconButton
-                aria-label="Copy results"
-                icon={<AppIcon name="copy" />}
-                size="xs"
-                variant="ghost"
-                onClick={onCopy}
-                colorScheme={hasCopied ? "green" : "gray"}
-              />
-            </HStack>
-            <Code
-              p={3}
-              fontSize="sm"
-              whiteSpace="pre-wrap"
-              display="block"
-              maxHeight="200px"
-              overflowY="auto"
-              bg="gray.50"
-              color="gray.800"
-              _dark={{ bg: "gray.900", color: "gray.100" }}
-            >
-              {JSON.stringify(results, null, 2)}
-            </Code>
-          </AccordionPanel>
-        </AccordionItem>
-      </Accordion>
-    </Box>
-  );
-};
 
 export const PerformanceTest: React.FC = () => {
   const [isRunningDatabase, setIsRunningDatabase] = useState(false);
+  const [isRunningAPI, setIsRunningAPI] = useState(false);
+  const [isRunningSystem, setIsRunningSystem] = useState(false);
   const [isRunningNetwork, setIsRunningNetwork] = useState(false);
-  const [isRunningPerformance, setIsRunningPerformance] = useState(false);
-  const [results, setResults] = useState<CombinedTestResults | null>(null);
+  const [results, setResults] = useState<TestResults | null>(null);
   const [currentTest, setCurrentTest] = useState<string>('');
   const [progress, setProgress] = useState<number>(0);
   const { showSuccess, showError, showInfo } = useEnhancedToast();
 
-  const isAnyRunning = isRunningDatabase || isRunningNetwork || isRunningPerformance;
+  const isAnyRunning = isRunningDatabase || isRunningAPI || isRunningSystem || isRunningNetwork;
 
   const runDatabaseTest = async () => {
     setIsRunningDatabase(true);
@@ -381,68 +102,133 @@ export const PerformanceTest: React.FC = () => {
     setProgress(0);
     
     try {
-      showInfo('Testing Database', 'Checking database connectivity and performance...');
+      showInfo('Testing Database', 'Checking database connectivity...');
+      setCurrentTest('Connecting to backend API...');
+      setProgress(10);
       
-      const startTime = Date.now();
-      const connections: DatabaseConnectionResult[] = [];
-      let allSuccessful = true;
-
-      const databasesToTest = [
-        { name: 'PostgreSQL (Primary)', host: 'db', port: 5432, database: 'callmaster', ssl: false },
-        { name: 'Redis Cache', host: 'redis', port: 6379, database: 'cache', ssl: false },
-        { name: 'External API DB', host: 'api.external.com', port: 5432, database: 'external', ssl: true }
-      ];
-
-      for (let i = 0; i < databasesToTest.length; i++) {
-        const db = databasesToTest[i];
-        setCurrentTest(`Testing ${db.name}...`);
-        setProgress((i / databasesToTest.length) * 100);
-        
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 200));
-        
-        const connectionSuccess = Math.random() > 0.2;
-        const responseTime = Math.floor(Math.random() * 200 + 10);
-        
-        const result: DatabaseConnectionResult = {
-          database: db.name,
-          status: connectionSuccess ? 'connected' : (Math.random() > 0.5 ? 'failed' : 'timeout'),
-          responseTime: connectionSuccess ? responseTime : 0,
-          details: { host: db.host, port: db.port, database: db.database, ssl: db.ssl }
-        };
-        
-        if (!connectionSuccess) {
-          result.error = result.status === 'timeout' ? 'Connection timed out after 5 seconds' : 'Connection refused';
-          allSuccessful = false;
+      const response = await fetch('/api/system-tests/database-connectivity', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         }
-        
-        connections.push(result);
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
+      setProgress(50);
+      setCurrentTest('Processing test results...');
+      
+      const data = await response.json();
       setProgress(100);
-      const totalTime = Date.now() - startTime;
-      const connectedCount = connections.filter(r => r.status === 'connected').length;
-      const summary = `Tested ${connections.length} databases. ${connectedCount} connected, ${connections.length - connectedCount} failed.`;
 
-      const finalResults: CombinedTestResults = {
-        testType: 'database',
-        success: allSuccessful,
-        summary,
-        totalTime,
-        databaseConnections: connections
-      };
-
-      setResults(finalResults);
+      setResults(data);
+      
+      const connectedCount = data.results.filter((r: any) => r.status === 'connected').length;
+      const allSuccessful = connectedCount === data.results.length;
       
       if (allSuccessful) {
-        showSuccess('Database Tests Passed', 'All database connections are working properly!');
+        showSuccess('Database Test Complete', data.summary);
       } else {
-        showError('Database Issues Detected', { description: 'Some database connections failed. Check results below.' });
+        showError('Database Test Issues', data.summary);
       }
-
+      
     } catch (error) {
-      showError('Database Test Failed', { description: `Failed to run database tests: ${error}` });
+      console.error('Database test failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      showError('Database Test Failed', `Failed to connect to test API: ${errorMessage}`);
     } finally {
       setIsRunningDatabase(false);
+      setCurrentTest('');
+      setProgress(0);
+    }
+  };
+
+  const runAPITest = async () => {
+    setIsRunningAPI(true);
+    setResults(null);
+    setProgress(0);
+    
+    try {
+      showInfo('Testing APIs', 'Checking API endpoint connectivity...');
+      setCurrentTest('Testing API endpoints...');
+      setProgress(10);
+      
+      const response = await fetch('/api/system-tests/api-endpoints', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      setProgress(50);
+      setCurrentTest('Processing API test results...');
+      
+      const data = await response.json();
+      setProgress(100);
+
+      setResults(data);
+      
+      const successCount = data.results.filter((r: any) => r.status === 'connected').length;
+      
+      if (successCount > 0) {
+        showSuccess('API Test Complete', data.summary);
+      } else {
+        showError('API Test Issues', data.summary);
+      }
+      
+    } catch (error) {
+      console.error('API test failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      showError('API Test Failed', `Failed to connect to test API: ${errorMessage}`);
+    } finally {
+      setIsRunningAPI(false);
+      setCurrentTest('');
+      setProgress(0);
+    }
+  };
+
+  const runSystemTest = async () => {
+    setIsRunningSystem(true);
+    setResults(null);
+    setProgress(0);
+    
+    try {
+      showInfo('Testing System', 'Checking system performance...');
+      setCurrentTest('Gathering system metrics...');
+      setProgress(10);
+      
+      const response = await fetch('/api/system-tests/system-performance', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      setProgress(50);
+      setCurrentTest('Processing system metrics...');
+      
+      const data = await response.json();
+      setProgress(100);
+
+      setResults(data);
+      showSuccess('System Test Complete', data.summary);
+      
+    } catch (error) {
+      console.error('System test failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      showError('System Test Failed', `Failed to get system metrics: ${errorMessage}`);
+    } finally {
+      setIsRunningSystem(false);
       setCurrentTest('');
       setProgress(0);
     }
@@ -454,89 +240,89 @@ export const PerformanceTest: React.FC = () => {
     setProgress(0);
     
     try {
-      showInfo('Testing Network', 'Running connectivity and speed tests...');
+      // Step 1: Check speedtest-cli availability and install if needed
+      showInfo('Preparing Network Test', 'Checking speed test dependencies...');
+      setCurrentTest('Checking for speedtest-cli on host system...');
+      setProgress(5);
       
-      const startTime = Date.now();
-      const connections: NetworkConnectivityResult[] = [];
-      let allSuccessful = true;
-
-      const servicesToTest = [
-        { name: 'Google DNS', url: 'https://dns.google' },
-        { name: 'Cloudflare DNS', url: 'https://1.1.1.1' },
-        { name: 'GitHub API', url: 'https://api.github.com' },
-        { name: 'OpenAI API', url: 'https://api.openai.com' },
-        { name: 'AWS Health', url: 'https://health.aws.amazon.com' }
-      ];
-
-      // Test connectivity
-      for (let i = 0; i < servicesToTest.length; i++) {
-        const service = servicesToTest[i];
-        setCurrentTest(`Testing ${service.name}...`);
-        setProgress((i / (servicesToTest.length + 1)) * 100);
-        
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 800 + 200));
-        
-        const success = Math.random() > 0.15;
-        const responseTime = Math.floor(Math.random() * 300 + 50);
-        const statusCode = success ? 200 : (Math.random() > 0.5 ? 404 : 500);
-        
-        const result: NetworkConnectivityResult = {
-          service: service.name,
-          status: success ? 'connected' : (Math.random() > 0.7 ? 'timeout' : 'failed'),
-          responseTime: success ? responseTime : 0,
-          statusCode: statusCode,
-          url: service.url
-        };
-        
-        if (!success) {
-          result.error = result.status === 'timeout' ? 'Request timed out' : `HTTP ${statusCode}`;
-          allSuccessful = false;
+      const prepResponse = await fetch('/api/system-tests/prepare-speedtest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         }
+      });
+      
+      if (!prepResponse.ok) {
+        throw new Error(`Preparation failed: HTTP ${prepResponse.status}`);
+      }
+      
+      const prepData = await prepResponse.json();
+      setProgress(15);
+      
+      if (prepData.installation_required) {
+        showInfo('Installing Dependencies', 'Installing speedtest-cli for accurate measurements...');
+        setCurrentTest('Installing speedtest-cli on host system (this may take 30-60 seconds)...');
+        setProgress(25);
         
-        connections.push(result);
+        // Wait a bit longer for installation
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        setProgress(35);
+      } else {
+        setCurrentTest('speedtest-cli found - proceeding with test...');
+        setProgress(20);
+      }
+      
+      // Step 2: Run ping tests
+      showInfo('Testing Network', 'Testing network connectivity and latency...');
+      setCurrentTest('Testing ping to DNS servers...');
+      setProgress(40);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Step 3: Run speed test
+      setCurrentTest('Running download speed test (this may take 20-30 seconds)...');
+      setProgress(50);
+      
+      const response = await fetch('/api/system-tests/network-speed', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Speed test
-      setCurrentTest('Running speed test...');
-      setProgress(85);
+      // Simulate speed test progress
+      setCurrentTest('Measuring download speed...');
+      setProgress(60);
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const speedTest: NetworkSpeedTestResult = {
-        downloadSpeed: Math.random() * 80 + 20,
-        uploadSpeed: Math.random() * 40 + 10,
-        ping: Math.floor(Math.random() * 50 + 10),
-        jitter: Math.floor(Math.random() * 10 + 1),
-        server: 'Speed Test Server (US-West)'
-      };
-
-      setProgress(100);
-      const totalTime = Date.now() - startTime;
-      const connectedCount = connections.filter(r => r.status === 'connected').length;
-      const avgResponseTime = connections
-        .filter(r => r.status === 'connected')
-        .reduce((sum, r) => sum + r.responseTime, 0) / Math.max(connectedCount, 1);
-
-      const summary = `${connectedCount}/${servicesToTest.length} services reachable (avg: ${Math.round(avgResponseTime)}ms) | ${speedTest.downloadSpeed.toFixed(1)} Mbps down`;
-
-      const finalResults: CombinedTestResults = {
-        testType: 'network',
-        success: allSuccessful,
-        summary,
-        totalTime,
-        networkConnections: connections,
-        speedTest
-      };
-
-      setResults(finalResults);
+      setCurrentTest('Measuring upload speed...');
+      setProgress(80);
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (allSuccessful) {
-        showSuccess('Network Tests Passed', 'All network services are reachable!');
-      } else {
-        showError('Network Issues Detected', { description: 'Some network connections failed. Check results below.' });
-      }
+      setCurrentTest('Processing results...');
+      setProgress(90);
+      
+      const data = await response.json();
+      setProgress(100);
 
+      setResults(data);
+      
+      // Enhanced success message based on speed test method
+      const isHostLevel = data.results.speedTestError && data.results.speedTestError.includes('host-direct');
+      const successTitle = isHostLevel ? 'High-Accuracy Network Test Complete' : 'Network Test Complete';
+      const successMessage = isHostLevel 
+        ? `${data.summary} (using host-level speed test for maximum accuracy)`
+        : data.summary;
+      
+      showSuccess(successTitle, successMessage);
+      
     } catch (error) {
-      showError('Network Test Failed', { description: `Failed to run network tests: ${error}` });
+      console.error('Network test failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      showError('Network Test Failed', `Failed to test network: ${errorMessage}`);
     } finally {
       setIsRunningNetwork(false);
       setCurrentTest('');
@@ -544,216 +330,234 @@ export const PerformanceTest: React.FC = () => {
     }
   };
 
-  const runPerformanceTest = async () => {
-    setIsRunningPerformance(true);
-    setResults(null);
-    setProgress(0);
-    
-    try {
-      showInfo('Testing Performance', 'Measuring system performance and resource usage...');
+  const renderDatabaseResults = (results: DatabaseConnectionResult[]) => (
+    <VStack spacing={3} align="stretch">
+      {results.map((result, index) => (
+        <Box key={index} p={4} border="1px solid" borderColor="gray.200" borderRadius="md">
+          <HStack justify="space-between" mb={2}>
+            <Text fontWeight="semibold">{result.database}</Text>
+            <Badge colorScheme={result.status === 'connected' ? 'green' : 'red'}>
+              {result.status.toUpperCase()}
+            </Badge>
+          </HStack>
+          <Text fontSize="sm" color="gray.600">
+            {result.details.host}:{result.details.port} • {result.details.database}
+          </Text>
+          {result.responseTime > 0 && (
+            <Text fontSize="sm">Response time: {result.responseTime}ms</Text>
+          )}
+          {result.error && (
+            <Text fontSize="sm" color="red.500">{result.error}</Text>
+          )}
+        </Box>
+      ))}
+    </VStack>
+  );
+
+  const renderAPIResults = (results: APITestResult[]) => (
+    <VStack spacing={3} align="stretch">
+      {results.map((result, index) => (
+        <Box key={index} p={4} border="1px solid" borderColor="gray.200" borderRadius="md">
+          <HStack justify="space-between" mb={2}>
+            <Text fontWeight="semibold">{result.endpoint}</Text>
+            <HStack>
+              {result.statusCode > 0 && (
+                <Badge colorScheme={result.statusCode < 400 ? 'green' : 'red'}>
+                  {result.statusCode}
+                </Badge>
+              )}
+              <Badge colorScheme={result.status === 'connected' ? 'green' : result.status === 'skipped' ? 'yellow' : 'red'}>
+                {result.status.toUpperCase()}
+              </Badge>
+            </HStack>
+          </HStack>
+          <Text fontSize="sm" color="gray.600">
+            {result.details.method} {result.details.url}
+          </Text>
+          {result.responseTime > 0 && (
+            <Text fontSize="sm">Response time: {result.responseTime}ms</Text>
+          )}
+          {result.error && (
+            <Text fontSize="sm" color="red.500">{result.error}</Text>
+          )}
+        </Box>
+      ))}
+    </VStack>
+  );
+
+  const renderSystemResults = (results: SystemPerformanceResult) => (
+    <HStack spacing={6} align="stretch">
+      <Stat>
+        <StatLabel>CPU Usage</StatLabel>
+        <StatNumber>{results.cpu.usage}%</StatNumber>
+        <StatHelpText>{results.cpu.cores} cores</StatHelpText>
+      </Stat>
+      <Stat>
+        <StatLabel>Memory Usage</StatLabel>
+        <StatNumber>{results.memory.percentage}%</StatNumber>
+        <StatHelpText>{results.memory.used.toFixed(1)} MB / {results.memory.total.toFixed(1)} MB</StatHelpText>
+      </Stat>
+      <Stat>
+        <StatLabel>Disk Usage</StatLabel>
+        <StatNumber>{results.disk.percentage}%</StatNumber>
+        <StatHelpText>{results.disk.used.toFixed(1)} GB / {results.disk.total.toFixed(1)} GB</StatHelpText>
+      </Stat>
+    </HStack>
+  );
+
+  const renderNetworkResults = (results: NetworkResult) => (
+    <VStack spacing={4} align="stretch">
+      <HStack spacing={6} wrap="wrap">
+        <Stat>
+          <StatLabel>Average Ping</StatLabel>
+          <StatNumber>{results.ping}ms</StatNumber>
+        </Stat>
+        <Stat>
+          <StatLabel>Jitter</StatLabel>
+          <StatNumber>{results.jitter}ms</StatNumber>
+        </Stat>
+        <Stat>
+          <StatLabel>Download Speed</StatLabel>
+          <StatNumber>{results.downloadSpeed} Mbps</StatNumber>
+          <StatHelpText>
+            {results.speedTestStatus === 'success' ? 'Measured' : 'Unavailable'}
+          </StatHelpText>
+        </Stat>
+        <Stat>
+          <StatLabel>Upload Speed</StatLabel>
+          <StatNumber>{results.uploadSpeed} Mbps</StatNumber>
+          <StatHelpText>Estimated</StatHelpText>
+        </Stat>
+      </HStack>
       
-      const startTime = Date.now();
-      const metrics: PerformanceMetric[] = [];
-      const apiEndpoints: APIEndpointResult[] = [];
-      let peakCPU = 0;
-      let peakMemory = 0;
-
-      // Resource monitoring
-      const resourceMonitor = setInterval(() => {
-        const currentCPU = Math.random() * 30 + 20;
-        const currentMemory = Math.random() * 200 + 100;
-        if (currentCPU > peakCPU) peakCPU = currentCPU;
-        if (currentMemory > peakMemory) peakMemory = currentMemory;
-      }, 100);
-
-      // DOM rendering test
-      setCurrentTest('Testing DOM rendering performance...');
-      setProgress(20);
-      await new Promise(resolve => setTimeout(resolve, 200));
-      const renderTime = Math.random() * 200 + 50;
+      {results.speedTestError && (
+        <Alert status="warning">
+          <AlertIcon />
+          <Box>
+            <AlertTitle>Speed Test Limitation</AlertTitle>
+            <AlertDescription>
+              {results.speedTestError}
+              <br />
+              <Text fontSize="xs" mt={2} opacity={0.8}>
+                Note: Server-based speed tests have limited accuracy due to network restrictions. 
+                For precise measurements, use dedicated speed test tools like Speedtest.net or Fast.com on your device.
+              </Text>
+            </AlertDescription>
+          </Box>
+        </Alert>
+      )}
       
-      metrics.push({
-        name: 'DOM Render Time',
-        value: Math.round(renderTime),
-        unit: 'ms',
-        status: renderTime < 100 ? 'good' : renderTime < 300 ? 'warning' : 'poor',
-        threshold: { good: 100, warning: 300 }
-      });
-
-      // Memory analysis
-      setCurrentTest('Analyzing memory usage...');
-      setProgress(40);
-      const memoryInfo = (performance as any).memory;
-      let jsHeapSize = memoryInfo ? memoryInfo.usedJSHeapSize / 1024 / 1024 : Math.random() * 50 + 20;
-      
-      metrics.push({
-        name: 'JS Heap Size',
-        value: Math.round(jsHeapSize * 10) / 10,
-        unit: 'MB',
-        status: jsHeapSize < 50 ? 'good' : jsHeapSize < 100 ? 'warning' : 'poor',
-        threshold: { good: 50, warning: 100 }
-      });
-
-      // API tests
-      setCurrentTest('Testing API performance...');
-      setProgress(60);
-      const testEndpoints = [
-        { endpoint: '/api/health', method: 'GET' },
-        { endpoint: '/api/me/crews', method: 'GET' },
-        { endpoint: '/api/me/venues', method: 'GET' }
-      ];
-
-      for (const ep of testEndpoints) {
-        try {
-          const apiStart = performance.now();
-          const response = await fetch(ep.endpoint, { method: ep.method, headers: { 'Content-Type': 'application/json' } });
-          const apiTime = performance.now() - apiStart;
-          const responseText = await response.text();
-          
-          apiEndpoints.push({
-            endpoint: ep.endpoint,
-            method: ep.method,
-            responseTime: Math.round(apiTime),
-            status: response.status,
-            payloadSize: responseText.length
-          });
-        } catch (error) {
-          apiEndpoints.push({
-            endpoint: ep.endpoint,
-            method: ep.method,
-            responseTime: 0,
-            status: 0,
-            payloadSize: 0
-          });
-        }
-      }
-
-      // Bundle size
-      setProgress(80);
-      const bundleSize = Math.random() * 500 + 200;
-      metrics.push({
-        name: 'Estimated Bundle Size',
-        value: Math.round(bundleSize),
-        unit: 'KB',
-        status: bundleSize < 300 ? 'good' : bundleSize < 500 ? 'warning' : 'poor',
-        threshold: { good: 300, warning: 500 }
-      });
-
-      clearInterval(resourceMonitor);
-      setProgress(100);
-
-      const totalTime = Date.now() - startTime;
-      const avgApiResponseTime = apiEndpoints.length > 0 
-        ? apiEndpoints.reduce((sum, ep) => sum + ep.responseTime, 0) / apiEndpoints.length 
-        : 0;
-      
-      const goodMetrics = metrics.filter(m => m.status === 'good').length;
-      const allPassed = goodMetrics === metrics.length && avgApiResponseTime < 500;
-      
-      const summary = `${goodMetrics}/${metrics.length} metrics optimal | Avg API: ${Math.round(avgApiResponseTime)}ms | Peak CPU: ${peakCPU.toFixed(1)}%`;
-
-      const finalResults: CombinedTestResults = {
-        testType: 'performance',
-        success: allPassed,
-        summary,
-        totalTime,
-        performanceMetrics: metrics,
-        apiEndpoints,
-        systemUsage: {
-          peakCPU,
-          peakMemory,
-          memoryUnit: 'MB', 
-          duration: totalTime
-        }
-      };
-
-      setResults(finalResults);
-      
-      if (allPassed) {
-        showSuccess('Performance Tests Passed', 'All performance metrics are within optimal ranges!');
-      } else {
-        showError('Performance Issues Detected', { description: 'Some performance metrics need attention. Check results below.' });
-      }
-
-    } catch (error) {
-      showError('Performance Test Failed', { description: `Failed to run performance tests: ${error}` });
-    } finally {
-      setIsRunningPerformance(false);
-      setCurrentTest('');
-      setProgress(0);
-    }
-  };
+      <Divider />
+      <VStack spacing={2} align="stretch">
+        <Text fontWeight="semibold">Ping Test Results:</Text>
+        {results.pingResults.map((ping, index) => (
+          <HStack key={index} justify="space-between">
+            <Text>{ping.host}</Text>
+            <HStack>
+              <Text>{ping.ping > 0 ? `${ping.ping}ms` : 'Failed'}</Text>
+              <Badge colorScheme={ping.status === 'success' ? 'green' : 'red'}>
+                {ping.status.toUpperCase()}
+              </Badge>
+            </HStack>
+          </HStack>
+        ))}
+      </VStack>
+    </VStack>
+  );
 
   return (
     <VStack spacing={6} align="stretch">
       <HStack spacing={2}>
-        <Badge colorScheme="blue" fontSize="sm" px={2} py={1}>PERFORMANCE</Badge>
+        <Badge colorScheme="purple" fontSize="sm" px={2} py={1}>PERFORMANCE</Badge>
       </HStack>
 
-      <Text color="gray.600">
-        Test database connections, network connectivity, and system performance. Includes speed tests, resource monitoring, and API response times.
+      <Text color="gray.600" fontSize="md">
+        These tests make actual API calls to check system connectivity and performance.
       </Text>
 
-      <HStack spacing={3}>
-        <Button
-          bg="blue.400"
-          color="white"
-          _hover={{ bg: 'orange.400' }}
-          size="sm"
-          onClick={runDatabaseTest}
-          isLoading={isRunningDatabase}
-          loadingText="Testing..."
-          leftIcon={isRunningDatabase ? <Spinner size="sm" /> : undefined}
-          isDisabled={isAnyRunning && !isRunningDatabase}
-        >
-          Test Database
-        </Button>
-        
-        <Button
-          bg="blue.400"
-          color="white"
-          _hover={{ bg: 'orange.400' }}
-          size="sm"
-          onClick={runNetworkTest}
-          isLoading={isRunningNetwork}
-          loadingText="Testing..."
-          leftIcon={isRunningNetwork ? <Spinner size="sm" /> : undefined}
-          isDisabled={isAnyRunning && !isRunningNetwork}
-        >
-          Test Network
-        </Button>
+      <Box>
+        <HStack spacing={2} flexWrap="wrap">
+          <Button
+            size="sm"
+            bg="blue.400"
+            color="white"
+            _hover={{ bg: 'orange.400' }}
+            onClick={runDatabaseTest}
+            isLoading={isRunningDatabase}
+            loadingText="Testing..."
+            isDisabled={isAnyRunning}
+          >
+            Test Database
+          </Button>
+          <Button
+            size="sm"
+            bg="blue.400"
+            color="white"
+            _hover={{ bg: 'orange.400' }}
+            onClick={runAPITest}
+            isLoading={isRunningAPI}
+            loadingText="Testing..."
+            isDisabled={isAnyRunning}
+          >
+            Test APIs
+          </Button>
+          <Button
+            size="sm"
+            bg="blue.400"
+            color="white"
+            _hover={{ bg: 'orange.400' }}
+            onClick={runSystemTest}
+            isLoading={isRunningSystem}
+            loadingText="Testing..."
+            isDisabled={isAnyRunning}
+          >
+            Test System
+          </Button>
+          <Button
+            size="sm"
+            bg="blue.400"
+            color="white"
+            _hover={{ bg: 'orange.400' }}
+            onClick={runNetworkTest}
+            isLoading={isRunningNetwork}
+            loadingText="Testing..."
+            isDisabled={isAnyRunning}
+          >
+            Test Network
+          </Button>
+        </HStack>
+      </Box>
 
-        <Button
-          bg="blue.400"
-          color="white"
-          _hover={{ bg: 'orange.400' }}
-          size="sm"
-          onClick={runPerformanceTest}
-          isLoading={isRunningPerformance}
-          loadingText="Testing..."
-          leftIcon={isRunningPerformance ? <Spinner size="sm" /> : undefined}
-          isDisabled={isAnyRunning && !isRunningPerformance}
-        >
-          Test Performance
-        </Button>
-      </HStack>
-
-      {isAnyRunning && (
-        <Alert status="info">
-          <AlertIcon />
-          <VStack align="start" spacing={2} flex="1">
-            <AlertTitle>{currentTest || 'Running tests...'}</AlertTitle>
-            <AlertDescription>
-              Testing system connectivity, performance, and resource usage.
-            </AlertDescription>
-            {progress > 0 && (
-              <Progress value={progress} size="sm" colorScheme="blue" width="100%" />
-            )}
-          </VStack>
-        </Alert>
+      {currentTest && (
+        <Box>
+          <Text fontSize="sm" mb={2}>{currentTest}</Text>
+          <Progress value={progress} colorScheme="blue" />
+        </Box>
       )}
 
-      {results && <CombinedResultsDisplay results={results} onClear={() => setResults(null)} />}
+      {results && (
+        <Box>
+          <Alert status="info" mb={4}>
+            <AlertIcon />
+            <Box>
+              <AlertTitle>Test Complete!</AlertTitle>
+              <AlertDescription>{results.summary}</AlertDescription>
+            </Box>
+          </Alert>
+
+          {results.testType === 'database' && Array.isArray(results.results) && 
+            renderDatabaseResults(results.results as DatabaseConnectionResult[])}
+          
+          {results.testType === 'api' && Array.isArray(results.results) && 
+            renderAPIResults(results.results as APITestResult[])}
+          
+          {results.testType === 'system' && !Array.isArray(results.results) && 
+            renderSystemResults(results.results as SystemPerformanceResult)}
+          
+          {results.testType === 'network' && !Array.isArray(results.results) && 
+            renderNetworkResults(results.results as NetworkResult)}
+        </Box>
+      )}
     </VStack>
   );
 };

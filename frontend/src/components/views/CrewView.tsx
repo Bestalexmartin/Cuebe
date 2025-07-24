@@ -138,7 +138,7 @@ export const CrewView: React.FC<CrewViewProps> = ({
                                     fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
-                                    Date Added
+                                    Created
                                 </MenuItem>
                                 <MenuItem
                                     onClick={() => handleSortClick('dateUpdated')}

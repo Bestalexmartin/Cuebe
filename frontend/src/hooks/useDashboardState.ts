@@ -57,6 +57,7 @@ interface UseDashboardStateReturn {
   setHoveredCardId: (id: string | null) => void;
   showCardRefs: MutableRefObject<Record<string, HTMLElement | null>>;
   shows: Show[];
+  currentView: string;
 
   // Selected state
   selectedState: SelectedState;

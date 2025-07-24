@@ -83,3 +83,6 @@ Wednesday Jul 23, 2025
 1) Addressed issues with pytest, added network, database, authentication and performance test suites
 2) Grouped tests into suites based on test type
 3) Extracted content into contextual "QuickAccess" panels for each options section with appropriate mobile presentation
+
+Thursday Jul 24, 2025
+1) Replaced faked performance and filesystem tests with real tests... updated internet speed test to use speedtest-cli from the host network and re-worked installation of pytest

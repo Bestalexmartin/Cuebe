@@ -52,7 +52,7 @@ interface ShowCardProps {
   onScriptClick: (scriptId: string) => void;
   onShowHover: (showId: string | null) => void;
   onCreateScriptClick: (showId: string) => void;
-  sortBy: "showName" | "showDate" | "dateUpdated";
+  sortBy: "showName" | "showDate" | "dateCreated" | "dateUpdated";
   sortDirection: "asc" | "desc";
   onSaveNavigationState?: () => void;
 }

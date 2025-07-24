@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  Flex, Box, Heading,
+  Flex, Box,
   Drawer, DrawerBody, DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton
 } from "@chakra-ui/react";
 import { useLocation } from 'react-router-dom';
