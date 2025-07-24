@@ -1,8 +1,8 @@
 // frontend/src/utils/toastUtils.ts
 
-import { useToast } from '@chakra-ui/react';
-import { toastConfigs } from '../ChakraTheme';
-import { EnhancedError, ErrorSeverity } from '../types/errorTypes';
+import { useToast } from "@chakra-ui/react";
+import { toastConfigs } from "../ChakraTheme";
+import { EnhancedError, ErrorSeverity } from "../types/errorTypes";
 
 export interface ToastOptions {
   title?: string;
@@ -20,62 +20,80 @@ export const useEnhancedToast = () => {
 
   const showToast = (options: EnhancedToastOptions) => {
     const { severity, ...baseOptions } = options;
-    
+
     const config = toastConfigs[severity] || toastConfigs.info;
 
     toast({
       title: baseOptions.title,
       description: baseOptions.description,
-      status: severity === 'error' ? 'error' : severity === 'warning' ? 'warning' : 'info',
-      duration: baseOptions.duration ?? (severity === 'error' ? 6000 : 4000),
+      status:
+        severity === "error"
+          ? "error"
+          : severity === "warning"
+            ? "warning"
+            : "info",
+      duration: baseOptions.duration ?? (severity === "error" ? 6000 : 4000),
       isClosable: baseOptions.isClosable ?? true,
-      position: 'bottom-right',
-      ...config
+      position: "bottom",
+      ...config,
     });
   };
 
-  const showSuccess = (title: string, description?: string, options?: ToastOptions) => {
+  const showSuccess = (
+    title: string,
+    description?: string,
+    options?: ToastOptions,
+  ) => {
     showToast({
       title,
       description,
-      severity: 'success',
-      ...options
+      severity: "success",
+      ...options,
     });
   };
 
   const showError = (error: EnhancedError | string, options?: ToastOptions) => {
-    if (typeof error === 'string') {
+    if (typeof error === "string") {
       showToast({
-        title: 'Error',
+        title: "Error",
         description: error,
-        severity: 'error',
-        ...options
+        severity: "error",
+        ...options,
       });
     } else {
       showToast({
         title: getErrorTitle(error),
-        description: error.message + (error.details ? ` (${error.details})` : ''),
+        description:
+          error.message + (error.details ? ` (${error.details})` : ""),
         severity: error.severity,
-        ...options
+        ...options,
       });
     }
   };
 
-  const showWarning = (title: string, description?: string, options?: ToastOptions) => {
+  const showWarning = (
+    title: string,
+    description?: string,
+    options?: ToastOptions,
+  ) => {
     showToast({
       title,
       description,
-      severity: 'warning',
-      ...options
+      severity: "warning",
+      ...options,
     });
   };
 
-  const showInfo = (title: string, description?: string, options?: ToastOptions) => {
+  const showInfo = (
+    title: string,
+    description?: string,
+    options?: ToastOptions,
+  ) => {
     showToast({
       title,
       description,
-      severity: 'info',
-      ...options
+      severity: "info",
+      ...options,
     });
   };
 
@@ -84,25 +102,25 @@ export const useEnhancedToast = () => {
     showSuccess,
     showError,
     showWarning,
-    showInfo
+    showInfo,
   };
 };
 
 const getErrorTitle = (error: EnhancedError): string => {
   switch (error.code) {
-    case 'NETWORK_ERROR':
-      return 'Connection Error';
-    case 'UNAUTHORIZED':
-      return 'Authentication Required';
-    case 'VALIDATION_ERROR':
-      return 'Invalid Input';
-    case 'SERVER_ERROR':
-      return 'Server Error';
-    case 'NOT_FOUND':
-      return 'Not Found';
-    case 'FORBIDDEN':
-      return 'Access Denied';
+    case "NETWORK_ERROR":
+      return "Connection Error";
+    case "UNAUTHORIZED":
+      return "Authentication Required";
+    case "VALIDATION_ERROR":
+      return "Invalid Input";
+    case "SERVER_ERROR":
+      return "Server Error";
+    case "NOT_FOUND":
+      return "Not Found";
+    case "FORBIDDEN":
+      return "Access Denied";
     default:
-      return 'Error';
+      return "Error";
   }
 };

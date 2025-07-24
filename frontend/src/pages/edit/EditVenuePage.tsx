@@ -291,8 +291,8 @@ export const EditVenuePage: React.FC = () => {
                     </Heading>
                 </HStack>
                 <HStack spacing="2">
-                    <ActionsMenu 
-                        actions={actions} 
+                    <ActionsMenu
+                        actions={actions}
                         isDisabled={isLoadingVenue || !venue}
                     />
                     <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
@@ -513,7 +513,7 @@ export const EditVenuePage: React.FC = () => {
                     </VStack>
                 )}
             </Box>
-            
+
             {/* Floating Validation Error Panel */}
             {form.fieldErrors.length > 0 && (
                 <Box
@@ -526,7 +526,7 @@ export const EditVenuePage: React.FC = () => {
                     flexShrink={0}
                 >
                     <Text fontWeight="semibold" fontSize="sm" display="inline">
-                        Validation Errors: 
+                        Validation Errors:
                     </Text>
                     <Text fontSize="sm" display="inline" ml={1}>
                         {form.fieldErrors.map((error, i) => (

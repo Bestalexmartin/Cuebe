@@ -61,7 +61,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
         required: false,
         rules: [
             {
-                validator: (value: string) => value && /^#[0-9A-Fa-f]{6}$/.test(value),
+                validator: (value: string) => !value || /^#[0-9A-Fa-f]{6}$/.test(value),
                 message: 'Please enter a valid color code (e.g., #3182CE)',
                 code: 'INVALID_COLOR'
             }
@@ -164,8 +164,8 @@ export const EditDepartmentPage: React.FC = () => {
     };
 
     const isFormValid = (): boolean => {
-        return form.fieldErrors.length === 0 && 
-            form.formData.departmentName.trim().length >= 4 && 
+        return form.fieldErrors.length === 0 &&
+            form.formData.departmentName.trim().length >= 4 &&
             form.formData.departmentColor.trim().length > 0;
     };
 
@@ -236,8 +236,8 @@ export const EditDepartmentPage: React.FC = () => {
                     </Heading>
                 </HStack>
                 <HStack spacing="2">
-                    <ActionsMenu 
-                        actions={actions} 
+                    <ActionsMenu
+                        actions={actions}
                         isDisabled={isLoadingDepartment || !department}
                     />
                     <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
@@ -412,7 +412,7 @@ export const EditDepartmentPage: React.FC = () => {
                     </VStack>
                 )}
             </Box>
-            
+
             {/* Floating Validation Error Panel */}
             {form.fieldErrors.length > 0 && (
                 <Box
@@ -425,7 +425,7 @@ export const EditDepartmentPage: React.FC = () => {
                     flexShrink={0}
                 >
                     <Text fontWeight="semibold" fontSize="sm" display="inline">
-                        Validation Errors: 
+                        Validation Errors:
                     </Text>
                     <Text fontSize="sm" display="inline" ml={1}>
                         {form.fieldErrors.map((error, i) => (

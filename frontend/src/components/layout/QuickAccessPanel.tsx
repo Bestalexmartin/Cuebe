@@ -56,7 +56,7 @@ const NavigationItem: React.FC<NavigationItemProps> = ({ icon, title, descriptio
       role="button"
       onKeyDown={handleKeyDown}
     >
-      <HStack spacing="1" align="center">
+      <HStack spacing="2" align="center">
         <AppIcon name={icon} />
         <Heading size="xs" textTransform="uppercase">{title}</Heading>
       </HStack>

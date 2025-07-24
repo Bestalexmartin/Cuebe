@@ -44,6 +44,7 @@ export const TutorialPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuCl
       id: 'features',
       title: 'Feature Tutorials',
       description: 'Step-by-step guides for core features',
+      icon: 'compass' as const,
       isDisabled: true,
       onClick: () => setSelectedTutorial('features')
     },
@@ -51,6 +52,7 @@ export const TutorialPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuCl
       id: 'quickstart',
       title: 'Quick Start',
       description: 'Get started in 5 minutes',
+      icon: 'compass' as const,
       isDisabled: true,
       onClick: () => setSelectedTutorial('quickstart')
     },
@@ -58,6 +60,7 @@ export const TutorialPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuCl
       id: 'faq',
       title: 'FAQ & Support',
       description: 'Common questions and solutions',
+      icon: 'compass' as const,
       isDisabled: true,
       onClick: () => setSelectedTutorial('faq')
     },
@@ -65,6 +68,7 @@ export const TutorialPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuCl
       id: 'settings',
       title: 'Settings Guide',
       description: 'Customize your experience',
+      icon: 'compass' as const,
       isDisabled: true,
       onClick: () => setSelectedTutorial('settings')
     }
@@ -74,7 +78,7 @@ export const TutorialPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuCl
     <ErrorBoundary context="Tutorial Page">
       <UnifiedPageLayout
         pageTitle="Tutorial"
-        pageIcon="warning"
+        pageIcon="compass"
         defaultContent={defaultContent}
         selectedContent={null} // No content selected since buttons are stubs
         quickAccessItems={quickAccessItems}

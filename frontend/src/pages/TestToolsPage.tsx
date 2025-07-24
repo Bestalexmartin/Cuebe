@@ -50,7 +50,7 @@ interface TestToolsPageProps {
 
 export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenuClose }) => {
   const { showSuccess, showError, showInfo } = useEnhancedToast();
-  
+
   // Initialize with session storage or default to 'performance'
   const [selectedTest, setSelectedTest] = useState<string>(() => {
     const saved = sessionStorage.getItem('testToolsSelectedTest');

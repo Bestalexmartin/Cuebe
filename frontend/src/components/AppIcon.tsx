@@ -27,7 +27,7 @@ type IconName =
   | 'crew'
   | 'asc'
   | 'desc'
-  | 'tutorial'
+  | 'compass'
   | 'copy'
   | 'api-docs';
 
@@ -61,7 +61,7 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={GoSortAsc} {...props} />;
     case 'desc':
       return <Icon as={GoSortDesc} {...props} />;
-    case 'tutorial':
+    case 'compass':
       return <Icon as={FaCompass} {...props} />;
     case 'copy':
       return <Icon as={CopyIcon} {...props} />;

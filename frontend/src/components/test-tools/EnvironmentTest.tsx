@@ -32,6 +32,14 @@ interface FilesystemPermissionResult {
   writable: boolean;
   exists: boolean;
   error?: string;
+  description?: string;
+  status?: string;
+  permissions?: string;
+  isDirectory?: boolean;
+  isFile?: boolean;
+  sizeBytes?: number;
+  created?: boolean;
+  requiredPermissions?: string[];
 }
 
 interface EnvironmentCommandResult {
@@ -106,7 +114,7 @@ const CombinedSystemResultsDisplay: React.FC<{ results: CombinedSystemResults; o
   };
 
   return (
-    <Box ref={resultsRef} mt={4} p={4} border="1px solid" borderColor="gray.500" borderRadius="md">
+    <Box ref={resultsRef} mt={4} p={4} border="1px solid" borderColor="gray.300" borderRadius="md" bg="white" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
       <HStack justify="space-between" mb={3}>
         <HStack spacing={2}>
           <Badge colorScheme={getBadgeColor()} fontSize="sm" px={2} py={1}>
@@ -135,26 +143,58 @@ const CombinedSystemResultsDisplay: React.FC<{ results: CombinedSystemResults; o
 
       {/* Filesystem Permission Results */}
       {results.filesystemResults && (
-        <VStack spacing={2} align="stretch" mb={4}>
+        <VStack spacing={3} align="stretch" mb={4}>
           {results.filesystemResults.map((result, index) => (
-            <HStack key={index} justify="space-between" p={2} bg="gray.800" borderRadius="sm">
-              <Text fontSize="sm" fontFamily="mono" color="white">{result.path}</Text>
-              <HStack spacing={1}>
-                <Badge colorScheme={result.exists ? "green" : "red"} size="sm">
-                  {result.exists ? "EXISTS" : "MISSING"}
-                </Badge>
-                {result.exists && (
-                  <>
-                    <Badge colorScheme={result.readable ? "green" : "red"} size="sm">
-                      {result.readable ? "READ" : "NO READ"}
+            <Box key={index} p={3} bg="white" borderRadius="md" border="1px solid" borderColor="gray.200" _dark={{ bg: "gray.900", borderColor: "gray.700" }}>
+              <VStack align="stretch" spacing={2}>
+                <HStack justify="space-between" align="start">
+                  <VStack align="start" spacing={1} flex={1}>
+                    <Text fontSize="sm" fontFamily="mono" fontWeight="semibold">{result.path}</Text>
+                    {result.description && (
+                      <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.400" }}>{result.description}</Text>
+                    )}
+                    {result.error && (
+                      <Text fontSize="xs" color="red.600" _dark={{ color: "red.400" }}>{result.error}</Text>
+                    )}
+                  </VStack>
+                  <HStack spacing={1} flexWrap="wrap">
+                    <Badge colorScheme={result.exists ? "green" : "red"} size="sm">
+                      {result.exists ? (result.created ? "CREATED" : "EXISTS") : "MISSING"}
                     </Badge>
-                    <Badge colorScheme={result.writable ? "green" : "red"} size="sm">
-                      {result.writable ? "WRITE" : "NO WRITE"}
-                    </Badge>
-                  </>
+                    {result.exists && (
+                      <>
+                        {result.isDirectory && (
+                          <Badge colorScheme="blue" size="sm">DIR</Badge>
+                        )}
+                        {result.isFile && (
+                          <Badge colorScheme="purple" size="sm">FILE</Badge>
+                        )}
+                        <Badge colorScheme={result.readable ? "green" : "red"} size="sm">
+                          {result.readable ? "READ" : "NO READ"}
+                        </Badge>
+                        <Badge colorScheme={result.writable ? "green" : "red"} size="sm">
+                          {result.writable ? "WRITE" : "NO WRITE"}
+                        </Badge>
+                        {result.permissions && (
+                          <Badge colorScheme="gray" size="sm">{result.permissions}</Badge>
+                        )}
+                      </>
+                    )}
+                  </HStack>
+                </HStack>
+                {result.requiredPermissions && (
+                  <HStack spacing={1}>
+                    <Text fontSize="xs" color="gray.500">Required:</Text>
+                    {result.requiredPermissions.map((perm, i) => (
+                      <Badge key={i} colorScheme="cyan" size="xs">{perm.toUpperCase()}</Badge>
+                    ))}
+                    {result.sizeBytes !== undefined && result.sizeBytes > 0 && (
+                      <Badge colorScheme="yellow" size="xs">{(result.sizeBytes / 1024).toFixed(1)} KB</Badge>
+                    )}
+                  </HStack>
                 )}
-              </HStack>
-            </HStack>
+              </VStack>
+            </Box>
           ))}
         </VStack>
       )}
@@ -311,70 +351,47 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
     try {
       showInfo('Testing Filesystem', 'Checking file and directory permissions...');
       
-      const startTime = Date.now();
-      
-      // Paths to test (simulated since we can't actually test filesystem from browser)
-      const pathsToTest = [
-        '/tmp',
-        '/var/log',
-        './src',
-        './public',
-        './package.json',
-        './node_modules',
-        '/etc/hosts',
-        '/usr/local/bin'
-      ];
-      
-      const testResults: FilesystemPermissionResult[] = [];
-      let allAccessible = true;
-      
-      // Simulate filesystem permission checks
-      for (const path of pathsToTest) {
-        // Simulate network delay for filesystem access
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 50));
-        
-        // Simulate various permission scenarios
-        const exists = Math.random() > 0.1; // 90% chance file exists
-        const readable = exists ? Math.random() > 0.1 : false; // 90% chance readable if exists
-        const writable = exists ? Math.random() > 0.3 : false; // 70% chance writable if exists
-        
-        const result: FilesystemPermissionResult = {
-          path,
-          exists,
-          readable,
-          writable
-        };
-        
-        if (!exists || !readable) {
-          allAccessible = false;
-          if (!exists) {
-            result.error = 'Path does not exist';
-          } else if (!readable) {
-            result.error = 'Permission denied';
-          }
+      const response = await fetch('/api/system-tests/filesystem-permissions', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         }
-        
-        testResults.push(result);
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
-      const totalTime = Date.now() - startTime;
-      const accessibleCount = testResults.filter(r => r.exists && r.readable).length;
-      const writableCount = testResults.filter(r => r.exists && r.writable).length;
+      const data = await response.json();
       
-      const summary = `Tested ${pathsToTest.length} paths. ${accessibleCount} readable, ${writableCount} writable.`;
+      // Convert backend results to frontend format
+      const testResults: FilesystemPermissionResult[] = data.results.map((result: any) => ({
+        path: result.path,
+        exists: result.exists,
+        readable: result.readable,
+        writable: result.writable,
+        error: result.error || undefined,
+        description: result.description,
+        status: result.status,
+        permissions: result.permissions,
+        isDirectory: result.is_directory,
+        isFile: result.is_file,
+        sizeBytes: result.size_bytes,
+        created: result.created,
+        requiredPermissions: result.required_permissions
+      }));
       
       const finalResults: CombinedSystemResults = {
         testType: 'filesystem',
-        success: allAccessible,
-        summary,
-        totalTime,
+        success: data.success,
+        summary: data.summary,
         filesystemResults: testResults
       };
       
       setResults(finalResults);
       
-      if (allAccessible) {
-        showSuccess('Filesystem Tests Passed', 'All filesystem permissions are accessible!');
+      if (data.success) {
+        showSuccess('Filesystem Tests Passed', 'All required filesystem permissions are accessible!');
       } else {
         showError('Filesystem Issues Detected', { description: 'Some filesystem permissions are restricted. Check results below.' });
       }

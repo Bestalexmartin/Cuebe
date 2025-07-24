@@ -20,7 +20,7 @@ import { AppIcon } from '../AppIcon';
 import { OptionsMenu } from '../OptionsMenu';
 
 // TypeScript interfaces
-type IconName = 'openmenu' | 'hamburger' | 'edit' | 'delete' | 'warning' | 'pinned' | 'show' | 'venue' | 'department' | 'crew' | 'asc' | 'desc' | 'copy' | 'api-docs' | 'tutorial';
+type IconName = 'openmenu' | 'hamburger' | 'edit' | 'delete' | 'warning' | 'pinned' | 'show' | 'venue' | 'department' | 'crew' | 'asc' | 'desc' | 'copy' | 'api-docs' | 'compass';
 
 interface QuickAccessItemProps {
   title: string;
@@ -30,6 +30,7 @@ interface QuickAccessItemProps {
   isDisabled?: boolean;
   badgeTitle?: string;
   badgeColorScheme?: string;
+  icon?: IconName;
 }
 
 interface QuickAccessItem {
@@ -40,6 +41,7 @@ interface QuickAccessItem {
   isDisabled?: boolean;
   badgeTitle?: string;
   badgeColorScheme?: string;
+  icon?: IconName;
 }
 
 interface UnifiedPageLayoutProps {
@@ -53,14 +55,15 @@ interface UnifiedPageLayoutProps {
   onMenuClose: () => void;
 }
 
-const QuickAccessItemComponent: React.FC<QuickAccessItemProps> = ({ 
-  title, 
-  description, 
-  isActive = false, 
+const QuickAccessItemComponent: React.FC<QuickAccessItemProps> = ({
+  title,
+  description,
+  isActive = false,
   onClick,
   isDisabled = false,
   badgeTitle,
-  badgeColorScheme
+  badgeColorScheme,
+  icon
 }) => {
   const handleClick = (): void => {
     if (!isDisabled && onClick) {
@@ -96,9 +99,18 @@ const QuickAccessItemComponent: React.FC<QuickAccessItemProps> = ({
           {badgeTitle}
         </Badge>
       ) : (
-        <Heading size="xs" textTransform="uppercase" mb="2">
-          {title}
-        </Heading>
+        <HStack spacing="2" align="center" mb="2">
+          {icon && <AppIcon 
+            name={icon} 
+            boxSize={
+              icon === 'api-docs' ? "16px" : 
+              "14px"
+            } 
+          />}
+          <Heading size="xs" textTransform="uppercase">
+            {title}
+          </Heading>
+        </HStack>
       )}
       <Text fontSize="sm" color="gray.600" mb="-1">
         {description}
@@ -129,7 +141,14 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
       {/* Header Section */}
       <Box flexShrink={0}>
         <HStack spacing="2" align="center">
-          <AppIcon name={pageIcon} boxSize="20px" />
+          <AppIcon 
+            name={pageIcon} 
+            boxSize={
+              pageIcon === 'api-docs' ? "27px" : 
+              pageIcon === 'compass' ? "23px" : 
+              "25px"
+            } 
+          />
           <Heading as="h2" size="md">
             {pageTitle}
           </Heading>
@@ -198,6 +217,7 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
                   isDisabled={item.isDisabled}
                   badgeTitle={item.badgeTitle}
                   badgeColorScheme={item.badgeColorScheme}
+                  icon={item.icon}
                 />
               ))}
             </VStack>
@@ -234,6 +254,7 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
                   isDisabled={item.isDisabled}
                   badgeTitle={item.badgeTitle}
                   badgeColorScheme={item.badgeColorScheme}
+                  icon={item.icon}
                 />
               ))}
             </VStack>

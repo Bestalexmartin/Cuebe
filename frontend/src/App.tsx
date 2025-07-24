@@ -16,7 +16,7 @@ import { EditDepartmentPage } from './pages/edit/EditDepartmentPage';
 import { EditCrewPage } from './pages/edit/EditCrewPage';
 import { TutorialPage } from './pages/TutorialPage';
 import { TestToolsPage } from './pages/TestToolsPage';
-import { ApiDocumentationPage } from './pages/ApiDocumentationPage';
+import { ApiDocsPage } from './pages/ApiDocsPage';
 
 // TypeScript interfaces
 interface ProtectedRouteProps {
@@ -108,7 +108,7 @@ const App: React.FC = () => {
 
           <Route path="/api-documentation" element={
             <ProtectedRoute>
-              <ApiDocumentationPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
+              <ApiDocsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
             </ProtectedRoute>
           } />
 
