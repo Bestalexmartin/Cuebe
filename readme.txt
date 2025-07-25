@@ -89,3 +89,6 @@ Thursday Jul 24, 2025
 2) Added external dependencies tool (Clerk check) and general clean up to all tools
 3) Swept for typescript errors and cleaned up comments and debug logging, added memory leak audit, implemented error boundaries to all components, added API rate limiting
 4) Extracted cards and modals into base components for consistent styling and duplicate code reduction, setup documentation pages
+
+Friday Jul 25, 2025
+1) Added markdown rendering to read docs and for future use, added system architecture documentation, updated page layout for static quickstart menu

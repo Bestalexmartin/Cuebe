@@ -76,7 +76,7 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
     ];
 
     const quickInfo = (
-        <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text" ml={4}>
+        <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text">
             <HStack justify="space-between">
                 <Text>0 crew members</Text>
                 <Text fontSize="xs">
@@ -98,7 +98,7 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
             {department.departmentColor && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Department Color</Text>
-                    <HStack spacing="3" align="center" ml={4}>
+                    <HStack spacing="3" align="center">
                         <Box
                             w="40px"
                             h="40px"
@@ -124,7 +124,7 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
             {department.departmentDescription && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Description</Text>
-                    <Text fontSize="sm" color="detail.text" ml={4}>
+                    <Text fontSize="sm" color="detail.text">
                         {department.departmentDescription}
                     </Text>
                 </Box>

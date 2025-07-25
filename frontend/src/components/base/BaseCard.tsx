@@ -217,10 +217,16 @@ const BaseCardComponent: React.FC<BaseCardProps> = ({
       ) : (
         <>
           {/* Header Row */}
-          <Flex justify="space-between" align="center" mb={headerBadges || headerActions ? 2 : 0}>
-            <Flex align="center" gap="3">
-              <Heading size="sm">{title}</Heading>
-              {headerBadges}
+          <Flex justify="space-between" align="center" mb={headerBadges || headerActions ? 1 : 0}>
+            <Flex align="center" gap="3" width="100%">
+              {headerBadges && (
+                <Box flexShrink="0">
+                  {headerBadges}
+                </Box>
+              )}
+              <Box flex="1">
+                <Heading size="sm">{title}</Heading>
+              </Box>
             </Flex>
 
             {headerActions && (
@@ -246,9 +252,16 @@ const BaseCardComponent: React.FC<BaseCardProps> = ({
 
           {/* Quick Info Section - Always Visible */}
           {quickInfo && (
-            <Box mb={expandedContent ? 0 : 0}>
-              {quickInfo}
-            </Box>
+            <Flex mt="1">
+              {headerBadges && (
+                <Box flexShrink="0" width="calc(32px + 12px)">
+                  {/* Spacer to align with text column */}
+                </Box>
+              )}
+              <Box flex="1">
+                {quickInfo}
+              </Box>
+            </Flex>
           )}
 
           {/* Custom children content - Always Visible */}
@@ -257,16 +270,25 @@ const BaseCardComponent: React.FC<BaseCardProps> = ({
           {/* Expandable Details - Only show when selected */}
           {expandedContent && (
             <Collapse in={isSelected} animateOpacity>
-              <VStack 
-                align="stretch" 
-                spacing="3" 
+              <Flex 
                 mt="4" 
                 pt="3" 
                 borderTop="1px solid" 
                 borderColor="ui.border"
               >
-                {expandedContent}
-              </VStack>
+                {headerBadges && (
+                  <Box flexShrink="0" width="calc(32px + 12px)">
+                    {/* Spacer to align with text column */}
+                  </Box>
+                )}
+                <VStack 
+                  align="stretch" 
+                  spacing="3"
+                  flex="1"
+                >
+                  {expandedContent}
+                </VStack>
+              </Flex>
             </Collapse>
           )}
         </>

@@ -20,7 +20,7 @@ import { AppIcon } from '../AppIcon';
 import { OptionsMenu } from '../OptionsMenu';
 
 // TypeScript interfaces
-type IconName = 'openmenu' | 'hamburger' | 'edit' | 'delete' | 'warning' | 'pinned' | 'show' | 'venue' | 'department' | 'crew' | 'asc' | 'desc' | 'copy' | 'api-docs' | 'compass';
+type IconName = 'openmenu' | 'hamburger' | 'edit' | 'delete' | 'warning' | 'pinned' | 'show' | 'venue' | 'department' | 'crew' | 'asc' | 'desc' | 'copy' | 'api-docs' | 'compass' | 'docs' | 'component' | 'performance' | 'test' | 'archive';
 
 interface QuickAccessItemProps {
   title: string;
@@ -169,7 +169,7 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
       >
         {/* Left Main Content */}
         <Box
-          flexBasis={{ base: '100%', lg: '80%' }}
+          flex="1"
           display="flex"
           flexDirection="column"
           minHeight={0} // Important for flex items to shrink
@@ -191,9 +191,11 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
 
         {/* Right QuickAccess Panel - Desktop Only */}
         <Box
-          flexBasis={{ base: '0', lg: '20%' }}
+          width={{ base: '0', lg: '330px' }}
+          minWidth={{ base: '0', lg: '330px' }}
           display={{ base: 'none', lg: 'flex' }}
           flexDirection="column"
+          flexShrink={0}
           minHeight={0} // Important for flex items to shrink
         >
           <Box
