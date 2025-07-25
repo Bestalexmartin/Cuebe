@@ -1,3 +1,8 @@
+Sunday, June 30, 2025
+• Purchased and picked up brand new macbook
+• Lead architecture discussion with Gemini to identify my strenghts and portable experience from my LAMP days in 2016, select system architecture and define all the components we'd need to build this including VSCode, Python, React, FastAPI and git
+• Signed up for git account. Tomorrow we code.
+
 Monday Jun 30, 2025
 1) This is my first app built with a modern tech stack so let's document it all here... after my first VSCode commit to git, that is!
 
@@ -92,3 +97,4 @@ Thursday Jul 24, 2025
 
 Friday Jul 25, 2025
 1) Added markdown rendering to read docs and for future use, added system architecture documentation, updated page layout for static quickstart menu
+2) Final cleanup on unifiedCard indentation, reviewed frontend and backend for TypeScript errors, updated documentation

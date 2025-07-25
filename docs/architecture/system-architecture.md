@@ -12,15 +12,22 @@ CallMaster is built on a containerized microservices architecture using Docker C
 │   (React/Vite)  │◄──►│   (FastAPI)     │◄──►│  (PostgreSQL)   │
 │   Port: 5173    │    │   Port: 8000    │    │   Port: 5432    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │
-         │                       │
-         ▼                       ▼
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                    Host File System                             │
 │  ./frontend/ ◄─── Volume Mount ───► /app                       │
 │  ./backend/  ◄─── Volume Mount ───► /app                       │
 │  ./docs/     ◄─── Volume Mount ───► /docs                      │
 └─────────────────────────────────────────────────────────────────┘
+                                ▲
+                                │
+                    ┌─────────────────┐
+                    │     Redis       │
+                    │  (Rate Limiting)│
+                    │ Optional Service│
+                    └─────────────────┘
 ```
 
 ## Container Architecture
@@ -66,6 +73,20 @@ CallMaster is built on a containerized microservices architecture using Docker C
 - ACID compliance
 - Connection pooling
 - Automated backups (when configured)
+
+### 4. Redis Service (Optional)
+- **Purpose**: Rate limiting and caching
+- **Port**: 6379 (not exposed to host by default)
+- **Integration**: Graceful degradation when unavailable
+- **Dependencies**: None (standalone service)
+
+**Key Features:**
+- API rate limiting via slowapi
+- Graceful fallback when Redis is unavailable
+- Different rate limits for different endpoint types:
+  - Webhooks: Conservative limits for external services
+  - System tests: Higher limits for internal testing
+  - General API: Balanced limits for user interactions
 
 ## File System Strategy
 

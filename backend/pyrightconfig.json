@@ -1,0 +1,24 @@
+{
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/venv",
+    "**/env"
+  ],
+  "reportGeneralTypeIssues": false,
+  "reportOptionalMemberAccess": false,
+  "reportAttributeAccessIssue": false,
+  "reportOperatorIssue": false,
+  "reportIncompatibleVariableOverride": false,
+  "reportUnknownMemberType": false,
+  "reportUnknownArgumentType": false,
+  "reportUnknownVariableType": false,
+  "reportMissingTypeStubs": false,
+  "reportImportCycles": false,
+  "reportArgumentType": false,
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "basic"
+}

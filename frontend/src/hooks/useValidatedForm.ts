@@ -12,7 +12,7 @@ import {
   parseBackendValidationErrors 
 } from '../types/validation';
 
-interface FormData {
+export interface FormData {
   [key: string]: any;
 }
 

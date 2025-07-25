@@ -30,11 +30,13 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 fake = Faker()
 
 def override_get_db():
+    db = None
     try:
         db = TestingSessionLocal()
         yield db
     finally:
-        db.close()
+        if db is not None:
+            db.close()
 
 # Override the dependency
 app.dependency_overrides[get_db] = override_get_db

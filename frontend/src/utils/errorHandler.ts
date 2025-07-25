@@ -32,7 +32,7 @@ export class ErrorHandler {
   async handleApiError(
     error: any,
     context: string,
-    options: ErrorHandlerOptions = {}
+    _options: ErrorHandlerOptions = {}
   ): Promise<EnhancedError> {
     let apiError: EnhancedError;
 

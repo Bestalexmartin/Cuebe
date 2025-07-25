@@ -61,7 +61,7 @@ export const createApiError = (
   status?: number,
   details?: string
 ): ApiError => {
-  let category = ERROR_CATEGORIES.SERVER; // Default
+  let category: typeof ERROR_CATEGORIES[keyof typeof ERROR_CATEGORIES] = ERROR_CATEGORIES.SERVER; // Default
 
   if (status) {
     switch (status) {

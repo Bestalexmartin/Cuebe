@@ -32,7 +32,7 @@ interface BaseFieldProps {
 }
 
 interface ValidatedInputProps extends BaseFieldProps {
-  type?: 'text' | 'email' | 'password' | 'url' | 'tel';
+  type?: 'text' | 'email' | 'password' | 'url' | 'tel' | 'datetime-local';
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;

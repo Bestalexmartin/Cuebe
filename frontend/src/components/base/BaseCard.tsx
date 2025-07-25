@@ -11,13 +11,13 @@ import {
   SkeletonText,
   BoxProps
 } from '@chakra-ui/react';
-import { AppIcon } from '../AppIcon';
+import { AppIcon, IconName } from '../AppIcon';
 
 export type SkeletonVariant = 'default' | 'show' | 'venue' | 'crew' | 'department';
 
 export interface BaseCardAction {
   label: string;
-  icon?: string;
+  icon?: IconName;
   onClick: (e: React.MouseEvent) => void;
   'aria-label'?: string;
 }

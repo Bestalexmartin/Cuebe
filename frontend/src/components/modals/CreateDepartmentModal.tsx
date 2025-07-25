@@ -141,6 +141,7 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
             primaryAction={{
                 label: "Create Department",
                 variant: "primary",
+                onClick: () => handleSubmit({} as React.FormEvent<HTMLFormElement>),
                 isLoading: form.isSubmitting,
                 isDisabled: !canSubmit
             }}

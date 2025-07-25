@@ -179,6 +179,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
             primaryAction={{
                 label: "Add Crew",
                 variant: "primary",
+                onClick: () => handleSubmit({} as React.FormEvent<HTMLFormElement>),
                 isLoading: form.isSubmitting,
                 isDisabled: !canSubmit
             }}

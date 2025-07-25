@@ -60,7 +60,7 @@ def rate_limit(limit_config):
     return decorator
 
 @router.get("/health")
-@rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def system_tests_health(request: Request):
     """Health check for system tests API"""
     # Test basic network connectivity
@@ -84,7 +84,7 @@ def system_tests_health(request: Request):
     }
 
 @router.get("/debug-speed")
-@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def debug_speed_test(request: Request):
     """Debug endpoint to test speed test components individually"""
     results = {
@@ -158,7 +158,7 @@ def debug_speed_test(request: Request):
     return results
 
 @router.get("/database-connectivity")
-@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def test_database_connectivity(request: Request, db: Session = Depends(get_db)):
     """Test connectivity to various database services"""
     results = []
@@ -237,7 +237,7 @@ def test_database_connectivity(request: Request, db: Session = Depends(get_db)):
     }
 
 @router.get("/api-endpoints")
-@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def test_api_endpoints(request: Request):
     """Test connectivity to API endpoints"""
     results = []
@@ -294,7 +294,7 @@ def test_api_endpoints(request: Request):
     }
 
 @router.get("/system-performance")
-@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def test_system_performance(request: Request):
     """Get real system performance metrics"""
     if not HAS_PSUTIL or psutil is None:
@@ -349,7 +349,7 @@ def test_system_performance(request: Request):
         raise HTTPException(status_code=500, detail=f"Failed to get system performance: {str(e)}")
 
 @router.get("/network-speed")
-@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def test_network_speed(request: Request):
     """Test network connectivity and download speed"""
     try:
@@ -671,7 +671,7 @@ def test_network_speed(request: Request):
         raise HTTPException(status_code=500, detail=f"Network test failed: {str(e)}")
 
 @router.get("/filesystem-permissions")
-@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def test_filesystem_permissions(request: Request):
     """Test filesystem permissions for paths critical to CallMaster operation"""
     from pathlib import Path
@@ -835,7 +835,7 @@ def test_filesystem_permissions(request: Request):
     }
 
 @router.post("/prepare-speedtest")
-@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def prepare_speedtest(request: Request):
     """Check for speedtest-cli availability and install if necessary"""
     import shutil
@@ -948,7 +948,7 @@ def prepare_speedtest(request: Request):
 
 
 @router.post("/prepare-pytest")
-@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def prepare_pytest(request: Request):
     """Check for pytest availability and install if necessary for API testing"""
     import shutil
@@ -1069,7 +1069,7 @@ def prepare_pytest(request: Request):
 
 
 @router.get("/external-services")
-@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def test_external_services(request: Request):
     """Test connectivity to external services required by CallMaster"""
     import requests

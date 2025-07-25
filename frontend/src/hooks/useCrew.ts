@@ -1,7 +1,7 @@
 // frontend/src/hooks/useCrew.ts
 
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@clerk/clerk-react";
 
 // TypeScript interfaces
 interface Crew {
@@ -29,42 +29,43 @@ interface UseCrewReturn {
 }
 
 export const useCrew = (crewId: string | undefined): UseCrewReturn => {
-    const { getToken } = useAuth();
-    const [crew, setCrew] = useState<Crew | null>(null);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+  const { getToken } = useAuth();
+  const [crew, setCrew] = useState<Crew | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-    const fetchCrew = useCallback(async () => {
-        if (!crewId) return;
-        
-        setIsLoading(true);
-        try {
-            const token = await getToken();
-            if (!token) {
-                setIsLoading(false);
-                return;
-            }
-            
-            const response = await fetch(`/api/crew/${crewId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+  const fetchCrew = useCallback(async () => {
+    if (!crewId) return;
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch crew data.');
-            }
-            const data: Crew = await response.json();
-            setCrew(data);
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to load crew member';
-            setError(errorMessage);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [crewId, getToken]);
+    setIsLoading(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
 
-    useEffect(() => {
-        fetchCrew();
-    }, [fetchCrew]);
+      const response = await fetch(`/api/crew/${crewId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    return { crew, isLoading, error };
+      if (!response.ok) {
+        throw new Error("Failed to fetch crew data.");
+      }
+      const data: Crew = await response.json();
+      setCrew(data);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load crew member";
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [crewId, getToken]);
+
+  useEffect(() => {
+    fetchCrew();
+  }, [fetchCrew]);
+
+  return { crew, isLoading, error };
 };

@@ -6,6 +6,7 @@
 - Node.js 18+
 - Python 3.9+
 - PostgreSQL
+- Redis (optional, for rate limiting)
 - Git
 
 ### Setup
@@ -194,6 +195,54 @@ return (
   </BaseModal>
 );
 ```
+
+## Backend Development
+
+### Python Type Checking
+The project uses Pylance/Pyright for type checking with SQLAlchemy-specific configuration:
+
+```json
+// pyrightconfig.json
+{
+  "reportGeneralTypeIssues": false,
+  "reportOptionalMemberAccess": false, 
+  "reportAttributeAccessIssue": false
+}
+```
+
+### SQLAlchemy Best Practices
+When working with SQLAlchemy models, use these patterns to avoid type checking issues:
+
+```python
+# ✅ Good: Use .is_() for boolean column comparisons
+relationship = db.query(models.CrewRelationship).filter(
+    models.CrewRelationship.isActive.is_(True)
+).first()
+
+# ✅ Good: Use setattr() for column assignments
+setattr(user, 'isActive', True)
+setattr(user, 'dateUpdated', datetime.now(timezone.utc))
+
+# ✅ Good: Use bool() for conditional checks on comparisons
+is_same_user = bool(crew_member.userID == user.userID)
+
+# ✅ Good: Use explicit None checks for nullable columns
+user_status = user.userStatus.value if user.userStatus is not None else "guest"
+
+# ❌ Avoid: Direct boolean checks on columns
+if user.isActive:  # This causes type errors
+
+# ❌ Avoid: Direct column assignments
+user.isActive = True  # This causes type errors
+```
+
+### Rate Limiting
+The application includes optional rate limiting via Redis:
+
+- Install Redis: `brew install redis` (macOS) or equivalent
+- Redis configuration is handled automatically via `utils/rate_limiter.py`
+- Rate limiting gracefully degrades if Redis is unavailable
+- Different limits for webhooks, system tests, and API endpoints
 
 ## Common Issues & Solutions
 

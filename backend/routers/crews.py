@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 import models
@@ -30,7 +30,7 @@ async def read_crew_members(
             models.User.userID.in_(  # Show users you manage
                 db.query(models.CrewRelationship.crew_user_id)
                 .filter(models.CrewRelationship.manager_user_id == user.userID)
-                .filter(models.CrewRelationship.isActive == True)
+                .filter(models.CrewRelationship.isActive.is_(True))
             )
         )
     ).all()
@@ -40,11 +40,11 @@ async def read_crew_members(
     for crew_member in crew_members:
         # Get relationship data if this is not the current user
         relationship = None
-        if crew_member.userID != user.userID:
+        if not bool(crew_member.userID == user.userID):
             relationship = db.query(models.CrewRelationship).filter(
                 models.CrewRelationship.manager_user_id == user.userID,
                 models.CrewRelationship.crew_user_id == crew_member.userID,
-                models.CrewRelationship.isActive == True
+                models.CrewRelationship.isActive.is_(True)
             ).first()
         
         # Create response data combining user data with relationship notes
@@ -58,7 +58,7 @@ async def read_crew_members(
             "userName": crew_member.userName,
             "profileImgURL": crew_member.profileImgURL,
             "phoneNumber": crew_member.phoneNumber,
-            "userStatus": crew_member.userStatus.value if crew_member.userStatus else "guest",
+            "userStatus": crew_member.userStatus.value if crew_member.userStatus is not None else "guest",
             "userRole": crew_member.userRole,
             "createdBy": crew_member.createdBy,
             "notes": crew_member.notes,  # Notes from User table
@@ -90,7 +90,7 @@ async def get_crew_member(
         raise HTTPException(status_code=404, detail="Crew member not found")
     
     # Determine if this is a self-access vs manager-access
-    is_self_access = crew_member.userID == user.userID
+    is_self_access = bool(crew_member.userID == user.userID)
     
     # Get relationship data for manager access
     relationship = None
@@ -99,7 +99,7 @@ async def get_crew_member(
         relationship = db.query(models.CrewRelationship).filter(
             models.CrewRelationship.manager_user_id == user.userID,
             models.CrewRelationship.crew_user_id == crew_id,
-            models.CrewRelationship.isActive == True
+            models.CrewRelationship.isActive.is_(True)
         ).first()
         
         if not relationship:
@@ -116,7 +116,7 @@ async def get_crew_member(
         "userName": crew_member.userName,
         "profileImgURL": crew_member.profileImgURL,
         "phoneNumber": crew_member.phoneNumber,
-        "userStatus": crew_member.userStatus.value if crew_member.userStatus else "guest",
+        "userStatus": crew_member.userStatus.value if crew_member.userStatus is not None else "guest",
         "userRole": crew_member.userRole,
         "createdBy": crew_member.createdBy,
         "notes": crew_member.notes,  # Notes from User table
@@ -152,7 +152,7 @@ async def update_crew_member(
         relationship = db.query(models.CrewRelationship).filter(
             models.CrewRelationship.manager_user_id == user.userID,
             models.CrewRelationship.crew_user_id == crew_id,
-            models.CrewRelationship.isActive == True
+            models.CrewRelationship.isActive.is_(True)
         ).first()
         
         if not relationship:
@@ -163,7 +163,7 @@ async def update_crew_member(
     logger.info(f"Updating crew member {crew_id} with data: {update_data}")
     
     # Determine if this is a self-edit vs manager-edit
-    is_self_edit = crew_member.userID == user.userID
+    is_self_edit = bool(crew_member.userID == user.userID)
     
     if is_self_edit:
         # User editing themselves - update their actual user data
@@ -183,7 +183,7 @@ async def update_crew_member(
         relationship_notes = update_data.pop('notes', None)
         
         # Don't allow changing certain fields for verified users when manager is editing
-        if crew_member.userStatus == models.UserStatus.VERIFIED: # type: ignore
+        if crew_member.userStatus.is_(models.UserStatus.VERIFIED):
             # Remove fields that shouldn't be changed for verified users (they own their contact info and role)
             protected_fields = ['emailAddress', 'phoneNumber', 'fullnameFirst', 'fullnameLast', 'userRole']
             for field in protected_fields:
@@ -200,20 +200,20 @@ async def update_crew_member(
             relationship = db.query(models.CrewRelationship).filter(
                 models.CrewRelationship.manager_user_id == user.userID,
                 models.CrewRelationship.crew_user_id == crew_id,
-                models.CrewRelationship.isActive == True
+                models.CrewRelationship.isActive.is_(True)
             ).first()
             
             if relationship:
                 relationship.notes = relationship_notes
-                relationship.dateUpdated = datetime.utcnow()
+                # dateUpdated will be automatically set by SQLAlchemy due to onupdate=func.now()
                 logger.info(f"Updated relationship notes for crew member {crew_id}")
         
         # Clear user notes field for guest users (notes should be in relationship)
-        if crew_member.userStatus == models.UserStatus.GUEST:
-            crew_member.notes = None
+        if crew_member.userStatus.is_(models.UserStatus.GUEST):
+            setattr(crew_member, 'notes', None)
     
     # Update the dateUpdated timestamp
-    crew_member.dateUpdated = datetime.utcnow() # type: ignore
+    setattr(crew_member, 'dateUpdated', datetime.now(timezone.utc))
     
     try:
         db.commit()
@@ -242,12 +242,12 @@ async def create_crew_relationship(
     ).first()
     
     if existing_relationship:
-        if existing_relationship.isActive: # type: ignore
+        if existing_relationship.isActive.is_(True):
             raise HTTPException(status_code=400, detail="User already in your crew")
         else:
             # Reactivate existing relationship
-            existing_relationship.isActive = True # type: ignore
-            existing_relationship.notes = relationship_data.notes # type: ignore
+            setattr(existing_relationship, 'isActive', True)
+            setattr(existing_relationship, 'notes', relationship_data.notes)
             db.commit()
             return {"message": "Crew relationship reactivated"}
     
@@ -274,7 +274,7 @@ async def delete_crew_relationship(
     relationship_to_delete = db.query(models.CrewRelationship).filter(
         models.CrewRelationship.manager_user_id == user.userID,
         models.CrewRelationship.crew_user_id == crew_user_id,
-        models.CrewRelationship.isActive == True
+        models.CrewRelationship.isActive.is_(True)
     ).first()
     
     if not relationship_to_delete:

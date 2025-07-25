@@ -127,7 +127,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
 
   const quickInfo = (
     <>
-      <HStack justify="space-between" fontSize="sm" color="detail.text" mt={2} ml={4}>
+      <HStack justify="space-between" fontSize="sm" color="detail.text" mt={2}>
         <Text>
           {venueName} • {formatDateFriendly(show.showDate)}
         </Text>
@@ -140,7 +140,6 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
         fontSize="sm"
         color="detail.text"
         mt={1}
-        ml={4}
       >
         <Text>Scripts: {show.scripts ? show.scripts.length : 0}</Text>
         <Text fontSize="xs">
@@ -197,7 +196,6 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                     justify="space-between"
                     fontSize="xs"
                     color="detail.text"
-                    ml={4}
                     mt={2}
                   >
                     <Badge variant="solid" colorScheme="blue" size="sm">
@@ -212,7 +210,6 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                     justify="space-between"
                     fontSize="xs"
                     color="detail.text"
-                    ml={4}
                   >
                     <Text>
                       Start Time:{" "}
