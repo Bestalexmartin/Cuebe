@@ -1,7 +1,8 @@
 # backend/main.py
 
 import logging
-from fastapi import FastAPI
+from pathlib import Path
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.responses import HTMLResponse
@@ -127,4 +128,51 @@ async def custom_redoc_html():
     """
     return HTMLResponse(content=html)
 
+# =============================================================================
+# DOCUMENTATION ENDPOINTS
+# =============================================================================
+
+@app.get("/api/docs/{file_path:path}")
+async def get_documentation(file_path: str):
+    """Serve markdown documentation files from the docs directory."""
+    try:
+        # Path resolution for Docker vs local development
+        docs_dir = Path("/docs") if Path("/docs").exists() else Path(__file__).parent.parent / "docs"
+        requested_file = docs_dir / file_path
+        
+        # Security check: ensure the file is within the docs directory
+        if not str(requested_file.resolve()).startswith(str(docs_dir.resolve())):
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Check if file exists and is a markdown file
+        if not requested_file.exists():
+            raise HTTPException(status_code=404, detail="Documentation file not found")
+        
+        if not requested_file.suffix.lower() in ['.md', '.txt']:
+            raise HTTPException(status_code=400, detail="Unsupported file type")
+        
+        # Read and return the file content
+        content = requested_file.read_text(encoding="utf-8")
+        return {"content": content, "file_path": file_path}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error serving documentation file {file_path}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 logger.info("CallMaster API initialized with organized routers and light mode documentation")
+
+# =============================================================================
+# SERVER STARTUP
+# =============================================================================
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info"
+    )

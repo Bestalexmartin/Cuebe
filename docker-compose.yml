@@ -8,6 +8,7 @@ services:
       - "8000:8000"  # Maps port 8000 on your machine to port 8000 in the container
     volumes:
       - ./backend:/app # Mounts your local ./backend folder into the container's /app folder for live-reloading
+      - ./docs:/docs # Mount docs directory for markdown serving
     env_file: # <-- ADD THIS SECTION
       - ./.env
     environment:

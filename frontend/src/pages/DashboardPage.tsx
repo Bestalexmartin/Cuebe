@@ -152,7 +152,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
         boxSizing="border-box"
       >
         <Box
-          flexBasis={{ base: '100%', lg: '80%' }}
+          flex="1"
           display="flex"
           flexDirection="column"
           height={{ base: '100vh', lg: 'auto' }}
@@ -224,9 +224,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
         </Box>
 
         <Box
-          flexBasis={{ base: '0', lg: '20%' }}
+          width={{ base: '0', lg: '330px' }}
+          minWidth={{ base: '0', lg: '330px' }}
           display={{ base: 'none', lg: 'flex' }}
           flexDirection="column"
+          flexShrink={0}
         >
           <QuickAccessPanel 
             activeView={currentView} 

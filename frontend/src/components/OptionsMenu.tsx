@@ -80,9 +80,9 @@ export const OptionsMenu: React.FC<OptionsMenuProps> = ({ onSaveNavigationState 
           API Docs
         </MenuItem>
         <MenuItem
-          onClick={() => handleNavigateToPage('/docs')}
+          onClick={() => handleNavigateToPage('/documentation')}
           icon={<AppIcon name="docs" boxSize="14px" />}
-          {...getMenuItemStyle('/docs')}
+          {...getMenuItemStyle('/documentation')}
         >
           Documentation
         </MenuItem>

@@ -115,7 +115,7 @@ const App: React.FC = () => {
             </ProtectedRoute>
           } />
 
-          <Route path="/docs" element={
+          <Route path="/documentation" element={
             <ProtectedRoute>
               <DocumentationPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
             </ProtectedRoute>
