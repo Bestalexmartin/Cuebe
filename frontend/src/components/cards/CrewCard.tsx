@@ -1,20 +1,14 @@
-// frontend/src/CrewCard.tsx
-
 import React from 'react';
 import {
-    Box,
-    Flex,
     HStack,
     VStack,
     Text,
     Badge,
-    Collapse,
-    Button,
-    Heading,
+    Box,
     Avatar
 } from "@chakra-ui/react";
 import { useUser } from '@clerk/clerk-react';
-import { AppIcon } from '../AppIcon';
+import { BaseCard, BaseCardAction } from '../base/BaseCard';
 import { formatDateTimeLocal } from '../../utils/dateTimeUtils';
 
 // TypeScript interfaces
@@ -43,19 +37,20 @@ interface CrewCardProps {
     isSelected: boolean;
     onHover?: (crewId: string | null) => void;
     onSaveNavigationState?: () => void;
+    isLoading?: boolean;
 }
 
-export const CrewCard: React.FC<CrewCardProps> = ({
+const CrewCardComponent: React.FC<CrewCardProps> = ({
     crewMember,
     onEdit,
     onCrewClick,
     isHovered,
     isSelected,
     onHover,
-    onSaveNavigationState
+    onSaveNavigationState,
+    isLoading = false,
 }) => {
     const { user: clerkUser } = useUser();
-    const borderColor = isHovered ? 'orange.400' : isSelected ? 'blue.400' : 'gray.600';
 
     const handleEditClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -104,146 +99,135 @@ export const CrewCard: React.FC<CrewCardProps> = ({
         return crewMember.relationshipNotes; // Relationship table notes
     };
 
-    return (
-        <Box
-            p="4"
-            borderWidth="2px"
-            borderRadius="md"
-            shadow="sm"
-            cursor="pointer"
-            borderColor={borderColor}
-            _hover={{ borderColor: 'orange.400' }}
-            onMouseEnter={() => onHover?.(crewMember.userID)}
-            onMouseLeave={() => onHover?.(null)}
-            onClick={() => onCrewClick(crewMember.userID)}
-        >
-            {/* Header Row */}
-            <Flex justify="space-between" align="center" mb={4}>
-                <Flex align="center" gap="3">
-                    <Avatar
-                        size="sm"
-                        name={getFullName()}
-                        src={crewMember.profileImgURL}
-                    />
-                    <Heading size="sm">{getFullName()}</Heading>
-                </Flex>
+    const headerBadges = (
+        <Avatar
+            size="sm"
+            name={getFullName()}
+            src={crewMember.profileImgURL}
+        />
+    );
 
-                <HStack spacing="1" opacity={isSelected ? 1 : 0} pointerEvents={isSelected ? "auto" : "none"}>
-                    <Button
-                        aria-label="Edit Crew Member"
-                        leftIcon={<AppIcon name="edit" boxSize="12px" />}
-                        size="xs"
-                        onClick={handleEditClick}
-                    >
-                        Edit
-                    </Button>
-                </HStack>
-            </Flex>
+    const headerActions: BaseCardAction[] = [
+        {
+            label: "Edit",
+            icon: "edit",
+            onClick: handleEditClick,
+            'aria-label': "Edit Crew Member"
+        }
+    ];
 
-            {/* Info Rows */}
-            <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text" ml={4}>
-                <HStack spacing="2" align="center">
-                    <Badge variant="outline" colorScheme="blue" size="sm">
-                        {formatRole(crewMember.userRole)}
+    const quickInfo = (
+        <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text" ml={4}>
+            <HStack spacing="2" align="center">
+                <Badge variant="outline" colorScheme="blue" size="sm">
+                    {formatRole(crewMember.userRole)}
+                </Badge>
+                {getUserStatusBadge()}
+                {!crewMember.isActive && (
+                    <Badge variant="solid" colorScheme="red" size="sm">
+                        Inactive
                     </Badge>
-                    {getUserStatusBadge()}
-                    {!crewMember.isActive && (
-                        <Badge variant="solid" colorScheme="red" size="sm">
-                            Inactive
-                        </Badge>
-                    )}
-                </HStack>
-
-                {/* Handle different combinations of email and phone with dates */}
-                {crewMember.emailAddress && crewMember.phoneNumber ? (
-                    // Both email and phone present
-                    <>
-                        <HStack justify="space-between">
-                            <Text isTruncated>
-                                {crewMember.emailAddress}
-                            </Text>
-                            <Text fontSize="xs">
-                                Created: {formatDateTimeLocal(crewMember.dateCreated)}
-                            </Text>
-                        </HStack>
-                        <HStack justify="space-between">
-                            <Text isTruncated>
-                                {crewMember.phoneNumber}
-                            </Text>
-                            <Text fontSize="xs">
-                                Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
-                            </Text>
-                        </HStack>
-                    </>
-                ) : crewMember.emailAddress ? (
-                    // Only email present - need another line for both dates
-                    <>
-                        <HStack justify="space-between">
-                            <Text isTruncated>
-                                {crewMember.emailAddress}
-                            </Text>
-                            <Text fontSize="xs">
-                                Created: {formatDateTimeLocal(crewMember.dateCreated)}
-                            </Text>
-                        </HStack>
-                        <HStack justify="flex-end">
-                            <Text fontSize="xs">
-                                Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
-                            </Text>
-                        </HStack>
-                    </>
-                ) : crewMember.phoneNumber ? (
-                    // Only phone present - need another line for both dates
-                    <>
-                        <HStack justify="space-between">
-                            <Text isTruncated>
-                                {crewMember.phoneNumber}
-                            </Text>
-                            <Text fontSize="xs">
-                                Created: {formatDateTimeLocal(crewMember.dateCreated)}
-                            </Text>
-                        </HStack>
-                        <HStack justify="flex-end">
-                            <Text fontSize="xs">
-                                Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
-                            </Text>
-                        </HStack>
-                    </>
-                ) : (
-                    // Neither email nor phone - dates align with badges row and a spacer
-                    <>
-                        <HStack justify="flex-end">
-                            <Text fontSize="xs">
-                                Created: {formatDateTimeLocal(crewMember.dateCreated)}
-                            </Text>
-                        </HStack>
-                        <HStack justify="flex-end">
-                            <Text fontSize="xs">
-                                Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
-                            </Text>
-                        </HStack>
-                    </>
                 )}
-            </VStack>
+            </HStack>
 
-            {/* Expandable Details - only show when selected */}
-            <Collapse in={isSelected} animateOpacity>
-                <VStack align="stretch" spacing="3" mt="4" pt="3" borderTop="1px solid" borderColor="ui.border">
+            {/* Handle different combinations of email and phone with dates */}
+            {crewMember.emailAddress && crewMember.phoneNumber ? (
+                // Both email and phone present
+                <>
+                    <HStack justify="space-between">
+                        <Text isTruncated>
+                            {crewMember.emailAddress}
+                        </Text>
+                        <Text fontSize="xs">
+                            Created: {formatDateTimeLocal(crewMember.dateCreated)}
+                        </Text>
+                    </HStack>
+                    <HStack justify="space-between">
+                        <Text isTruncated>
+                            {crewMember.phoneNumber}
+                        </Text>
+                        <Text fontSize="xs">
+                            Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
+                        </Text>
+                    </HStack>
+                </>
+            ) : crewMember.emailAddress ? (
+                // Only email present - need another line for both dates
+                <>
+                    <HStack justify="space-between">
+                        <Text isTruncated>
+                            {crewMember.emailAddress}
+                        </Text>
+                        <Text fontSize="xs">
+                            Created: {formatDateTimeLocal(crewMember.dateCreated)}
+                        </Text>
+                    </HStack>
+                    <HStack justify="flex-end">
+                        <Text fontSize="xs">
+                            Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
+                        </Text>
+                    </HStack>
+                </>
+            ) : crewMember.phoneNumber ? (
+                // Only phone present - need another line for both dates
+                <>
+                    <HStack justify="space-between">
+                        <Text isTruncated>
+                            {crewMember.phoneNumber}
+                        </Text>
+                        <Text fontSize="xs">
+                            Created: {formatDateTimeLocal(crewMember.dateCreated)}
+                        </Text>
+                    </HStack>
+                    <HStack justify="flex-end">
+                        <Text fontSize="xs">
+                            Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
+                        </Text>
+                    </HStack>
+                </>
+            ) : (
+                // Neither email nor phone - dates align with badges row and a spacer
+                <>
+                    <HStack justify="flex-end">
+                        <Text fontSize="xs">
+                            Created: {formatDateTimeLocal(crewMember.dateCreated)}
+                        </Text>
+                    </HStack>
+                    <HStack justify="flex-end">
+                        <Text fontSize="xs">
+                            Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
+                        </Text>
+                    </HStack>
+                </>
+            )}
+        </VStack>
+    );
 
-                    {/* Notes Section */}
-                    {getNotesToShow() && (
-                        <Box>
-                            <Text fontWeight="semibold" mb={2}>Notes</Text>
-                            <Text fontSize="sm" color="detail.text" ml={4}>
-                                {getNotesToShow()}
-                            </Text>
-                        </Box>
-                    )}
-
-                    {/* TODO: Show Assignments section will be added later */}
-
-                </VStack>
-            </Collapse>
+    const expandedContent = getNotesToShow() ? (
+        <Box>
+            <Text fontWeight="semibold" mb={2}>Notes</Text>
+            <Text fontSize="sm" color="detail.text" ml={4}>
+                {getNotesToShow()}
+            </Text>
         </Box>
+    ) : undefined;
+
+    return (
+        <BaseCard
+            title={getFullName()}
+            cardId={crewMember.userID}
+            isSelected={isSelected}
+            isHovered={isHovered}
+            onCardClick={() => onCrewClick(crewMember.userID)}
+            onHover={onHover}
+            headerBadges={headerBadges}
+            headerActions={headerActions}
+            quickInfo={quickInfo}
+            expandedContent={expandedContent}
+            isLoading={isLoading}
+            skeletonVariant="crew"
+        />
     );
 };
+
+export const CrewCard = React.memo(CrewCardComponent);

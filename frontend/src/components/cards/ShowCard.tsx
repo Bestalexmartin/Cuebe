@@ -1,19 +1,14 @@
-// frontend/src/ShowCard.tsx
-
 import React, { useMemo } from "react";
 import {
-  Flex,
-  Box,
   VStack,
   HStack,
-  Heading,
   Button,
   Text,
-  Collapse,
   Badge,
+  Box,
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
-import { AppIcon } from "../AppIcon";
+import { BaseCard, BaseCardAction } from "../base/BaseCard";
 import { formatDateFriendly, formatTimeLocal, formatDateTimeLocal } from "../../utils/dateTimeUtils";
 
 // TypeScript interfaces
@@ -55,9 +50,10 @@ interface ShowCardProps {
   sortBy: "showName" | "showDate" | "dateCreated" | "dateUpdated";
   sortDirection: "asc" | "desc";
   onSaveNavigationState?: () => void;
+  isLoading?: boolean;
 }
 
-export const ShowCard: React.FC<ShowCardProps> = ({
+const ShowCardComponent: React.FC<ShowCardProps> = ({
   show,
   isSelected,
   isHovered,
@@ -69,6 +65,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
   sortBy,
   sortDirection,
   onSaveNavigationState,
+  isLoading = false,
 }) => {
   const navigate = useNavigate();
 
@@ -87,12 +84,6 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     });
     return scriptsToSort;
   }, [show.scripts, sortBy, sortDirection]);
-
-  const borderColor = isHovered
-    ? "orange.400"
-    : isSelected
-      ? "blue.400"
-      : "gray.600";
 
   // Handler for the show edit button
   const handleEditClick = (e: React.MouseEvent) => {
@@ -125,33 +116,17 @@ export const ShowCard: React.FC<ShowCardProps> = ({
   // Get venue name safely
   const venueName = show.venue?.venueName || "No venue set";
 
-  return (
-    <Box
-      p="4"
-      borderWidth="2px"
-      borderRadius="md"
-      shadow="sm"
-      cursor="pointer"
-      onClick={() => onShowClick(show.showID)}
-      borderColor={borderColor}
-      onMouseEnter={() => onShowHover(show.showID)}
-      onMouseLeave={() => onShowHover(null)}
-    >
-      <Flex justify="space-between" align="center">
-        <Heading size="sm">{show.showName}</Heading>
-        <HStack
-          opacity={isSelected ? 1 : 0}
-          pointerEvents={isSelected ? "auto" : "none"}
-        >
-          <Button
-            leftIcon={<AppIcon name="edit" boxSize="12px" />}
-            size="xs"
-            onClick={handleEditClick}
-          >
-            Edit
-          </Button>
-        </HStack>
-      </Flex>
+  const headerActions: BaseCardAction[] = [
+    {
+      label: "Edit",
+      icon: "edit",
+      onClick: handleEditClick,
+      'aria-label': "Edit show"
+    }
+  ];
+
+  const quickInfo = (
+    <>
       <HStack justify="space-between" fontSize="sm" color="detail.text" mt={2} ml={4}>
         <Text>
           {venueName} • {formatDateFriendly(show.showDate)}
@@ -172,121 +147,127 @@ export const ShowCard: React.FC<ShowCardProps> = ({
           Updated: {formatDateTimeLocal(show.dateUpdated)}
         </Text>
       </HStack>
-      <Collapse in={isSelected} animateOpacity>
-        <VStack
-          align="stretch"
-          spacing="3"
-          mt="4"
-          pt="3"
-          borderTop="1px solid"
-          borderColor="ui.border"
-        >
-          {/* Scripts Section */}
-          <Box>
-            <Flex justify="space-between" align="center" flexShrink={0} mb={4}>
-              <Text fontWeight="semibold">
-                Scripts
-              </Text>
-              <Button
-                bg="blue.400"
-                size="xs"
-                color="white"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  onCreateScriptClick(show.showID);
-                }}
-                _hover={{ bg: "orange.400" }}
-                _focus={{ boxShadow: "none" }}
-              >
-                Create Script
-              </Button>
-            </Flex>
-            <Box pl="4">
-              {sortedScripts.length > 0 ? (
-                <VStack spacing={2} align="stretch">
-                  {sortedScripts.map((script) => (
-                    <Box
-                      key={script.scriptID}
-                      p="3"
-                      borderWidth="2px"
-                      borderRadius="md"
-                      shadow="sm"
-                      cursor="pointer"
-                      onClick={(e: React.MouseEvent) =>
-                        handleScriptClick(script.scriptID, e)
-                      }
-                      borderColor={
-                        selectedScriptId === script.scriptID
-                          ? "blue.400"
-                          : "gray.600"
-                      }
-                      _hover={{ borderColor: "orange.400" }}
-                      onMouseEnter={() => onShowHover(null)}
-                      onMouseLeave={() => onShowHover(show.showID)}
-                    >
-                      <VStack align="stretch" spacing="1">
-                        <Heading size="sm">{script.scriptName}</Heading>
-                        <HStack
-                          justify="space-between"
-                          fontSize="xs"
-                          color="detail.text"
-                          ml={4}
-                          mt={2}
-                        >
-                          <Badge variant="solid" colorScheme="blue" size="sm">
-                            {script.scriptStatus.toUpperCase()}
-                          </Badge>
-                          <Text>
-                            Created:{" "}
-                            {formatDateTimeLocal(script.dateCreated)}
-                          </Text>
-                        </HStack>
-                        <HStack
-                          justify="space-between"
-                          fontSize="xs"
-                          color="detail.text"
-                          ml={4}
-                        >
-                          <Text>
-                            Start Time:{" "}
-                            {formatTimeLocal(script.startTime)}
-                          </Text>
-                          <Text>
-                            Updated:{" "}
-                            {formatDateTimeLocal(script.dateUpdated)}
-                          </Text>
-                        </HStack>
-                        {script.lastUsed && (
-                          <HStack
-                            justify="flex-end"
-                            fontSize="xs"
-                            color="detail.text"
-                          >
-                            <Text>
-                              Last Used:{" "}
-                              {formatDateTimeLocal(script.lastUsed)}
-                            </Text>
-                          </HStack>
-                        )}
-                      </VStack>
-                    </Box>
-                  ))}
-                </VStack>
-              ) : (
-                <Text
-                  fontSize="sm"
-                  fontStyle="italic"
-                  color="detail.text"
-                  pl={2}
-                >
-                  No scripts for this show.
-                </Text>
-              )}
-            </Box>
-          </Box>
+    </>
+  );
 
-        </VStack>
-      </Collapse>
-    </Box >
+  const expandedContent = (
+    <Box>
+      <HStack justify="space-between" align="center" flexShrink={0} mb={4}>
+        <Text fontWeight="semibold">
+          Scripts
+        </Text>
+        <Button
+          variant="primary"
+          size="xs"
+          onClick={(e: React.MouseEvent) => {
+            e.stopPropagation();
+            onCreateScriptClick(show.showID);
+          }}
+          _focus={{ boxShadow: "none" }}
+        >
+          Create Script
+        </Button>
+      </HStack>
+      <Box pl="4">
+        {sortedScripts.length > 0 ? (
+          <VStack spacing={2} align="stretch">
+            {sortedScripts.map((script) => (
+              <Box
+                key={script.scriptID}
+                p="3"
+                borderWidth="2px"
+                borderRadius="md"
+                shadow="sm"
+                cursor="pointer"
+                onClick={(e: React.MouseEvent) =>
+                  handleScriptClick(script.scriptID, e)
+                }
+                borderColor={
+                  selectedScriptId === script.scriptID
+                    ? "blue.400"
+                    : "gray.600"
+                }
+                _hover={{ borderColor: "orange.400" }}
+                onMouseEnter={() => onShowHover(null)}
+                onMouseLeave={() => onShowHover(show.showID)}
+              >
+                <VStack align="stretch" spacing="1">
+                  <Text fontWeight="semibold" size="sm">{script.scriptName}</Text>
+                  <HStack
+                    justify="space-between"
+                    fontSize="xs"
+                    color="detail.text"
+                    ml={4}
+                    mt={2}
+                  >
+                    <Badge variant="solid" colorScheme="blue" size="sm">
+                      {script.scriptStatus.toUpperCase()}
+                    </Badge>
+                    <Text>
+                      Created:{" "}
+                      {formatDateTimeLocal(script.dateCreated)}
+                    </Text>
+                  </HStack>
+                  <HStack
+                    justify="space-between"
+                    fontSize="xs"
+                    color="detail.text"
+                    ml={4}
+                  >
+                    <Text>
+                      Start Time:{" "}
+                      {formatTimeLocal(script.startTime)}
+                    </Text>
+                    <Text>
+                      Updated:{" "}
+                      {formatDateTimeLocal(script.dateUpdated)}
+                    </Text>
+                  </HStack>
+                  {script.lastUsed && (
+                    <HStack
+                      justify="flex-end"
+                      fontSize="xs"
+                      color="detail.text"
+                    >
+                      <Text>
+                        Last Used:{" "}
+                        {formatDateTimeLocal(script.lastUsed)}
+                      </Text>
+                    </HStack>
+                  )}
+                </VStack>
+              </Box>
+            ))}
+          </VStack>
+        ) : (
+          <Text
+            fontSize="sm"
+            fontStyle="italic"
+            color="detail.text"
+            pl={2}
+          >
+            No scripts for this show.
+          </Text>
+        )}
+      </Box>
+    </Box>
+  );
+
+  return (
+    <BaseCard
+      title={show.showName}
+      cardId={show.showID}
+      isSelected={isSelected}
+      isHovered={isHovered}
+      onCardClick={() => onShowClick(show.showID)}
+      onHover={onShowHover}
+      headerActions={headerActions}
+      quickInfo={quickInfo}
+      expandedContent={expandedContent}
+      isLoading={isLoading}
+      skeletonVariant="show"
+    />
   );
 };
+
+export const ShowCard = React.memo(ShowCardComponent);

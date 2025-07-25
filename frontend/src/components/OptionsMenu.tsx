@@ -77,7 +77,14 @@ export const OptionsMenu: React.FC<OptionsMenuProps> = ({ onSaveNavigationState 
           icon={<AppIcon name="api-docs" boxSize="16px" />}
           {...getMenuItemStyle('/api-documentation')}
         >
-          API Documentation
+          API Docs
+        </MenuItem>
+        <MenuItem
+          onClick={() => handleNavigateToPage('/docs')}
+          icon={<AppIcon name="docs" boxSize="14px" />}
+          {...getMenuItemStyle('/docs')}
+        >
+          Documentation
         </MenuItem>
         <MenuDivider />
         <MenuItem isDisabled>

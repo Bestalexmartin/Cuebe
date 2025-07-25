@@ -1,28 +1,17 @@
-// frontend/src/components/modals/CreateShowModal.tsx
-
 import React, { useState, useEffect } from 'react';
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
-  Button,
   FormControl,
   FormLabel,
   Input,
   Select,
   VStack,
-  Box,
-  Text,
   Textarea,
 } from '@chakra-ui/react';
 import { useValidatedForm } from '../../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../../types/validation';
 import { FormInput } from '../form/FormField';
-import { ErrorBoundary } from '../ErrorBoundary';
+import { BaseModal } from '../base/BaseModal';
+import { useVenueFormValidation } from '../../hooks/useFormValidation';
 import { useResource } from '../../hooks/useResource';
 import { convertLocalToUTC } from '../../utils/dateTimeUtils';
 
@@ -171,125 +160,87 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
     onClose();
   };
 
-  const isFormValid = (): boolean => {
-    return form.formData.showName.trim() !== '' &&
-      (!isAddingNewVenue || newVenueName.trim() !== '');
-  };
+  const { canSubmit } = useVenueFormValidation(form, isAddingNewVenue, newVenueName);
 
   return (
-    <ErrorBoundary context="CreateShowModal">
-      <Modal isOpen={isOpen} onClose={handleModalClose} onCloseComplete={form.resetForm}>
-      <ModalOverlay />
-      <ModalContent
-        as="form"
-        onSubmit={handleSubmit}
-        bg="page.background"
-        border="2px solid"
-        borderColor="gray.600"
-      >
-        <ModalHeader>Create New Show</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody pb={6}>
-          <VStack spacing={4} align="stretch">
-            <FormInput
-              form={form}
-              name="showName"
-              label="Show Name"
-              placeholder="Enter show name"
-              isRequired
-            />
+    <BaseModal
+      title="Create New Show"
+      isOpen={isOpen}
+      onClose={handleModalClose}
+      onCloseComplete={form.resetForm}
+      onSubmit={handleSubmit}
+      primaryAction={{
+        label: "Create Show",
+        variant: "primary",
+        isLoading: form.isSubmitting,
+        isDisabled: !canSubmit
+      }}
+      validationErrors={form.fieldErrors}
+      showValidationErrors={form.fieldErrors.length > 0}
+      errorBoundaryContext="CreateShowModal"
+    >
+      <VStack spacing={4} align="stretch">
+        <FormInput
+          form={form}
+          name="showName"
+          label="Show Name"
+          placeholder="Enter show name"
+          isRequired
+        />
 
-            <FormControl>
-              <FormLabel>Venue</FormLabel>
-              <VStack align="stretch" spacing={3}>
-                <Select
-                  placeholder={isLoadingVenues ? "Loading venues..." : "Select venue"}
-                  value={isAddingNewVenue ? 'add_new' : form.formData.venueID}
-                  onChange={handleVenueSelectChange}
-                  disabled={isLoadingVenues}
-                >
-                  {venues?.map((venue) => (
-                    <option key={venue.venueID} value={venue.venueID}>
-                      {venue.venueName}
-                    </option>
-                  ))}
-                  <option value="add_new">+ Add New Venue</option>
-                </Select>
+        <FormControl>
+          <FormLabel>Venue</FormLabel>
+          <VStack align="stretch" spacing={3}>
+            <Select
+              placeholder={isLoadingVenues ? "Loading venues..." : "Select venue"}
+              value={isAddingNewVenue ? 'add_new' : form.formData.venueID}
+              onChange={handleVenueSelectChange}
+              disabled={isLoadingVenues}
+            >
+              {venues?.map((venue) => (
+                <option key={venue.venueID} value={venue.venueID}>
+                  {venue.venueName}
+                </option>
+              ))}
+              <option value="add_new">+ Add New Venue</option>
+            </Select>
 
-                {isAddingNewVenue && (
-                  <Input
-                    placeholder="Enter venue name"
-                    value={newVenueName}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewVenueName(e.target.value)}
-                  />
-                )}
-              </VStack>
-            </FormControl>
-
-            <FormInput
-              form={form}
-              name="showDate"
-              label="Show Date"
-              type="datetime-local"
-            />
-
-            <FormInput
-              form={form}
-              name="deadline"
-              label="Script Deadline"
-              type="datetime-local"
-            />
-
-            <FormControl>
-              <FormLabel>Notes</FormLabel>
-              <Textarea
-                placeholder="Additional notes about this show"
-                value={form.formData.showNotes}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => form.updateField('showNotes', e.target.value)}
-                onBlur={() => form.validateField('showNotes')}
-                rows={2}
-                resize="vertical"
+            {isAddingNewVenue && (
+              <Input
+                placeholder="Enter venue name"
+                value={newVenueName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewVenueName(e.target.value)}
               />
-            </FormControl>
-
+            )}
           </VStack>
-        </ModalBody>
+        </FormControl>
 
-        <ModalFooter>
-          <Button
-            size="sm"
-            mr={3}
-            onClick={handleModalClose}
-            _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
-          >
-            Cancel
-          </Button>
-          <Button
-            bg="blue.400"
-            color="white"
-            size="sm"
-            type="submit"
-            isLoading={form.isSubmitting}
-            isDisabled={!isFormValid()}
-            _hover={{ bg: 'orange.400' }}
-          >
-            Create Show
-          </Button>
-        </ModalFooter>
-        
-        {/* Show form-level validation errors */}
-        {form.fieldErrors.length > 0 && (
-          <Box p={3} bg="red.500" color="white" borderRadius="md" mx={6} mb={6}>
-            <Text fontWeight="semibold" mb={2}>Validation Errors:</Text>
-            {form.fieldErrors.map((error, i) => (
-              <Text key={i} fontSize="sm">
-                • {error.message}
-              </Text>
-            ))}
-          </Box>
-        )}
-      </ModalContent>
-    </Modal>
-    </ErrorBoundary>
+        <FormInput
+          form={form}
+          name="showDate"
+          label="Show Date"
+          type="datetime-local"
+        />
+
+        <FormInput
+          form={form}
+          name="deadline"
+          label="Script Deadline"
+          type="datetime-local"
+        />
+
+        <FormControl>
+          <FormLabel>Notes</FormLabel>
+          <Textarea
+            placeholder="Additional notes about this show"
+            value={form.formData.showNotes}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => form.updateField('showNotes', e.target.value)}
+            onBlur={() => form.validateField('showNotes')}
+            rows={2}
+            resize="vertical"
+          />
+        </FormControl>
+      </VStack>
+    </BaseModal>
   );
 };

@@ -1,14 +1,5 @@
-// frontend/src/components/modals/CreateDepartmentModal.tsx
-
 import React from 'react';
 import {
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalFooter,
-    ModalBody,
-    ModalCloseButton,
     Button,
     FormControl,
     FormLabel,
@@ -22,7 +13,8 @@ import {
 import { useValidatedForm } from '../../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../../types/validation';
 import { FormInput } from '../form/FormField';
-import { ErrorBoundary } from '../ErrorBoundary';
+import { BaseModal } from '../base/BaseModal';
+import { useStandardFormValidation } from '../../hooks/useFormValidation';
 
 // TypeScript interfaces
 interface DepartmentFormData {
@@ -137,129 +129,91 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
         form.updateField('departmentColor', colorValue);
     };
 
-    const isFormValid = (): boolean => {
-        return form.formData.departmentName.trim() !== '';
-    };
+    const { canSubmit } = useStandardFormValidation(form, ['departmentName']);
 
     return (
-        <ErrorBoundary context="CreateDepartmentModal">
-            <Modal isOpen={isOpen} onClose={handleModalClose} onCloseComplete={form.resetForm}>
-                <ModalOverlay />
-                <ModalContent
-                    as="form"
-                    onSubmit={handleSubmit}
-                    bg="page.background"
-                    border="2px solid"
-                    borderColor="gray.600"
-                >
-                    <ModalHeader>Create New Department</ModalHeader>
-                    <ModalCloseButton />
-                    <ModalBody pb={6}>
-                        <VStack spacing={4} align="stretch">
-                            <FormInput
-                                form={form}
-                                name="departmentName"
-                                label="Department Name"
-                                placeholder="Enter department name"
-                                isRequired
+        <BaseModal
+            title="Create New Department"
+            isOpen={isOpen}
+            onClose={handleModalClose}
+            onCloseComplete={form.resetForm}
+            onSubmit={handleSubmit}
+            primaryAction={{
+                label: "Create Department",
+                variant: "primary",
+                isLoading: form.isSubmitting,
+                isDisabled: !canSubmit
+            }}
+            validationErrors={form.fieldErrors}
+            showValidationErrors={form.fieldErrors.length > 0}
+            errorBoundaryContext="CreateDepartmentModal"
+        >
+            <VStack spacing={4} align="stretch">
+                <FormInput
+                    form={form}
+                    name="departmentName"
+                    label="Department Name"
+                    placeholder="Enter department name"
+                    isRequired
+                />
+
+                <FormControl>
+                    <FormLabel>Department Color</FormLabel>
+                    <VStack align="stretch" spacing={3}>
+                        <HStack>
+                            <Input
+                                type="color"
+                                value={form.formData.departmentColor}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('departmentColor', e.target.value)}
+                                width="60px"
+                                height="40px"
+                                padding="1"
+                                cursor="pointer"
                             />
-
-                        <FormControl>
-                            <FormLabel>Department Color</FormLabel>
-                            <VStack align="stretch" spacing={3}>
-                                <HStack>
-                                    <Input
-                                        type="color"
-                                        value={form.formData.departmentColor}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('departmentColor', e.target.value)}
-                                        width="60px"
-                                        height="40px"
-                                        padding="1"
-                                        cursor="pointer"
-                                    />
-                                    <Input
-                                        value={form.formData.departmentColor}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('departmentColor', e.target.value)}
-                                        placeholder="#6495ED"
-                                        flex="1"
-                                    />
-                                </HStack>
-                                <Box>
-                                    <Text fontSize="sm" color="gray.500" mb={2}>
-                                        Quick Colors:
-                                    </Text>
-                                    <HStack spacing={2} flexWrap="wrap">
-                                        {PRESET_COLORS.map((color) => (
-                                            <Button
-                                                key={color.value}
-                                                size="sm"
-                                                height="30px"
-                                                width="30px"
-                                                minWidth="30px"
-                                                backgroundColor={color.value}
-                                                border={form.formData.departmentColor === color.value ? '3px solid' : '1px solid'}
-                                                borderColor={form.formData.departmentColor === color.value ? 'white' : 'gray.300'}
-                                                onClick={() => handleColorButtonClick(color.value)}
-                                                _hover={{ transform: 'scale(1.1)' }}
-                                                title={color.name}
-                                            />
-                                        ))}
-                                    </HStack>
-                                </Box>
-                            </VStack>
-                        </FormControl>
-
-                            <FormControl>
-                                <FormLabel>Description</FormLabel>
-                                <Textarea
-                                    placeholder="Describe the department's role and responsibilities"
-                                    value={form.formData.departmentDescription}
-                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => form.updateField('departmentDescription', e.target.value)}
-                                    onBlur={() => form.validateField('departmentDescription')}
-                                    rows={2}
-                                    resize="vertical"
-                                />
-                            </FormControl>
-
-
-                    </VStack>
-                </ModalBody>
-
-                <ModalFooter>
-                    <Button
-                        size="sm"
-                        mr={3}
-                        onClick={handleModalClose}
-                        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        bg="blue.400"
-                        color="white"
-                        size="sm"
-                        type="submit"
-                        isLoading={form.isSubmitting}
-                        isDisabled={!isFormValid()}
-                        _hover={{ bg: 'orange.400' }}
-                    >
-                        Create Department
-                    </Button>
-                </ModalFooter>
-                
-                {/* Show form-level validation errors */}
-                {form.fieldErrors.length > 0 && (
-                    <Box p={3} bg="red.500" color="white" borderRadius="md" mx={6} mb={6}>
-                        <Text fontWeight="semibold" mb={2}>Validation Errors:</Text>
-                        {form.fieldErrors.map((error, i) => (
-                            <Text key={i} fontSize="sm">
-                                • {error.message}
+                            <Input
+                                value={form.formData.departmentColor}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('departmentColor', e.target.value)}
+                                placeholder="#6495ED"
+                                flex="1"
+                            />
+                        </HStack>
+                        <Box>
+                            <Text fontSize="sm" color="gray.500" mb={2}>
+                                Quick Colors:
                             </Text>
-                        ))}
-                    </Box>
-                )}
-            </ModalContent>
-        </Modal>
-        </ErrorBoundary>
+                            <HStack spacing={2} flexWrap="wrap">
+                                {PRESET_COLORS.map((color) => (
+                                    <Button
+                                        key={color.value}
+                                        size="sm"
+                                        height="30px"
+                                        width="30px"
+                                        minWidth="30px"
+                                        backgroundColor={color.value}
+                                        border={form.formData.departmentColor === color.value ? '3px solid' : '1px solid'}
+                                        borderColor={form.formData.departmentColor === color.value ? 'white' : 'gray.300'}
+                                        onClick={() => handleColorButtonClick(color.value)}
+                                        _hover={{ transform: 'scale(1.1)' }}
+                                        title={color.name}
+                                    />
+                                ))}
+                            </HStack>
+                        </Box>
+                    </VStack>
+                </FormControl>
+
+                <FormControl>
+                    <FormLabel>Description</FormLabel>
+                    <Textarea
+                        placeholder="Describe the department's role and responsibilities"
+                        value={form.formData.departmentDescription}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => form.updateField('departmentDescription', e.target.value)}
+                        onBlur={() => form.validateField('departmentDescription')}
+                        rows={2}
+                        resize="vertical"
+                    />
+                </FormControl>
+            </VStack>
+        </BaseModal>
     );
 };

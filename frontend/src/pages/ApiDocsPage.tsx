@@ -39,11 +39,10 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
   const apiOverviewContent = (
     <VStack spacing={6} align="stretch">
       <Box>
-        <Text fontSize="lg" fontWeight="semibold" mb={3}>API Endpoints Overview</Text>
         <VStack spacing={3} align="stretch">
           <Box p={4} border="1px solid" borderColor={borderColor} borderRadius="md">
             <HStack justify="space-between" mb={2}>
-              <Text fontWeight="semibold">Authentication & Users</Text>
+              <Text fontWeight="semibold">Authentication</Text>
               <Badge colorScheme="blue">POST, GET</Badge>
             </HStack>
             <Text fontSize="sm" color="gray.600">
@@ -119,23 +118,6 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
             </Text>
           </Box>
         </VStack>
-      </Box>
-
-      <Box>
-        <Text fontSize="md" fontWeight="semibold" mb={3}>Authentication</Text>
-        <Text fontSize="sm" color="gray.600" mb={2}>
-          All API endpoints (except health check and webhooks) require JWT authentication via Clerk.
-        </Text>
-        <Text fontSize="sm" color="gray.600">
-          Include the JWT token in the Authorization header: <code>Bearer &lt;token&gt;</code>
-        </Text>
-      </Box>
-
-      <Box>
-        <Text fontSize="md" fontWeight="semibold" mb={3}>Base URL</Text>
-        <Text fontSize="sm" color="gray.600">
-          All API endpoints are prefixed with <code>/api/</code>
-        </Text>
       </Box>
     </VStack>
   );

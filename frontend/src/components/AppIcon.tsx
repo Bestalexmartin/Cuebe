@@ -12,6 +12,11 @@ import { FaCompass } from "react-icons/fa";
 import { EditIcon } from "@chakra-ui/icons";
 import { GoSortAsc, GoSortDesc, GoAlertFill } from "react-icons/go";
 import { MdOutlineMenuBook } from "react-icons/md";
+import { SiDocsify } from "react-icons/si";
+import { VscCode } from "react-icons/vsc";
+import { MdSpeed } from "react-icons/md";
+import { BiTestTube } from "react-icons/bi";
+import { FaArchive } from "react-icons/fa";
 
 // TypeScript interfaces
 type IconName =
@@ -29,7 +34,12 @@ type IconName =
   | 'desc'
   | 'compass'
   | 'copy'
-  | 'api-docs';
+  | 'api-docs'
+  | 'docs'
+  | 'component'
+  | 'performance'
+  | 'test'
+  | 'archive';
 
 interface AppIconProps extends Omit<IconProps, 'as'> {
   name: IconName;
@@ -67,6 +77,16 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={CopyIcon} {...props} />;
     case 'api-docs':
       return <Icon as={MdOutlineMenuBook} {...props} />;
+    case 'docs':
+      return <Icon as={SiDocsify} {...props} />;
+    case 'component':
+      return <Icon as={VscCode} {...props} />;
+    case 'performance':
+      return <Icon as={MdSpeed} {...props} />;
+    case 'test':
+      return <Icon as={BiTestTube} {...props} />;
+    case 'archive':
+      return <Icon as={FaArchive} {...props} />;
     default:
       return null;
   }
