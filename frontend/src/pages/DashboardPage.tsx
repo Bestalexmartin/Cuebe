@@ -60,7 +60,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
     handleDepartmentClick,
     handleCrewClick,
     showCardRefs,
-    shows: safeShows,
+    shows: _safeShows,
     handleViewChange: hookHandleViewChange,
     saveCurrentNavigationState,
     sortState,

@@ -25,9 +25,9 @@ interface ActionsMenuProps {
     isDisabled?: boolean;
 }
 
-export const ActionsMenu: React.FC<ActionsMenuProps> = ({ 
-    actions, 
-    isDisabled = false 
+export const ActionsMenu: React.FC<ActionsMenuProps> = ({
+    actions,
+    isDisabled = false
 }) => {
     if (actions.length === 0) return null;
 

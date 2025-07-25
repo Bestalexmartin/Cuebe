@@ -37,7 +37,7 @@ def rate_limit(limit_config):
 # =============================================================================
 
 @router.post("/webhooks/clerk")
-@rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 async def handle_clerk_webhook(
     request: Request,
     db: Session = Depends(get_db)
@@ -70,14 +70,14 @@ async def handle_clerk_webhook(
 
         if existing_user:
             # Update existing user (whether active guest or inactive user)
-            existing_user.isActive = True # type: ignore
+            setattr(existing_user, 'isActive', True)
             existing_user.clerk_user_id = new_clerk_id
             existing_user.userName = user_data.get('username')
-            existing_user.userStatus = models.UserStatus.VERIFIED # type: ignore
+            setattr(existing_user, 'userStatus', models.UserStatus.VERIFIED)
             # Update name and profile if provided by Clerk and not already set
-            if user_data.get('first_name') and not existing_user.fullnameFirst:
+            if user_data.get('first_name') and not bool(existing_user.fullnameFirst):
                 existing_user.fullnameFirst = user_data.get('first_name')
-            if user_data.get('last_name') and not existing_user.fullnameLast:
+            if user_data.get('last_name') and not bool(existing_user.fullnameLast):
                 existing_user.fullnameLast = user_data.get('last_name')
             if user_data.get('image_url'):
                 existing_user.profileImgURL = user_data.get('image_url')
@@ -113,7 +113,7 @@ async def handle_clerk_webhook(
         if clerk_id_to_delete:
             user_to_deactivate = db.query(models.User).filter(models.User.clerk_user_id == clerk_id_to_delete).first()
             if user_to_deactivate:
-                user_to_deactivate.isActive = False # type: ignore
+                setattr(user_to_deactivate, 'isActive', False)
                 db.commit()
                 logger.info(f"User {clerk_id_to_delete} deactivated.")
     
@@ -125,7 +125,7 @@ async def handle_clerk_webhook(
 # =============================================================================
 
 @router.get("/dev/diagnostics")
-@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 async def test_diagnostics(request: Request):
     """
     Diagnostic endpoint to check the testing environment
@@ -178,7 +178,7 @@ async def test_diagnostics(request: Request):
 
 
 @router.post("/dev/run-tests")
-@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 async def run_tests(
     request: Request,
     test_suite: str = "all"
@@ -245,6 +245,6 @@ async def run_tests(
 # =============================================================================
 
 @router.get("/health")
-@rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE else None)
+@rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 async def read_root(request: Request):
     return {"status": "ok"}

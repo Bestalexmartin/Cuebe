@@ -11,7 +11,7 @@ import { useValidatedForm } from '../../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../../types/validation';
 import { FormInput } from '../form/FormField';
 import { BaseModal } from '../base/BaseModal';
-import { useVenueFormValidation } from '../../hooks/useFormValidation';
+import { useStandardFormValidation } from '../../hooks/useFormValidation';
 import { useResource } from '../../hooks/useResource';
 import { convertLocalToUTC } from '../../utils/dateTimeUtils';
 
@@ -160,7 +160,7 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
     onClose();
   };
 
-  const { canSubmit } = useVenueFormValidation(form, isAddingNewVenue, newVenueName);
+  const { canSubmit } = useStandardFormValidation(form, ['showName']);
 
   return (
     <BaseModal
@@ -172,6 +172,7 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
       primaryAction={{
         label: "Create Show",
         variant: "primary",
+        onClick: () => handleSubmit({} as React.FormEvent<HTMLFormElement>),
         isLoading: form.isSubmitting,
         isDisabled: !canSubmit
       }}

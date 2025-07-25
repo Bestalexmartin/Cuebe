@@ -112,6 +112,7 @@ export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
             primaryAction={{
                 label: "Create Venue",
                 variant: "primary",
+                onClick: () => handleSubmit({} as React.FormEvent<HTMLFormElement>),
                 isLoading: form.isSubmitting,
                 isDisabled: !canSubmit
             }}
@@ -141,7 +142,6 @@ export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
                         name="state"
                         label="State"
                         placeholder="CA"
-                        maxLength={2}
                     />
                 </HStack>
             </VStack>

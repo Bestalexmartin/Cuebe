@@ -1,7 +1,7 @@
 // frontend/src/components/form/FormField.tsx
 
 import React from 'react';
-import { UseValidatedFormReturn } from '../../hooks/useValidatedForm';
+import { UseValidatedFormReturn, FormData } from '../../hooks/useValidatedForm';
 import {
   ValidatedInput,
   ValidatedTextarea,
@@ -12,7 +12,7 @@ import {
   ValidatedRadioGroup
 } from './ValidatedFormField';
 
-interface BaseFormFieldProps<T> {
+interface BaseFormFieldProps<T extends FormData> {
   form: UseValidatedFormReturn<T>;
   name: keyof T;
   label?: string;
@@ -20,40 +20,40 @@ interface BaseFormFieldProps<T> {
   isRequired?: boolean;
 }
 
-interface FormInputProps<T> extends BaseFormFieldProps<T> {
-  type?: 'text' | 'email' | 'password' | 'url' | 'tel';
+interface FormInputProps<T extends FormData> extends BaseFormFieldProps<T> {
+  type?: 'text' | 'email' | 'password' | 'url' | 'tel' | 'datetime-local';
   placeholder?: string;
 }
 
-interface FormTextareaProps<T> extends BaseFormFieldProps<T> {
+interface FormTextareaProps<T extends FormData> extends BaseFormFieldProps<T> {
   placeholder?: string;
   rows?: number;
 }
 
-interface FormSelectProps<T> extends BaseFormFieldProps<T> {
+interface FormSelectProps<T extends FormData> extends BaseFormFieldProps<T> {
   placeholder?: string;
   children: React.ReactNode;
 }
 
-interface FormNumberInputProps<T> extends BaseFormFieldProps<T> {
+interface FormNumberInputProps<T extends FormData> extends BaseFormFieldProps<T> {
   min?: number;
   max?: number;
   step?: number;
   precision?: number;
 }
 
-interface FormSwitchProps<T> extends BaseFormFieldProps<T> {}
+interface FormSwitchProps<T extends FormData> extends BaseFormFieldProps<T> {}
 
-interface FormCheckboxProps<T> extends BaseFormFieldProps<T> {
+interface FormCheckboxProps<T extends FormData> extends BaseFormFieldProps<T> {
   children: React.ReactNode;
 }
 
-interface FormRadioGroupProps<T> extends BaseFormFieldProps<T> {
+interface FormRadioGroupProps<T extends FormData> extends BaseFormFieldProps<T> {
   children: React.ReactNode;
   direction?: 'row' | 'column';
 }
 
-export const FormInput = <T extends Record<string, any>>({
+export const FormInput = <T extends FormData>({
   form,
   name,
   label,
@@ -81,7 +81,7 @@ export const FormInput = <T extends Record<string, any>>({
   );
 };
 
-export const FormTextarea = <T extends Record<string, any>>({
+export const FormTextarea = <T extends FormData>({
   form,
   name,
   label,
@@ -109,7 +109,7 @@ export const FormTextarea = <T extends Record<string, any>>({
   );
 };
 
-export const FormSelect = <T extends Record<string, any>>({
+export const FormSelect = <T extends FormData>({
   form,
   name,
   label,
@@ -138,7 +138,7 @@ export const FormSelect = <T extends Record<string, any>>({
   );
 };
 
-export const FormNumberInput = <T extends Record<string, any>>({
+export const FormNumberInput = <T extends FormData>({
   form,
   name,
   label,
@@ -170,7 +170,7 @@ export const FormNumberInput = <T extends Record<string, any>>({
   );
 };
 
-export const FormSwitch = <T extends Record<string, any>>({
+export const FormSwitch = <T extends FormData>({
   form,
   name,
   label,
@@ -194,7 +194,7 @@ export const FormSwitch = <T extends Record<string, any>>({
   );
 };
 
-export const FormCheckbox = <T extends Record<string, any>>({
+export const FormCheckbox = <T extends FormData>({
   form,
   name,
   label,
@@ -221,7 +221,7 @@ export const FormCheckbox = <T extends Record<string, any>>({
   );
 };
 
-export const FormRadioGroup = <T extends Record<string, any>>({
+export const FormRadioGroup = <T extends FormData>({
   form,
   name,
   label,

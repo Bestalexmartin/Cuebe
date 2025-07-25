@@ -50,7 +50,7 @@ export class ErrorBoundary extends Component<Props, State> {
   static getDerivedStateFromError(error: Error): State {
     // Generate a unique error ID for tracking
     const errorId = `ERR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     return {
       hasError: true,
       error,
@@ -80,7 +80,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.props.onError?.(error, errorInfo);
 
     // In production, you might want to send this to an error reporting service
-    if (process.env.NODE_ENV === 'production') {
+    if ((import.meta as any).env.PROD) {
       // Example: sendErrorReport(error, errorInfo, this.state.errorId);
     }
   }
@@ -106,7 +106,7 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       // Default error UI
-      return <ErrorFallback 
+      return <ErrorFallback
         error={this.state.error}
         errorInfo={this.state.errorInfo}
         errorId={this.state.errorId}
@@ -166,7 +166,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
           <Box>
             <AlertTitle>Component Error!</AlertTitle>
             <AlertDescription>
-              {context 
+              {context
                 ? `An error occurred in ${context}. The component has crashed but the rest of the application should continue working.`
                 : 'A component has crashed, but the rest of the application should continue working.'
               }
@@ -229,11 +229,11 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                       <Text fontSize="sm" fontWeight="semibold" mb={2}>
                         Error Stack:
                       </Text>
-                      <Code 
-                        p={3} 
-                        borderRadius="md" 
-                        fontSize="xs" 
-                        display="block" 
+                      <Code
+                        p={3}
+                        borderRadius="md"
+                        fontSize="xs"
+                        display="block"
                         whiteSpace="pre-wrap"
                         maxH="200px"
                         overflowY="auto"
@@ -242,17 +242,17 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
                       </Code>
                     </Box>
                   )}
-                  
+
                   {errorInfo?.componentStack && (
                     <Box>
                       <Text fontSize="sm" fontWeight="semibold" mb={2}>
                         Component Stack:
                       </Text>
-                      <Code 
-                        p={3} 
-                        borderRadius="md" 
-                        fontSize="xs" 
-                        display="block" 
+                      <Code
+                        p={3}
+                        borderRadius="md"
+                        fontSize="xs"
+                        display="block"
                         whiteSpace="pre-wrap"
                         maxH="200px"
                         overflowY="auto"

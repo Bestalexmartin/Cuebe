@@ -110,6 +110,7 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
             primaryAction={{
                 label: "Create Script",
                 variant: "primary",
+                onClick: () => handleSubmit({} as React.FormEvent<HTMLFormElement>),
                 isLoading: form.isSubmitting,
                 isDisabled: !canSubmit
             }}

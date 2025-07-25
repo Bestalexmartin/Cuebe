@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session, joinedload
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 import models
@@ -116,7 +116,7 @@ async def update_show(
         setattr(show_to_update, key, value)
     
     # Update the dateUpdated timestamp
-    show_to_update.dateUpdated = datetime.utcnow() # type: ignore
+    setattr(show_to_update, 'dateUpdated', datetime.now(timezone.utc))
     
     db.commit()
     db.refresh(show_to_update)
@@ -193,7 +193,7 @@ async def create_script_for_show(
     new_script = models.Script(
         showID=show_id,
         scriptName=script.scriptName or "New Script",
-        scriptStatus=models.ScriptStatus(script.scriptStatus) if script.scriptStatus else models.ScriptStatus.DRAFT,
+        scriptStatus=models.ScriptStatus(script.scriptStatus) if script.scriptStatus is not None else models.ScriptStatus.DRAFT,
         startTime=show.showDate,  # Inherit show datetime as start time
         ownerID=user.userID
     )
@@ -267,7 +267,7 @@ async def update_script(
             setattr(script, field, value)
     
     # Update the dateUpdated timestamp
-    script.dateUpdated = datetime.utcnow() # type: ignore
+    setattr(script, 'dateUpdated', datetime.now(timezone.utc))
     
     try:
         db.commit()

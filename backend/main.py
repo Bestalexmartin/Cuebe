@@ -37,12 +37,12 @@ app = FastAPI(
 )
 
 # Add rate limiting if available
-if RATE_LIMITING_ENABLED:
+if RATE_LIMITING_ENABLED and RateLimitExceeded is not None and rate_limit_exceeded_handler is not None:
     # Add rate limiter to app state
     app.state.limiter = limiter
     
     # Add rate limit exception handler
-    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)  # type: ignore[arg-type]
     logger.info("Rate limiting enabled")
 else:
     logger.warning("Rate limiting disabled - slowapi package not available")

@@ -6,7 +6,6 @@ import {
   Text,
   VStack,
   HStack,
-  Heading,
   Badge,
   Code,
   Accordion,

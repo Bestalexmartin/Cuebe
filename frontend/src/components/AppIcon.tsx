@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Icon, IconProps } from "@chakra-ui/react";
-import { ChevronDownIcon, DeleteIcon, WarningIcon, CopyIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, DeleteIcon, CopyIcon } from '@chakra-ui/icons';
 import { TiPin } from "react-icons/ti";
 import { IoPeopleSharp } from "react-icons/io5";
 import { CiMenuBurger } from "react-icons/ci";
@@ -19,7 +19,7 @@ import { BiTestTube } from "react-icons/bi";
 import { FaArchive } from "react-icons/fa";
 
 // TypeScript interfaces
-type IconName =
+export type IconName =
   | 'openmenu'
   | 'hamburger'
   | 'edit'
