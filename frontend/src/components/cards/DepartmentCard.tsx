@@ -1,17 +1,11 @@
-// frontend/src/DepartmentCard.tsx
-
 import React from 'react';
 import {
     Box,
-    Flex,
     HStack,
     VStack,
     Text,
-    Collapse,
-    Button,
-    Heading
 } from "@chakra-ui/react";
-import { AppIcon } from '../AppIcon';
+import { BaseCard, BaseCardAction } from '../base/BaseCard';
 import { formatDateTimeLocal } from '../../utils/dateTimeUtils';
 
 // TypeScript interfaces
@@ -32,19 +26,19 @@ interface DepartmentCardProps {
     isSelected: boolean;
     onHover?: (departmentId: string | null) => void;
     onSaveNavigationState?: () => void;
+    isLoading?: boolean;
 }
 
-export const DepartmentCard: React.FC<DepartmentCardProps> = ({
+const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
     department,
     onEdit,
     onDepartmentClick,
     isHovered,
     isSelected,
     onHover,
-    onSaveNavigationState
+    onSaveNavigationState,
+    isLoading = false,
 }) => {
-    const borderColor = isHovered ? 'orange.400' : isSelected ? 'blue.400' : 'gray.600';
-
     const handleEditClick = (e: React.MouseEvent) => {
         e.stopPropagation();
 
@@ -55,112 +49,105 @@ export const DepartmentCard: React.FC<DepartmentCardProps> = ({
         onEdit(department.departmentID);
     };
 
-    return (
-        <Box
-            p="4"
-            borderWidth="2px"
-            borderRadius="md"
-            shadow="sm"
-            cursor="pointer"
-            borderColor={borderColor}
-            _hover={{ borderColor: 'orange.400' }}
-            onMouseEnter={() => onHover?.(department.departmentID)}
-            onMouseLeave={() => onHover?.(null)}
-            onClick={() => onDepartmentClick(department.departmentID)}
-        >
-            {/* Header Row */}
-            <Flex justify="space-between" align="center" mb={2}>
-                <Flex align="center" gap="3">
-                    {/* Color chip on the left */}
-                    {department.departmentColor && (
+    const headerBadges = (
+        <>
+            {department.departmentColor && (
+                <Box
+                    w="32px"
+                    h="32px"
+                    borderRadius="full"
+                    bg={department.departmentColor}
+                    border="2px solid"
+                    borderColor="gray.300"
+                    _dark={{ borderColor: "gray.600" }}
+                    flexShrink="0"
+                />
+            )}
+        </>
+    );
+
+    const headerActions: BaseCardAction[] = [
+        {
+            label: "Edit",
+            icon: "edit",
+            onClick: handleEditClick,
+            'aria-label': "Edit Department"
+        }
+    ];
+
+    const quickInfo = (
+        <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text" ml={4}>
+            <HStack justify="space-between">
+                <Text>0 crew members</Text>
+                <Text fontSize="xs">
+                    Created: {formatDateTimeLocal(department.dateCreated || department.dateUpdated)}
+                </Text>
+            </HStack>
+            <HStack justify="space-between">
+                <Text>0 shows assigned</Text>
+                <Text fontSize="xs">
+                    Updated: {formatDateTimeLocal(department.dateUpdated || department.dateCreated)}
+                </Text>
+            </HStack>
+        </VStack>
+    );
+
+    const expandedContent = (
+        <>
+            {/* Color Information */}
+            {department.departmentColor && (
+                <Box>
+                    <Text fontWeight="semibold" mb={2}>Department Color</Text>
+                    <HStack spacing="3" align="center" ml={4}>
                         <Box
-                            w="32px"
-                            h="32px"
-                            borderRadius="full"
+                            w="40px"
+                            h="40px"
+                            borderRadius="md"
                             bg={department.departmentColor}
                             border="2px solid"
                             borderColor="gray.300"
                             _dark={{ borderColor: "gray.600" }}
-                            flexShrink="0"
                         />
-                    )}
-
-                    {/* Department name */}
-                    <Heading size="sm">{department.departmentName}</Heading>
-                </Flex>
-
-                {isSelected && (
-                    <HStack spacing="1" flexShrink="0">
-                        <Button
-                            aria-label="Edit Department"
-                            leftIcon={<AppIcon name="edit" boxSize="12px" />}
-                            size="xs"
-                            onClick={handleEditClick}
-                        >
-                            Edit
-                        </Button>
-                    </HStack>
-                )}
-            </Flex>
-
-            {/* Quick Info Row */}
-            <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text" ml={4}>
-                <HStack justify="space-between">
-                    <Text>0 crew members</Text>
-                    <Text fontSize="xs">
-                        Created: {formatDateTimeLocal(department.dateCreated || department.dateUpdated)}
-                    </Text>
-                </HStack>
-                <HStack justify="space-between">
-                    <Text>0 shows assigned</Text>
-                    <Text fontSize="xs">
-                        Updated: {formatDateTimeLocal(department.dateUpdated || department.dateCreated)}
-                    </Text>
-                </HStack>
-            </VStack>
-
-            {/* Expandable Details - only show when selected */}
-            <Collapse in={isSelected} animateOpacity>
-                <VStack align="stretch" spacing="3" mt="4" pt="3" borderTop="1px solid" borderColor="ui.border">
-
-                    {/* Color Information */}
-                    {department.departmentColor && (
-                        <Box>
-                            <Text fontWeight="semibold" mb={2}>Department Color</Text>
-                            <HStack spacing="3" align="center" ml={4}>
-                                <Box
-                                    w="40px"
-                                    h="40px"
-                                    borderRadius="md"
-                                    bg={department.departmentColor}
-                                    border="2px solid"
-                                    borderColor="gray.300"
-                                    _dark={{ borderColor: "gray.600" }}
-                                />
-                                <VStack align="start" spacing="0">
-                                    <Text fontSize="sm" fontWeight="medium">
-                                        {department.departmentColor.toUpperCase()}
-                                    </Text>
-                                    <Text fontSize="xs" color="detail.text">
-                                        Hex Color Code
-                                    </Text>
-                                </VStack>
-                            </HStack>
-                        </Box>
-                    )}
-
-                    {/* Full Description */}
-                    {department.departmentDescription && (
-                        <Box>
-                            <Text fontWeight="semibold" mb={2}>Description</Text>
-                            <Text fontSize="sm" color="detail.text" ml={4}>
-                                {department.departmentDescription}
+                        <VStack align="start" spacing="0">
+                            <Text fontSize="sm" fontWeight="medium">
+                                {department.departmentColor.toUpperCase()}
                             </Text>
-                        </Box>
-                    )}
+                            <Text fontSize="xs" color="detail.text">
+                                Hex Color Code
+                            </Text>
+                        </VStack>
+                    </HStack>
+                </Box>
+            )}
 
-                </VStack>
-            </Collapse>
-        </Box >
+            {/* Full Description */}
+            {department.departmentDescription && (
+                <Box>
+                    <Text fontWeight="semibold" mb={2}>Description</Text>
+                    <Text fontSize="sm" color="detail.text" ml={4}>
+                        {department.departmentDescription}
+                    </Text>
+                </Box>
+            )}
+        </>
+    );
+
+    return (
+        <BaseCard
+            title={department.departmentName}
+            cardId={department.departmentID}
+            isSelected={isSelected}
+            isHovered={isHovered}
+            onCardClick={() => onDepartmentClick(department.departmentID)}
+            onHover={onHover}
+            headerBadges={headerBadges}
+            headerActions={headerActions}
+            quickInfo={quickInfo}
+            expandedContent={expandedContent}
+            isLoading={isLoading}
+            skeletonVariant="department"
+        />
     );
 };
+
+export const DepartmentCard = React.memo(DepartmentCardComponent);

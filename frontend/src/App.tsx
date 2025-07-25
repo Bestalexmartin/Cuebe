@@ -17,6 +17,7 @@ import { EditCrewPage } from './pages/edit/EditCrewPage';
 import { TutorialPage } from './pages/TutorialPage';
 import { TestToolsPage } from './pages/TestToolsPage';
 import { ApiDocsPage } from './pages/ApiDocsPage';
+import { DocumentationPage } from './pages/DocumentationPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 // TypeScript interfaces
@@ -111,6 +112,12 @@ const App: React.FC = () => {
           <Route path="/api-documentation" element={
             <ProtectedRoute>
               <ApiDocsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/docs" element={
+            <ProtectedRoute>
+              <DocumentationPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
             </ProtectedRoute>
           } />
 

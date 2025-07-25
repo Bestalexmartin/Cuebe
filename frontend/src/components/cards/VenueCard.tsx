@@ -1,18 +1,13 @@
-// frontend/src/VenueCard.tsx
-
 import React from 'react';
 import {
-    Box,
-    Flex,
     HStack,
     VStack,
     Text,
     Badge,
-    Collapse,
-    Button,
-    Heading
+    Box,
+    Flex,
 } from "@chakra-ui/react";
-import { AppIcon } from '../AppIcon';
+import { BaseCard, BaseCardAction } from '../base/BaseCard';
 import { formatDateTimeLocal } from '../../utils/dateTimeUtils';
 
 // TypeScript interfaces
@@ -45,9 +40,10 @@ interface VenueCardProps {
     isSelected: boolean;
     onHover?: (venueId: string | null) => void;
     onSaveNavigationState?: () => void;
+    isLoading?: boolean;
 }
 
-export const VenueCard: React.FC<VenueCardProps> = ({
+const VenueCardComponent: React.FC<VenueCardProps> = ({
     venue,
     onEdit,
     onVenueClick,
@@ -55,10 +51,9 @@ export const VenueCard: React.FC<VenueCardProps> = ({
     isHovered,
     isSelected,
     onHover,
-    onSaveNavigationState
+    onSaveNavigationState,
+    isLoading = false
 }) => {
-    const borderColor = isHovered ? 'orange.400' : isSelected ? 'blue.400' : 'gray.600';
-
     const handleEditClick = (e: React.MouseEvent) => {
         e.stopPropagation();
 
@@ -74,140 +69,138 @@ export const VenueCard: React.FC<VenueCardProps> = ({
         return capacity.toLocaleString();
     };
 
-    return (
-        <Box
-            p="4"
-            borderWidth="2px"
-            borderRadius="md"
-            shadow="sm"
-            cursor="pointer"
-            borderColor={borderColor}
-            _hover={{ borderColor: 'orange.400' }}
-            onMouseEnter={() => onHover?.(venue.venueID)}
-            onMouseLeave={() => onHover?.(null)}
-            onClick={() => onVenueClick(venue.venueID)}
-        >
-            {/* Header Row */}
-            <Flex justify="space-between" align="center" mb={2}>
-                <Flex align="center" gap="3">
-                    <Heading size="sm">{venue.venueName}</Heading>
-                    {showCount > 0 && (
-                        <Badge colorScheme="blue" variant="subtle">
-                            {showCount} show{showCount !== 1 ? 's' : ''}
+    const headerBadges = (
+        <>
+            {showCount > 0 && (
+                <Badge colorScheme="blue" variant="subtle">
+                    {showCount} show{showCount !== 1 ? 's' : ''}
+                </Badge>
+            )}
+        </>
+    );
+
+    const headerActions: BaseCardAction[] = [
+        {
+            label: "Edit",
+            icon: "edit",
+            onClick: handleEditClick,
+            'aria-label': "Edit venue"
+        }
+    ];
+
+    const quickInfo = (
+        <VStack align="stretch" spacing="1" color="detail.text" fontSize="sm" ml={4}>
+            <HStack justify="space-between">
+                <HStack spacing="4">
+                    {venue.venueType && (
+                        <Badge variant="outline" colorScheme="green">
+                            {venue.venueType}
                         </Badge>
                     )}
-                </Flex>
-
-                <HStack spacing="1" opacity={isSelected ? 1 : 0} pointerEvents={isSelected ? "auto" : "none"}>
-                    <Button
-                        aria-label="Edit venue"
-                        leftIcon={<AppIcon name="edit" boxSize="12px" />}
-                        size="xs"
-                        onClick={handleEditClick}
-                    >
-                        Edit
-                    </Button>
-                </HStack>
-            </Flex>
-
-            {/* Quick Info Rows */}
-            <VStack align="stretch" spacing="1" color="detail.text" fontSize="sm" ml={4}>
-                <HStack justify="space-between">
-                    <HStack spacing="4">
-                        {venue.venueType && (
-                            <Badge variant="outline" colorScheme="green">
-                                {venue.venueType}
-                            </Badge>
-                        )}
-                        {venue.capacity && (
-                            <Text>
-                                Capacity: {formatCapacity(venue.capacity)}
-                            </Text>
-                        )}
-                    </HStack>
-                    <Text fontSize="xs">
-                        Created: {formatDateTimeLocal(venue.dateCreated || venue.dateUpdated)}
-                    </Text>
-                </HStack>
-                <HStack justify="space-between">
-                    {venue.address ? (
-                        <Text isTruncated>
-                            {venue.address}
+                    {venue.capacity && (
+                        <Text>
+                            Capacity: {formatCapacity(venue.capacity)}
                         </Text>
-                    ) : (
-                        <Box />
                     )}
-                    <Text fontSize="xs">
-                        Updated: {formatDateTimeLocal(venue.dateUpdated || venue.dateCreated)}
-                    </Text>
                 </HStack>
-            </VStack>
+                <Text fontSize="xs">
+                    Created: {formatDateTimeLocal(venue.dateCreated || venue.dateUpdated)}
+                </Text>
+            </HStack>
+            <HStack justify="space-between">
+                {venue.address ? (
+                    <Text isTruncated>
+                        {venue.address}
+                    </Text>
+                ) : (
+                    <Box />
+                )}
+                <Text fontSize="xs">
+                    Updated: {formatDateTimeLocal(venue.dateUpdated || venue.dateCreated)}
+                </Text>
+            </HStack>
+        </VStack>
+    );
 
-            {/* Expandable Details - only show when selected */}
-            <Collapse in={isSelected} animateOpacity>
-                <VStack align="stretch" spacing="3" mt="4" pt="3" borderTop="1px solid" borderColor="ui.border">
+    const expandedContent = (
+        <>
+            {/* Contact Information */}
+            {(venue.contactName || venue.contactEmail || venue.contactPhone) && (
+                <Box>
+                    <Text fontWeight="semibold" mb={2}>Contact Information</Text>
+                    <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text" ml={4}>
+                        {venue.contactName && <Text>Contact: {venue.contactName}</Text>}
+                        {venue.contactEmail && <Text>Email: {venue.contactEmail}</Text>}
+                        {venue.contactPhone && <Text>Phone: {venue.contactPhone}</Text>}
+                    </VStack>
+                </Box>
+            )}
 
-                    {/* Contact Information */}
-                    {(venue.contactName || venue.contactEmail || venue.contactPhone) && (
-                        <Box>
-                            <Text fontWeight="semibold" mb={2}>Contact Information</Text>
-                            <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text" ml={4}>
-                                {venue.contactName && <Text>Contact: {venue.contactName}</Text>}
-                                {venue.contactEmail && <Text>Email: {venue.contactEmail}</Text>}
-                                {venue.contactPhone && <Text>Phone: {venue.contactPhone}</Text>}
-                            </VStack>
-                        </Box>
-                    )}
+            {/* Technical Specifications */}
+            {(venue.stageWidth || venue.stageDepth || venue.flyHeight) && (
+                <Box>
+                    <Text fontWeight="semibold" mb={2}>Technical Specifications</Text>
+                    <HStack spacing="4" fontSize="sm" color="detail.text" ml={4}>
+                        {venue.stageWidth && <Text>Width: {venue.stageWidth} ft</Text>}
+                        {venue.stageDepth && <Text>Depth: {venue.stageDepth} ft</Text>}
+                        {venue.flyHeight && <Text>Fly Height: {venue.flyHeight} ft</Text>}
+                    </HStack>
+                </Box>
+            )}
 
-                    {/* Technical Specifications */}
-                    {(venue.stageWidth || venue.stageDepth || venue.flyHeight) && (
-                        <Box>
-                            <Text fontWeight="semibold" mb={2}>Technical Specifications</Text>
-                            <HStack spacing="4" fontSize="sm" color="detail.text" ml={4}>
-                                {venue.stageWidth && <Text>Width: {venue.stageWidth} ft</Text>}
-                                {venue.stageDepth && <Text>Depth: {venue.stageDepth} ft</Text>}
-                                {venue.flyHeight && <Text>Fly Height: {venue.flyHeight} ft</Text>}
-                            </HStack>
-                        </Box>
-                    )}
+            {/* Equipment & Features */}
+            {venue.equipment && venue.equipment.length > 0 && (
+                <Box>
+                    <Text fontWeight="semibold" mb={2}>Available Equipment</Text>
+                    <Flex wrap="wrap" gap="1" ml={4}>
+                        {venue.equipment.map((item, index) => (
+                            <Badge key={index} variant="subtle" colorScheme="purple">
+                                {item}
+                            </Badge>
+                        ))}
+                    </Flex>
+                </Box>
+            )}
 
-                    {/* Equipment & Features */}
-                    {venue.equipment && venue.equipment.length > 0 && (
-                        <Box>
-                            <Text fontWeight="semibold" mb={2}>Available Equipment</Text>
-                            <Flex wrap="wrap" gap="1" ml={4}>
-                                {venue.equipment.map((item, index) => (
-                                    <Badge key={index} variant="subtle" colorScheme="purple">
-                                        {item}
-                                    </Badge>
-                                ))}
-                            </Flex>
-                        </Box>
-                    )}
+            {/* Rental Information */}
+            {(venue.rentalRate || venue.minimumRental) && (
+                <Box>
+                    <Text fontWeight="semibold" mb={2}>Rental Information</Text>
+                    <HStack spacing="4" fontSize="sm" color="detail.text" ml={4}>
+                        {venue.rentalRate && <Text>Daily Rate: ${venue.rentalRate}</Text>}
+                        {venue.minimumRental && <Text>Minimum: ${venue.minimumRental}</Text>}
+                    </HStack>
+                </Box>
+            )}
 
-                    {/* Rental Information */}
-                    {(venue.rentalRate || venue.minimumRental) && (
-                        <Box>
-                            <Text fontWeight="semibold" mb={2}>Rental Information</Text>
-                            <HStack spacing="4" fontSize="sm" color="detail.text" ml={4}>
-                                {venue.rentalRate && <Text>Daily Rate: ${venue.rentalRate}</Text>}
-                                {venue.minimumRental && <Text>Minimum: ${venue.minimumRental}</Text>}
-                            </HStack>
-                        </Box>
-                    )}
+            {/* Notes */}
+            {venue.notes && (
+                <Box>
+                    <Text fontWeight="semibold" mb={2}>Notes</Text>
+                    <Text fontSize="sm" color="detail.text" ml={4}>
+                        {venue.notes}
+                    </Text>
+                </Box>
+            )}
+        </>
+    );
 
-                    {/* Notes */}
-                    {venue.notes && (
-                        <Box>
-                            <Text fontWeight="semibold" mb={2}>Notes</Text>
-                            <Text fontSize="sm" color="detail.text" ml={4}>
-                                {venue.notes}
-                            </Text>
-                        </Box>
-                    )}
-
-                </VStack>
-            </Collapse>
-        </Box>
+    return (
+        <BaseCard
+            title={venue.venueName}
+            cardId={venue.venueID}
+            isSelected={isSelected}
+            isHovered={isHovered}
+            onCardClick={() => onVenueClick(venue.venueID)}
+            onHover={onHover}
+            headerBadges={headerBadges}
+            headerActions={headerActions}
+            quickInfo={quickInfo}
+            expandedContent={expandedContent}
+            isLoading={isLoading}
+            skeletonVariant="venue"
+        />
     );
 };
+
+export const VenueCard = React.memo(VenueCardComponent);

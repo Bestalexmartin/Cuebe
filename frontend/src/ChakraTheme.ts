@@ -129,6 +129,34 @@ const components = {
         boxShadow: 'none',
       },
     },
+    variants: {
+      primary: {
+        bg: 'blue.400',
+        color: 'white',
+        _hover: { bg: 'orange.400' },
+        _disabled: {
+          bg: 'gray.400',
+          _hover: { bg: 'gray.400' }
+        }
+      },
+      secondary: {
+        bg: 'transparent',
+        color: 'inherit',
+        _hover: { 
+          bg: 'gray.100', 
+          _dark: { bg: 'gray.700' } 
+        }
+      },
+      danger: {
+        bg: 'red.500',
+        color: 'white',
+        _hover: { bg: 'red.600' },
+        _disabled: {
+          bg: 'gray.400',
+          _hover: { bg: 'gray.400' }
+        }
+      }
+    }
   },
   IconButton: {
     baseStyle: {

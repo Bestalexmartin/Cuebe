@@ -1,27 +1,15 @@
-// frontend/src/components/modals/CreateScriptModal.tsx
-
 import React from 'react';
 import {
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalFooter,
-    ModalBody,
-    ModalCloseButton,
-    Button,
     FormControl,
     FormLabel,
-    Input,
     Select,
     VStack,
-    Box,
-    Text,
 } from '@chakra-ui/react';
 import { useValidatedForm } from '../../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../../types/validation';
 import { FormInput } from '../form/FormField';
-import { ErrorBoundary } from '../ErrorBoundary';
+import { BaseModal } from '../base/BaseModal';
+import { useStandardFormValidation } from '../../hooks/useFormValidation';
 
 // TypeScript interfaces
 interface ScriptFormData {
@@ -110,85 +98,48 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
         onClose();
     };
 
-    const isFormValid = (): boolean => {
-        return form.formData.scriptName.trim() !== '';
-    };
+    const { canSubmit } = useStandardFormValidation(form, ['scriptName']);
 
     return (
-        <ErrorBoundary context="CreateScriptModal">
-            <Modal isOpen={isOpen} onClose={handleModalClose} onCloseComplete={form.resetForm}>
-            <ModalOverlay />
-            <ModalContent
-                as="form"
-                onSubmit={handleSubmit}
-                bg="page.background"
-                border="2px solid"
-                borderColor="gray.600"
-            >
-                <ModalHeader>Create New Script</ModalHeader>
-                <ModalCloseButton />
-                <ModalBody pb={6}>
-                    <VStack spacing={4} align="stretch">
-                        <FormInput
-                            form={form}
-                            name="scriptName"
-                            label="Script Name"
-                            placeholder="Enter script name"
-                            isRequired
-                        />
+        <BaseModal
+            title="Create New Script"
+            isOpen={isOpen}
+            onClose={handleModalClose}
+            onCloseComplete={form.resetForm}
+            onSubmit={handleSubmit}
+            primaryAction={{
+                label: "Create Script",
+                variant: "primary",
+                isLoading: form.isSubmitting,
+                isDisabled: !canSubmit
+            }}
+            validationErrors={form.fieldErrors}
+            showValidationErrors={form.fieldErrors.length > 0}
+            errorBoundaryContext="CreateScriptModal"
+        >
+            <VStack spacing={4} align="stretch">
+                <FormInput
+                    form={form}
+                    name="scriptName"
+                    label="Script Name"
+                    placeholder="Enter script name"
+                    isRequired
+                />
 
-                        <FormControl>
-                            <FormLabel>Script Status</FormLabel>
-                            <Select
-                                value={form.formData.scriptStatus}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => form.updateField('scriptStatus', e.target.value)}
-                            >
-                                {SCRIPT_STATUS_OPTIONS.map(option => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </Select>
-                        </FormControl>
-
-                    </VStack>
-                </ModalBody>
-
-                <ModalFooter>
-                    <Button
-                        size="sm"
-                        mr={3}
-                        onClick={handleModalClose}
-                        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
+                <FormControl>
+                    <FormLabel>Script Status</FormLabel>
+                    <Select
+                        value={form.formData.scriptStatus}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => form.updateField('scriptStatus', e.target.value)}
                     >
-                        Cancel
-                    </Button>
-                    <Button
-                        bg="blue.400"
-                        color="white"
-                        size="sm"
-                        type="submit"
-                        isLoading={form.isSubmitting}
-                        isDisabled={!isFormValid()}
-                        _hover={{ bg: 'orange.400' }}
-                    >
-                        Create Script
-                    </Button>
-                </ModalFooter>
-                
-                {/* Show form-level validation errors */}
-                {form.fieldErrors.length > 0 && (
-                    <Box p={3} bg="red.500" color="white" borderRadius="md" mx={6} mb={6}>
-                        <Text fontWeight="semibold" mb={2}>Validation Errors:</Text>
-                        {form.fieldErrors.map((error, i) => (
-                            <Text key={i} fontSize="sm">
-                                • {error.message}
-                            </Text>
+                        {SCRIPT_STATUS_OPTIONS.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
                         ))}
-                    </Box>
-                )}
-            </ModalContent>
-        </Modal>
-        </ErrorBoundary>
+                    </Select>
+                </FormControl>
+            </VStack>
+        </BaseModal>
     );
 };

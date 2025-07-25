@@ -1,29 +1,17 @@
-// frontend/src/components/modals/CreateCrewModal.tsx
-
 import React from 'react';
 import {
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalFooter,
-    ModalBody,
-    ModalCloseButton,
-    Button,
     FormControl,
     FormLabel,
-    Input,
     Select,
     VStack,
     HStack,
-    Box,
-    Text,
 } from '@chakra-ui/react';
 import { useAuth } from '@clerk/clerk-react';
 import { useValidatedForm } from '../../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../../types/validation';
 import { FormInput } from '../form/FormField';
-import { ErrorBoundary } from '../ErrorBoundary';
+import { BaseModal } from '../base/BaseModal';
+import { useStandardFormValidation } from '../../hooks/useFormValidation';
 
 // TypeScript interfaces
 interface CrewFormData {
@@ -141,7 +129,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
                         crew_user_id: existingUser.ID
                     };
 
-                    await submitForm(
+                    await form.submitForm(
                         '/api/crew-relationships/',
                         'POST',
                         `"${existingUser.fullnameFirst} ${existingUser.fullnameLast}" has been added to your crew`,
@@ -179,108 +167,67 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
         onClose();
     };
 
-    const isFormValid = (): boolean => {
-        const hasRequiredFields = form.formData.emailAddress.trim() !== '' &&
-            form.formData.fullnameFirst.trim() !== '' &&
-            form.formData.fullnameLast.trim() !== '';
-        
-        const hasNoValidationErrors = form.fieldErrors.length === 0;
-        
-        return hasRequiredFields && hasNoValidationErrors;
-    };
+    const { canSubmit } = useStandardFormValidation(form, ['emailAddress', 'fullnameFirst', 'fullnameLast']);
 
     return (
-        <Modal isOpen={isOpen} onClose={handleModalClose} onCloseComplete={form.resetForm}>
-            <ModalOverlay />
-            <ModalContent
-                as="form"
-                onSubmit={handleSubmit}
-                bg="page.background"
-                border="2px solid"
-                borderColor="gray.600"
-            >
-                <ModalHeader>Add New Crew</ModalHeader>
-                <ModalCloseButton />
-                <ModalBody pb={6}>
-                    <VStack spacing={4} align="stretch">
-                        <HStack spacing={4}>
-                            <FormInput
-                                form={form}
-                                name="fullnameFirst"
-                                label="First Name"
-                                placeholder="Enter first name"
-                                isRequired
-                            />
+        <BaseModal
+            title="Add New Crew"
+            isOpen={isOpen}
+            onClose={handleModalClose}
+            onCloseComplete={form.resetForm}
+            onSubmit={handleSubmit}
+            primaryAction={{
+                label: "Add Crew",
+                variant: "primary",
+                isLoading: form.isSubmitting,
+                isDisabled: !canSubmit
+            }}
+            validationErrors={form.fieldErrors}
+            showValidationErrors={form.fieldErrors.length > 0}
+            errorBoundaryContext="CreateCrewModal"
+        >
+            <VStack spacing={4} align="stretch">
+                <HStack spacing={4}>
+                    <FormInput
+                        form={form}
+                        name="fullnameFirst"
+                        label="First Name"
+                        placeholder="Enter first name"
+                        isRequired
+                    />
 
-                            <FormInput
-                                form={form}
-                                name="fullnameLast"
-                                label="Last Name"
-                                placeholder="Enter last name"
-                                isRequired
-                            />
-                        </HStack>
+                    <FormInput
+                        form={form}
+                        name="fullnameLast"
+                        label="Last Name"
+                        placeholder="Enter last name"
+                        isRequired
+                    />
+                </HStack>
 
-                        <FormInput
-                            form={form}
-                            name="emailAddress"
-                            label="Email Address"
-                            type="email"
-                            placeholder="crew@example.com"
-                            isRequired
-                        />
+                <FormInput
+                    form={form}
+                    name="emailAddress"
+                    label="Email Address"
+                    type="email"
+                    placeholder="crew@example.com"
+                    isRequired
+                />
 
-                        <FormControl isRequired>
-                            <FormLabel>Role</FormLabel>
-                            <Select
-                                value={form.formData.userRole}
-                                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => form.updateField('userRole', e.target.value)}
-                            >
-                                {ROLE_OPTIONS.map((role) => (
-                                    <option key={role.value} value={role.value}>
-                                        {role.label}
-                                    </option>
-                                ))}
-                            </Select>
-                        </FormControl>
-
-                    </VStack>
-                </ModalBody>
-
-                <ModalFooter>
-                    <Button
-                        size="sm"
-                        mr={3}
-                        onClick={handleModalClose}
-                        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
+                <FormControl isRequired>
+                    <FormLabel>Role</FormLabel>
+                    <Select
+                        value={form.formData.userRole}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => form.updateField('userRole', e.target.value)}
                     >
-                        Cancel
-                    </Button>
-                    <Button
-                        bg="blue.400"
-                        color="white"
-                        size="sm"
-                        type="submit"
-                        isLoading={form.isSubmitting}
-                        isDisabled={!isFormValid()}
-                        _hover={{ bg: 'orange.400' }}
-                    >
-                        Add Crew
-                    </Button>
-                </ModalFooter>
-                
-                {/* Show form-level validation errors */}
-                {form.fieldErrors.length > 0 && (
-                    <Box p={3} bg="red.500" color="white" borderRadius="md" mx={6} mb={6}>
-                        <Text fontWeight="semibold" mb={2}>Validation Errors:</Text>
-                        {form.fieldErrors.map((error, i) => (
-                            <Text key={i} fontSize="sm">
-                                • {error.message}
-                            </Text>
+                        {ROLE_OPTIONS.map((role) => (
+                            <option key={role.value} value={role.value}>
+                                {role.label}
+                            </option>
                         ))}
-                    </Box>
-                )}
-            </ModalContent>
-        </Modal>
+                    </Select>
+                </FormControl>
+            </VStack>
+        </BaseModal>
     );
 };
