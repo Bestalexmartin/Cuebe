@@ -127,7 +127,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
 
   const quickInfo = (
     <>
-      <HStack justify="space-between" fontSize="sm" color="detail.text" mt={2}>
+      <HStack justify="space-between" fontSize="sm" color="detail.text">
         <Text>
           {venueName} • {formatDateFriendly(show.showDate)}
         </Text>
