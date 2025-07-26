@@ -25,7 +25,7 @@ import { AuthenticationTest } from '../components/test-tools/AuthenticationTest'
 import { PerformanceTest } from '../components/test-tools/PerformanceTest';
 import { EnvironmentTest } from '../components/test-tools/EnvironmentTest';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { UnifiedPageLayout } from '../components/layout/UnifiedPageLayout';
+import { BaseUtilityPage } from '../components/base/BaseUtilityPage';
 import { useEnhancedToast } from '../utils/toastUtils';
 
 interface TestResult {
@@ -431,7 +431,7 @@ export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenu
 
   return (
     <ErrorBoundary context="Test Tools Page">
-      <UnifiedPageLayout
+      <BaseUtilityPage
         pageTitle="Test Tools"
         pageIcon="warning"
         defaultContent={null}

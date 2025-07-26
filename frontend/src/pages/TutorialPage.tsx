@@ -10,7 +10,7 @@ import {
   AlertDescription
 } from '@chakra-ui/react';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { UnifiedPageLayout } from '../components/layout/UnifiedPageLayout';
+import { BaseUtilityPage } from '../components/base/BaseUtilityPage';
 
 interface TutorialPageProps {
   isMenuOpen: boolean;
@@ -76,7 +76,7 @@ export const TutorialPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuCl
 
   return (
     <ErrorBoundary context="Tutorial Page">
-      <UnifiedPageLayout
+      <BaseUtilityPage
         pageTitle="Tutorial"
         pageIcon="compass"
         defaultContent={defaultContent}

@@ -3,7 +3,7 @@
 import React from "react";
 import { Flex, Box, VStack, Heading, Button, Text, HStack } from "@chakra-ui/react";
 import { AppIcon } from '../AppIcon';
-import { OptionsMenu } from '../OptionsMenu';
+import { UtilitiesMenu } from '../UtilitiesMenu';
 
 // TypeScript interfaces
 type IconName = 'openmenu' | 'hamburger' | 'edit' | 'delete' | 'warning' | 'pinned' | 'show' | 'venue' | 'department' | 'crew' | 'asc' | 'desc';
@@ -100,7 +100,7 @@ export const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({ activeView, 
   return (
     <>
       <Flex justify="flex-end" align="center">
-        <OptionsMenu onSaveNavigationState={onSaveNavigationState} />
+        <UtilitiesMenu onSaveNavigationState={onSaveNavigationState} />
       </Flex>
 
       <Box
