@@ -10,7 +10,7 @@ import {
   useColorModeValue
 } from '@chakra-ui/react';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { UnifiedPageLayout } from '../components/layout/UnifiedPageLayout';
+import { BaseUtilityPage } from '../components/base/BaseUtilityPage';
 
 interface ApiDocsPageProps {
   isMenuOpen: boolean;
@@ -214,7 +214,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
 
   return (
     <ErrorBoundary context="API Documentation Page">
-      <UnifiedPageLayout
+      <BaseUtilityPage
         pageTitle="API Documentation"
         pageIcon="api-docs"
         defaultContent={null}

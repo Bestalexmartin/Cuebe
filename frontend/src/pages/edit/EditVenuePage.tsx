@@ -2,16 +2,16 @@
 
 import React, { useEffect, useState } from 'react';
 import {
-    Flex, Box, Heading, HStack, VStack, Button, Text, Spinner,
-    FormControl, FormLabel, Input, Textarea, Select, Divider
+    Box, VStack, HStack, Text, Spinner, Flex,
+    FormControl, FormLabel, Input, Textarea, Select
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useVenue } from "../../hooks/useVenue";
 import { useValidatedForm } from '../../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../../types/validation';
-import { AppIcon } from '../../components/AppIcon';
-import { ActionsMenu, ActionItem } from '../../components/ActionsMenu';
+import { BaseEditPage } from '../../components/base/BaseEditPage';
+import { ActionItem } from '../../components/ActionsMenu';
 import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmationModal';
 import { useEnhancedToast } from '../../utils/toastUtils';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
@@ -275,61 +275,25 @@ export const EditVenuePage: React.FC = () => {
 
     return (
         <ErrorBoundary context="Edit Venue Page">
-            <Flex
-                as="form"
+            <BaseEditPage
+                pageTitle={venue?.venueName || 'Venue'}
                 onSubmit={handleSubmit}
-                width="100%"
-                height="100%"
-                p="2rem"
-                flexDirection="column"
-                boxSizing="border-box"
-            >
-            {/* Header Section */}
-            <Flex justify="space-between" align="center" flexShrink={0}>
-                <HStack spacing="2" align="center">
-                    <AppIcon name="edit" boxSize="20px" />
-                    <Heading as="h2" size="md">
-                        {isLoadingVenue ? 'Loading...' : `${venue?.venueName}`}
-                    </Heading>
-                </HStack>
-                <HStack spacing="2">
-                    <ActionsMenu
-                        actions={actions}
-                        isDisabled={isLoadingVenue || !venue}
-                    />
-                    <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
-                    <Button
-                        onClick={handleClose}
-                        size="xs"
-                        _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        bg="blue.400"
-                        color="white"
-                        size="xs"
-                        _hover={{ bg: 'orange.400' }}
-                        type="submit"
-                        isLoading={form.isSubmitting}
-                        isDisabled={!isFormValid()}
-                    >
-                        Save Changes
-                    </Button>
-                </HStack>
-            </Flex>
-
-            {/* Form Content Box */}
-            <Box
-                mt="4"
-                border="1px solid"
-                borderColor="container.border"
-                p="4"
-                pb="8"
-                borderRadius="md"
-                flexGrow={1}
-                overflowY="auto"
-                className="hide-scrollbar edit-form-container"
+                isLoading={isLoadingVenue}
+                primaryAction={{
+                    label: "Save Changes",
+                    variant: "primary",
+                    type: "submit",
+                    isLoading: form.isSubmitting,
+                    isDisabled: !isFormValid()
+                }}
+                secondaryActions={[
+                    {
+                        label: "Cancel",
+                        variant: "outline",
+                        onClick: handleClose
+                    }
+                ]}
+                menuActions={actions}
             >
                 {/* Loading State */}
                 {isLoadingVenue && (
@@ -514,23 +478,27 @@ export const EditVenuePage: React.FC = () => {
                         </FormControl>
                     </VStack>
                 )}
-            </Box>
 
-            {/* Floating Validation Error Panel */}
-            {form.fieldErrors.length > 0 && (
-                <Box
-                    mt="4"
-                    bg="red.500"
-                    color="white"
-                    p={4}
-                    borderRadius="md"
-                    boxShadow="lg"
-                    flexShrink={0}
-                >
-                    <Text fontWeight="semibold" fontSize="sm" display="inline">
+                {/* Floating Validation Error Panel */}
+                {form.fieldErrors.length > 0 && (
+                    <Box
+                        position="fixed"
+                        bottom="20px"
+                        left="50%"
+                        transform="translateX(-50%)"
+                        bg="red.500"
+                        color="white"
+                        px="8"
+                        py="6"
+                        borderRadius="lg"
+                        boxShadow="xl"
+                        flexShrink={0}
+                        minWidth="450px"
+                    >
+                    <Text fontWeight="semibold" fontSize="md" display="inline">
                         Validation Errors:
                     </Text>
-                    <Text fontSize="sm" display="inline" ml={1}>
+                    <Text fontSize="md" display="inline" ml={1}>
                         {form.fieldErrors.map((error, i) => (
                             <Text key={i} as="span">
                                 {i > 0 && '; '}{error.message}
@@ -539,6 +507,8 @@ export const EditVenuePage: React.FC = () => {
                     </Text>
                 </Box>
             )}
+
+            </BaseEditPage>
 
             {/* Delete Confirmation Modal */}
             <DeleteConfirmationModal
@@ -549,7 +519,6 @@ export const EditVenuePage: React.FC = () => {
                 entityType="Venue"
                 entityName={venue?.venueName || ''}
             />
-            </Flex>
         </ErrorBoundary>
     );
 };

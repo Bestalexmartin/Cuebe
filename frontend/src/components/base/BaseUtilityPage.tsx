@@ -1,4 +1,4 @@
-// frontend/src/components/layout/UnifiedPageLayout.tsx
+// frontend/src/components/base/BaseUtilityPage.tsx
 
 import React from 'react';
 import {
@@ -16,11 +16,8 @@ import {
   DrawerContent,
   DrawerCloseButton
 } from '@chakra-ui/react';
-import { AppIcon } from '../AppIcon';
-import { OptionsMenu } from '../OptionsMenu';
-
-// TypeScript interfaces
-type IconName = 'openmenu' | 'hamburger' | 'edit' | 'delete' | 'warning' | 'pinned' | 'show' | 'venue' | 'department' | 'crew' | 'asc' | 'desc' | 'copy' | 'api-docs' | 'compass' | 'docs' | 'component' | 'performance' | 'test' | 'archive';
+import { AppIcon, IconName } from '../AppIcon';
+import { UtilitiesMenu } from '../UtilitiesMenu';
 
 interface QuickAccessItemProps {
   title: string;
@@ -33,7 +30,7 @@ interface QuickAccessItemProps {
   icon?: IconName;
 }
 
-interface QuickAccessItem {
+export interface QuickAccessItem {
   id: string;
   title: string;
   description: string;
@@ -44,7 +41,7 @@ interface QuickAccessItem {
   icon?: IconName;
 }
 
-interface UnifiedPageLayoutProps {
+interface BaseUtilityPageProps {
   pageTitle: string;
   pageIcon: IconName;
   defaultContent: React.ReactNode;
@@ -119,7 +116,7 @@ const QuickAccessItemComponent: React.FC<QuickAccessItemProps> = ({
   );
 };
 
-export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
+export const BaseUtilityPage: React.FC<BaseUtilityPageProps> = ({
   pageTitle,
   pageIcon,
   defaultContent,
@@ -153,7 +150,7 @@ export const UnifiedPageLayout: React.FC<UnifiedPageLayoutProps> = ({
             {pageTitle}
           </Heading>
           <Box ml="auto">
-            <OptionsMenu />
+            <UtilitiesMenu />
           </Box>
         </HStack>
       </Box>

@@ -99,8 +99,9 @@ Friday Jul 25, 2025
 1) Added markdown rendering to read docs and for future use, added system architecture documentation, updated page layout for static quickstart menu
 2) Final cleanup on unifiedCard indentation, reviewed frontend and backend for TypeScript errors, updated documentation
 
-Friday JUl 25, 2025 - MILESTONE 01 Completed
-• Account management, primary navigation and FPO UI/UX, server architecture, testing suite and documentation completed
-
 Saturday Jul 26, 2025
 1) Minor spacing issues fixed prior to beginning milestone 2
+2) Extracted edit page layout to "BaseEditPage", refactored validation alert to float on this page rather than stick to bottom
+
+Saturday JUl 25, 2025 - MILESTONE 01 Completed
+• Account management, primary navigation and FPO UI/UX, server architecture, testing suite and documentation completed

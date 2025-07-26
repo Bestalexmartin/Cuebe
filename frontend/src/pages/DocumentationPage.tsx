@@ -26,7 +26,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { UnifiedPageLayout } from '../components/layout/UnifiedPageLayout';
+import { BaseUtilityPage } from '../components/base/BaseUtilityPage';
 import { AppIcon } from '../components/AppIcon';
 
 interface DocFile {
@@ -473,7 +473,7 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
 
   return (
     <ErrorBoundary context="Documentation Page">
-      <UnifiedPageLayout
+      <BaseUtilityPage
         pageTitle="Documentation"
         pageIcon="docs"
         defaultContent={defaultContent}

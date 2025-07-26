@@ -173,7 +173,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
             {sortedScripts.map((script) => (
               <Box
                 key={script.scriptID}
-                p="3"
+                p="4"
                 borderWidth="2px"
                 borderRadius="md"
                 shadow="sm"
