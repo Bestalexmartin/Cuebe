@@ -614,6 +614,228 @@ This type safety initiative represents a crucial maturation of the codebase, est
 
 ---
 
+## Part VII: Edit Page Layout Consolidation
+
+### Background
+After establishing robust type safety and performance optimizations, the development focused on eliminating code duplication across edit pages. The edit pages (EditShowPage, EditVenuePage, EditCrewPage, EditDepartmentPage, EditScriptPage) shared common layout patterns but implemented them independently, leading to maintenance challenges and inconsistent user experience.
+
+### BaseEditPage Architecture Implementation
+
+#### Layout Pattern Extraction
+**Challenge**: Five edit pages with similar layout structures but different implementations:
+- Shared header layout with title and action buttons
+- Common form submission handling patterns  
+- Consistent validation error display needs
+- Uniform navigation and close behaviors
+
+**Solution**: Created BaseEditPage component that captures the common layout pattern while allowing flexible content composition.
+
+#### BaseEditPage Component Structure
+```typescript
+interface BaseEditPageProps {
+  // Page configuration
+  pageTitle: string;
+  pageIcon?: string;
+  
+  // Form handling
+  onSubmit?: (event: React.FormEvent) => void;
+  isLoading?: boolean;
+  
+  // Action configuration
+  primaryAction?: {
+    label: string;
+    variant: "primary" | "outline";
+    type?: "submit" | "button";
+    isLoading?: boolean;
+    isDisabled?: boolean;
+    onClick?: () => void;
+  };
+  secondaryActions?: Array<{
+    label: string;
+    variant: "primary" | "outline";
+    onClick: () => void;
+  }>;
+  menuActions?: ActionItem[];
+  
+  // Content
+  children: React.ReactNode;
+}
+```
+
+#### Enhanced Validation Error Display
+**Before**: Each edit page implemented validation errors differently:
+- Inline errors with basic styling
+- Inconsistent positioning and formatting
+- Limited visual prominence
+
+**After**: Standardized floating validation error system:
+```typescript
+// Floating validation errors with enhanced styling
+{form.fieldErrors.length > 0 && (
+  <Box
+    position="fixed"
+    bottom="20px"
+    left="50%"
+    transform="translateX(-50%)"
+    bg="red.500"
+    color="white"
+    px="8"
+    py="6"
+    borderRadius="lg"
+    boxShadow="xl"
+    flexShrink={0}
+    minWidth="450px"
+  >
+    <Text fontWeight="semibold" fontSize="md">
+      Validation Errors: {errors}
+    </Text>
+  </Box>
+)}
+```
+
+### Page-by-Page Refactoring Results
+
+#### EditShowPage Refactoring
+**Before**: 450 lines (estimated)
+**After**: 390 lines
+**Improvements**:
+- Integrated BaseEditPage layout
+- Enhanced floating validation errors
+- Standardized action button patterns
+- Maintained all existing functionality
+
+#### EditVenuePage Refactoring  
+**Before**: 580 lines (estimated)
+**After**: 523 lines
+**Improvements**:
+- Adopted BaseEditPage architecture
+- Unified form submission handling
+- Enhanced validation error display
+- Consistent navigation patterns
+
+#### EditCrewPage Refactoring
+**Before**: 650 lines (estimated)  
+**After**: 576 lines
+**Improvements**:
+- Leveraged BaseEditPage layout system
+- Improved validation error prominence
+- Standardized action menu integration
+- Enhanced user experience consistency
+
+#### EditDepartmentPage Refactoring
+**Before**: 480 lines (estimated)
+**After**: 421 lines
+**Improvements**:
+- Complete BaseEditPage integration
+- Fixed JSX structure issues
+- Enhanced validation error styling
+- Added missing Button import for color presets
+
+#### EditScriptPage Refactoring
+**Before**: 420 lines (estimated)
+**After**: 382 lines
+**Improvements**:
+- BaseEditPage layout adoption
+- Floating validation error implementation
+- Consistent modal integration
+- Unified action button patterns
+
+### Code Reduction & Standardization Impact
+
+#### Quantified Improvements
+**Before Refactoring** (estimated original line counts):
+- EditShowPage: ~450 lines
+- EditVenuePage: ~580 lines  
+- EditCrewPage: ~650 lines
+- EditDepartmentPage: ~480 lines
+- EditScriptPage: ~420 lines
+- **Total: ~2,580 lines**
+
+**After Refactoring**:
+- BaseEditPage: 130 lines (shared component)
+- EditShowPage: 390 lines
+- EditVenuePage: 523 lines
+- EditCrewPage: 576 lines  
+- EditDepartmentPage: 421 lines
+- EditScriptPage: 382 lines
+- **Total: 2,422 lines**
+
+**Code Reduction**: ~158 lines eliminated (~6% reduction)
+
+#### Enhanced Features Through Standardization
+1. **Consistent Layout Structure**
+   - Standardized header with title and icon
+   - Unified action button placement  
+   - Responsive form containers
+
+2. **Enhanced Validation Display**
+   - Floating validation errors positioned at bottom center
+   - Enhanced styling with larger text (`fontSize="md"`)
+   - Proportional sizing (`minWidth="450px"`)
+
+3. **Flexible Action Configuration**
+   - Primary action (typically "Save Changes")
+   - Multiple secondary actions (Cancel, etc.)
+   - Menu-based destructive actions (Delete)
+
+4. **Form Integration**
+   - Automatic form submission handling
+   - Loading state management
+   - Validation error display
+
+### Development Experience Improvements
+
+#### Maintenance Benefits
+- **Single Point of Control**: Layout changes apply to all edit pages
+- **Consistent Patterns**: Developers follow established patterns for new edit pages
+- **Reduced Testing Surface**: Fewer unique implementations to test
+- **Simplified Debugging**: Common layout logic centralized
+
+#### Future Development Efficiency
+- **Rapid Page Creation**: New edit pages can be created quickly using BaseEditPage
+- **Consistent UX**: Users experience uniform behavior across all edit interfaces
+- **Type Safety**: Shared interfaces ensure consistent prop usage
+- **Documentation**: Clear patterns for extending edit functionality
+
+### Technical Implementation Details
+
+#### Composition Pattern Usage
+BaseEditPage uses composition rather than inheritance:
+- **Flexible Content Areas**: Children prop allows any form content
+- **Configurable Actions**: Props-based action configuration
+- **Optional Features**: Loading states, icons, menu actions as needed
+- **Type Safety**: Full TypeScript support with strict interfaces
+
+#### Integration with Existing Systems
+- **BaseUtilityPage Distinction**: BaseEditPage for forms, BaseUtilityPage for documentation
+- **Action Menu Integration**: Seamless integration with existing ActionsMenu component
+- **Validation System**: Compatible with existing useValidatedForm hooks
+- **Navigation Patterns**: Maintains existing routing and state management
+
+#### Error Handling Enhancements
+- **JSX Structure Fixes**: Resolved closing tag mismatches during refactoring
+- **Import Resolution**: Added missing imports (Button, Flex, HStack)
+- **Validation Display**: Improved error visibility and user experience
+- **Build Verification**: All refactoring verified with successful TypeScript compilation
+
+### Future Scalability
+
+#### Pattern Replication
+The BaseEditPage pattern establishes a template for future component consolidation:
+- **BaseListPage**: For entity listing pages with filters and search
+- **BaseDetailPage**: For entity detail view pages
+- **BaseSettingsPage**: For configuration and settings interfaces
+
+#### Maintenance Strategy
+- **Version Control**: All changes tracked with clear commit messages
+- **Testing Integration**: Edit page functionality verified through existing test suites
+- **Documentation**: Usage patterns documented in component architecture guide
+- **Performance Monitoring**: React.memo patterns maintained for optimal rendering
+
+This consolidation initiative demonstrates the maturity of the codebase architecture, showing how established patterns can be extracted and reused to eliminate duplication while enhancing functionality. The BaseEditPage system provides a foundation for consistent user experience and efficient development practices across all edit interfaces.
+
+---
+
 *Document updated: July 2025*  
 *Codebase: CallMaster Full Stack (React/FastAPI)*  
 *Status: Production Ready with Enterprise Type Safety*
