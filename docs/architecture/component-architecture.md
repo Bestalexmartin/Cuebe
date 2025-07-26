@@ -423,4 +423,119 @@ test('handles selection and expansion', async () => {
 });
 ```
 
+## BaseEditPage Architecture
+
+### Overview
+BaseEditPage provides a consistent layout and functionality pattern for all edit pages in the application, eliminating code duplication and ensuring uniform user experience across entity editing interfaces.
+
+### Component Structure
+```typescript
+interface BaseEditPageProps {
+  // Page configuration
+  pageTitle: string;
+  pageIcon?: string;
+  
+  // Form handling
+  onSubmit?: (event: React.FormEvent) => void;
+  isLoading?: boolean;
+  
+  // Action configuration
+  primaryAction?: {
+    label: string;
+    variant: "primary" | "outline";
+    type?: "submit" | "button";
+    isLoading?: boolean;
+    isDisabled?: boolean;
+    onClick?: () => void;
+  };
+  secondaryActions?: Array<{
+    label: string;
+    variant: "primary" | "outline";
+    onClick: () => void;
+  }>;
+  menuActions?: ActionItem[];
+  
+  // Content
+  children: React.ReactNode;
+}
+```
+
+### Usage Pattern
+```tsx
+<BaseEditPage
+  pageTitle={entity?.name || 'Entity'}
+  onSubmit={handleSubmit}
+  isLoading={isLoadingEntity}
+  primaryAction={{
+    label: "Save Changes",
+    variant: "primary",
+    type: "submit",
+    isLoading: form.isSubmitting,
+    isDisabled: !isFormValid()
+  }}
+  secondaryActions={[{
+    label: "Cancel",
+    variant: "outline",
+    onClick: handleClose
+  }]}
+  menuActions={actions}
+>
+  {/* Form content */}
+  
+  {/* Floating validation errors */}
+  {form.fieldErrors.length > 0 && (
+    <FloatingValidationErrors errors={form.fieldErrors} />
+  )}
+</BaseEditPage>
+```
+
+### Refactoring Impact
+The BaseEditPage refactoring eliminated significant code duplication across edit pages:
+
+**Before Refactoring** (estimated original line counts):
+- EditShowPage: ~450 lines
+- EditVenuePage: ~580 lines  
+- EditCrewPage: ~650 lines
+- EditDepartmentPage: ~480 lines
+- EditScriptPage: ~420 lines
+- **Total: ~2,580 lines**
+
+**After Refactoring**:
+- BaseEditPage: 130 lines (shared component)
+- EditShowPage: 390 lines
+- EditVenuePage: 523 lines
+- EditCrewPage: 576 lines  
+- EditDepartmentPage: 421 lines
+- EditScriptPage: 382 lines
+- **Total: 2,422 lines**
+
+**Code Reduction**: ~158 lines eliminated (~6% reduction) while improving:
+- Consistency across all edit pages
+- Maintainability through centralized layout logic
+- Type safety with shared interfaces
+- Enhanced floating validation error styling
+- Standardized action button patterns
+
+### Key Features
+
+1. **Consistent Layout Structure**
+   - Standardized header with title and icon
+   - Unified action button placement
+   - Responsive form containers
+
+2. **Enhanced Validation Display**
+   - Floating validation errors positioned at bottom center
+   - Enhanced styling with larger text (`fontSize="md"`)
+   - Proportional sizing (`minWidth="450px"`)
+
+3. **Flexible Action Configuration**
+   - Primary action (typically "Save Changes")
+   - Multiple secondary actions (Cancel, etc.)
+   - Menu-based destructive actions (Delete)
+
+4. **Form Integration**
+   - Automatic form submission handling
+   - Loading state management
+   - Validation error display
+
 This architecture provides a solid foundation for scalable, maintainable React components while ensuring consistent user experience and optimal performance.

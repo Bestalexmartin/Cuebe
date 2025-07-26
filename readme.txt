@@ -102,6 +102,7 @@ Friday Jul 25, 2025
 Saturday Jul 26, 2025
 1) Minor spacing issues fixed prior to beginning milestone 2
 2) Extracted edit page layout to "BaseEditPage", refactored validation alert to float on this page rather than stick to bottom
+3) Updated documentation to include new refactoring data
 
 Saturday JUl 25, 2025 - MILESTONE 01 Completed
 • Account management, primary navigation and FPO UI/UX, server architecture, testing suite and documentation completed
