@@ -33,11 +33,18 @@ interface DocFile {
   name: string;
   path: string;
   description: string;
-  category: 'Quick Start' | 'Architecture' | 'Testing' | 'Archive';
-  icon: 'compass' | 'docs' | 'component' | 'performance' | 'warning' | 'test' | 'archive';
+  category: 'Roadmap' | 'Quick Start' | 'Architecture' | 'Testing' | 'Archive';
+  icon: 'roadmap' | 'compass' | 'docs' | 'component' | 'performance' | 'warning' | 'test' | 'archive';
 }
 
 const DOCUMENTATION_FILES: DocFile[] = [
+  {
+    name: 'Development Roadmap',
+    path: 'roadmap.md',
+    description: 'Comprehensive roadmap for script editing, real-time collaboration, and advanced theater production features',
+    category: 'Roadmap',
+    icon: 'roadmap'
+  },
   {
     name: 'Development Guide',
     path: 'development-guide.md',
@@ -226,6 +233,14 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
 
   // Quick Access items for documentation categories
   const quickAccessItems = [
+    {
+      id: 'roadmap',
+      title: 'Roadmap',
+      description: 'Future features and development timeline',
+      icon: 'roadmap' as const,
+      isDisabled: false,
+      onClick: () => loadCategory('Roadmap')
+    },
     {
       id: 'quick-start',
       title: 'Quick Start',

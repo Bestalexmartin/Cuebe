@@ -7,7 +7,7 @@ import { TiPin } from "react-icons/ti";
 import { IoPeopleSharp } from "react-icons/io5";
 import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
-import { FaMasksTheater } from "react-icons/fa6";
+import { FaMasksTheater, FaMapLocationDot } from "react-icons/fa6";
 import { FaCompass } from "react-icons/fa";
 import { EditIcon } from "@chakra-ui/icons";
 import { GoSortAsc, GoSortDesc, GoAlertFill } from "react-icons/go";
@@ -39,7 +39,8 @@ export type IconName =
   | 'component'
   | 'performance'
   | 'test'
-  | 'archive';
+  | 'archive'
+  | 'roadmap';
 
 interface AppIconProps extends Omit<IconProps, 'as'> {
   name: IconName;
@@ -87,6 +88,8 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={BiTestTube} {...props} />;
     case 'archive':
       return <Icon as={FaArchive} {...props} />;
+    case 'roadmap':
+      return <Icon as={FaMapLocationDot} {...props} />;
     default:
       return null;
   }
