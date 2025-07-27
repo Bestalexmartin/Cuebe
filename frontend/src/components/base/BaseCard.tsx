@@ -206,7 +206,6 @@ const BaseCardComponent: React.FC<BaseCardProps> = ({
       shadow="sm"
       cursor={isLoading ? "default" : "pointer"}
       borderColor={isLoading ? "gray.200" : getBorderColor()}
-      _hover={isLoading ? {} : { borderColor: 'orange.400' }}
       onMouseEnter={isLoading ? undefined : handleMouseEnter}
       onMouseLeave={isLoading ? undefined : handleMouseLeave}
       onClick={isLoading ? undefined : handleCardClick}

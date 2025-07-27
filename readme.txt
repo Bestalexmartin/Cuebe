@@ -108,4 +108,6 @@ Saturday JUl 25, 2025 - MILESTONE 01 Completed
 • Account management, primary navigation and FPO UI/UX, server architecture, testing suite and documentation completed
 
 Saturday Jul 26, 2025
-1) Crafted Roadmap for further development and added it to documentation
+4) Crafted Roadmap for further development and added it to documentation
+5) Created edit script page, fixed issue with show card hover state
+6) Added Edit Script page, duplicate and delete features, implemented change detection for pages with editable fields, improved documentation layout

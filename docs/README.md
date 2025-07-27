@@ -4,14 +4,14 @@ Welcome to the CallMaster documentation! This comprehensive guide covers all asp
 
 ## 📁 Documentation Structure
 
-### **[Development Roadmap](./roadmap.md)** - Future Features & Timeline
-Comprehensive roadmap for script editing, real-time collaboration, and advanced theater production features.
+### `/planning` - Project Vision & Roadmap
+- **[Development Roadmap](./planning/roadmap.md)** - Comprehensive roadmap for script editing, real-time collaboration, and advanced theater production features
 
-### **[Development Guide](./development-guide.md)** - Start Here! 🚀
-Quick start guide for developers with setup, workflow, and best practices.
+### `/development` - Developer Resources  
+- **[Development Guide](./development/development-guide.md)** - Start Here! 🚀 Quick start guide for developers with setup, workflow, and best practices
 
-### **[Documentation Standards](./documentation-standards.md)** - Naming & Style Guide
-File naming conventions, content guidelines, and maintenance practices.
+### `/standards` - Guidelines & Best Practices
+- **[Documentation Standards](./standards/documentation-standards.md)** - File naming conventions, content guidelines, and maintenance practices
 
 ### `/architecture` - System Design & Technical Details
 - **[Component Architecture](./architecture/component-architecture.md)** - BaseCard/BaseModal patterns and implementation guide
@@ -24,11 +24,12 @@ File naming conventions, content guidelines, and maintenance practices.
 
 ### `/archive` - Historical Records & Major Changes
 - **[Codebase Improvements Archive](./archive/codebase-improvements-archive.md)** - Complete record of major refactoring and optimizations
+- **[Design Insights Archive](./archive/design-insights-archive.md)** - Valuable design decisions and feature rationales
 
 ## 🚀 Quick Start
 
 ### For Developers
-1. **Start Here**: [Development Guide](./development-guide.md) - Setup, workflow, and daily development practices
+1. **Start Here**: [Development Guide](./development/development-guide.md) - Setup, workflow, and daily development practices
 2. **Architecture**: [Component Architecture](./architecture/component-architecture.md) - How to extend BaseCard/BaseModal
 3. **Testing**: [Testing Tools Guide](./testing/testing-tools-guide.md) - Use the built-in testing suite
 4. **Performance**: [Performance Optimizations](./architecture/performance-optimizations.md) - Best practices and monitoring

@@ -33,24 +33,31 @@ interface DocFile {
   name: string;
   path: string;
   description: string;
-  category: 'Roadmap' | 'Quick Start' | 'Architecture' | 'Testing' | 'Archive';
-  icon: 'roadmap' | 'compass' | 'docs' | 'component' | 'performance' | 'warning' | 'test' | 'archive';
+  category: 'Planning' | 'Quick Start' | 'Architecture' | 'Testing' | 'Archive';
+  icon: 'planning' | 'roadmap' | 'compass' | 'docs' | 'component' | 'performance' | 'warning' | 'test' | 'archive';
 }
 
 const DOCUMENTATION_FILES: DocFile[] = [
   {
     name: 'Development Roadmap',
-    path: 'roadmap.md',
+    path: 'planning/roadmap.md',
     description: 'Comprehensive roadmap for script editing, real-time collaboration, and advanced theater production features',
-    category: 'Roadmap',
+    category: 'Planning',
     icon: 'roadmap'
   },
   {
     name: 'Development Guide',
-    path: 'development-guide.md',
+    path: 'development/development-guide.md',
     description: 'Quick start guide for developers with setup, workflow, and best practices',
     category: 'Quick Start',
     icon: 'compass'
+  },
+  {
+    name: 'Documentation Standards',
+    path: 'standards/documentation-standards.md',
+    description: 'File naming conventions, content guidelines, and maintenance practices',
+    category: 'Planning',
+    icon: 'docs'
   },
   {
     name: 'Documentation Overview',
@@ -234,12 +241,12 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
   // Quick Access items for documentation categories
   const quickAccessItems = [
     {
-      id: 'roadmap',
-      title: 'Roadmap',
-      description: 'Future features and development timeline',
-      icon: 'roadmap' as const,
+      id: 'planning',
+      title: 'Planning',
+      description: 'Project roadmap and documentation standards',
+      icon: 'planning' as const,
       isDisabled: false,
-      onClick: () => loadCategory('Roadmap')
+      onClick: () => loadCategory('Planning')
     },
     {
       id: 'quick-start',

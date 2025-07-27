@@ -17,6 +17,7 @@ import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmat
 import { FinalDeleteConfirmationModal } from '../../components/modals/FinalDeleteConfirmationModal';
 import { useEnhancedToast } from '../../utils/toastUtils';
 import { convertUTCToLocal, convertLocalToUTC } from '../../utils/dateTimeUtils';
+import { useChangeDetection } from '../../hooks/useChangeDetection';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 // TypeScript interfaces
@@ -108,6 +109,21 @@ export const EditShowPage: React.FC = () => {
         }
     }, [show, form.setFormData]);
 
+    // Change detection for save button
+    const initialData = show ? {
+        showName: show.showName || '',
+        showNotes: show.showNotes || '',
+        showDate: convertUTCToLocal(show.showDate),
+        deadline: convertUTCToLocal(show.deadline),
+        venueID: show.venue?.venueID || ''
+    } : null;
+
+    const { hasChanges, updateOriginalData } = useChangeDetection(
+        initialData,
+        form.formData,
+        true // Always active for show editing
+    );
+
     // Handle form field changes
     const handleChange = (field: keyof ShowFormData, value: string) => {
         form.updateField(field, value);
@@ -144,6 +160,9 @@ export const EditShowPage: React.FC = () => {
                 updateData
             );
 
+            // Update original data to reflect the new saved state
+            updateOriginalData(form.formData);
+
             // Navigate back to dashboard on success
             navigate('/dashboard', {
                 state: {
@@ -171,6 +190,10 @@ export const EditShowPage: React.FC = () => {
     const isFormValid = (): boolean => {
         // Now rely entirely on the validation system
         return form.fieldErrors.length === 0 && form.formData.showName.trim().length >= 4;
+    };
+
+    const canSave = (): boolean => {
+        return isFormValid() && hasChanges;
     };
 
     // Delete functionality
@@ -249,7 +272,7 @@ export const EditShowPage: React.FC = () => {
                     variant: "primary",
                     type: "submit",
                     isLoading: form.isSubmitting,
-                    isDisabled: !isFormValid()
+                    isDisabled: !canSave()
                 }}
                 secondaryActions={[
                     {

@@ -140,7 +140,15 @@ interface ShowDepartment {
 - **Department/crew overview** for current script
 - **Performance statistics** and analytics
 
-#### 4.3 Keyboard Shortcuts System
+#### 4.3 Script Edit History System
+- **Version tracking** for all script modifications with timestamps
+- **Change audit trail** showing who made what changes when
+- **History browser interface** for reviewing past versions
+- **Diff visualization** comparing versions side-by-side
+- **Restore capability** to revert to previous versions
+- **Change notifications** for collaborative editing awareness
+
+#### 4.4 Keyboard Shortcuts System
 - **Mode switching**: V/P/I/E/S
 - **Element creation**: Ctrl+D (dialogue), Ctrl+S (stage direction), Ctrl+L (lighting), etc.
 - **Navigation**: J/K for element traversal, G for go-to

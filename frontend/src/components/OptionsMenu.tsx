@@ -52,7 +52,7 @@ export const OptionsMenu: React.FC<OptionsMenuProps> = ({ onSaveNavigationState 
       <MenuList>
         <MenuItem
           onClick={() => handleNavigateToPage('/dashboard')}
-          icon={<AppIcon name="show" boxSize="14px" />}
+          icon={<AppIcon name="dashboard" boxSize="14px" />}
           {...getMenuItemStyle('/dashboard')}
         >
           Dashboard

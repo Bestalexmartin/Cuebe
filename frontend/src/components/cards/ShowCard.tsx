@@ -188,7 +188,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                 }
                 _hover={{ borderColor: "orange.400" }}
                 onMouseEnter={() => onShowHover(null)}
-                onMouseLeave={() => onShowHover(show.showID)}
+                onMouseLeave={() => onShowHover(null)}
               >
                 <VStack align="stretch" spacing="1">
                   <Text fontWeight="semibold" size="sm">{script.scriptName}</Text>
