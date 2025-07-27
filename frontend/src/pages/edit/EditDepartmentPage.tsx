@@ -16,6 +16,7 @@ import { ActionItem } from '../../components/ActionsMenu';
 import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmationModal';
 import { useEnhancedToast } from '../../utils/toastUtils';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
+import { useChangeDetection } from '../../hooks/useChangeDetection';
 
 // TypeScript interfaces
 interface DepartmentFormData {
@@ -114,6 +115,19 @@ export const EditDepartmentPage: React.FC = () => {
         }
     }, [department, form.setFormData]);
 
+    // Change detection for save button - same pattern as EditShowPage
+    const initialData = department ? {
+        departmentName: department.departmentName || '',
+        departmentDescription: department.departmentDescription || '',
+        departmentColor: department.departmentColor || '#3182CE'
+    } : null;
+
+    const { hasChanges, updateOriginalData } = useChangeDetection(
+        initialData,
+        form.formData,
+        true // Always active for department edit
+    );
+
     // Handle form field changes
     const handleChange = (field: keyof DepartmentFormData, value: string) => {
         form.updateField(field, value);
@@ -139,6 +153,9 @@ export const EditDepartmentPage: React.FC = () => {
                 `"${form.formData.departmentName}" has been updated successfully`,
                 updateData
             );
+
+            // Update original data to reflect the changes
+            updateOriginalData(form.formData);
 
             // Navigate back to dashboard on success
             navigate('/dashboard', {
@@ -229,7 +246,7 @@ export const EditDepartmentPage: React.FC = () => {
                     variant: "primary",
                     type: "submit",
                     isLoading: form.isSubmitting,
-                    isDisabled: !isFormValid()
+                    isDisabled: !isFormValid() || !hasChanges
                 }}
                 secondaryActions={[
                     {

@@ -1,6 +1,6 @@
 // frontend/src/EditScriptPage.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
     Box,
     VStack,
@@ -42,7 +42,7 @@ interface ScriptFormData {
     scriptName: string;
     scriptStatus: string;
     startTime: string;
-    description: string;
+    scriptNotes: string;
 }
 
 // Script status options - matching the workflow states
@@ -58,7 +58,7 @@ const INITIAL_FORM_STATE: ScriptFormData = {
     scriptName: '',
     scriptStatus: 'DRAFT',
     startTime: '',
-    description: ''
+    scriptNotes: ''
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
@@ -78,10 +78,10 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             ValidationRules.maxLength(100, 'Script name must be no more than 100 characters')
         ]
     },
-    description: {
+    scriptNotes: {
         required: false,
         rules: [
-            ValidationRules.maxLength(500, 'Description must be no more than 500 characters')
+            ValidationRules.maxLength(500, 'Notes must be no more than 500 characters')
         ]
     }
 };
@@ -132,7 +132,8 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
         scriptName: script.scriptName,
         showName: show.showName,
         scriptStatus: script.scriptStatus,
-        startTime: convertLocalToUTC(convertUTCToLocal(script.startTime)) // Normalize the format
+        startTime: convertLocalToUTC(convertUTCToLocal(script.startTime)), // Normalize the format
+        scriptNotes: script.scriptNotes || ''
     } : null;
 
     const { hasChanges, updateOriginalData } = useChangeDetection(
@@ -140,7 +141,8 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
         {
             scriptName: form.formData.scriptName,
             scriptStatus: form.formData.scriptStatus,
-            startTime: convertLocalToUTC(form.formData.startTime)
+            startTime: convertLocalToUTC(form.formData.startTime),
+            scriptNotes: form.formData.scriptNotes
         },
         activeMode === 'info'
     );
@@ -152,7 +154,7 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
                 scriptName: script.scriptName || '',
                 scriptStatus: script.scriptStatus || 'DRAFT',
                 startTime: convertUTCToLocal(script.startTime),
-                description: ''
+                scriptNotes: script.scriptNotes || ''
             });
         }
     }, [script, form.setFormData]);
@@ -233,7 +235,7 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
                 scriptName: form.formData.scriptName,
                 scriptStatus: form.formData.scriptStatus,
                 startTime: convertLocalToUTC(form.formData.startTime),
-                description: form.formData.description || null
+                scriptNotes: form.formData.scriptNotes || null
             };
 
             await form.submitForm(
@@ -510,12 +512,12 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
                                         </FormControl>
 
                                         <FormControl>
-                                            <FormLabel>Description</FormLabel>
+                                            <FormLabel>Notes</FormLabel>
                                             <Textarea
-                                                value={form.formData.description}
-                                                onChange={(e) => form.updateField('description', e.target.value)}
-                                                onBlur={() => form.validateField('description')}
-                                                placeholder="Script description, notes, or special instructions..."
+                                                value={form.formData.scriptNotes}
+                                                onChange={(e) => form.updateField('scriptNotes', e.target.value)}
+                                                onBlur={() => form.validateField('scriptNotes')}
+                                                placeholder="Script notes or special instructions..."
                                                 minHeight="120px"
                                                 resize="vertical"
                                             />

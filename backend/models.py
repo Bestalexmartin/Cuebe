@@ -18,9 +18,73 @@ class ElementType(enum.Enum):
     """Types of script elements"""
     CUE = "cue"
     NOTE = "note"
-    MARKER = "marker"
+    GROUP = "group"
+
+class TriggerType(enum.Enum):
+    """How script elements are triggered"""
+    MANUAL = "manual"
+    TIME = "time"
+    AUTO = "auto"
+    FOLLOW = "follow"
+    GO = "go"
     STANDBY = "standby"
-    WARNING = "warning"
+
+class ExecutionStatus(enum.Enum):
+    """Current execution status of script elements"""
+    PENDING = "pending"
+    READY = "ready"
+    EXECUTING = "executing"
+    COMPLETED = "completed"
+    SKIPPED = "skipped"
+    FAILED = "failed"
+
+class PriorityLevel(enum.Enum):
+    """Priority levels for script elements"""
+    CRITICAL = "critical"
+    HIGH = "high"
+    NORMAL = "normal"
+    LOW = "low"
+    OPTIONAL = "optional"
+
+class LocationArea(enum.Enum):
+    """Theater location areas"""
+    STAGE_LEFT = "stage_left"
+    STAGE_RIGHT = "stage_right"
+    CENTER_STAGE = "center_stage"
+    UPSTAGE = "upstage"
+    DOWNSTAGE = "downstage"
+    STAGE_LEFT_UP = "stage_left_up"
+    STAGE_RIGHT_UP = "stage_right_up"
+    STAGE_LEFT_DOWN = "stage_left_down"
+    STAGE_RIGHT_DOWN = "stage_right_down"
+    FLY_GALLERY = "fly_gallery"
+    BOOTH = "booth"
+    HOUSE = "house"
+    BACKSTAGE = "backstage"
+    WINGS_LEFT = "wings_left"
+    WINGS_RIGHT = "wings_right"
+    GRID = "grid"
+    TRAP = "trap"
+    PIT = "pit"
+    LOBBY = "lobby"
+    DRESSING_ROOM = "dressing_room"
+    OTHER = "other"
+
+class ConditionType(enum.Enum):
+    """Types of conditional rules"""
+    WEATHER = "weather"
+    CAST = "cast"
+    EQUIPMENT = "equipment"
+    TIME = "time"
+    CUSTOM = "custom"
+
+class OperatorType(enum.Enum):
+    """Operators for conditional rules"""
+    EQUALS = "equals"
+    NOT_EQUALS = "not_equals"
+    CONTAINS = "contains"
+    GREATER_THAN = "greater_than"
+    LESS_THAN = "less_than"
 
 class UserStatus(enum.Enum):
     """User authentication status"""
@@ -149,7 +213,7 @@ class Venue(Base):
     equipment = Column(JSON, nullable=True)  # e.g., ["Fly System", "Orchestra Pit", "Sound System"]
     
     # Additional Information
-    notes = Column(Text, nullable=True)
+    venueNotes = Column(Text, nullable=True)
     
     # Rental Information
     rentalRate = Column(Integer, nullable=True)  # Daily rate in dollars
@@ -258,6 +322,7 @@ class Script(Base):
     
     # Core script information
     scriptName = Column(String, nullable=False)
+    scriptNotes = Column(Text, nullable=True)
     scriptStatus = Column(Enum(ScriptStatus), default=ScriptStatus.DRAFT, nullable=False)  # Updated to use enum with DRAFT default
     
     # Timing information
@@ -280,7 +345,7 @@ class Script(Base):
     # Relationships
     owner = relationship("User", foreign_keys=[ownerID])
     show = relationship("Show", back_populates="scripts")
-    elements = relationship("ScriptElement", back_populates="script", order_by="ScriptElement.elementOrder")
+    elements = relationship("ScriptElement", back_populates="script", order_by="ScriptElement.sequence")
 
 class ScriptElement(Base):
     """Individual elements (cues, notes, etc.) within a script"""
@@ -288,28 +353,170 @@ class ScriptElement(Base):
     __table_args__ = (
         Index('idx_scriptelement_timeoffset', 'timeOffset'),
         Index('idx_scriptelement_script_order', 'scriptID', 'elementOrder'),
+        Index('idx_script_sequence', 'scriptID', 'sequence'),
+        Index('idx_script_time_ms', 'scriptID', 'timeOffsetMs'),
+        Index('idx_department_elements', 'departmentID'),
+        Index('idx_parent_element', 'parentElementID'),
+        Index('idx_cue_id', 'cueID'),
+        Index('idx_type_active', 'elementType', 'isActive'),
     )
     
-    # Primary key - CHANGED TO UUID
+    # Primary key - UUID
     elementID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    # Foreign keys - CHANGED TO UUID
+    # Foreign keys - UUID
     scriptID = Column(UUID(as_uuid=True), ForeignKey("scriptsTable.scriptID"), nullable=False)
-    departmentID = Column(UUID(as_uuid=True), ForeignKey("departmentsTable.departmentID"), nullable=False)
+    departmentID = Column(UUID(as_uuid=True), ForeignKey("departmentsTable.departmentID"), nullable=True)  # Nullable for notes
+    parentElementID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID"), nullable=True)
+    createdBy = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=True)
+    updatedBy = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=True)
     
     # Element information
     elementType = Column(Enum(ElementType), nullable=False)
-    elementOrder = Column(Integer, nullable=False)
-    cueNumber = Column(String, nullable=True)
-    elementDescription = Column(Text, nullable=True)
+    elementOrder = Column(Integer, nullable=True)  # Legacy field - made nullable for migration compatibility
+    sequence = Column(Integer, nullable=True)  # New sequence field
+    cueNumber = Column(String, nullable=True)  # Legacy field
+    cueID = Column(String(50), nullable=True)  # New cue ID field
+    elementDescription = Column(Text, nullable=True)  # Legacy field
+    description = Column(Text, nullable=False, server_default='')  # New description field
+    notes = Column(Text, nullable=True)
+    
+    # Trigger and execution
+    triggerType = Column(Enum(TriggerType), nullable=False, server_default='manual')
+    followsCueID = Column(String, nullable=True)
+    executionStatus = Column(Enum(ExecutionStatus), nullable=False, server_default='pending')
+    priority = Column(Enum(PriorityLevel), nullable=False, server_default='normal')
     
     # Timing
-    timeOffset = Column(Interval, nullable=False)
+    timeOffset = Column(Interval, nullable=True)  # Legacy field - made nullable for migration compatibility
+    timeOffsetMs = Column(Integer, nullable=False, server_default='0')  # New timing in milliseconds
+    duration = Column(Integer, nullable=True)  # Duration in milliseconds
+    fadeIn = Column(Integer, nullable=True)  # Fade in time in milliseconds
+    fadeOut = Column(Integer, nullable=True)  # Fade out time in milliseconds
+    
+    # Location and visual
+    location = Column(Enum(LocationArea), nullable=True)
+    locationDetails = Column(Text, nullable=True)
+    departmentColor = Column(String(7), nullable=True)  # Hex color override
+    customColor = Column(String(7), nullable=True)  # Custom color for element
+    
+    # Grouping and hierarchy
+    groupLevel = Column(Integer, nullable=False, server_default='0')
+    isCollapsed = Column(Boolean, nullable=False, server_default='false')
+    
+    # Safety and metadata
+    isSafetyCritical = Column(Boolean, nullable=False, server_default='false')
+    safetyNotes = Column(Text, nullable=True)
+    version = Column(Integer, nullable=False, server_default='1')
     
     # Status
     isActive = Column(Boolean, default=True, nullable=False)
+    
+    # Timestamps
+    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
+    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     script = relationship("Script", back_populates="elements")
     department = relationship("Department")
+    parent_element = relationship("ScriptElement", remote_side=[elementID], backref="child_elements")
+    created_by_user = relationship("User", foreign_keys=[createdBy])
+    updated_by_user = relationship("User", foreign_keys=[updatedBy])
+    
+    # Supporting table relationships
+    equipment = relationship("ScriptElementEquipment", back_populates="element", cascade="all, delete-orphan")
+    crew_assignments = relationship("ScriptElementCrewAssignment", back_populates="element", cascade="all, delete-orphan")
+    performer_assignments = relationship("ScriptElementPerformerAssignment", back_populates="element", cascade="all, delete-orphan")
+    conditional_rules = relationship("ScriptElementConditionalRule", back_populates="element", cascade="all, delete-orphan")
+    group_relationships = relationship("ScriptElementGroup", foreign_keys="ScriptElementGroup.groupID", back_populates="group_element", cascade="all, delete-orphan")
+
+# =============================================================================
+# SCRIPT ELEMENT SUPPORTING MODELS
+# =============================================================================
+
+class ScriptElementEquipment(Base):
+    """Equipment requirements for script elements"""
+    __tablename__ = "scriptElementEquipment"
+    
+    # Composite primary key
+    elementID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID", ondelete="CASCADE"), primary_key=True)
+    equipmentName = Column(String(100), primary_key=True)
+    
+    # Equipment details
+    isRequired = Column(Boolean, nullable=False, server_default='true')
+    notes = Column(Text, nullable=True)
+    
+    # Relationships
+    element = relationship("ScriptElement", back_populates="equipment")
+
+class ScriptElementCrewAssignment(Base):
+    """Crew assignments for script elements"""
+    __tablename__ = "scriptElementCrewAssignments"
+    
+    # Composite primary key
+    elementID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID", ondelete="CASCADE"), primary_key=True)
+    crewID = Column(UUID(as_uuid=True), primary_key=True)  # Will link to User table when crew management is implemented
+    
+    # Assignment details
+    assignmentRole = Column(String(100), nullable=True)
+    isLead = Column(Boolean, nullable=False, server_default='false')
+    
+    # Relationships
+    element = relationship("ScriptElement", back_populates="crew_assignments")
+
+class ScriptElementPerformerAssignment(Base):
+    """Performer assignments for script elements"""
+    __tablename__ = "scriptElementPerformerAssignments"
+    
+    # Composite primary key
+    elementID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID", ondelete="CASCADE"), primary_key=True)
+    performerID = Column(UUID(as_uuid=True), primary_key=True)  # Will link to User/Performer table when implemented
+    
+    # Assignment details
+    characterName = Column(String(100), nullable=True)
+    notes = Column(Text, nullable=True)
+    
+    # Relationships
+    element = relationship("ScriptElement", back_populates="performer_assignments")
+
+class ScriptElementConditionalRule(Base):
+    """Conditional rules for script elements"""
+    __tablename__ = "scriptElementConditionalRules"
+    __table_args__ = (
+        Index('idx_element_conditions', 'elementID'),
+    )
+    
+    # Primary key
+    ruleID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    
+    # Foreign key
+    elementID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID", ondelete="CASCADE"), nullable=False)
+    
+    # Rule definition
+    conditionType = Column(Enum(ConditionType), nullable=False)
+    operator = Column(Enum(OperatorType), nullable=False)
+    conditionValue = Column(Text, nullable=False)
+    description = Column(Text, nullable=False)
+    isActive = Column(Boolean, nullable=False, server_default='true')
+    
+    # Relationships
+    element = relationship("ScriptElement", back_populates="conditional_rules")
+
+class ScriptElementGroup(Base):
+    """Group relationships for script elements"""
+    __tablename__ = "scriptElementGroups"
+    __table_args__ = (
+        Index('idx_group_order', 'groupID', 'orderInGroup'),
+    )
+    
+    # Composite primary key
+    groupID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID", ondelete="CASCADE"), primary_key=True)
+    childElementID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID", ondelete="CASCADE"), primary_key=True)
+    
+    # Group details
+    orderInGroup = Column(Integer, nullable=False)
+    
+    # Relationships
+    group_element = relationship("ScriptElement", foreign_keys=[groupID], back_populates="group_relationships")
+    child_element = relationship("ScriptElement", foreign_keys=[childElementID])
 

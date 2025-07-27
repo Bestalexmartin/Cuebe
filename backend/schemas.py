@@ -90,7 +90,7 @@ class VenueBase(BaseModel):
     stageDepth: Optional[int] = None
     flyHeight: Optional[int] = None
     equipment: Optional[List[str]] = None
-    notes: Optional[str] = None
+    venueNotes: Optional[str] = None
     rentalRate: Optional[int] = None
     minimumRental: Optional[int] = None
 
@@ -159,25 +159,28 @@ class Show(BaseModel):
 
 class ScriptCreate(BaseModel):
     scriptName: Optional[str] = None
+    scriptNotes: Optional[str] = None
     scriptStatus: Optional[str] = None
 
 class Script(BaseModel):
     scriptID: UUID  # ALREADY UUID
     scriptName: str
+    scriptNotes: Optional[str] = None
     scriptStatus: str
     startTime: Optional[datetime] = None
     showID: UUID  # ALREADY UUID
     dateCreated: datetime
     dateUpdated: datetime
     
-    # Forward reference to ScriptElement (defined below)
-    elements: List['ScriptElement'] = []
+    # Forward reference to ScriptElement (defined below) - Optional for dashboard performance
+    elements: Optional[List['ScriptElement']] = []
 
     class Config:
         from_attributes = True
 
 class ScriptUpdate(BaseModel):
     scriptName: Optional[str] = None
+    scriptNotes: Optional[str] = None
     scriptStatus: Optional[str] = None
     startTime: Optional[datetime] = None
 
@@ -215,4 +218,181 @@ class ScriptElement(BaseModel):
         if isinstance(v, timedelta):
             return int(v.total_seconds())
         return v
+
+# =============================================================================
+# ENHANCED SCRIPT ELEMENT SCHEMAS
+# =============================================================================
+
+class ScriptElementCreate(BaseModel):
+    """Schema for creating new script elements"""
+    elementType: str  # 'cue', 'note', 'group'
+    sequence: Optional[int] = None  # Auto-calculated if not provided
+    timeOffsetMs: Optional[int] = 0  # Time offset in milliseconds
+    triggerType: Optional[str] = "manual"  # 'manual', 'time', 'auto', 'follow', 'go', 'standby'
+    cueID: Optional[str] = None
+    description: str = ""
+    notes: Optional[str] = None
+    departmentID: Optional[UUID] = None
+    location: Optional[str] = None  # LocationArea enum values
+    locationDetails: Optional[str] = None
+    duration: Optional[int] = None  # Duration in milliseconds
+    fadeIn: Optional[int] = None  # Fade in time in milliseconds
+    fadeOut: Optional[int] = None  # Fade out time in milliseconds
+    priority: Optional[str] = "normal"  # 'critical', 'high', 'normal', 'low', 'optional'
+    parentElementID: Optional[UUID] = None  # For grouped elements
+    groupLevel: Optional[int] = 0
+    isSafetyCritical: Optional[bool] = False
+    safetyNotes: Optional[str] = None
+    departmentColor: Optional[str] = None  # Hex color override
+    customColor: Optional[str] = None  # Custom color for element
+
+class ScriptElementUpdate(BaseModel):
+    """Schema for updating script elements"""
+    elementType: Optional[str] = None
+    sequence: Optional[int] = None
+    timeOffsetMs: Optional[int] = None
+    triggerType: Optional[str] = None
+    followsCueID: Optional[str] = None
+    cueID: Optional[str] = None
+    description: Optional[str] = None
+    notes: Optional[str] = None
+    departmentID: Optional[UUID] = None
+    location: Optional[str] = None
+    locationDetails: Optional[str] = None
+    duration: Optional[int] = None
+    fadeIn: Optional[int] = None
+    fadeOut: Optional[int] = None
+    priority: Optional[str] = None
+    executionStatus: Optional[str] = None  # 'pending', 'ready', 'executing', 'completed', 'skipped', 'failed'
+    parentElementID: Optional[UUID] = None
+    groupLevel: Optional[int] = None
+    isCollapsed: Optional[bool] = None
+    isSafetyCritical: Optional[bool] = None
+    safetyNotes: Optional[str] = None
+    departmentColor: Optional[str] = None
+    customColor: Optional[str] = None
+
+class ScriptElementEquipment(BaseModel):
+    """Schema for script element equipment requirements"""
+    equipmentName: str
+    isRequired: bool = True
+    notes: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+class ScriptElementCrewAssignment(BaseModel):
+    """Schema for script element crew assignments"""
+    crewID: UUID
+    assignmentRole: Optional[str] = None
+    isLead: bool = False
+    
+    class Config:
+        from_attributes = True
+
+class ScriptElementConditionalRule(BaseModel):
+    """Schema for script element conditional rules"""
+    ruleID: UUID
+    conditionType: str  # 'weather', 'cast', 'equipment', 'time', 'custom'
+    operator: str  # 'equals', 'not_equals', 'contains', 'greater_than', 'less_than'
+    conditionValue: str
+    description: str
+    isActive: bool = True
+    
+    class Config:
+        from_attributes = True
+
+class ScriptElementEnhanced(BaseModel):
+    """Enhanced schema for script elements with all new fields"""
+    elementID: UUID
+    scriptID: UUID
+    elementType: str
+    sequence: Optional[int] = None
+    elementOrder: int  # Legacy field
+    
+    # Timing fields
+    timeOffsetMs: int = 0  # New timing in milliseconds
+    timeOffset: int  # Legacy field in seconds (computed)
+    duration: Optional[int] = None
+    fadeIn: Optional[int] = None
+    fadeOut: Optional[int] = None
+    
+    # Trigger and execution
+    triggerType: str = "manual"
+    followsCueID: Optional[str] = None
+    executionStatus: str = "pending"
+    priority: str = "normal"
+    
+    # Content
+    cueID: Optional[str] = None
+    cueNumber: Optional[str] = None  # Legacy field
+    description: str = ""
+    elementDescription: Optional[str] = None  # Legacy field
+    notes: Optional[str] = None
+    
+    # Location and visual
+    departmentID: Optional[UUID] = None
+    location: Optional[str] = None
+    locationDetails: Optional[str] = None
+    departmentColor: Optional[str] = None
+    customColor: Optional[str] = None
+    
+    # Grouping and hierarchy
+    parentElementID: Optional[UUID] = None
+    groupLevel: int = 0
+    isCollapsed: bool = False
+    
+    # Safety and metadata
+    isSafetyCritical: bool = False
+    safetyNotes: Optional[str] = None
+    version: int = 1
+    
+    # System fields
+    isActive: bool = True
+    createdBy: Optional[UUID] = None
+    updatedBy: Optional[UUID] = None
+    dateCreated: datetime
+    dateUpdated: datetime
+    
+    # Relationships
+    equipment: List[ScriptElementEquipment] = []
+    crew_assignments: List[ScriptElementCrewAssignment] = []
+    conditional_rules: List[ScriptElementConditionalRule] = []
+    
+    class Config:
+        from_attributes = True
+    
+    @field_validator('timeOffset', mode='before')
+    @classmethod
+    def format_timedelta_to_seconds(cls, v):
+        """Convert timedelta to seconds for frontend consumption"""
+        if isinstance(v, timedelta):
+            return int(v.total_seconds())
+        return v
+
+# Update the main ScriptElement schema to use enhanced version
+ScriptElement = ScriptElementEnhanced
+
+# =============================================================================
+# BULK OPERATION SCHEMAS
+# =============================================================================
+
+class ScriptElementReorderItem(BaseModel):
+    """Schema for individual element in reorder operation"""
+    elementID: UUID
+    sequence: int
+
+class ScriptElementReorderRequest(BaseModel):
+    """Schema for bulk reordering script elements"""
+    elements: List[ScriptElementReorderItem]
+
+class ScriptElementBulkUpdate(BaseModel):
+    """Schema for bulk updating script elements"""
+    element_ids: List[UUID]
+    department_id: Optional[UUID] = None
+    priority: Optional[str] = None
+    execution_status: Optional[str] = None
+    location: Optional[str] = None
+    is_safety_critical: Optional[bool] = None
+    custom_color: Optional[str] = None
 

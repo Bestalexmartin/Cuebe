@@ -1,3 +1,5 @@
+// frontend/src/pages/DocumentationPage.tsx
+
 import React, { useState } from 'react';
 import {
   Box,
@@ -133,15 +135,25 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
   const codeBlockBg = useColorModeValue('gray.100', 'gray.700');
   const tableBg = useColorModeValue('white', 'gray.800');
   const tableBorderColor = useColorModeValue('gray.200', 'gray.600');
+  const headingColor = useColorModeValue('blue.600', 'blue.300');
+  const subHeadingColor = useColorModeValue('blue.500', 'blue.400');
+  
+  // Color mode values for documentation cards
+  const cardBg = useColorModeValue('white', 'gray.800');
+  const itemBg = useColorModeValue('gray.50', 'gray.700');
+  const itemHoverBg = useColorModeValue('gray.100', 'gray.600');
+  const textColor = useColorModeValue('gray.900', 'white');
+  const secondaryTextColor = useColorModeValue('gray.600', 'whiteAlpha.800');
+  const iconColor = useColorModeValue('gray.600', 'white');
 
   const markdownComponents = {
     h1: ({ children }: any) => (
-      <Heading as="h1" size="xl" mt={8} mb={4} color="blue.400">
+      <Heading as="h1" size="xl" mt={8} mb={4} color={headingColor}>
         {children}
       </Heading>
     ),
     h2: ({ children }: any) => (
-      <Heading as="h2" size="lg" mt={6} mb={3} color="blue.300">
+      <Heading as="h2" size="lg" mt={6} mb={3} color={subHeadingColor}>
         {children}
       </Heading>
     ),
@@ -300,7 +312,7 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       setContent(data.content);
     } catch (error) {
@@ -333,28 +345,28 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
           return groups;
         }, {} as Record<string, DocFile[]>)
       ).map(([category, docs]) => (
-        <Card key={category} size="sm" bg="gray.800">
+        <Card key={category} size="sm" bg={cardBg}>
           <CardBody>
             <VStack align="stretch" spacing={3}>
               <HStack spacing={2}>
                 <Badge colorScheme="blue" size="sm">
                   {category}
                 </Badge>
-                <Text fontWeight="semibold" fontSize="sm" color="white">
+                <Text fontWeight="semibold" fontSize="sm" color={textColor}>
                   {docs.length} document{docs.length > 1 ? 's' : ''}
                 </Text>
               </HStack>
               <VStack spacing={2} align="stretch">
                 {docs.map((doc) => (
-                  <HStack key={doc.name} spacing={3} p={2} rounded="md" bg="gray.700">
+                  <HStack key={doc.name} spacing={3} p={2} rounded="md" bg={itemBg}>
                     <Box px={2}>
-                      <AppIcon name={doc.icon} boxSize="25px" color="white" />
+                      <AppIcon name={doc.icon} boxSize="25px" color={iconColor} />
                     </Box>
                     <VStack align="start" spacing={0} flex={1}>
-                      <Text fontWeight="medium" fontSize="sm" color="white">
+                      <Text fontWeight="medium" fontSize="sm" color={textColor}>
                         {doc.name}
                       </Text>
-                      <Text fontSize="xs" color="whiteAlpha.800" noOfLines={1}>
+                      <Text fontSize="xs" color={secondaryTextColor} noOfLines={1}>
                         {doc.description}
                       </Text>
                     </VStack>
@@ -375,10 +387,10 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
         <CardBody>
           <VStack spacing={4} align="stretch">
             <HStack spacing={3} align="start">
-              <AppIcon 
-                name={getCategoryIcon(selectedCategory)} 
-                boxSize="24px" 
-                color="white" 
+              <AppIcon
+                name={getCategoryIcon(selectedCategory)}
+                boxSize="24px"
+                color={iconColor}
               />
               <VStack align="start" spacing={0}>
                 <Text fontWeight="semibold" fontSize="lg">{selectedCategory} Documentation</Text>
@@ -392,25 +404,25 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
               {DOCUMENTATION_FILES
                 .filter(doc => doc.category === selectedCategory)
                 .map((doc) => (
-                  <HStack 
-                    key={doc.name} 
-                    spacing={3} 
-                    p={3} 
-                    rounded="md" 
-                    bg="gray.700"
+                  <HStack
+                    key={doc.name}
+                    spacing={3}
+                    p={3}
+                    rounded="md"
+                    bg={itemBg}
                     cursor="pointer"
-                    _hover={{ bg: "gray.600" }}
+                    _hover={{ bg: itemHoverBg }}
                     onClick={() => loadDocument(doc.name)}
                     align="start"
                   >
                     <Box px={2}>
-                      <AppIcon name={doc.icon} boxSize="20px" color="white" />
+                      <AppIcon name={doc.icon} boxSize="20px" color={iconColor} />
                     </Box>
                     <VStack align="start" spacing={1} flex={1}>
-                      <Text fontWeight="medium" fontSize="sm" color="white">
+                      <Text fontWeight="medium" fontSize="sm" color={textColor}>
                         {doc.name}
                       </Text>
-                      <Text fontSize="xs" color="whiteAlpha.800">
+                      <Text fontSize="xs" color={secondaryTextColor}>
                         {doc.description}
                       </Text>
                     </VStack>
@@ -451,7 +463,7 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
             <CardBody>
               <VStack spacing={4} align="stretch">
                 <HStack spacing={3} align="start">
-                  <AppIcon name={DOCUMENTATION_FILES.find(doc => doc.name === selectedDoc)?.icon || 'docs'} boxSize="24px" color="white" />
+                  <AppIcon name={DOCUMENTATION_FILES.find(doc => doc.name === selectedDoc)?.icon || 'docs'} boxSize="24px" color={iconColor} />
                   <VStack align="start" spacing={0}>
                     <Text fontWeight="semibold">{selectedDoc}</Text>
                   </VStack>

@@ -19,7 +19,7 @@ interface Venue {
   stageDepth?: number;
   flyHeight?: number;
   equipment?: string[];
-  notes?: string;
+  venueNotes?: string;
   rentalRate?: number;
   minimumRental?: number;
   dateCreated: string;

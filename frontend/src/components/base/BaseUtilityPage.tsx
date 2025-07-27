@@ -175,7 +175,6 @@ export const BaseUtilityPage: React.FC<BaseUtilityPageProps> = ({
             border="1px solid"
             borderColor="container.border"
             p="4"
-            pb="8"
             borderRadius="md"
             flexGrow={1}
             overflowY="auto"

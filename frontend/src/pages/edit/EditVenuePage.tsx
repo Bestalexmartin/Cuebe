@@ -15,6 +15,7 @@ import { ActionItem } from '../../components/ActionsMenu';
 import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmationModal';
 import { useEnhancedToast } from '../../utils/toastUtils';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
+import { useChangeDetection } from '../../hooks/useChangeDetection';
 
 // TypeScript interfaces
 interface VenueFormData {
@@ -30,7 +31,7 @@ interface VenueFormData {
     stageWidth: string;
     stageDepth: string;
     flyHeight: string;
-    notes: string;
+    venueNotes: string;
     rentalRate: string;
     minimumRental: string;
 }
@@ -53,7 +54,7 @@ const INITIAL_FORM_STATE: VenueFormData = {
     stageWidth: '',
     stageDepth: '',
     flyHeight: '',
-    notes: '',
+    venueNotes: '',
     rentalRate: '',
     minimumRental: ''
 };
@@ -107,7 +108,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             }
         ]
     },
-    notes: {
+    venueNotes: {
         required: false,
         rules: [
             ValidationRules.maxLength(1000, 'Notes must be no more than 1000 characters')
@@ -152,12 +153,37 @@ export const EditVenuePage: React.FC = () => {
                 stageWidth: venue.stageWidth?.toString() || '',
                 stageDepth: venue.stageDepth?.toString() || '',
                 flyHeight: venue.flyHeight?.toString() || '',
-                notes: venue.notes || '',
+                venueNotes: venue.venueNotes || '',
                 rentalRate: venue.rentalRate?.toString() || '',
                 minimumRental: venue.minimumRental?.toString() || ''
             });
         }
     }, [venue, form.setFormData]);
+
+    // Change detection for save button - same pattern as EditShowPage
+    const initialData = venue ? {
+        venueName: venue.venueName || '',
+        address: venue.address || '',
+        city: venue.city || '',
+        state: venue.state || '',
+        capacity: venue.capacity?.toString() || '',
+        venueType: venue.venueType || '',
+        contactName: venue.contactName || '',
+        contactEmail: venue.contactEmail || '',
+        contactPhone: venue.contactPhone || '',
+        stageWidth: venue.stageWidth?.toString() || '',
+        stageDepth: venue.stageDepth?.toString() || '',
+        flyHeight: venue.flyHeight?.toString() || '',
+        venueNotes: venue.venueNotes || '',
+        rentalRate: venue.rentalRate?.toString() || '',
+        minimumRental: venue.minimumRental?.toString() || ''
+    } : null;
+
+    const { hasChanges, updateOriginalData } = useChangeDetection(
+        initialData,
+        form.formData,
+        true // Always active for venue edit
+    );
 
     // Handle form field changes
     const handleChange = (field: keyof VenueFormData, value: string) => {
@@ -185,7 +211,7 @@ export const EditVenuePage: React.FC = () => {
                 stageWidth: form.formData.stageWidth ? parseInt(form.formData.stageWidth) : null,
                 stageDepth: form.formData.stageDepth ? parseInt(form.formData.stageDepth) : null,
                 flyHeight: form.formData.flyHeight ? parseInt(form.formData.flyHeight) : null,
-                notes: form.formData.notes || null,
+                venueNotes: form.formData.venueNotes || null,
                 rentalRate: form.formData.rentalRate ? parseInt(form.formData.rentalRate) : null,
                 minimumRental: form.formData.minimumRental ? parseInt(form.formData.minimumRental) : null,
             };
@@ -196,6 +222,9 @@ export const EditVenuePage: React.FC = () => {
                 `"${form.formData.venueName}" has been updated successfully`,
                 updateData
             );
+
+            // Update original data to reflect the changes
+            updateOriginalData(form.formData);
 
             // Navigate back to dashboard on success
             navigate('/dashboard', {
@@ -284,7 +313,7 @@ export const EditVenuePage: React.FC = () => {
                     variant: "primary",
                     type: "submit",
                     isLoading: form.isSubmitting,
-                    isDisabled: !isFormValid()
+                    isDisabled: !isFormValid() || !hasChanges
                 }}
                 secondaryActions={[
                     {
@@ -468,9 +497,9 @@ export const EditVenuePage: React.FC = () => {
                         <FormControl>
                             <FormLabel>Notes</FormLabel>
                             <Textarea
-                                value={form.formData.notes}
-                                onChange={(e) => handleChange('notes', e.target.value)}
-                                onBlur={() => form.validateField('notes')}
+                                value={form.formData.venueNotes}
+                                onChange={(e) => handleChange('venueNotes', e.target.value)}
+                                onBlur={() => form.validateField('venueNotes')}
                                 placeholder="Additional venue information, equipment, special requirements, etc."
                                 minHeight="120px"
                                 resize="vertical"
@@ -495,18 +524,18 @@ export const EditVenuePage: React.FC = () => {
                         flexShrink={0}
                         minWidth="450px"
                     >
-                    <Text fontWeight="semibold" fontSize="md" display="inline">
-                        Validation Errors:
-                    </Text>
-                    <Text fontSize="md" display="inline" ml={1}>
-                        {form.fieldErrors.map((error, i) => (
-                            <Text key={i} as="span">
-                                {i > 0 && '; '}{error.message}
-                            </Text>
-                        ))}
-                    </Text>
-                </Box>
-            )}
+                        <Text fontWeight="semibold" fontSize="md" display="inline">
+                            Validation Errors:
+                        </Text>
+                        <Text fontSize="md" display="inline" ml={1}>
+                            {form.fieldErrors.map((error, i) => (
+                                <Text key={i} as="span">
+                                    {i > 0 && '; '}{error.message}
+                                </Text>
+                            ))}
+                        </Text>
+                    </Box>
+                )}
 
             </BaseEditPage>
 
