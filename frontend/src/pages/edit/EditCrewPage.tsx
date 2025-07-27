@@ -17,6 +17,7 @@ import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmat
 import { FinalDeleteConfirmationModal } from '../../components/modals/FinalDeleteConfirmationModal';
 import { useEnhancedToast } from '../../utils/toastUtils';
 import { formatDateTimeLocal } from '../../utils/dateTimeUtils';
+import { useChangeDetection } from '../../hooks/useChangeDetection';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 
 // TypeScript interfaces
@@ -157,6 +158,22 @@ export const EditCrewPage: React.FC = () => {
         }
     }, [crew, form.setFormData]);
 
+    // Change detection for save button
+    const initialData = crew ? {
+        fullnameFirst: crew.fullnameFirst || '',
+        fullnameLast: crew.fullnameLast || '',
+        emailAddress: crew.emailAddress || '',
+        phoneNumber: crew.phoneNumber || '',
+        userRole: crew.userRole || '',
+        notes: crew.relationshipNotes || ''
+    } : null;
+
+    const { hasChanges, updateOriginalData } = useChangeDetection(
+        initialData,
+        form.formData,
+        true // Always active for crew editing
+    );
+
     // Handle form field changes
     const handleChange = (field: keyof CrewFormData, value: string) => {
         form.updateField(field, value);
@@ -185,6 +202,9 @@ export const EditCrewPage: React.FC = () => {
                 `"${form.formData.fullnameFirst} ${form.formData.fullnameLast}" has been updated successfully`,
                 updateData
             );
+
+            // Update original data to reflect the new saved state
+            updateOriginalData(form.formData);
 
             // Navigate back to dashboard on success
             navigate('/dashboard', {
@@ -216,6 +236,10 @@ export const EditCrewPage: React.FC = () => {
             form.formData.fullnameLast.trim().length >= 4 &&
             form.formData.emailAddress.trim().length > 0 &&
             form.formData.userRole.trim().length > 0;
+    };
+
+    const canSave = (): boolean => {
+        return isFormValid() && hasChanges;
     };
 
     const getFullName = (): string => {
@@ -331,7 +355,7 @@ export const EditCrewPage: React.FC = () => {
                     variant: "primary",
                     type: "submit",
                     isLoading: form.isSubmitting,
-                    isDisabled: !isFormValid()
+                    isDisabled: !canSave()
                 }}
                 secondaryActions={[
                     {

@@ -52,7 +52,7 @@ export const UtilitiesMenu: React.FC<UtilitiesMenuProps> = ({ onSaveNavigationSt
       <MenuList>
         <MenuItem
           onClick={() => handleNavigateToPage('/dashboard')}
-          icon={<AppIcon name="show" boxSize="14px" />}
+          icon={<AppIcon name="dashboard" boxSize="16px" />}
           {...getMenuItemStyle('/dashboard')}
         >
           Dashboard
@@ -60,14 +60,14 @@ export const UtilitiesMenu: React.FC<UtilitiesMenuProps> = ({ onSaveNavigationSt
         <MenuDivider />
         <MenuItem
           onClick={() => handleNavigateToPage('/tutorial')}
-          icon={<AppIcon name="compass" boxSize="14px" />}
+          icon={<AppIcon name="compass" boxSize="16px" />}
           {...getMenuItemStyle('/tutorial')}
         >
           Tutorial
         </MenuItem>
         <MenuItem
           onClick={() => handleNavigateToPage('/test-tools')}
-          icon={<AppIcon name="warning" boxSize="14px" />}
+          icon={<AppIcon name="warning" boxSize="16px" />}
           {...getMenuItemStyle('/test-tools')}
         >
           Test Tools
@@ -81,7 +81,7 @@ export const UtilitiesMenu: React.FC<UtilitiesMenuProps> = ({ onSaveNavigationSt
         </MenuItem>
         <MenuItem
           onClick={() => handleNavigateToPage('/documentation')}
-          icon={<AppIcon name="docs" boxSize="14px" />}
+          icon={<AppIcon name="docs" boxSize="16px" />}
           {...getMenuItemStyle('/documentation')}
         >
           Documentation

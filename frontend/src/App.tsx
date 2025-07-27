@@ -66,7 +66,7 @@ const App: React.FC = () => {
             </ProtectedRoute>
           } />
 
-          {/* Add this new route for script editing */}
+          {/* Script editing route */}
           <Route path="/scripts/:scriptId/edit" element={
             <ProtectedRoute>
               <EditScriptPage />
