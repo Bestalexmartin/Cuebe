@@ -7,6 +7,7 @@ import { useAuth } from '@clerk/clerk-react';
 interface Script {
   scriptID: string;
   scriptName: string;
+  scriptNotes?: string;
   scriptStatus: string;
   showID: string;
   startTime: string;

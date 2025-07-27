@@ -58,10 +58,10 @@ async def read_shows_for_current_user(
     skip: int = 0,
     limit: int = 100
 ):
-    """Get all shows owned by the current user."""
+    """Get all shows owned by the current user - optimized for dashboard cards."""
     shows = db.query(models.Show).options(
-        joinedload(models.Show.scripts).joinedload(models.Script.elements),
-        joinedload(models.Show.venue)
+        joinedload(models.Show.scripts),  # Load basic script info (name, status, dates) but not elements
+        joinedload(models.Show.venue)     # Load venue for venue name display
     ).filter(models.Show.ownerID == user.userID).offset(skip).limit(limit).all()
     
     return shows

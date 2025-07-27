@@ -128,7 +128,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
       case 'swagger':
         return (
           <Box
-            height="80vh"
+            height="100%"
             border="1px solid"
             borderColor={borderColor}
             borderRadius="md"
@@ -149,7 +149,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
       case 'redoc':
         return (
           <Box
-            height="80vh"
+            height="100%"
             border="1px solid"
             borderColor={borderColor}
             borderRadius="md"
@@ -168,7 +168,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
       default:
         return (
           <Box
-            height="80vh"
+            height="100%"
             border="1px solid"
             borderColor={borderColor}
             borderRadius="md"

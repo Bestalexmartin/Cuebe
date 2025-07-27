@@ -48,8 +48,8 @@ const semanticTokens = {
       _dark: 'whiteAlpha.300',
     },
     'container.border': {
-      _light: 'gray.700',
-      _dark: 'gray.300',
+      _light: 'gray.600',
+      _dark: 'gray.400',
     },
     // Success/Info Toast (default blue)
     'toast.success.bg': {

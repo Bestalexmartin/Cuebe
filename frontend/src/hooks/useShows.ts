@@ -12,6 +12,7 @@ interface Venue {
 interface Script {
   scriptID: string;
   scriptName: string;
+  scriptNotes?: string;
   scriptStatus: string;
   showID: string;
   startTime: string;

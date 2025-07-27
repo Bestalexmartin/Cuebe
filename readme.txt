@@ -111,3 +111,6 @@ Saturday Jul 26, 2025
 4) Crafted Roadmap for further development and added it to documentation
 5) Created edit script page, fixed issue with show card hover state
 6) Added Edit Script page, duplicate and delete features, implemented change detection for pages with editable fields, improved documentation layout
+
+Sunday Jul 27, 2025
+1) UI Cleanup and thorough implementation of the hasChange() function to track changes when using forms

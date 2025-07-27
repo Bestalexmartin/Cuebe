@@ -19,7 +19,7 @@ except ImportError:
     RATE_LIMITING_ENABLED = False
 
 # Import routers
-from routers import users, crews, venues, departments, shows, webhooks, system_tests
+from routers import users, crews, venues, departments, shows, webhooks, system_tests, script_elements
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -66,6 +66,7 @@ app.include_router(crews.router)     # Crew management at /api/me/crews, /api/cr
 app.include_router(venues.router)    # Venue management at /api/me/venues, /api/venues/*
 app.include_router(departments.router)  # Department management at /api/me/departments, /api/departments/*
 app.include_router(shows.router)     # Show and script management at /api/shows/*, /api/scripts/*
+app.include_router(script_elements.router)  # Script elements CRUD at /api/scripts/*/elements, /api/elements/*
 app.include_router(system_tests.router)  # System testing endpoints at /api/system-tests/*
 
 # =============================================================================
@@ -81,6 +82,16 @@ async def custom_swagger_ui_html():
         <title>{app.title} - API Explorer</title>
         <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
         <style>
+            html, body {{
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                overflow: hidden;
+            }}
+            #swagger-ui {{
+                height: 100vh;
+                overflow-y: auto;
+            }}
             .swagger-ui .topbar {{ display: none; }}
         </style>
     </head>
@@ -119,6 +130,18 @@ async def custom_redoc_html():
         <title>{app.title} - ReDoc</title>
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            html, body {{
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                overflow: hidden;
+            }}
+            redoc {{
+                height: 100vh;
+                overflow-y: auto;
+            }}
+        </style>
     </head>
     <body>
         <redoc spec-url='{app.openapi_url}' hide-download-button></redoc>

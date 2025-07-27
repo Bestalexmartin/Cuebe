@@ -15,6 +15,8 @@ Welcome to the CallMaster documentation! This comprehensive guide covers all asp
 
 ### `/architecture` - System Design & Technical Details
 - **[Component Architecture](./architecture/component-architecture.md)** - BaseCard/BaseModal patterns and implementation guide
+- **[Script Elements Data Model](./architecture/script-elements-data-model.md)** - Complete data structure for script cues, notes, and groups
+- **[Script Elements Database Schema](./architecture/script-elements-database-schema.md)** - Database tables and API endpoints for script elements
 - **[Performance Optimizations](./architecture/performance-optimizations.md)** - React.memo, component optimization, and performance monitoring
 - **[Error Handling](./architecture/error-handling.md)** - Error boundaries, validation, and recovery strategies
 - **[Documentation Integration](./architecture/documentation-integration.md)** - How documentation is integrated into the application

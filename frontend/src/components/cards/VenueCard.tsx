@@ -170,11 +170,11 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
             )}
 
             {/* Notes */}
-            {venue.notes && (
+            {venue.venueNotes && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Notes</Text>
                     <Text fontSize="sm" color="detail.text">
-                        {venue.notes}
+                        {venue.venueNotes}
                     </Text>
                 </Box>
             )}
