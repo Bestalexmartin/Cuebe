@@ -116,7 +116,7 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                 <HStack spacing="2">
                     <Menu>
                         <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
-                        <MenuList>
+                        <MenuList zIndex={9999}>
                             <MenuItem
                                 onClick={() => handleSortClick('showName')}
                                 color={sortBy === 'showName' ? 'blue.400' : 'inherit'}

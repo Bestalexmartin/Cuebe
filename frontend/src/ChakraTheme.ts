@@ -51,6 +51,10 @@ const semanticTokens = {
       _light: 'gray.600',
       _dark: 'gray.400',
     },
+    'card.background': {
+      _light: 'gray.100',
+      _dark: 'gray.800',
+    },
     // Success/Info Toast (default blue)
     'toast.success.bg': {
       _light: '#6495ED',

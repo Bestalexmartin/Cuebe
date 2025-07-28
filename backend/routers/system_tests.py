@@ -59,8 +59,8 @@ def rate_limit(limit_config):
         return func
     return decorator
 
-@router.get("/health")
 @rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+@router.get("/health")
 def system_tests_health(request: Request):
     """Health check for system tests API"""
     # Test basic network connectivity
@@ -83,8 +83,8 @@ def system_tests_health(request: Request):
         "network_connectivity": network_test
     }
 
-@router.get("/debug-speed")
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+@router.get("/debug-speed")
 def debug_speed_test(request: Request):
     """Debug endpoint to test speed test components individually"""
     results = {
@@ -157,8 +157,8 @@ def debug_speed_test(request: Request):
     
     return results
 
-@router.get("/database-connectivity")
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+@router.get("/database-connectivity")
 def test_database_connectivity(request: Request, db: Session = Depends(get_db)):
     """Test connectivity to various database services"""
     results = []
@@ -236,8 +236,8 @@ def test_database_connectivity(request: Request, db: Session = Depends(get_db)):
         "summary": f"Tested {len(results)} databases. {connected_count} connected, {failed_count} failed."
     }
 
-@router.get("/api-endpoints")
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+@router.get("/api-endpoints")
 def test_api_endpoints(request: Request):
     """Test connectivity to API endpoints"""
     results = []
@@ -293,8 +293,8 @@ def test_api_endpoints(request: Request):
         "summary": f"Tested {len(results)} endpoints. {connected_count} successful, {len(results) - connected_count} failed/skipped."
     }
 
-@router.get("/system-performance")
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+@router.get("/system-performance")
 def test_system_performance(request: Request):
     """Get real system performance metrics"""
     if not HAS_PSUTIL or psutil is None:
@@ -348,8 +348,8 @@ def test_system_performance(request: Request):
         logger.error(f"System performance test failed: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get system performance: {str(e)}")
 
-@router.get("/network-speed")
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+@router.get("/network-speed")
 def test_network_speed(request: Request):
     """Test network connectivity and download speed"""
     try:
@@ -643,14 +643,48 @@ def test_network_speed(request: Request):
                 speed_test_error = f"Speed test unavailable: {str(e)}"
                 logger.error(f"Speed test failed: {e}")
         
-        # Only estimate upload speed if we don't have a real measurement
+        # Test actual upload speed if we don't have a real measurement from speedtest-cli
         if upload_speed == 0 and download_speed > 0:
-            if download_speed > 100:  # Fiber connection
-                upload_speed = round(download_speed * 0.8, 2)  # Symmetric or near-symmetric
-            elif download_speed > 25:  # Cable/DSL
-                upload_speed = round(download_speed * 0.1, 2)  # 10% ratio typical for cable
-            else:  # Slower connection
-                upload_speed = round(download_speed * 0.2, 2)  # Better ratio for slower connections
+            try:
+                logger.info("Attempting upload speed test using POST to httpbin")
+                # Test upload speed using httpbin.org/post
+                import io
+                
+                # Create test data (1MB)
+                test_data = b'x' * (1024 * 1024)  # 1MB of data
+                
+                upload_start = time.time()
+                response = requests.post(
+                    'https://httpbin.org/post',
+                    data=test_data,
+                    timeout=15,
+                    headers={'Content-Type': 'application/octet-stream'}
+                )
+                upload_end = time.time()
+                
+                if response.status_code == 200:
+                    upload_duration = upload_end - upload_start
+                    if upload_duration > 0.5:  # At least 500ms for reliable measurement
+                        upload_speed_bps = (len(test_data) * 8) / upload_duration
+                        upload_speed = round(upload_speed_bps / 1000000, 2)
+                        logger.info(f"Upload speed test successful: {upload_speed} Mbps")
+                        speed_test_error = speed_test_error + " | Upload tested via httpbin" if speed_test_error else "Upload tested via httpbin"
+                    else:
+                        logger.info("Upload test too fast for reliable measurement, using estimation")
+                        raise Exception("Upload too fast to measure")
+                else:
+                    logger.info("Upload test failed, using estimation")
+                    raise Exception("Upload test HTTP error")
+                    
+            except Exception as e:
+                logger.info(f"Upload test failed ({e}), using estimation based on download speed")
+                # Fall back to estimation
+                if download_speed > 100:  # Fiber connection
+                    upload_speed = round(download_speed * 0.8, 2)  # Symmetric or near-symmetric
+                elif download_speed > 25:  # Cable/DSL
+                    upload_speed = round(download_speed * 0.1, 2)  # 10% ratio typical for cable
+                else:  # Slower connection
+                    upload_speed = round(download_speed * 0.2, 2)  # Better ratio for slower connections
         
         return {
             "testType": "network",
@@ -670,8 +704,8 @@ def test_network_speed(request: Request):
         logger.error(f"Network speed test failed: {e}")
         raise HTTPException(status_code=500, detail=f"Network test failed: {str(e)}")
 
-@router.get("/filesystem-permissions")
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+@router.get("/filesystem-permissions")
 def test_filesystem_permissions(request: Request):
     """Test filesystem permissions for paths critical to CallMaster operation"""
     from pathlib import Path
@@ -834,8 +868,8 @@ def test_filesystem_permissions(request: Request):
         "summary": ". ".join(summary_parts) + "."
     }
 
-@router.post("/prepare-speedtest")
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+@router.post("/prepare-speedtest")
 def prepare_speedtest(request: Request):
     """Check for speedtest-cli availability and install if necessary"""
     import shutil
@@ -947,8 +981,8 @@ def prepare_speedtest(request: Request):
     return result
 
 
-@router.post("/prepare-pytest")
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+@router.post("/prepare-pytest")
 def prepare_pytest(request: Request):
     """Check for pytest availability and install if necessary for API testing"""
     import shutil
@@ -1068,8 +1102,8 @@ def prepare_pytest(request: Request):
     return result
 
 
-@router.get("/external-services")
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+@router.get("/external-services")
 def test_external_services(request: Request):
     """Test connectivity to external services required by CallMaster"""
     import requests

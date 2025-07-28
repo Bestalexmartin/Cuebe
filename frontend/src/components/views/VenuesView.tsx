@@ -94,7 +94,7 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
                     <HStack spacing="2">
                         <Menu>
                             <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
-                            <MenuList>
+                            <MenuList zIndex={9999}>
                                 <MenuItem
                                     onClick={() => handleSortClick('venueName')}
                                     color={sortBy === 'venueName' ? 'blue.400' : 'inherit'}

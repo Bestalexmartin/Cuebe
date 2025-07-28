@@ -135,11 +135,12 @@ async def custom_redoc_html():
                 margin: 0;
                 padding: 0;
                 height: 100%;
-                overflow: hidden;
+                overflow: auto;
             }}
             redoc {{
-                height: 100vh;
+                height: 100%;
                 overflow-y: auto;
+                display: block;
             }}
         </style>
     </head>

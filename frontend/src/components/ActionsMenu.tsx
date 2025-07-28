@@ -46,7 +46,7 @@ export const ActionsMenu: React.FC<ActionsMenuProps> = ({
             >
                 Actions
             </MenuButton>
-            <MenuList>
+            <MenuList zIndex={9999}>
                 {/* Normal actions */}
                 {normalActions.map((action) => (
                     <MenuItem

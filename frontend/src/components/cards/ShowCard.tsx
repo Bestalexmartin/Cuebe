@@ -1,3 +1,5 @@
+// frontend/src/components/cards/ShowCard.tsx
+
 import React, { useMemo } from "react";
 import {
   VStack,
@@ -97,7 +99,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
     navigate(`/shows/${show.showID}/edit`);
   };
 
-  // Handler for script click - now navigates to edit page
+  // Handler for script click - now navigates to manage page
   const handleScriptClick = (scriptId: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
@@ -109,8 +111,8 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
       onSaveNavigationState();
     }
 
-    // Navigate to the script edit page
-    navigate(`/scripts/${scriptId}/edit`);
+    // Navigate to the script management page
+    navigate(`/scripts/${scriptId}/manage`);
   };
 
   // Get venue name safely

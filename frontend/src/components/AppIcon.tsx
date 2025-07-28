@@ -8,7 +8,7 @@ import { IoPeopleSharp } from "react-icons/io5";
 import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
 import { FaMasksTheater, FaMapLocationDot, FaScroll } from "react-icons/fa6";
-import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList } from "react-icons/fa";
+import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt } from "react-icons/fa";
 import { RiDashboard2Fill } from "react-icons/ri";
 import { EditIcon } from "@chakra-ui/icons";
 import { GoSortAsc, GoSortDesc, GoAlertFill } from "react-icons/go";
@@ -49,7 +49,9 @@ export type IconName =
   | 'share'
   | 'info'
   | 'dashboard'
-  | 'planning';
+  | 'planning'
+  | 'add'
+  | 'group';
 
 interface AppIconProps extends Omit<IconProps, 'as'> {
   name: IconName;
@@ -106,7 +108,7 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
     case 'play':
       return <Icon as={FaPlay} {...props} />;
     case 'script-edit':
-      return <Icon as={FaEdit} {...props} />;
+      return <Icon as={FaPencilAlt} {...props} />;
     case 'share':
       return <Icon as={FaShare} {...props} />;
     case 'info':
@@ -115,6 +117,10 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={RiDashboard2Fill} {...props} />;
     case 'planning':
       return <Icon as={FaClipboardList} {...props} />;
+    case 'add':
+      return <Icon as={FaPlus} {...props} />;
+    case 'group':
+      return <Icon as={FaLayerGroup} {...props} />;
     default:
       return null;
   }

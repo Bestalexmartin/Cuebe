@@ -1,3 +1,5 @@
+// frontend/src/components/cards/CrewCard.tsx
+
 import React from 'react';
 import {
     HStack,

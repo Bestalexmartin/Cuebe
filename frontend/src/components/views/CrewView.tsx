@@ -99,7 +99,7 @@ export const CrewView: React.FC<CrewViewProps> = ({
                     <HStack spacing="2">
                         <Menu>
                             <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
-                            <MenuList>
+                            <MenuList zIndex={9999}>
                                 <MenuItem
                                     onClick={() => handleSortClick('fullnameFirst')}
                                     color={sortBy === 'fullnameFirst' ? 'blue.400' : 'inherit'}

@@ -1,3 +1,5 @@
+// frontend/src/components/modals/ProcessingsModal.tsx
+
 import React from 'react';
 import {
     Modal,
@@ -22,9 +24,9 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({
     message = "Please wait while we process your request..."
 }) => {
     return (
-        <Modal 
-            isOpen={isOpen} 
-            onClose={() => {}} // No close function - modal should only be closed programmatically
+        <Modal
+            isOpen={isOpen}
+            onClose={() => { }}
             isCentered
             closeOnOverlayClick={false}
             closeOnEsc={false}
@@ -34,25 +36,25 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({
                 <ModalBody py="8">
                     <VStack spacing={6} align="center">
                         <Box>
-                            <Spinner 
-                                size="xl" 
+                            <Spinner
+                                size="xl"
                                 thickness="4px"
                                 speed="0.8s"
                                 color="blue.400"
                             />
                         </Box>
-                        
+
                         <VStack spacing={2} textAlign="center">
-                            <Text 
-                                fontSize="lg" 
+                            <Text
+                                fontSize="lg"
                                 fontWeight="semibold"
                                 color="gray.700"
                                 _dark={{ color: "gray.200" }}
                             >
                                 {title}
                             </Text>
-                            <Text 
-                                fontSize="sm" 
+                            <Text
+                                fontSize="sm"
                                 color="gray.600"
                                 _dark={{ color: "gray.400" }}
                             >
