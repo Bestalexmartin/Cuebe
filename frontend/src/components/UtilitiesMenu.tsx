@@ -49,7 +49,7 @@ export const UtilitiesMenu: React.FC<UtilitiesMenuProps> = ({ onSaveNavigationSt
       >
         Utilities
       </MenuButton>
-      <MenuList>
+      <MenuList zIndex={9999}>
         <MenuItem
           onClick={() => handleNavigateToPage('/dashboard')}
           icon={<AppIcon name="dashboard" boxSize="16px" />}

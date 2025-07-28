@@ -49,7 +49,7 @@ export const OptionsMenu: React.FC<OptionsMenuProps> = ({ onSaveNavigationState 
       >
         Options
       </MenuButton>
-      <MenuList>
+      <MenuList zIndex={9999}>
         <MenuItem
           onClick={() => handleNavigateToPage('/dashboard')}
           icon={<AppIcon name="dashboard" boxSize="14px" />}

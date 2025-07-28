@@ -1,6 +1,6 @@
 # backend/routers/script_elements.py
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Query, Request
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_
 from uuid import UUID
@@ -13,9 +13,26 @@ import schemas
 from database import get_db
 from .auth import get_current_user
 
+# Optional rate limiting import
+try:
+    from utils.rate_limiter import limiter, RateLimitConfig
+    RATE_LIMITING_AVAILABLE = True
+except ImportError:
+    limiter = None
+    RateLimitConfig = None
+    RATE_LIMITING_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["script-elements"])
+
+def rate_limit(limit_config):
+    """Decorator factory that conditionally applies rate limiting"""
+    def decorator(func):
+        if RATE_LIMITING_AVAILABLE and limiter and limit_config:
+            return limiter.limit(limit_config)(func)
+        return func
+    return decorator
 
 
 # =============================================================================
@@ -47,8 +64,10 @@ async def get_script_elements(
     if script.show.ownerID != user.userID:
         raise HTTPException(status_code=403, detail="Not authorized to view this script")
     
-    # Build query with filters
-    query = db.query(models.ScriptElement).filter(models.ScriptElement.scriptID == script_id)
+    # Build query with filters and include department relationship
+    query = db.query(models.ScriptElement).options(
+        joinedload(models.ScriptElement.department)
+    ).filter(models.ScriptElement.scriptID == script_id)
     
     if active_only:
         query = query.filter(models.ScriptElement.isActive == True)
@@ -168,7 +187,6 @@ async def create_script_element(
             updatedBy=user.userID,
             # Set legacy fields for compatibility
             elementOrder=element.sequence or 1,
-            timeOffset=timedelta(milliseconds=element.timeOffsetMs or 0),
             elementDescription=element.description or ""
         )
         
@@ -225,9 +243,7 @@ async def update_script_element(
             elif field == "location" and value is not None:
                 setattr(element, field, models.LocationArea(value))
             elif field == "timeOffsetMs" and value is not None:
-                # Update both new and legacy timing fields
                 setattr(element, field, value)
-                setattr(element, "timeOffset", timedelta(milliseconds=value))
             elif field == "description" and value is not None:
                 # Update both new and legacy description fields
                 setattr(element, field, value)

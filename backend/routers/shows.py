@@ -1,6 +1,6 @@
 # backend/routers/shows.py
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.orm import Session, joinedload
 from uuid import UUID
 from datetime import datetime, timezone
@@ -11,17 +11,36 @@ import schemas
 from database import get_db
 from .auth import get_current_user
 
+# Optional rate limiting import
+try:
+    from utils.rate_limiter import limiter, RateLimitConfig
+    RATE_LIMITING_AVAILABLE = True
+except ImportError:
+    limiter = None
+    RateLimitConfig = None
+    RATE_LIMITING_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["shows", "scripts"])
+
+def rate_limit(limit_config):
+    """Decorator factory that conditionally applies rate limiting"""
+    def decorator(func):
+        if RATE_LIMITING_AVAILABLE and limiter and limit_config:
+            return limiter.limit(limit_config)(func)
+        return func
+    return decorator
 
 
 # =============================================================================
 # SHOW ENDPOINTS
 # =============================================================================
 
+@rate_limit(RateLimitConfig.CRUD_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 @router.post("/shows/", response_model=schemas.Show)
 async def create_show(
+    request: Request,
     show: schemas.ShowCreate, 
     db: Session = Depends(get_db), 
     user: models.User = Depends(get_current_user)
@@ -51,8 +70,10 @@ async def create_show(
     return new_show
 
 
+@rate_limit(RateLimitConfig.READ_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 @router.get("/me/shows", response_model=list[schemas.Show])
 async def read_shows_for_current_user(
+    request: Request,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db), 
     skip: int = 0,
@@ -172,8 +193,10 @@ async def delete_show(
 # SCRIPT ENDPOINTS
 # =============================================================================
 
+@rate_limit(RateLimitConfig.CRUD_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 @router.post("/shows/{show_id}/scripts/", response_model=schemas.Script)
 async def create_script_for_show(
+    request: Request,
     show_id: UUID,
     script: schemas.ScriptCreate,
     user: models.User = Depends(get_current_user),
@@ -200,6 +223,29 @@ async def create_script_for_show(
     db.add(new_script)
     db.commit()
     db.refresh(new_script)
+
+    # Create automatic "Show Start" cue with minimal required fields
+    from datetime import timedelta
+    show_start_cue = models.ScriptElement(
+        scriptID=new_script.scriptID,
+        elementType=models.ElementType.CUE,
+        cueID=None,  # No cue ID needed for show start
+        description="SHOW START",  # All caps title
+        timeOffsetMs=0,  # Start at 00:00
+        triggerType=models.TriggerType.MANUAL,
+        executionStatus=models.ExecutionStatus.PENDING,
+        priority=models.PriorityLevel.CRITICAL,
+        customColor="#DC2626",
+        sequence=1,
+        elementOrder=1,
+        isActive=True,
+        groupLevel=0,
+        isSafetyCritical=False,
+        createdBy=user.userID
+        # departmentID intentionally left out (None/NULL)
+    )
+    db.add(show_start_cue)
+    db.commit()
 
     return new_script
 

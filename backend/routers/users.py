@@ -1,6 +1,6 @@
 # backend/routers/users.py
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from datetime import datetime
 import logging
@@ -10,13 +10,32 @@ import schemas
 from database import get_db
 from .auth import get_current_user
 
+# Optional rate limiting import
+try:
+    from utils.rate_limiter import limiter, RateLimitConfig
+    RATE_LIMITING_AVAILABLE = True
+except ImportError:
+    limiter = None
+    RateLimitConfig = None
+    RATE_LIMITING_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
+def rate_limit(limit_config):
+    """Decorator factory that conditionally applies rate limiting"""
+    def decorator(func):
+        if RATE_LIMITING_AVAILABLE and limiter and limit_config:
+            return limiter.limit(limit_config)(func)
+        return func
+    return decorator
 
+
+@rate_limit(RateLimitConfig.READ_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 @router.get("/check-email")
 async def check_user_by_email(
+    request: Request,
     email: str,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -27,7 +46,9 @@ async def check_user_by_email(
 
 
 @router.post("/create-guest-with-relationship", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
+@rate_limit(RateLimitConfig.AUTH_ENDPOINTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 async def create_guest_user_with_relationship(
+    request: Request,
     guest_data: schemas.GuestUserCreate,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)

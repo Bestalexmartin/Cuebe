@@ -1,3 +1,5 @@
+// frontend/src/components/cards/VenueCard.tsx
+
 import React from 'react';
 import {
     HStack,

@@ -114,3 +114,6 @@ Saturday Jul 26, 2025
 
 Sunday Jul 27, 2025
 1) UI Cleanup and thorough implementation of the hasChange() function to track changes when using forms
+
+Monday Jul 28, 2025
+1) Refactored EditScript page to acknowledge central role, created script API endpoints, added cue view, updated docs, added script element CRUD loop

@@ -107,6 +107,19 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
 
           <Box p={4} border="1px solid" borderColor={borderColor} borderRadius="md">
             <HStack justify="space-between" mb={2}>
+              <Text fontWeight="semibold">Script Elements</Text>
+              <Badge colorScheme="teal">GET, POST, PATCH, DELETE</Badge>
+            </HStack>
+            <Text fontSize="sm" color="gray.600">
+              Individual cues, notes, and groups within theater scripts - lighting cues, sound effects, stage directions, and safety-critical elements
+            </Text>
+            <Text fontSize="xs" color="gray.500" mt={1}>
+              /api/scripts/*/elements, /api/elements/*, bulk operations
+            </Text>
+          </Box>
+
+          <Box p={4} border="1px solid" borderColor={borderColor} borderRadius="md">
+            <HStack justify="space-between" mb={2}>
               <Text fontWeight="semibold">Development & Health</Text>
               <Badge colorScheme="gray">GET, POST</Badge>
             </HStack>
@@ -187,21 +200,21 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
     }
   };
 
-  // QuickAccess items ordered as requested: API Explorer first, then Overview, then ReDoc
+  // QuickAccess items ordered: API Overview first, then API Explorer, then ReDoc
   const quickAccessItems = [
-    {
-      id: 'swagger',
-      title: 'API Explorer',
-      description: 'Interactive API explorer',
-      icon: 'api-docs' as const,
-      onClick: () => handleContentSelection('swagger')
-    },
     {
       id: 'overview',
       title: 'API Overview',
       description: 'High-level endpoints overview',
       icon: 'api-docs' as const,
       onClick: () => handleContentSelection('overview')
+    },
+    {
+      id: 'swagger',
+      title: 'API Explorer',
+      description: 'Interactive API explorer',
+      icon: 'api-docs' as const,
+      onClick: () => handleContentSelection('swagger')
     },
     {
       id: 'redoc',

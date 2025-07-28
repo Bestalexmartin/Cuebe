@@ -1,3 +1,5 @@
+// frontend/src/components/cards/DepartmentCard.tsx
+
 import React from 'react';
 import {
     Box,

@@ -16,35 +16,35 @@ Base = declarative_base()
 
 class ElementType(enum.Enum):
     """Types of script elements"""
-    CUE = "cue"
-    NOTE = "note"
-    GROUP = "group"
+    CUE = "CUE"
+    NOTE = "NOTE"
+    GROUP = "GROUP"
 
 class TriggerType(enum.Enum):
     """How script elements are triggered"""
-    MANUAL = "manual"
-    TIME = "time"
-    AUTO = "auto"
-    FOLLOW = "follow"
-    GO = "go"
-    STANDBY = "standby"
+    MANUAL = "MANUAL"
+    TIME = "TIME"
+    AUTO = "AUTO"
+    FOLLOW = "FOLLOW"
+    GO = "GO"
+    STANDBY = "STANDBY"
 
 class ExecutionStatus(enum.Enum):
     """Current execution status of script elements"""
-    PENDING = "pending"
-    READY = "ready"
-    EXECUTING = "executing"
-    COMPLETED = "completed"
-    SKIPPED = "skipped"
-    FAILED = "failed"
+    PENDING = "PENDING"
+    READY = "READY"
+    EXECUTING = "EXECUTING"
+    COMPLETED = "COMPLETED"
+    SKIPPED = "SKIPPED"
+    FAILED = "FAILED"
 
 class PriorityLevel(enum.Enum):
     """Priority levels for script elements"""
-    CRITICAL = "critical"
-    HIGH = "high"
-    NORMAL = "normal"
-    LOW = "low"
-    OPTIONAL = "optional"
+    CRITICAL = "CRITICAL"
+    HIGH = "HIGH"
+    NORMAL = "NORMAL"
+    LOW = "LOW"
+    OPTIONAL = "OPTIONAL"
 
 class LocationArea(enum.Enum):
     """Theater location areas"""
@@ -345,13 +345,12 @@ class Script(Base):
     # Relationships
     owner = relationship("User", foreign_keys=[ownerID])
     show = relationship("Show", back_populates="scripts")
-    elements = relationship("ScriptElement", back_populates="script", order_by="ScriptElement.sequence")
+    elements = relationship("ScriptElement", back_populates="script", order_by="ScriptElement.sequence", cascade="all, delete-orphan")
 
 class ScriptElement(Base):
     """Individual elements (cues, notes, etc.) within a script"""
     __tablename__ = "scriptElementsTable"
     __table_args__ = (
-        Index('idx_scriptelement_timeoffset', 'timeOffset'),
         Index('idx_scriptelement_script_order', 'scriptID', 'elementOrder'),
         Index('idx_script_sequence', 'scriptID', 'sequence'),
         Index('idx_script_time_ms', 'scriptID', 'timeOffsetMs'),
@@ -382,14 +381,13 @@ class ScriptElement(Base):
     notes = Column(Text, nullable=True)
     
     # Trigger and execution
-    triggerType = Column(Enum(TriggerType), nullable=False, server_default='manual')
+    triggerType = Column(Enum(TriggerType), nullable=False, server_default='MANUAL')
     followsCueID = Column(String, nullable=True)
-    executionStatus = Column(Enum(ExecutionStatus), nullable=False, server_default='pending')
-    priority = Column(Enum(PriorityLevel), nullable=False, server_default='normal')
+    executionStatus = Column(Enum(ExecutionStatus), nullable=False, server_default='PENDING')
+    priority = Column(Enum(PriorityLevel), nullable=False, server_default='NORMAL')
     
     # Timing
-    timeOffset = Column(Interval, nullable=True)  # Legacy field - made nullable for migration compatibility
-    timeOffsetMs = Column(Integer, nullable=False, server_default='0')  # New timing in milliseconds
+    timeOffsetMs = Column(Integer, nullable=False, server_default='0')  # Timing in milliseconds
     duration = Column(Integer, nullable=True)  # Duration in milliseconds
     fadeIn = Column(Integer, nullable=True)  # Fade in time in milliseconds
     fadeOut = Column(Integer, nullable=True)  # Fade out time in milliseconds

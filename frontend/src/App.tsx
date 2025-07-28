@@ -10,7 +10,7 @@ import SignInPage from "./pages/auth/SignInPage";
 import SignUpPage from "./pages/auth/SignUpPage";
 import UserProfilePage from "./pages/UserProfilePage";
 import { EditShowPage } from './pages/edit/EditShowPage';
-import { EditScriptPage } from './pages/edit/EditScriptPage';
+import { ManageScriptPage } from './pages/ManageScriptPage';
 import { EditVenuePage } from './pages/edit/EditVenuePage';
 import { EditDepartmentPage } from './pages/edit/EditDepartmentPage';
 import { EditCrewPage } from './pages/edit/EditCrewPage';
@@ -66,10 +66,10 @@ const App: React.FC = () => {
             </ProtectedRoute>
           } />
 
-          {/* Script editing route */}
-          <Route path="/scripts/:scriptId/edit" element={
+          {/* Script management route - elevated from edit hierarchy */}
+          <Route path="/scripts/:scriptId/manage" element={
             <ProtectedRoute>
-              <EditScriptPage />
+              <ManageScriptPage />
             </ProtectedRoute>
           } />
 

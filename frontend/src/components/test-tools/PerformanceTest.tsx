@@ -1,4 +1,5 @@
-// Real Performance Test Component with actual API calls
+// frontend/src/components/test-tools/PerformanceTest.tsx
+
 import React, { useState } from 'react';
 import {
   Box,
@@ -487,7 +488,7 @@ export const PerformanceTest: React.FC = () => {
   const renderNetworkResults = (results: NetworkResult) => (
     <VStack spacing={4} align="stretch">
       <Box p={4} border="1px solid" borderColor="gray.300" borderRadius="md" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
-        <HStack spacing={6} wrap="wrap">
+        <HStack spacing={6} wrap="wrap" align="flex-start">
           <Stat>
             <StatLabel>Average Ping</StatLabel>
             <StatNumber>{results.ping}ms</StatNumber>
@@ -497,14 +498,14 @@ export const PerformanceTest: React.FC = () => {
             <StatNumber>{results.jitter}ms</StatNumber>
           </Stat>
           <Stat>
-            <StatLabel>Download Speed</StatLabel>
+            <StatLabel>Download</StatLabel>
             <StatNumber>{results.downloadSpeed} Mbps</StatNumber>
             <StatHelpText>
               {results.speedTestStatus === 'success' ? 'Measured' : 'Unavailable'}
             </StatHelpText>
           </Stat>
           <Stat>
-            <StatLabel>Upload Speed</StatLabel>
+            <StatLabel>Upload</StatLabel>
             <StatNumber>{results.uploadSpeed} Mbps</StatNumber>
             <StatHelpText>Estimated</StatHelpText>
           </Stat>

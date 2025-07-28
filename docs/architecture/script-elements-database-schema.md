@@ -168,105 +168,244 @@ ALTER TABLE scripts ADD COLUMN IF NOT EXISTS element_count INTEGER DEFAULT 0;
 ALTER TABLE scripts ADD COLUMN IF NOT EXISTS last_element_update TIMESTAMP NULL;
 ```
 
-## API Endpoints Required
+## API Endpoints Implementation Status
 
-### Script Elements CRUD Operations
+### Implemented Script Elements CRUD Operations
 
 #### 1. Get Script Elements
 ```
 GET /api/scripts/{script_id}/elements
 ```
-**Query Parameters:**
-- `include_inactive` (boolean): Include disabled elements
-- `department_id` (string): Filter by department
-- `type` (string): Filter by element type
-- `parent_only` (boolean): Only return top-level elements
+**Implementation Status:** ✅ **COMPLETE** - Fully implemented and tested
 
-**Response:**
+**Query Parameters:**
+- `element_type` (string): Filter by element type (cue, note, group) 
+- `department_id` (UUID): Filter by department
+- `active_only` (boolean, default: true): Only return active elements
+- `skip` (int, default: 0): Pagination offset
+- `limit` (int, default: 100, max: 1000): Pagination limit
+
+**Response:** Direct array of ScriptElement objects
 ```json
-{
-  "elements": [ScriptElement],
-  "departments": [Department],
-  "total_count": number,
-  "active_count": number
-}
+[ScriptElement, ScriptElement, ...]
 ```
 
-#### 2. Create Script Element
+**Security:** User ownership verification through show relationship
+
+---
+
+#### 2. Get Single Script Element
+```
+GET /api/elements/{element_id}
+```
+**Implementation Status:** ✅ **COMPLETE** - Additional endpoint for detailed element retrieval
+
+**Response:** Single ScriptElement with all relationships loaded
+**Security:** User ownership verification through show relationship
+
+---
+
+#### 3. Create Script Element
 ```
 POST /api/scripts/{script_id}/elements
 ```
-**Request Body:**
+**Implementation Status:** ✅ **COMPLETE** - Full validation and enum support
+
+**Request Body:** Uses `ScriptElementCreate` schema
 ```json
 {
-  "type": "cue|note|group",
-  "cue_id": "string?",
+  "elementType": "cue|note|group",
+  "cueID": "string?",
   "description": "string",
-  "department_id": "string?",
-  "time_offset": number,
-  "trigger_type": "manual|time|auto|follow|go|standby",
+  "departmentID": "UUID?",
+  "timeOffsetMs": number,
+  "triggerType": "manual|time|auto|follow|go|standby",
   "duration": number?,
   "location": "LocationArea?",
   "priority": "critical|high|normal|low|optional",
-  "is_safety_critical": boolean,
-  "equipment_required": ["string"],
-  "crew_assignments": ["string"],
-  "conditional_rules": [ConditionalRule],
-  // ... other fields
+  "isSafetyCritical": boolean,
+  "sequence": number? // Auto-calculated if not provided
 }
 ```
 
-#### 3. Update Script Element
-```
-PATCH /api/scripts/{script_id}/elements/{element_id}
-```
-**Request Body:** Partial ScriptElementFormData
+**Features:**
+- Automatic sequence number calculation
+- Department ownership validation
+- Enum value validation with error handling
+- Legacy field compatibility (maintains both old and new fields)
 
-#### 4. Delete Script Element
-```
-DELETE /api/scripts/{script_id}/elements/{element_id}
-```
+---
 
-#### 5. Bulk Operations
+#### 4. Update Script Element
 ```
-POST /api/scripts/{script_id}/elements/bulk
+PATCH /api/elements/{element_id}
 ```
-**Actions:** create, update, delete, reorder
+**Implementation Status:** ✅ **COMPLETE** - Comprehensive update with version tracking
 
-### Specialized Endpoints
+**Request Body:** Uses `ScriptElementUpdate` schema (partial updates)
+**Features:**
+- Version tracking (auto-incrementing)
+- User attribution (updatedBy field)
+- Enum validation
+- Legacy field synchronization
+- Timestamp updating
 
-#### 6. Reorder Elements
+---
+
+#### 5. Delete Script Element
+```
+DELETE /api/elements/{element_id}
+```
+**Implementation Status:** ✅ **COMPLETE** - Supports both soft and hard delete
+
+**Query Parameters:**
+- `soft_delete` (boolean, default: true): Soft delete vs hard delete
+
+**Features:**
+- Soft delete by default (sets isActive=False)
+- Hard delete option for permanent removal
+- Cascade handling for relationships
+
+---
+
+#### 6. Restore Script Element
+```
+POST /api/elements/{element_id}/restore
+```
+**Implementation Status:** ✅ **COMPLETE** - Restore soft-deleted elements
+
+**Features:**
+- Restores isActive flag
+- Updates version and timestamp
+- User attribution for restore action
+
+---
+
+### Implemented Bulk Operations
+
+#### 7. Reorder Elements
 ```
 PATCH /api/scripts/{script_id}/elements/reorder
 ```
-**Request Body:**
+**Implementation Status:** ✅ **COMPLETE** - Efficient bulk reordering
+
+**Request Body:** Uses `ScriptElementReorderRequest` schema
 ```json
 {
-  "element_orders": [
-    {"element_id": "string", "sequence": number}
+  "elements": [
+    {"elementID": "UUID", "sequence": number}
   ]
 }
 ```
 
-#### 7. Duplicate Element
+**Features:**
+- Updates both new sequence and legacy elementOrder fields
+- Version tracking for all modified elements
+- Atomic transaction handling
+
+---
+
+#### 8. Bulk Update Elements
+```
+PATCH /api/scripts/{script_id}/elements/bulk-update
+```
+**Implementation Status:** ✅ **COMPLETE** - Mass property updates
+
+**Request Body:** Uses `ScriptElementBulkUpdate` schema
+```json
+{
+  "element_ids": ["UUID"],
+  "department_id": "UUID?",
+  "priority": "string?",
+  "execution_status": "string?",
+  "location": "string?",
+  "is_safety_critical": boolean?,
+  "custom_color": "string?"
+}
+```
+
+**Features:**
+- Selective property updates
+- Enum validation
+- Atomic transactions
+- Version tracking for all modified elements
+
+---
+
+### Planned Future Endpoints (Not Yet Implemented)
+
+#### 9. Duplicate Element
 ```
 POST /api/scripts/{script_id}/elements/{element_id}/duplicate
 ```
+**Status:** 🚧 **PLANNED** - Future implementation
 
-#### 8. Group Management
+#### 10. Group Management
 ```
 POST /api/scripts/{script_id}/elements/{group_id}/children
-PATCH /api/scripts/{script_id}/elements/{group_id}/collapse
+PATCH /api/scripts/{script_id}/elements/{group_id}/collapse  
 DELETE /api/scripts/{script_id}/elements/{group_id}/children/{child_id}
 ```
+**Status:** 🚧 **PLANNED** - Future implementation for advanced grouping
 
-#### 9. Department Operations
+#### 11. Department Operations
 ```
 GET /api/departments
 POST /api/departments
 PATCH /api/departments/{department_id}
 DELETE /api/departments/{department_id}
 ```
+**Status:** ✅ **IMPLEMENTED** - Available in separate departments router
+
+---
+
+## Testing Status
+
+### Endpoint Testing
+- **Health checks:** All endpoints respond correctly
+- **Authentication:** User ownership verification working
+- **Validation:** Enum validation and error handling tested
+- **Performance:** Pagination and filtering optimized
+- **Error handling:** Comprehensive error responses
+
+### Integration Testing
+- **Database integrity:** Foreign key constraints working
+- **Cascade operations:** Show/script deletion cascades properly
+- **Transaction safety:** Atomic operations for bulk updates
+- **Legacy compatibility:** Both old and new field structures maintained
+
+---
+
+## Implementation Notes
+
+### Security Features
+- All endpoints require authentication via `get_current_user`
+- User ownership verified through show relationships
+- Department ownership validated for assignments
+- Comprehensive authorization checks
+
+### Performance Optimizations
+- Pagination support (skip/limit) for large datasets
+- Selective field updates in PATCH operations
+- Efficient ordering by sequence and timeOffsetMs
+- Joinedload for reducing N+1 queries
+
+### Data Consistency
+- Automatic sequence number management
+- Legacy field synchronization (elementOrder, timeOffset, elementDescription)
+- Version tracking for audit trails
+- Soft delete preservation for data integrity
+
+### Error Handling
+- Enum validation with descriptive error messages
+- Database constraint violation handling
+- Graceful degradation for missing relationships
+- Comprehensive logging for debugging
+
+---
+
+*API Implementation completed July 2025*  
+*All core CRUD operations are production-ready*
 
 #### 10. Playback and Execution
 ```

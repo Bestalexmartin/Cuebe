@@ -192,7 +192,6 @@ class ScriptElementFromDB(BaseModel):
     """Schema for script elements coming FROM the database"""
     elementID: UUID  # CHANGED TO UUID
     scriptID: UUID  # CHANGED TO UUID
-    timeOffset: timedelta
 
     class Config:
         from_attributes = True
@@ -206,18 +205,9 @@ class ScriptElement(BaseModel):
     elementOrder: int
     cueNumber: Optional[str] = None
     elementDescription: Optional[str] = None
-    timeOffset: int  # Converted to seconds for frontend
 
     class Config:
         from_attributes = True
-
-    @field_validator('timeOffset', mode='before')
-    @classmethod
-    def format_timedelta_to_seconds(cls, v):
-        """Convert timedelta to seconds for frontend consumption"""
-        if isinstance(v, timedelta):
-            return int(v.total_seconds())
-        return v
 
 # =============================================================================
 # ENHANCED SCRIPT ELEMENT SCHEMAS
@@ -225,10 +215,10 @@ class ScriptElement(BaseModel):
 
 class ScriptElementCreate(BaseModel):
     """Schema for creating new script elements"""
-    elementType: str  # 'cue', 'note', 'group'
+    elementType: str  # 'CUE', 'NOTE', 'GROUP'
     sequence: Optional[int] = None  # Auto-calculated if not provided
     timeOffsetMs: Optional[int] = 0  # Time offset in milliseconds
-    triggerType: Optional[str] = "manual"  # 'manual', 'time', 'auto', 'follow', 'go', 'standby'
+    triggerType: Optional[str] = "MANUAL"  # 'MANUAL', 'TIME', 'AUTO', 'FOLLOW', 'GO', 'STANDBY'
     cueID: Optional[str] = None
     description: str = ""
     notes: Optional[str] = None
@@ -238,7 +228,7 @@ class ScriptElementCreate(BaseModel):
     duration: Optional[int] = None  # Duration in milliseconds
     fadeIn: Optional[int] = None  # Fade in time in milliseconds
     fadeOut: Optional[int] = None  # Fade out time in milliseconds
-    priority: Optional[str] = "normal"  # 'critical', 'high', 'normal', 'low', 'optional'
+    priority: Optional[str] = "NORMAL"  # 'CRITICAL', 'HIGH', 'NORMAL', 'LOW', 'OPTIONAL'
     parentElementID: Optional[UUID] = None  # For grouped elements
     groupLevel: Optional[int] = 0
     isSafetyCritical: Optional[bool] = False
@@ -311,8 +301,7 @@ class ScriptElementEnhanced(BaseModel):
     elementOrder: int  # Legacy field
     
     # Timing fields
-    timeOffsetMs: int = 0  # New timing in milliseconds
-    timeOffset: int  # Legacy field in seconds (computed)
+    timeOffsetMs: int = 0  # Timing in milliseconds
     duration: Optional[int] = None
     fadeIn: Optional[int] = None
     fadeOut: Optional[int] = None
@@ -332,9 +321,10 @@ class ScriptElementEnhanced(BaseModel):
     
     # Location and visual
     departmentID: Optional[UUID] = None
+    departmentName: Optional[str] = None  # Computed from department relationship
+    departmentColor: Optional[str] = None  # Computed from department relationship
     location: Optional[str] = None
     locationDetails: Optional[str] = None
-    departmentColor: Optional[str] = None
     customColor: Optional[str] = None
     
     # Grouping and hierarchy
@@ -362,13 +352,21 @@ class ScriptElementEnhanced(BaseModel):
     class Config:
         from_attributes = True
     
-    @field_validator('timeOffset', mode='before')
+    @model_validator(mode='before')
     @classmethod
-    def format_timedelta_to_seconds(cls, v):
-        """Convert timedelta to seconds for frontend consumption"""
-        if isinstance(v, timedelta):
-            return int(v.total_seconds())
-        return v
+    def populate_department_fields(cls, data):
+        """Populate department name and color from department relationship"""
+        if hasattr(data, 'department') and data.department:
+            # If this is a SQLAlchemy model instance with department relationship
+            data.departmentName = data.department.departmentName
+            data.departmentColor = data.department.departmentColor
+        elif isinstance(data, dict):
+            # If this is already a dict, check if department data is available
+            department = data.get('department')
+            if department:
+                data['departmentName'] = department.get('departmentName')
+                data['departmentColor'] = department.get('departmentColor')
+        return data
 
 # Update the main ScriptElement schema to use enhanced version
 ScriptElement = ScriptElementEnhanced

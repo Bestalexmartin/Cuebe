@@ -108,7 +108,7 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
                     <HStack spacing="2">
                         <Menu>
                             <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
-                            <MenuList>
+                            <MenuList zIndex={9999}>
                                 <MenuItem
                                     onClick={() => handleSortClick('departmentName')}
                                     color={sortBy === 'departmentName' ? 'blue.400' : 'inherit'}

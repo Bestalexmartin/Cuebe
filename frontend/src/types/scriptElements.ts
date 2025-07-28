@@ -47,7 +47,8 @@ export interface ScriptElementBase {
   
   // Department and visual
   departmentID?: string;               // Link to department
-  departmentColor?: string;            // Override color for notes
+  departmentName?: string;             // Department name from relationship
+  departmentColor?: string;            // Department color from relationship
   customColor?: string;                // Custom row color for notes
   
   // Location and logistics
@@ -101,11 +102,15 @@ export interface CueElement extends ScriptElementBase {
   type: 'cue';
   cueID: string;                       // Required for cues
   departmentID: string;                // Required for cues
+  departmentName?: string;             // Department name from relationship
+  departmentColor?: string;            // Department color from relationship
 }
 
 export interface NoteElement extends ScriptElementBase {
   type: 'note';
   departmentID?: string;               // Optional for notes
+  departmentName?: string;             // Department name from relationship
+  departmentColor?: string;            // Department color from relationship
   customColor: string;                 // Required for visual distinction
 }
 
@@ -114,6 +119,8 @@ export interface GroupElement extends ScriptElementBase {
   childElementIDs: string[];           // Elements in this group
   isCollapsed: boolean;                // Group collapse state
   groupColor?: string;                 // Visual grouping color
+  departmentName?: string;             // Department name from relationship
+  departmentColor?: string;            // Department color from relationship
 }
 
 // Union type for all elements

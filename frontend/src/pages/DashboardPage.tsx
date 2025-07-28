@@ -31,6 +31,7 @@ interface DashboardPageProps {
 
 interface LocationState {
   returnFromEdit?: boolean;
+  returnFromManage?: boolean;
   view?: string;
 }
 
@@ -42,9 +43,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
   // Simple refresh key to force re-mounting/re-fetching
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Check if we're returning from edit to skip session storage restoration
+  // Check if we're returning from edit/manage to skip session storage restoration
   const state = location.state as LocationState;
-  const skipSessionRestore = Boolean(state?.returnFromEdit);
+  const skipSessionRestore = Boolean(state?.returnFromEdit || state?.returnFromManage);
 
   const {
     selectedShowId,

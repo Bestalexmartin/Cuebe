@@ -1,6 +1,6 @@
-// frontend/src/EditScriptPage.tsx
+// frontend/src/pages/ManageScriptPage.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
     Box,
     VStack,
@@ -9,33 +9,38 @@ import {
     Spinner,
     Flex,
     Button,
-    Tooltip,
     Divider,
-    FormControl,
-    FormLabel,
-    Input,
-    Select,
-    Textarea,
     Heading
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
-import { useScript } from "../../hooks/useScript";
-import { useShow } from "../../hooks/useShow";
-import { ErrorBoundary } from '../../components/ErrorBoundary';
-import { AppIcon } from '../../components/AppIcon';
-import { ActionsMenu, ActionItem } from '../../components/ActionsMenu';
-import { DeleteConfirmationModal } from '../../components/modals/DeleteConfirmationModal';
-import { FinalDeleteConfirmationModal } from '../../components/modals/FinalDeleteConfirmationModal';
-import { DuplicateScriptModal } from '../../components/modals/DuplicateScriptModal';
-import { ProcessingModal } from '../../components/modals/ProcessingModal';
-import { useEnhancedToast } from '../../utils/toastUtils';
-import { useValidatedForm } from '../../hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from '../../types/validation';
-import { convertUTCToLocal, convertLocalToUTC } from '../../utils/dateTimeUtils';
-import { useChangeDetection } from '../../hooks/useChangeDetection';
+import { useScript } from "../hooks/useScript";
+import { useShow } from "../hooks/useShow";
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import { AppIcon } from '../components/AppIcon';
+import { ActionsMenu, ActionItem } from '../components/ActionsMenu';
+import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmationModal';
+import { FinalDeleteConfirmationModal } from '../components/modals/FinalDeleteConfirmationModal';
+import { DuplicateScriptModal } from '../components/modals/DuplicateScriptModal';
+import { ProcessingModal } from '../components/modals/ProcessingModal';
+import { OptionsModal } from '../components/modals/OptionsModal';
+import { useEnhancedToast } from '../utils/toastUtils';
+import { useValidatedForm } from '../hooks/useValidatedForm';
+import { ValidationRules, FormValidationConfig } from '../types/validation';
+import { convertUTCToLocal, convertLocalToUTC } from '../utils/dateTimeUtils';
+import { useChangeDetection } from '../hooks/useChangeDetection';
 
-interface EditScriptPageProps { }
+// Import script-specific components
+import { ScriptToolbar } from './script/components/ScriptToolbar';
+import { InfoMode } from './script/components/modes/InfoMode';
+import { ViewMode, ViewModeRef } from './script/components/modes/ViewMode';
+import { EditMode, EditModeRef } from './script/components/modes/EditMode';
+import { PlayMode } from './script/components/modes/PlayMode';
+import { ShareMode } from './script/components/modes/ShareMode';
+import { AddScriptElementModal } from './script/components/AddScriptElementModal';
+import { useScriptModes } from './script/hooks/useScriptModes';
+
+interface ManageScriptPageProps { }
 
 // TypeScript interfaces for script metadata form
 interface ScriptFormData {
@@ -88,14 +93,14 @@ const VALIDATION_CONFIG: FormValidationConfig = {
 
 interface ToolButton {
     id: string;
-    icon: 'view' | 'play' | 'info' | 'script-edit' | 'share' | 'dashboard';
+    icon: 'view' | 'play' | 'info' | 'script-edit' | 'share' | 'dashboard' | 'add' | 'copy' | 'group' | 'delete';
     label: string;
     description: string;
     isActive: boolean;
     isDisabled?: boolean;
 }
 
-export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
+export const ManageScriptPage: React.FC<ManageScriptPageProps> = () => {
     const { scriptId } = useParams<{ scriptId: string }>();
     const navigate = useNavigate();
     const { getToken } = useAuth();
@@ -109,6 +114,15 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
     // Duplicate state management
     const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
     const [isProcessingModalOpen, setIsProcessingModalOpen] = useState(false);
+
+    // Element action state management
+    const [isAddElementModalOpen, setIsAddElementModalOpen] = useState(false);
+    const viewModeRef = useRef<ViewModeRef>(null);
+    const editModeRef = useRef<EditModeRef>(null);
+
+    // Options state management
+    const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
+    const [colorizeDepNames, setColorizeDepNames] = useState(false);
 
     // Form management for INFO mode
     const form = useValidatedForm<ScriptFormData>(INITIAL_FORM_STATE, {
@@ -124,8 +138,8 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
     // Fetch the show data using the script's showID
     const { show } = useShow(script?.showID);
 
-    // Active mode state
-    const [activeMode, setActiveMode] = useState<string>('view');
+    // Active mode state using script-specific hook
+    const { activeMode, setActiveMode, getAvailableModes } = useScriptModes('view');
 
     // Change detection for save button
     const initialData = script && show ? {
@@ -160,57 +174,108 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
     }, [script, form.setFormData]);
 
 
-    // Tool buttons configuration - single column, ghosted except view and info
-    const toolButtons: ToolButton[] = [
-        {
-            id: 'view',
-            icon: 'view',
-            label: 'View',
-            description: 'View Script',
-            isActive: activeMode === 'view',
-            isDisabled: false
-        },
-        {
-            id: 'play',
-            icon: 'play',
-            label: 'Play',
-            description: 'Perform Script',
-            isActive: activeMode === 'play',
-            isDisabled: true
-        },
-        {
-            id: 'info',
-            icon: 'info',
-            label: 'Info',
-            description: 'Update Script Info',
-            isActive: activeMode === 'info',
-            isDisabled: false
-        },
-        {
-            id: 'edit',
-            icon: 'script-edit',
-            label: 'Edit',
-            description: 'Edit Script',
-            isActive: activeMode === 'edit',
-            isDisabled: true
-        },
-        {
-            id: 'share',
-            icon: 'share',
-            label: 'Share',
-            description: 'Share Script',
-            isActive: activeMode === 'share',
-            isDisabled: true
-        },
-        {
-            id: 'dashboard',
-            icon: 'dashboard',
-            label: 'Dashboard',
-            description: 'Return to Dashboard',
-            isActive: false,
-            isDisabled: false
+    // Tool buttons configuration - changes based on active mode
+    const getToolButtons = (): ToolButton[] => {
+        if (activeMode === 'edit') {
+            // In edit mode, show element action buttons
+            return [
+                {
+                    id: 'view',
+                    icon: 'view',
+                    label: 'View',
+                    description: 'Switch to View Mode',
+                    isActive: false,
+                    isDisabled: false
+                },
+                {
+                    id: 'add-element',
+                    icon: 'add',
+                    label: 'Add',
+                    description: 'Add Script Element',
+                    isActive: false,
+                    isDisabled: false
+                },
+                {
+                    id: 'duplicate-element',
+                    icon: 'copy',
+                    label: 'Duplicate',
+                    description: 'Duplicate Selected Element',
+                    isActive: false,
+                    isDisabled: true // Will enable when element is selected
+                },
+                {
+                    id: 'group-elements',
+                    icon: 'group',
+                    label: 'Group',
+                    description: 'Group Selected Elements',
+                    isActive: false,
+                    isDisabled: true // Will enable when elements are selected
+                },
+                {
+                    id: 'delete-element',
+                    icon: 'delete',
+                    label: 'Delete',
+                    description: 'Delete Selected Element',
+                    isActive: false,
+                    isDisabled: true // Will enable when element is selected
+                },
+                {
+                    id: 'dashboard',
+                    icon: 'dashboard',
+                    label: 'Dashboard',
+                    description: 'Return to Dashboard',
+                    isActive: false,
+                    isDisabled: false
+                }
+            ];
+        } else {
+            // In view, info, play, share modes, show mode switching buttons
+            const availableModes = getAvailableModes();
+            return [
+                ...availableModes.map(mode => {
+                    let icon: ToolButton['icon'];
+                    switch (mode.id) {
+                        case 'view':
+                            icon = 'view';
+                            break;
+                        case 'play':
+                            icon = 'play';
+                            break;
+                        case 'info':
+                            icon = 'info';
+                            break;
+                        case 'edit':
+                            icon = 'script-edit';
+                            break;
+                        case 'share':
+                            icon = 'share';
+                            break;
+                        default:
+                            icon = 'view';
+                            break;
+                    }
+                    return {
+                        id: mode.id,
+                        icon,
+                        label: mode.label,
+                        description: `${mode.label} Script`,
+                        isActive: activeMode === mode.id,
+                        isDisabled: mode.isDisabled
+                    };
+                }),
+                {
+                    id: 'dashboard',
+                    icon: 'dashboard',
+                    label: 'Dashboard',
+                    description: 'Return to Dashboard',
+                    isActive: false,
+                    isDisabled: false
+                }
+            ];
         }
-    ];
+    };
+
+    const toolButtons = getToolButtons();
 
     const handleModeChange = (modeId: string) => {
         // Handle dashboard navigation separately
@@ -219,10 +284,31 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
             return;
         }
 
-        // Only allow switching to enabled modes
+        // Handle element actions in edit mode
+        if (activeMode === 'edit') {
+            switch (modeId) {
+                case 'view':
+                    setActiveMode('view');
+                    return;
+                case 'add-element':
+                    setIsAddElementModalOpen(true);
+                    return;
+                case 'duplicate-element':
+                    handleElementDuplicate();
+                    return;
+                case 'group-elements':
+                    handleElementGroup();
+                    return;
+                case 'delete-element':
+                    handleElementDelete();
+                    return;
+            }
+        }
+
+        // Handle mode switching for view, info, play, share modes
         const tool = toolButtons.find(t => t.id === modeId);
         if (tool && !tool.isDisabled) {
-            setActiveMode(modeId);
+            setActiveMode(modeId as any); // Type assertion for now, will be improved with better types
         }
     };
 
@@ -263,7 +349,7 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
                 view: 'shows',
                 selectedShowId: script?.showID,
                 selectedScriptId: scriptId,
-                returnFromEdit: true
+                returnFromManage: true
             }
         });
     };
@@ -307,7 +393,7 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
                 state: {
                     view: 'shows',
                     selectedShowId: script?.showID,
-                    returnFromEdit: true
+                    returnFromManage: true
                 }
             });
 
@@ -331,8 +417,8 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
 
     const handleScriptDuplicated = (newScriptId: string) => {
         setIsProcessingModalOpen(false);
-        // Navigate directly to the new script's edit page
-        navigate(`/scripts/${newScriptId}/edit`);
+        // Navigate directly to the new script's manage page
+        navigate(`/scripts/${newScriptId}/manage`);
     };
 
     const handleDuplicationError = () => {
@@ -340,8 +426,46 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
         // Error toast will be shown by the form submission handler
     };
 
+    // Element action handlers
+    const handleElementCreated = async () => {
+        // Close the modal and refetch elements to show the new cue in context
+        setIsAddElementModalOpen(false);
+
+        // Call refetch on the active mode
+        if (activeMode === 'view' && viewModeRef.current) {
+            await viewModeRef.current.refetchElements();
+        } else if (activeMode === 'edit' && editModeRef.current) {
+            await editModeRef.current.refetchElements();
+        }
+    };
+
+    const handleElementDuplicate = () => {
+        // TODO: Get selected element from EditMode component
+        // For now, show a toast indicating feature is not fully implemented
+        showError('Element duplication feature is under development');
+    };
+
+    const handleElementGroup = () => {
+        // TODO: Get selected elements from EditMode component
+        // For now, show a toast indicating feature is not fully implemented
+        showError('Element grouping feature is under development');
+    };
+
+    const handleElementDelete = () => {
+        // TODO: Get selected element from EditMode component
+        // For now, show a toast indicating feature is not fully implemented
+        showError('Element deletion feature is under development');
+    };
+
     // Configure actions menu
     const actions: ActionItem[] = [
+        {
+            id: 'options',
+            label: 'Options',
+            onClick: () => setIsOptionsModalOpen(true),
+            isDestructive: false,
+            isDisabled: false
+        },
         {
             id: 'duplicate-script',
             label: 'Duplicate Script',
@@ -373,7 +497,7 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
     ];
 
     return (
-        <ErrorBoundary context="Script Edit Page">
+        <ErrorBoundary context="Script Management Page">
             <Flex width="100%" height="100%" p="2rem" flexDirection="column" boxSizing="border-box">
                 {/* Header Section */}
                 <Flex
@@ -394,7 +518,7 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
 
                     {/* Right: Action Buttons positioned to align with scroll area */}
                     <Box flex={1} position="relative">
-                        <Box position="absolute" right="106px" top="50%" transform="translateY(-50%)">
+                        <Box position="absolute" right="106px" top="50%" transform="translateY(-50%)" zIndex={10000}>
                             <HStack spacing={2}>
                                 {/* Actions Menu */}
                                 <ActionsMenu
@@ -410,7 +534,8 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
                                     size="xs"
                                     variant="outline"
                                     onClick={handleCancel}
-                                    _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
+                                    _hover={{ bg: 'gray.100' }}
+                                    _dark={{ _hover: { bg: 'gray.700' } }}
                                 >
                                     Cancel
                                 </Button>
@@ -434,7 +559,8 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
                     {/* Left: Script Content Area - matches BaseEditPage dimensions but shifted left */}
                     <Box
                         flex={1}
-                        bg={{ base: "white", _dark: "gray.900" }}
+                        bg="gray.200"
+                        _dark={{ bg: "gray.700" }}
                         borderRadius="md"
                         mr="8"
                         position="relative"
@@ -444,6 +570,7 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
                         border="1px solid"
                         borderColor="container.border"
                         width="calc(100% - 106px)" // Account for bordered toolbar (74px) + double margins (32px)
+                        zIndex={1}
                     >
                         {/* Loading State */}
                         {isLoadingScript && (
@@ -474,69 +601,12 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
                                 className="hide-scrollbar edit-form-container"
                                 minHeight={0}
                             >
-                                {/* INFO Mode - Script Metadata Form */}
-                                {activeMode === 'info' && (
-                                    <VStack spacing={4} align="stretch" width="100%">
-                                        <FormControl isRequired>
-                                            <FormLabel>Script Name</FormLabel>
-                                            <Input
-                                                value={form.formData.scriptName}
-                                                onChange={(e) => form.updateField('scriptName', e.target.value)}
-                                                onBlur={() => form.validateField('scriptName')}
-                                                placeholder="Enter script name"
-                                            />
-                                        </FormControl>
-
-                                        <FormControl isRequired>
-                                            <FormLabel>Script Status</FormLabel>
-                                            <Select
-                                                value={form.formData.scriptStatus}
-                                                onChange={(e) => form.updateField('scriptStatus', e.target.value)}
-                                            >
-                                                {SCRIPT_STATUS_OPTIONS.map(option => (
-                                                    <option key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </option>
-                                                ))}
-                                            </Select>
-                                        </FormControl>
-
-                                        <FormControl>
-                                            <FormLabel>Start Time</FormLabel>
-                                            <Input
-                                                type="datetime-local"
-                                                value={form.formData.startTime}
-                                                onChange={(e) => form.updateField('startTime', e.target.value)}
-                                                placeholder="Select start time"
-                                            />
-                                        </FormControl>
-
-                                        <FormControl>
-                                            <FormLabel>Notes</FormLabel>
-                                            <Textarea
-                                                value={form.formData.scriptNotes}
-                                                onChange={(e) => form.updateField('scriptNotes', e.target.value)}
-                                                onBlur={() => form.validateField('scriptNotes')}
-                                                placeholder="Script notes or special instructions..."
-                                                minHeight="120px"
-                                                resize="vertical"
-                                            />
-                                        </FormControl>
-                                    </VStack>
-                                )}
-
-                                {/* Other modes - Placeholder */}
-                                {activeMode !== 'info' && (
-                                    <Flex
-                                        height="100%"
-                                        alignItems="center"
-                                        justifyContent="center"
-                                    >
-                                        <Text color="gray.500" fontSize="lg">
-                                            Script content area - {activeMode} mode
-                                        </Text>
-                                    </Flex>
-                                )}
+                                {/* Render active mode component */}
+                                {activeMode === 'info' && <InfoMode form={form} />}
+                                {activeMode === 'view' && <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={colorizeDepNames} />}
+                                {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={colorizeDepNames} />}
+                                {activeMode === 'play' && <PlayMode />}
+                                {activeMode === 'share' && <ShareMode />}
                             </Box>
                         )}
                     </Box>
@@ -549,60 +619,17 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
                         borderColor="container.border"
                         borderRadius="md"
                         p="4"
-                        bg={{ base: "gray.50", _dark: "gray.900" }}
+                        bg="gray.50"
+                        _dark={{ bg: "gray.900" }}
                         alignSelf="flex-start"
                         maxHeight="100%"
                         overflowY="auto"
                         className="hide-scrollbar"
                     >
-                        <VStack spacing={2}>
-                            {toolButtons.map((tool) => (
-                                <Tooltip
-                                    key={tool.id}
-                                    label={tool.description}
-                                    placement="bottom-start"
-                                    hasArrow
-                                    bg="blue.500"
-                                    color="white"
-                                    fontSize="sm"
-                                    px={3}
-                                    py={2}
-                                    borderRadius="md"
-                                    openDelay={2000}
-                                >
-                                    <Button
-                                        width="50px"
-                                        height="50px"
-                                        minWidth="50px"
-                                        p={0}
-                                        bg={tool.isActive && !tool.isDisabled ? "blue.500" : tool.isDisabled ? { base: "gray.200", _dark: "gray.800" } : { base: "gray.100", _dark: "gray.700" }}
-                                        color={tool.isActive && !tool.isDisabled ? "white" : tool.isDisabled ? { base: "gray.400", _dark: "gray.600" } : { base: "gray.600", _dark: "gray.300" }}
-                                        border="1px solid"
-                                        borderColor={tool.isActive && !tool.isDisabled ? "blue.400" : "container.border"}
-                                        borderRadius="md"
-                                        _hover={tool.isDisabled ? {} : {
-                                            bg: tool.isActive ? "orange.400" : "orange.500",
-                                            color: "white",
-                                            borderColor: "orange.300",
-                                            transform: "scale(1.05)"
-                                        }}
-                                        _active={tool.isDisabled ? {} : {
-                                            transform: "scale(0.95)"
-                                        }}
-                                        transition="all 0.2s"
-                                        onClick={() => !tool.isDisabled && handleModeChange(tool.id)}
-                                        isDisabled={tool.isDisabled}
-                                        cursor={tool.isDisabled ? "not-allowed" : "pointer"}
-                                        opacity={tool.isDisabled ? 0.4 : 1}
-                                    >
-                                        <AppIcon
-                                            name={tool.icon}
-                                            boxSize="24px"
-                                        />
-                                    </Button>
-                                </Tooltip>
-                            ))}
-                        </VStack>
+                        <ScriptToolbar
+                            toolButtons={toolButtons}
+                            onModeChange={handleModeChange}
+                        />
                     </Box>
                 </Flex>
             </Flex>
@@ -671,6 +698,22 @@ export const EditScriptPage: React.FC<EditScriptPageProps> = () => {
                 entityType="Script"
                 entityName={script?.scriptName || ''}
                 warningMessage="Deleting this script will permanently remove all script elements and cannot be undone."
+            />
+
+            {/* Add Script Element Modal */}
+            <AddScriptElementModal
+                isOpen={isAddElementModalOpen}
+                onClose={() => setIsAddElementModalOpen(false)}
+                scriptId={scriptId || ''}
+                onElementCreated={handleElementCreated}
+            />
+
+            {/* Options Modal */}
+            <OptionsModal
+                isOpen={isOptionsModalOpen}
+                onClose={() => setIsOptionsModalOpen(false)}
+                colorizeDepNames={colorizeDepNames}
+                onColorizeDepNamesChange={setColorizeDepNames}
             />
         </ErrorBoundary>
     );
