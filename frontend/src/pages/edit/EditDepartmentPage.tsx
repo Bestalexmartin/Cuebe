@@ -23,6 +23,7 @@ interface DepartmentFormData {
     departmentName: string;
     departmentDescription: string;
     departmentColor: string;
+    departmentInitials: string;
 }
 
 interface PresetColor {
@@ -33,7 +34,8 @@ interface PresetColor {
 const INITIAL_FORM_STATE: DepartmentFormData = {
     departmentName: '',
     departmentDescription: '',
-    departmentColor: '#3182CE'
+    departmentColor: '#3182CE',
+    departmentInitials: ''
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
@@ -45,9 +47,9 @@ const VALIDATION_CONFIG: FormValidationConfig = {
                     if (!value || value.trim().length === 0) {
                         return true; // Empty is valid
                     }
-                    return value.trim().length >= 4; // Must have 4+ chars if not empty
+                    return value.trim().length >= 3; // Must have 3+ chars if not empty
                 },
-                message: 'Department name must be at least 4 characters',
+                message: 'Department name must be at least 3 characters',
                 code: 'MIN_LENGTH'
             },
             ValidationRules.maxLength(100, 'Department name must be no more than 100 characters')
@@ -67,6 +69,13 @@ const VALIDATION_CONFIG: FormValidationConfig = {
                 message: 'Please enter a valid color code (e.g., #3182CE)',
                 code: 'INVALID_COLOR'
             }
+        ]
+    },
+    departmentInitials: {
+        required: false,
+        rules: [
+            ValidationRules.maxLength(5, 'Initials must be no more than 5 characters'),
+            ValidationRules.pattern(/^[A-Z]*$/i, 'Initials must contain only letters')
         ]
     }
 };
@@ -110,7 +119,8 @@ export const EditDepartmentPage: React.FC = () => {
             form.setFormData({
                 departmentName: department.departmentName || '',
                 departmentDescription: department.departmentDescription || '',
-                departmentColor: department.departmentColor || '#3182CE'
+                departmentColor: department.departmentColor || '#3182CE',
+                departmentInitials: department.departmentInitials || ''
             });
         }
     }, [department, form.setFormData]);
@@ -119,7 +129,8 @@ export const EditDepartmentPage: React.FC = () => {
     const initialData = department ? {
         departmentName: department.departmentName || '',
         departmentDescription: department.departmentDescription || '',
-        departmentColor: department.departmentColor || '#3182CE'
+        departmentColor: department.departmentColor || '#3182CE',
+        departmentInitials: department.departmentInitials || ''
     } : null;
 
     const { hasChanges, updateOriginalData } = useChangeDetection(
@@ -145,6 +156,7 @@ export const EditDepartmentPage: React.FC = () => {
                 departmentName: form.formData.departmentName,
                 departmentDescription: form.formData.departmentDescription || null,
                 departmentColor: form.formData.departmentColor,
+                departmentInitials: form.formData.departmentInitials || null,
             };
 
             await form.submitForm(
@@ -183,7 +195,7 @@ export const EditDepartmentPage: React.FC = () => {
 
     const isFormValid = (): boolean => {
         return form.fieldErrors.length === 0 &&
-            form.formData.departmentName.trim().length >= 4 &&
+            form.formData.departmentName.trim().length >= 3 &&
             form.formData.departmentColor.trim().length > 0;
     };
 
@@ -327,39 +339,32 @@ export const EditDepartmentPage: React.FC = () => {
                             />
                         </FormControl>
 
-                        {/* Color Selection */}
-                        <FormControl isRequired>
-                            <FormLabel>Department Color</FormLabel>
-                            <VStack align="stretch" spacing="3">
-                                <HStack spacing="4" align="center">
-                                    <Input
-                                        type="color"
-                                        value={form.formData.departmentColor}
-                                        onChange={(e) => handleChange('departmentColor', e.target.value)}
-                                        width="80px"
-                                        height="40px"
-                                        padding="4px"
-                                        border="2px solid"
-                                        borderColor="gray.300"
-                                        borderRadius="md"
-                                        cursor="pointer"
-                                    />
-                                    <Input
-                                        value={form.formData.departmentColor}
-                                        onChange={(e) => handleChange('departmentColor', e.target.value)}
-                                        onBlur={() => form.validateField('departmentColor')}
-                                        placeholder="#3182CE"
-                                        maxWidth="120px"
-                                        fontFamily="mono"
-                                    />
-                                </HStack>
-
-                                {/* Preset Color Options */}
-                                <Box>
-                                    <Text fontSize="sm" color="detail.text" mb={2}>
-                                        Quick Colors:
-                                    </Text>
-                                    <HStack spacing={2} flexWrap="wrap">
+                        {/* Color Selection and Initials */}
+                        <HStack spacing={6} align="start">
+                            <FormControl isRequired flex="2">
+                                <FormLabel>Department Color</FormLabel>
+                                <VStack align="stretch" spacing="3">
+                                    <HStack spacing={2} align="center">
+                                        <Input
+                                            type="color"
+                                            value={form.formData.departmentColor}
+                                            onChange={(e) => handleChange('departmentColor', e.target.value)}
+                                            width="80px"
+                                            height="40px"
+                                            padding="4px"
+                                            border="2px solid"
+                                            borderColor="gray.300"
+                                            borderRadius="md"
+                                            cursor="pointer"
+                                        />
+                                        <Input
+                                            value={form.formData.departmentColor}
+                                            onChange={(e) => handleChange('departmentColor', e.target.value)}
+                                            onBlur={() => form.validateField('departmentColor')}
+                                            placeholder="#3182CE"
+                                            width="120px"
+                                            fontFamily="mono"
+                                        />
                                         {PRESET_COLORS.map((color) => (
                                             <Button
                                                 key={color.value}
@@ -373,12 +378,27 @@ export const EditDepartmentPage: React.FC = () => {
                                                 onClick={() => handleChange('departmentColor', color.value)}
                                                 _hover={{ transform: 'scale(1.1)' }}
                                                 title={color.name}
+                                                tabIndex={-1}
                                             />
                                         ))}
                                     </HStack>
-                                </Box>
-                            </VStack>
-                        </FormControl>
+                                </VStack>
+                            </FormControl>
+                            
+                            <FormControl flex="1">
+                                <FormLabel>Initials</FormLabel>
+                                <Input
+                                    value={form.formData.departmentInitials}
+                                    onChange={(e) => handleChange('departmentInitials', e.target.value.toUpperCase())}
+                                    onBlur={() => form.validateField('departmentInitials')}
+                                    placeholder="LX"
+                                    maxLength={5}
+                                />
+                                <Text fontSize="xs" color="gray.500" mt={1}>
+                                    Optional
+                                </Text>
+                            </FormControl>
+                        </HStack>
 
                         {/* Department Description */}
                         <FormControl>

@@ -134,8 +134,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     // Options state management
     const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
-    const [colorizeDepNames, setColorizeDepNames] = useState(false);
+    const [colorizeDepNames, setColorizeDepNames] = useState(true);
     const [showClockTimes, setShowClockTimes] = useState(false);
+    const [autoSortCues, setAutoSortCues] = useState(true);
 
     // Responsive breakpoint for mobile layout
     const isMobile = useBreakpointValue({ base: true, lg: false });
@@ -453,11 +454,48 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         // Close the modal and refetch elements to show the new cue in context
         setIsAddElementModalOpen(false);
 
-        // Call refetch on the active mode
+        // Call refetch on the active mode (element is already in correct position)
         if (activeMode === 'view' && viewModeRef.current) {
             await viewModeRef.current.refetchElements();
         } else if (activeMode === 'edit' && editModeRef.current) {
             await editModeRef.current.refetchElements();
+        }
+    };
+
+    const handleAutoSortElements = async () => {
+        if (!scriptId) return;
+
+        try {
+            const token = await getToken();
+            if (!token) {
+                showError('Authentication required');
+                return;
+            }
+
+            const response = await fetch(`/api/scripts/${scriptId}/auto-sort-elements`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Auto-sort endpoint error:', response.status, errorText);
+                throw new Error(`Failed to auto-sort elements: ${response.status} - ${errorText}`);
+            }
+
+            // Refetch elements to show the updated order
+            if (activeMode === 'view' && viewModeRef.current) {
+                await viewModeRef.current.refetchElements();
+            } else if (activeMode === 'edit' && editModeRef.current) {
+                await editModeRef.current.refetchElements();
+            }
+
+        } catch (error) {
+            console.error('Error auto-sorting elements:', error);
+            showError('Failed to auto-sort elements. Please try again.');
         }
     };
 
@@ -587,7 +625,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     {/* Left: Script Content Area - matches BaseEditPage dimensions but shifted left */}
                     <Box
                         flex={1}
-                        bg="gray.200"
+                        bg="white"
                         _dark={{ bg: "gray.700" }}
                         borderRadius="md"
                         mr={isMobile ? "0" : "8"}
@@ -632,7 +670,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
                                 {activeMode === 'view' && <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={colorizeDepNames} showClockTimes={showClockTimes} />}
-                                {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={colorizeDepNames} showClockTimes={showClockTimes} />}
+                                {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={colorizeDepNames} showClockTimes={showClockTimes} autoSortCues={autoSortCues} onAutoSortChange={setAutoSortCues} />}
                                 {activeMode === 'play' && <PlayMode />}
                                 {activeMode === 'share' && <ShareMode />}
                             </Box>
@@ -736,6 +774,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onClose={() => setIsAddElementModalOpen(false)}
                 scriptId={scriptId || ''}
                 onElementCreated={handleElementCreated}
+                autoSortCues={autoSortCues}
             />
 
             {/* Options Modal */}
@@ -746,6 +785,14 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onColorizeDepNamesChange={setColorizeDepNames}
                 showClockTimes={showClockTimes}
                 onShowClockTimesChange={setShowClockTimes}
+                autoSortCues={autoSortCues}
+                onAutoSortCuesChange={(value) => {
+                    setAutoSortCues(value);
+                    // If auto-sort is being enabled, trigger immediate re-sort
+                    if (value && scriptId) {
+                        handleAutoSortElements();
+                    }
+                }}
             />
 
             {/* Mobile Drawer Menu */}

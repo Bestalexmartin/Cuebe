@@ -16,6 +16,7 @@ interface Department {
     departmentName: string;
     departmentDescription?: string;
     departmentColor?: string;
+    departmentInitials?: string;
     dateCreated: string;
     dateUpdated: string;
 }
@@ -63,7 +64,21 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
                     borderColor="gray.300"
                     _dark={{ borderColor: "gray.600" }}
                     flexShrink="0"
-                />
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                >
+                    {department.departmentInitials && (
+                        <Text
+                            fontSize="xs"
+                            fontWeight="bold"
+                            color="black"
+                            userSelect="none"
+                        >
+                            {department.departmentInitials}
+                        </Text>
+                    )}
+                </Box>
             )}
         </>
     );

@@ -21,6 +21,7 @@ interface DepartmentFormData {
     departmentName: string;
     departmentDescription: string;
     departmentColor: string;
+    departmentInitials: string;
 }
 
 interface CreateDepartmentModalProps {
@@ -38,6 +39,7 @@ const INITIAL_FORM_STATE: DepartmentFormData = {
     departmentName: '',
     departmentDescription: '',
     departmentColor: '#6495ED',
+    departmentInitials: '',
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
@@ -49,9 +51,9 @@ const VALIDATION_CONFIG: FormValidationConfig = {
                     if (!value || value.trim().length === 0) {
                         return true; // Empty is valid
                     }
-                    return value.trim().length >= 4; // Must have 4+ chars if not empty
+                    return value.trim().length >= 3; // Must have 3+ chars if not empty
                 },
-                message: 'Department name must be at least 4 characters',
+                message: 'Department name must be at least 3 characters',
                 code: 'MIN_LENGTH'
             },
             ValidationRules.maxLength(50, 'Department name must be no more than 50 characters')
@@ -67,6 +69,13 @@ const VALIDATION_CONFIG: FormValidationConfig = {
         required: false, // Handle required validation manually for button state
         rules: [
             ValidationRules.pattern(/^#[0-9A-F]{6}$/i, 'Please enter a valid hex color code')
+        ]
+    },
+    departmentInitials: {
+        required: false,
+        rules: [
+            ValidationRules.maxLength(5, 'Initials must be no more than 5 characters'),
+            ValidationRules.pattern(/^[A-Z]*$/i, 'Initials must contain only letters')
         ]
     }
 };
@@ -103,6 +112,9 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
                 ...(form.formData.departmentDescription.trim() && {
                     departmentDescription: form.formData.departmentDescription.trim()
                 }),
+                ...(form.formData.departmentInitials.trim() && {
+                    departmentInitials: form.formData.departmentInitials.trim().toUpperCase()
+                }),
             };
 
             await form.submitForm(
@@ -129,6 +141,22 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
         form.updateField('departmentColor', colorValue);
     };
 
+    const handleDepartmentNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newName = e.target.value;
+        form.updateField('departmentName', newName);
+        
+        // Auto-populate initials if they haven't been manually set
+        if (!form.formData.departmentInitials || 
+            form.formData.departmentInitials === generateInitials(form.formData.departmentName)) {
+            const newInitials = generateInitials(newName);
+            form.updateField('departmentInitials', newInitials);
+        }
+    };
+
+    const generateInitials = (name: string): string => {
+        return name.trim().substring(0, 2).toUpperCase();
+    };
+
     const { canSubmit } = useStandardFormValidation(form, ['departmentName']);
 
     return (
@@ -150,39 +178,36 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
             errorBoundaryContext="CreateDepartmentModal"
         >
             <VStack spacing={4} align="stretch">
-                <FormInput
-                    form={form}
-                    name="departmentName"
-                    label="Department Name"
-                    placeholder="Enter department name"
-                    isRequired
-                />
+                <FormControl isRequired>
+                    <FormLabel>Department Name</FormLabel>
+                    <Input
+                        value={form.formData.departmentName}
+                        onChange={handleDepartmentNameChange}
+                        onBlur={() => form.validateField('departmentName')}
+                        placeholder="Enter department name"
+                    />
+                </FormControl>
 
-                <FormControl>
-                    <FormLabel>Department Color</FormLabel>
-                    <VStack align="stretch" spacing={3}>
-                        <HStack>
-                            <Input
-                                type="color"
-                                value={form.formData.departmentColor}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('departmentColor', e.target.value)}
-                                width="60px"
-                                height="40px"
-                                padding="1"
-                                cursor="pointer"
-                            />
-                            <Input
-                                value={form.formData.departmentColor}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('departmentColor', e.target.value)}
-                                placeholder="#6495ED"
-                                flex="1"
-                            />
-                        </HStack>
-                        <Box>
-                            <Text fontSize="sm" color="gray.500" mb={2}>
-                                Quick Colors:
-                            </Text>
-                            <HStack spacing={2} flexWrap="wrap">
+                <HStack spacing={4} align="start">
+                    <FormControl flex="2">
+                        <FormLabel>Department Color</FormLabel>
+                        <VStack align="stretch" spacing={3}>
+                            <HStack spacing={2} align="center">
+                                <Input
+                                    type="color"
+                                    value={form.formData.departmentColor}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('departmentColor', e.target.value)}
+                                    width="60px"
+                                    height="40px"
+                                    padding="1"
+                                    cursor="pointer"
+                                />
+                                <Input
+                                    value={form.formData.departmentColor}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('departmentColor', e.target.value)}
+                                    placeholder="#6495ED"
+                                    width="120px"
+                                />
                                 {PRESET_COLORS.map((color) => (
                                     <Button
                                         key={color.value}
@@ -196,12 +221,28 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
                                         onClick={() => handleColorButtonClick(color.value)}
                                         _hover={{ transform: 'scale(1.1)' }}
                                         title={color.name}
+                                        tabIndex={-1}
                                     />
                                 ))}
                             </HStack>
-                        </Box>
-                    </VStack>
-                </FormControl>
+                        </VStack>
+                    </FormControl>
+                    
+                    <FormControl flex="1">
+                        <FormLabel>Initials</FormLabel>
+                        <Input
+                            value={form.formData.departmentInitials}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('departmentInitials', e.target.value.toUpperCase())}
+                            onBlur={() => form.validateField('departmentInitials')}
+                            placeholder="LX"
+                            maxLength={5}
+                        />
+                        <Text fontSize="xs" color="gray.500" mt={1}>
+                            Optional
+                        </Text>
+                    </FormControl>
+                </HStack>
+
 
                 <FormControl>
                     <FormLabel>Description</FormLabel>

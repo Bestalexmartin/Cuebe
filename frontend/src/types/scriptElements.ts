@@ -49,6 +49,7 @@ export interface ScriptElementBase {
   departmentID?: string;               // Link to department
   departmentName?: string;             // Department name from relationship
   departmentColor?: string;            // Department color from relationship
+  departmentInitials?: string;         // Department initials from relationship
   customColor?: string;                // Custom row color for notes
   
   // Location and logistics
@@ -104,6 +105,7 @@ export interface CueElement extends ScriptElementBase {
   departmentID: string;                // Required for cues
   departmentName?: string;             // Department name from relationship
   departmentColor?: string;            // Department color from relationship
+  departmentInitials?: string;         // Department initials from relationship
 }
 
 export interface NoteElement extends ScriptElementBase {
@@ -111,6 +113,7 @@ export interface NoteElement extends ScriptElementBase {
   departmentID?: string;               // Optional for notes
   departmentName?: string;             // Department name from relationship
   departmentColor?: string;            // Department color from relationship
+  departmentInitials?: string;         // Department initials from relationship
   customColor: string;                 // Required for visual distinction
 }
 

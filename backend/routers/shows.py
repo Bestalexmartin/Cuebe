@@ -217,7 +217,8 @@ async def create_script_for_show(
         showID=show_id,
         scriptName=script.scriptName or "New Script",
         scriptStatus=models.ScriptStatus(script.scriptStatus) if script.scriptStatus is not None else models.ScriptStatus.DRAFT,
-        startTime=show.showDate,  # Inherit show datetime as start time
+        startTime=show.showDate,
+        endTime=show.showDuration if show.showDuration else None,
         ownerID=user.userID
     )
     db.add(new_script)
