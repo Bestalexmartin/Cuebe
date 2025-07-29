@@ -546,7 +546,7 @@ def rate_limit(limit_config):
 
 #### Rate Limiter Error Resolution
 **Issues Resolved**:
-- Fixed null attribute access errors in `main.py`, `webhooks.py`, and `system_tests.py`
+- Fixed null attribute access errors in `main.py`, `webhooks.py`, and the `system_tests` package
 - Added proper null checks before accessing RateLimitConfig attributes
 - Implemented fallback behavior when rate limiting is unavailable
 
