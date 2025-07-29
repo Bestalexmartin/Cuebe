@@ -69,7 +69,7 @@ async def create_guest_user_with_relationship(
         phoneNumber=guest_data.phoneNumber,
         notes=None,  # Notes belong in the relationship, not the user
         createdBy=user.userID,  # Track who created this guest user
-        clerk_user_id=None,  # No Clerk integration yet
+        clerk_user_id=None,  # Clerk user ID will be set when webhooks sync data
         userName=None,
         profileImgURL=None,
         isActive=True
