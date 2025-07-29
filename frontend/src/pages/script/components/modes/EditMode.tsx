@@ -68,7 +68,7 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({ scriptId, colo
                                 showClockTimes={showClockTimes}
                                 scriptStartTime={script?.startTime}
                                 scriptEndTime={script?.endTime}
-                                onClick={() => console.log('Element clicked:', element.elementID)}
+                                onClick={() => {}}
                             />
                         ))}
                     </VStack>
