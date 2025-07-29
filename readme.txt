@@ -1,126 +1,106 @@
-Sunday, June 30, 2025
-• Purchased and picked up brand new macbook
-• Lead architecture discussion with Gemini to identify my strengths and portable experience from my LAMP days in 2016, select system architecture and define all the components we'd need to build this including VSCode, Python, React, FastAPI and git
-• Signed up for git account. Tomorrow we code.
+	CallMaster is a theater production management application designed around a modern
+container‑based architecture. The project uses React 19 with TypeScript and Chakra UI
+on the frontend, while the backend is powered by FastAPI and SQLAlchemy with PostgreSQL
+storage. Authentication is handled through Clerk, and the environment supports a full
+suite of tests covering API endpoints, database integrity, authentication, and
+performance. The system architecture documentation explains how the frontend, backend,
+and database services communicate via Docker Compose, with optional Redis integration
+for rate limiting and caching.
 
-Monday Jun 30, 2025
-1) This is my first app built with a modern tech stack so let's document it all here... after my first VSCode commit to git, that is!
+##     Architecture Diagram
 
-Tuesday Jul 1, 2025
-1) Lots of progress here... got python installed correctly in the virtual environment, set up the database, extracted environment variables into a .env file and confirmed the db is working.
-2) And one more commit to include the fixes to the database schema and show write and read API endpoints.
-3) Afternoon commit to include progress related to including Clerk... got the login loop, still need to add the webhook to create a user record in my own database
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │    Backend      │    │   Database      │
+│   (React/Vite)  │◄──►│   (FastAPI)     │◄──►│  (PostgreSQL)   │
+│   Port: 5173    │    │   Port: 8000    │    │   Port: 5432    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Host File System                             │
+│  ./frontend/ ◄─── Volume Mount ───► /app                        │
+│  ./backend/  ◄─── Volume Mount ───► /app                        │
+│  ./docs/     ◄─── Volume Mount ───► /docs                       │
+└─────────────────────────────────────────────────────────────────┘
 
-Wednesday Jul 2, 2025
-1) Early morning commit to remove faulty webhook work and start fresh
-2) Added React Router and some nicer looking Clerk components
-3) Spent some time working on the routing logic... still not done but better
-4) Finalized the routing for Clerk signup, signin and userpreferences
-5) Completed webhook setup via SVIX, updated Clerk logic and made successful new user account round trip
+	CallMaster is built with: - **Frontend**: React 19.1.0 + TypeScript + Chakra UI -
+**Backend**: Python FastAPI + SQLAlchemy + PostgreSQL - **Authentication**: Clerk -
+**Testing**: Comprehensive test suites for all application layers
 
-Thursday Jul 3, 2025
-1) Implemented soft delete of user accounts and tested updates to user data
-2) Secured API endpoints with JWT bearer tokens
 
-Friday Jul 4, 2025
-1) Added new data types for scripts, elements, departments, etc, created guest access token interface to retrieve calls and updated show primary key to use UUIDs and 
+	Core functionality centers on comprehensive script management. The script elements
+data model defines cues, notes, and groupings with precise sequencing, timing, and
+department assignments.
 
-Saturday Jul 5, 2025
-1) Thinking about user journeys and fleshing out the main dashboard functionality
+#     Script Elements Data Model
 
-Sunday Jul 6, 2025
-1) Implemented Chakra UI components, styled dashboard elements and added "dark mode" with system level config support
+##     Overview
 
-Monday Jul 7, 2025
-1) Created UI for creating and selecting shows, showing show details and scripts
-2) Added modal for creating scripts, sorting and highlighting logic, moved scripts inside of the show card
-3) A few more formatting fixes, added some placeholders for the quickstart menu
-4) A bit of visual fix to prevent elements from moving around
+	The script elements data model defines the structure for all script content in
+CallMaster. This includes cues, notes, and organizational groups that make up a theater
+production script.
 
-Tueday Jul 8, 2025
-1) Extracted state of dashboard into separate file, extracted show & script card functions into separate file
-2) Fixed some issues with passing variables between dashboard and show card files
-3) Added hamburger and popout menu to display right side panel on mobile devices
+##     Core Element Types
 
-Wednesday Jul 9, 2025
-1) Added side panel buttons and extracted views for each data type into separate pages, added proper scrolling and boundary management for cards in the main window, added auto-creation of script file when show is created
-2) Added some icons to the quick access menu and screen title areas
-3) Extracted menu imports into separate file to be more DRY
+###     Base Element Structure
+	All script elements inherit from `ScriptElementBase` which provides:
 
-Thursday Jul 10, 2025
-1) Fixed issue with left side panel rendering and scrolling on mobile devices
+	- **Primary identification**: Unique IDs, script reference, element type -
+**Sequencing and timing**: Order, time offsets, trigger mechanisms - **Content**:
+Descriptions, notes, cue identifiers - **Department association**: Visual organization
+and color coding - **Location tracking**: Physical theater locations - **Execution
+management**: Timing, fades, status tracking - **Hierarchy support**: Parent/child
+relationships for grouping - **Resource assignment**: Equipment, crew, and performer
+requirements - **Safety protocols**: Critical cue identification and safety notes
 
-Friday Jul 11, 2025
-1) Added button for editing the show
-2) Fixed the formatting of the show edit page and activated the return button
-3) Added stub of edit show page
+	Users can edit scripts through an intuitive drag‑and‑drop interface that resolves
+conflicts when moving elements, and the application exposes a complete CRUD API for
+script elements.
 
-Wednesday Jul 16, 2025
-1) Substantial code review and component architecture revisions - reusable patterns, proper state management, clean separation of concerns... plus more consistent styling
-2) Major refactor: distributed sorting, self-contained views and completed CRUD for venues/departments/crew
+#     Drag-and-Drop Script Element Reordering System
 
-Thursday Jul 17, 2025
-1) Major refactoring to extract modal functionality, complete all creation endpoints and create a form hook to facilitate creation of forms
-2) Updated all table IDs to UUID for security, general UI/UX cleanup
+##     Overview
 
-Saturday Jul 18, 2025
-1) Completed edit pages, major refactor to state management to preserve open cards across edits
-2) General UI/UX improvements to cards and edit pages for consistency and readability, updates to data types and improved code quality
-3) Indented detail text on cards
-4) Cleaned up comments and console logs in preparation for next dev push
+	The CallMaster application features a comprehensive drag-and-drop system for
+reordering script elements (cues, notes, groups) in edit mode. This system provides
+intelligent conflict resolution when time offsets don't match the new element
+positioning.
 
-Sunday Jul 19, 2025
-1) Code review and cleanup, fixed error handling, hook callback usage, dependency management, toast styling and others. Began conversion to TypeScript
-2) Completed typescript conversion of all files
+##     Architecture
 
-Monday Jul 20, 2025
-1) Completed delete functionality for all elements, including two stage deletion for show and crew, plus major revisions to modals and edit pages
-2) Refactored sort controls and general visual improvements
-3) Cleanup of scrolling on edit pages and minor UI fixes
-4) General UI/UX cleanup, pruned unused endpoints
-5) Major update... enhanced error handling system, added centralized smart form validation, enhanced and unified modals, added initial help page and improved navigation state persistence
+###     Core Components
 
-Tuesday Jul 22, 2025
-1) Separated test tools from future tutorial content, fixed duplicate state restoration code in QuickAccess navigation, added form validation to edit pages, fixed useValidatedForm hook for consistenty
-2) Added environment reset and API testing to test tools, styling review of all test tools, filesystem reorganization, restructured routing files, added OpenAPI docs to Options menu
+####     1. EditMode Component
+#### (`/frontend/src/pages/script/components/modes/EditMode.tsx`)
+	- **Purpose**: Container for drag-and-drop functionality in script editing - **Key
+Features**: - Local state management for visual updates without server refresh -
+Integration with @dnd-kit library for drag operations - Modal-based conflict resolution
+for time offset mismatches - Server synchronization for persistent changes
 
-Wednesday Jul 23, 2025
-1) Addressed issues with pytest, added network, database, authentication and performance test suites
-2) Grouped tests into suites based on test type
-3) Extracted content into contextual "QuickAccess" panels for each options section with appropriate mobile presentation
+####     2. DraggableCueElement Component
+#### (`/frontend/src/pages/script/components/DraggableCueElement.tsx`)
+	- **Purpose**: Wrapper component that makes script elements draggable - **Key
+Features**: - Full-row dragging (entire element is draggable) - Visual feedback during
+drag operations with color blending - Z-index management for proper layering during
+drag - Maintains opacity and visual consistency
 
-Thursday Jul 24, 2025
-1) Replaced faked performance and filesystem tests with real tests... updated internet speed test to use speedtest-cli from the host network and re-worked installation of pytest
-2) Added external dependencies tool (Clerk check) and general clean up to all tools
-3) Swept for typescript errors and cleaned up comments and debug logging, added memory leak audit, implemented error boundaries to all components, added API rate limiting
-4) Extracted cards and modals into base components for consistent styling and duplicate code reduction, setup documentation pages
+####     3. DragReorderModal Component
+#### (`/frontend/src/pages/script/components/modals/DragReorderModal.tsx`)
+	- **Purpose**: User choice modal for handling time offset conflicts - **Key
+Features**: - Mobile toolbar-style buttons with orange hover and blue active states -
+Three conflict resolution options: disable auto-sort, match above, match below - Clear
+visual feedback for user decisions
 
-Friday Jul 25, 2025
-1) Added markdown rendering to read docs and for future use, added system architecture documentation, updated page layout for static quickstart menu
-2) Final cleanup on unifiedCard indentation, reviewed frontend and backend for TypeScript errors, updated documentation
+###     Major Achievements
+	- **Script Elements API**: Complete CRUD operations for theater script management -
+**Drag-and-Drop System**: Intuitive script element reordering with intelligent conflict
+resolution - **Note Color Customization**: Visual organization system with smart text
+contrast and preset colors - **Enterprise-Grade Testing Suite**: 6 comprehensive
+testing tools - **Performance Optimized**: React.memo implementation across all
+components - **DRY Architecture**: Base component system eliminates code duplication -
+**Comprehensive Documentation**: Full technical documentation and guides
 
-Saturday Jul 26, 2025
-1) Minor spacing issues fixed prior to beginning milestone 2
-2) Extracted edit page layout to "BaseEditPage", refactored validation alert to float on this page rather than stick to bottom
-3) Updated documentation to include new refactoring data
-
-Saturday JUl 25, 2025 - MILESTONE 01 Completed
-• Account management, primary navigation and FPO UI/UX, server architecture, testing suite and documentation completed
-
-Saturday Jul 26, 2025
-4) Crafted Roadmap for further development and added it to documentation
-5) Created edit script page, fixed issue with show card hover state
-6) Added Edit Script page, duplicate and delete features, implemented change detection for pages with editable fields, improved documentation layout
-
-Sunday Jul 27, 2025
-1) UI Cleanup and thorough implementation of the hasChange() function to track changes when using forms
-
-Monday Jul 28, 2025
-1) Refactored EditScript page to acknowledge central role, created script API endpoints, added cue view, updated docs, added script element CRUD loop
-2) Improvements to script cue element, added duration and run time, started user options interface, started using OpenAI Codex on github to clean and debug so that claude doesn't have to do it
-
-Tuesday Jul 29, 2025
-• Several small Codex pull requests
-1) Added auto-sorting and drag sorting of cue elements, note creation with background color, drag sorting
-2) Renamed API Test page, various UI cleanup, fixed script duplication issue, began work on cue element select and delete
-3) Applied small improvements recommended by Codex
+	Additional modules cover shows, venues, crew, and departments, all secured by
+authentication and enriched with performance optimizations and extensive documentation.

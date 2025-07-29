@@ -299,10 +299,6 @@ async def delete_crew_relationship(
     if not relationship_to_delete:
         raise HTTPException(status_code=404, detail="Crew relationship not found")
     
-    # For now, just log that this will be needed
-    logger.info(f"Deleting crew relationship between manager {user.userID} and crew member {crew_user_id}")
-    logger.info("TODO: Remove crew member from show assignments when that feature is implemented")
-    
     # Delete the crew relationship (this preserves the guest user account)
     db.delete(relationship_to_delete)
     db.commit()

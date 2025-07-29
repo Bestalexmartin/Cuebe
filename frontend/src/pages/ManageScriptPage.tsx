@@ -500,20 +500,14 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     };
 
     const handleElementDuplicate = () => {
-        // TODO: Get selected element from EditMode component
-        // For now, show a toast indicating feature is not fully implemented
         showError('Element duplication feature is under development');
     };
 
     const handleElementGroup = () => {
-        // TODO: Get selected elements from EditMode component
-        // For now, show a toast indicating feature is not fully implemented
         showError('Element grouping feature is under development');
     };
 
     const handleElementDelete = () => {
-        // TODO: Get selected element from EditMode component
-        // For now, show a toast indicating feature is not fully implemented
         showError('Element deletion feature is under development');
     };
 
@@ -578,11 +572,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
                     {/* Right: Action Buttons positioned to align with scroll area */}
                     <Box flex={1} position="relative">
-                        <Box 
-                            position="absolute" 
-                            right={isMobile ? "16px" : "106px"} 
-                            top="50%" 
-                            transform="translateY(-50%)" 
+                        <Box
+                            position="absolute"
+                            right={isMobile ? "16px" : "106px"}
+                            top="50%"
+                            transform="translateY(-50%)"
                             zIndex={100}
                         >
                             <HStack spacing={2}>
