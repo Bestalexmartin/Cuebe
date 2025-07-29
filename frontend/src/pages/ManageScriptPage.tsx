@@ -10,7 +10,14 @@ import {
     Flex,
     Button,
     Divider,
-    Heading
+    Heading,
+    useBreakpointValue,
+    Drawer,
+    DrawerBody,
+    DrawerHeader,
+    DrawerOverlay,
+    DrawerContent,
+    DrawerCloseButton
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
@@ -21,9 +28,9 @@ import { AppIcon } from '../components/AppIcon';
 import { ActionsMenu, ActionItem } from '../components/ActionsMenu';
 import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmationModal';
 import { FinalDeleteConfirmationModal } from '../components/modals/FinalDeleteConfirmationModal';
-import { DuplicateScriptModal } from '../components/modals/DuplicateScriptModal';
-import { ProcessingModal } from '../components/modals/ProcessingModal';
-import { OptionsModal } from '../components/modals/OptionsModal';
+import { DuplicateScriptModal } from './script/components/modals/DuplicateScriptModal';
+import { ProcessingModal } from './script/components/modals/ProcessingModal';
+import { OptionsModal } from './script/components/modals/OptionsModal';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { useValidatedForm } from '../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../types/validation';
@@ -40,13 +47,17 @@ import { ShareMode } from './script/components/modes/ShareMode';
 import { AddScriptElementModal } from './script/components/AddScriptElementModal';
 import { useScriptModes } from './script/hooks/useScriptModes';
 
-interface ManageScriptPageProps { }
+interface ManageScriptPageProps {
+    isMenuOpen: boolean;
+    onMenuClose: () => void;
+}
 
 // TypeScript interfaces for script metadata form
 interface ScriptFormData {
     scriptName: string;
     scriptStatus: string;
     startTime: string;
+    endTime: string;
     scriptNotes: string;
 }
 
@@ -63,6 +74,7 @@ const INITIAL_FORM_STATE: ScriptFormData = {
     scriptName: '',
     scriptStatus: 'DRAFT',
     startTime: '',
+    endTime: '',
     scriptNotes: ''
 };
 
@@ -100,7 +112,7 @@ interface ToolButton {
     isDisabled?: boolean;
 }
 
-export const ManageScriptPage: React.FC<ManageScriptPageProps> = () => {
+export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, onMenuClose }) => {
     const { scriptId } = useParams<{ scriptId: string }>();
     const navigate = useNavigate();
     const { getToken } = useAuth();
@@ -123,6 +135,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = () => {
     // Options state management
     const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
     const [colorizeDepNames, setColorizeDepNames] = useState(false);
+    const [showClockTimes, setShowClockTimes] = useState(false);
+
+    // Responsive breakpoint for mobile layout
+    const isMobile = useBreakpointValue({ base: true, lg: false });
 
     // Form management for INFO mode
     const form = useValidatedForm<ScriptFormData>(INITIAL_FORM_STATE, {
@@ -147,6 +163,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = () => {
         showName: show.showName,
         scriptStatus: script.scriptStatus,
         startTime: convertLocalToUTC(convertUTCToLocal(script.startTime)), // Normalize the format
+        endTime: convertLocalToUTC(convertUTCToLocal(script.endTime)), // Normalize the format
         scriptNotes: script.scriptNotes || ''
     } : null;
 
@@ -156,6 +173,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = () => {
             scriptName: form.formData.scriptName,
             scriptStatus: form.formData.scriptStatus,
             startTime: convertLocalToUTC(form.formData.startTime),
+            endTime: convertLocalToUTC(form.formData.endTime),
             scriptNotes: form.formData.scriptNotes
         },
         activeMode === 'info'
@@ -168,6 +186,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = () => {
                 scriptName: script.scriptName || '',
                 scriptStatus: script.scriptStatus || 'DRAFT',
                 startTime: convertUTCToLocal(script.startTime),
+                endTime: convertUTCToLocal(script.endTime),
                 scriptNotes: script.scriptNotes || ''
             });
         }
@@ -321,6 +340,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = () => {
                 scriptName: form.formData.scriptName,
                 scriptStatus: form.formData.scriptStatus,
                 startTime: convertLocalToUTC(form.formData.startTime),
+                endTime: convertLocalToUTC(form.formData.endTime),
                 scriptNotes: form.formData.scriptNotes || null
             };
 
@@ -335,7 +355,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = () => {
             updateOriginalData({
                 scriptName: form.formData.scriptName,
                 scriptStatus: form.formData.scriptStatus,
-                startTime: convertLocalToUTC(form.formData.startTime)
+                startTime: convertLocalToUTC(form.formData.startTime),
+                endTime: convertLocalToUTC(form.formData.endTime),
+                scriptNotes: form.formData.scriptNotes
             });
 
         } catch (error) {
@@ -518,7 +540,13 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = () => {
 
                     {/* Right: Action Buttons positioned to align with scroll area */}
                     <Box flex={1} position="relative">
-                        <Box position="absolute" right="106px" top="50%" transform="translateY(-50%)" zIndex={10000}>
+                        <Box 
+                            position="absolute" 
+                            right={isMobile ? "16px" : "106px"} 
+                            top="50%" 
+                            transform="translateY(-50%)" 
+                            zIndex={100}
+                        >
                             <HStack spacing={2}>
                                 {/* Actions Menu */}
                                 <ActionsMenu
@@ -562,14 +590,14 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = () => {
                         bg="gray.200"
                         _dark={{ bg: "gray.700" }}
                         borderRadius="md"
-                        mr="8"
+                        mr={isMobile ? "0" : "8"}
                         position="relative"
                         overflow="hidden"
                         display="flex"
                         flexDirection="column"
                         border="1px solid"
                         borderColor="container.border"
-                        width="calc(100% - 106px)" // Account for bordered toolbar (74px) + double margins (32px)
+                        width={isMobile ? "100%" : "calc(100% - 106px)"} // Full width on mobile, account for toolbar on desktop
                         zIndex={1}
                     >
                         {/* Loading State */}
@@ -603,34 +631,36 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = () => {
                             >
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
-                                {activeMode === 'view' && <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={colorizeDepNames} />}
-                                {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={colorizeDepNames} />}
+                                {activeMode === 'view' && <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={colorizeDepNames} showClockTimes={showClockTimes} />}
+                                {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={colorizeDepNames} showClockTimes={showClockTimes} />}
                                 {activeMode === 'play' && <PlayMode />}
                                 {activeMode === 'share' && <ShareMode />}
                             </Box>
                         )}
                     </Box>
 
-                    {/* Right: Tool Toolbar - Single Column with Border */}
-                    <Box
-                        width="74px"
-                        flexShrink={0}
-                        border="1px solid"
-                        borderColor="container.border"
-                        borderRadius="md"
-                        p="4"
-                        bg="gray.50"
-                        _dark={{ bg: "gray.900" }}
-                        alignSelf="flex-start"
-                        maxHeight="100%"
-                        overflowY="auto"
-                        className="hide-scrollbar"
-                    >
-                        <ScriptToolbar
-                            toolButtons={toolButtons}
-                            onModeChange={handleModeChange}
-                        />
-                    </Box>
+                    {/* Right: Tool Toolbar - Single Column with Border - Hidden on Mobile */}
+                    {!isMobile && (
+                        <Box
+                            width="74px"
+                            flexShrink={0}
+                            border="1px solid"
+                            borderColor="container.border"
+                            borderRadius="md"
+                            p="4"
+                            bg="gray.50"
+                            _dark={{ bg: "gray.900" }}
+                            alignSelf="flex-start"
+                            maxHeight="100%"
+                            overflowY="auto"
+                            className="hide-scrollbar"
+                        >
+                            <ScriptToolbar
+                                toolButtons={toolButtons}
+                                onModeChange={handleModeChange}
+                            />
+                        </Box>
+                    )}
                 </Flex>
             </Flex>
 
@@ -714,7 +744,57 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = () => {
                 onClose={() => setIsOptionsModalOpen(false)}
                 colorizeDepNames={colorizeDepNames}
                 onColorizeDepNamesChange={setColorizeDepNames}
+                showClockTimes={showClockTimes}
+                onShowClockTimesChange={setShowClockTimes}
             />
+
+            {/* Mobile Drawer Menu */}
+            <Drawer isOpen={isMenuOpen} placement="right" onClose={onMenuClose}>
+                <DrawerOverlay />
+                <DrawerContent key={activeMode}>
+                    <DrawerCloseButton
+                        borderRadius="full"
+                        border="3px solid"
+                        borderColor="blue.400"
+                        bg="inherit"
+                        _hover={{ borderColor: 'orange.400' }}
+                    />
+                    <DrawerHeader>Script Tools</DrawerHeader>
+                    <DrawerBody>
+                        <VStack spacing={4} align="stretch">
+                            {toolButtons.map((tool) => (
+                                <Button
+                                    key={tool.id}
+                                    leftIcon={
+                                        <AppIcon
+                                            name={tool.icon}
+                                            boxSize="20px"
+                                        />
+                                    }
+                                    variant={tool.isActive ? "solid" : "outline"}
+                                    colorScheme={tool.isActive ? "blue" : "gray"}
+                                    isDisabled={tool.isDisabled}
+                                    onClick={() => {
+                                        if (!tool.isDisabled) {
+                                            handleModeChange(tool.id);
+                                            onMenuClose();
+                                        }
+                                    }}
+                                    justifyContent="flex-start"
+                                    width="100%"
+                                    _hover={tool.isDisabled ? {} : {
+                                        bg: tool.isActive ? "orange.400" : "orange.500",
+                                        color: "white",
+                                        borderColor: "orange.300"
+                                    }}
+                                >
+                                    {tool.label}
+                                </Button>
+                            ))}
+                        </VStack>
+                    </DrawerBody>
+                </DrawerContent>
+            </Drawer>
         </ErrorBoundary>
     );
 };

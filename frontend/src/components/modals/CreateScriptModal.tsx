@@ -1,3 +1,5 @@
+// frontend/src/components/modals/CreateScriptModal.tsx
+
 import React from 'react';
 import {
     FormControl,

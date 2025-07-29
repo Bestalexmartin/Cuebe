@@ -539,3 +539,181 @@ The BaseEditPage refactoring eliminated significant code duplication across edit
    - Validation error display
 
 This architecture provides a solid foundation for scalable, maintainable React components while ensuring consistent user experience and optimal performance.
+
+## Script Management Architecture
+
+### ForwardRef Pattern for Mode Components
+
+The script management system uses React's forwardRef pattern to expose imperative methods from child components to their parents, eliminating the need for useEffect-based callback patterns that could cause infinite loops.
+
+#### Implementation Pattern
+```typescript
+// Component definition with forwardRef
+export interface ViewModeRef {
+    refetchElements: () => Promise<void>;
+}
+
+export const ViewMode = forwardRef<ViewModeRef, ViewModeProps>(({ scriptId, colorizeDepNames = false }, ref) => {
+    const { elements, isLoading, error, refetchElements } = useScriptElements(scriptId);
+    
+    // Expose methods to parent via ref
+    useImperativeHandle(ref, () => ({
+        refetchElements
+    }), [refetchElements]);
+
+    return (
+        // Component JSX
+    );
+});
+
+// Parent component usage
+const ManageScriptPage: React.FC = () => {
+    const viewModeRef = useRef<ViewModeRef>(null);
+    const editModeRef = useRef<EditModeRef>(null);
+
+    const handleElementCreated = async () => {
+        // Call refetch on the active mode without useEffect dependency issues
+        if (activeMode === 'view' && viewModeRef.current) {
+            await viewModeRef.current.refetchElements();
+        } else if (activeMode === 'edit' && editModeRef.current) {
+            await editModeRef.current.refetchElements();
+        }
+    };
+
+    return (
+        <>
+            {activeMode === 'view' && <ViewMode ref={viewModeRef} scriptId={scriptId} />}
+            {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId} />}
+        </>
+    );
+};
+```
+
+#### Benefits
+- **Eliminates useEffect Dependencies**: No need for callback props that trigger useEffect re-runs
+- **Direct Method Access**: Parent components can directly call child methods when needed
+- **Type Safety**: Full TypeScript support for exposed methods
+- **Performance**: Avoids unnecessary re-renders from callback prop changes
+
+### Options Modal and Display Customization
+
+The script management system includes an Options modal that allows users to customize the display of script elements.
+
+#### Options Modal Implementation
+```typescript
+export const OptionsModal: React.FC<OptionsModalProps> = ({
+    isOpen,
+    onClose,
+    colorizeDepNames,
+    onColorizeDepNamesChange
+}) => {
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} size="md">
+            <ModalContent>
+                <ModalHeader>Script Display Options</ModalHeader>
+                <ModalBody>
+                    <VStack spacing={6} align="stretch">
+                        <FormControl>
+                            <HStack align="center">
+                                <Checkbox
+                                    isChecked={colorizeDepNames}
+                                    onChange={(e) => onColorizeDepNamesChange(e.target.checked)}
+                                />
+                                <FormLabel>Colorize Department Names</FormLabel>
+                            </HStack>
+                        </FormControl>
+                    </VStack>
+                </ModalBody>
+            </ModalContent>
+        </Modal>
+    );
+};
+```
+
+#### Department Colorization Feature
+When enabled, the department colorization feature:
+- Applies colored backgrounds to department name cells using `element.departmentColor`
+- Changes text color to bold white for better contrast
+- Implements conditional border logic to hide vertical separators for seamless colored backgrounds
+- Maintains NOTE element styling (no colorization, always shows borders)
+
+#### Conditional Border Logic
+```typescript
+// In CueElement.tsx - borders are conditionally shown based on colorization and element type
+<Box
+    borderRight={colorizeDepNames && (element as any).elementType !== 'NOTE' ? 'none' : '1px solid'}
+    borderLeft={colorizeDepNames && (element as any).elementType !== 'NOTE' ? 'none' : '1px solid'}
+    borderColor="gray.400"
+>
+    {/* Cell content */}
+</Box>
+
+// Department name cell with conditional styling
+{colorizeDepNames && element.departmentColor && (element as any).elementType !== 'NOTE' ? (
+    <Box
+        bg={element.departmentColor}
+        borderRadius="sm"
+        width="100%"
+        height="100%"
+        mx="2px"
+        my="2px"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+    >
+        <Text fontSize="sm" color="white" fontWeight="bold" isTruncated>
+            {element.departmentName || ''}
+        </Text>
+    </Box>
+) : (
+    <Text fontSize="sm" color={textColor} textAlign="center" isTruncated fontWeight={fontWeight}>
+        {(element as any).elementType === 'NOTE' ? '' : (element.departmentName || '')}
+    </Text>
+)}
+```
+
+### Visual Enhancements
+
+#### Cue Element Styling
+- **Height Reduction**: Reduced cue element height from 40px to 32px for more compact display
+- **Consistent Borders**: Standardized all vertical separators to use `gray.400` color
+- **Element Separation**: Added 1px margin bottom (`mb="1px"`) between elements instead of borders
+- **Dynamic Cue IDs**: Auto-generated cue IDs follow pattern: `[DEPT]-[##]` (e.g., `FL-01`, `SM-03`)
+- **Empty Cell Handling**: Uses non-breaking space (`\u00A0`) for empty cue IDs to maintain column structure
+
+#### Header Alignment
+The ScriptElementsHeader component uses manually adjusted column widths to align with content rows:
+- Time column: 82px width
+- Priority column: 122px width
+- Consistent height (32px) and styling with content rows
+- Sticky positioning for scroll persistence
+
+### Database Schema Updates
+
+#### TimeOffset Field Migration
+Removed legacy `timeOffset` field in favor of `timeOffsetMs` for better precision:
+
+```sql
+-- Migration: 13fe35e29ccb_remove_timeoffset_legacy_field.py
+def upgrade():
+    with op.batch_alter_table('script_elements', schema=None) as batch_op:
+        batch_op.drop_index('ix_script_elements_timeOffset')
+        batch_op.drop_column('timeOffset')
+
+def downgrade():
+    with op.batch_alter_table('script_elements', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('timeOffset', sa.INTEGER(), nullable=True))
+        batch_op.create_index('ix_script_elements_timeOffset', ['timeOffset'], unique=False)
+```
+
+#### Time Display Logic
+```typescript
+// Convert timeOffsetMs to MM:SS format
+const timeValue = (element as any).timeOffsetMs || 0;
+const totalSeconds = Math.round(timeValue / 1000);
+const minutes = Math.floor(totalSeconds / 60);
+const seconds = totalSeconds % 60;
+return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+```
+
+This architecture ensures maintainable, performant script management with customizable display options and consistent user experience across all modes.

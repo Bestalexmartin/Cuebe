@@ -18,7 +18,6 @@ class ElementType(enum.Enum):
     """Types of script elements"""
     CUE = "CUE"
     NOTE = "NOTE"
-    GROUP = "GROUP"
 
 class TriggerType(enum.Enum):
     """How script elements are triggered"""
@@ -265,6 +264,7 @@ class Show(Base):
     # Core show information
     showName = Column(String, index=True, nullable=False)
     showDate = Column(DateTime(timezone=True), nullable=True)
+    showDuration = Column(DateTime(timezone=True), nullable=True)  # End time of show
     showNotes = Column(Text, nullable=True)
     deadline = Column(DateTime(timezone=True), nullable=True)
     
@@ -327,6 +327,7 @@ class Script(Base):
     
     # Timing information
     startTime = Column(DateTime(timezone=True), nullable=True)
+    endTime = Column(DateTime(timezone=True), nullable=True)  # Planned end time
     actualStartTime = Column(DateTime(timezone=True), nullable=True)
     
     # Status flags
@@ -378,7 +379,7 @@ class ScriptElement(Base):
     cueID = Column(String(50), nullable=True)  # New cue ID field
     elementDescription = Column(Text, nullable=True)  # Legacy field
     description = Column(Text, nullable=False, server_default='')  # New description field
-    notes = Column(Text, nullable=True)
+    cueNotes = Column(Text, nullable=True)
     
     # Trigger and execution
     triggerType = Column(Enum(TriggerType), nullable=False, server_default='MANUAL')

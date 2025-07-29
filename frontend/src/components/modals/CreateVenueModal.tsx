@@ -1,3 +1,5 @@
+// frontend/src/components/modals/CreateVenueModal.tsx
+
 import React from 'react';
 import {
     VStack,
@@ -70,8 +72,6 @@ export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
         showFieldErrorsInToast: false // Only show validation errors in red alert box
     });
 
-    const { canSubmit } = useStandardFormValidation(form, ['venueName']);
-
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
@@ -101,6 +101,8 @@ export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
         form.resetForm();
         onClose();
     };
+
+    const { canSubmit } = useStandardFormValidation(form, ['venueName']);
 
     return (
         <BaseModal

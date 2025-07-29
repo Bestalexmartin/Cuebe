@@ -5,11 +5,11 @@ import {
     Select,
     VStack,
 } from '@chakra-ui/react';
-import { useValidatedForm } from '../../hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from '../../types/validation';
-import { FormInput } from '../form/FormField';
-import { BaseModal } from '../base/BaseModal';
-import { useStandardFormValidation } from '../../hooks/useFormValidation';
+import { useValidatedForm } from '../../../../hooks/useValidatedForm';
+import { ValidationRules, FormValidationConfig } from '../../../../types/validation';
+import { FormInput } from '../../../../components/form/FormField';
+import { BaseModal } from '../../../../components/base/BaseModal';
+import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
 
 // TypeScript interfaces
 interface ScriptFormData {

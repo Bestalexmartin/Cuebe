@@ -11,6 +11,9 @@ interface CueElementProps {
     onClick?: () => void;
     isSelected?: boolean;
     colorizeDepNames?: boolean;
+    showClockTimes?: boolean;
+    scriptStartTime?: string;
+    scriptEndTime?: string;
 }
 
 export const CueElement: React.FC<CueElementProps> = ({
@@ -19,7 +22,10 @@ export const CueElement: React.FC<CueElementProps> = ({
     allElements,
     onClick,
     isSelected = false,
-    colorizeDepNames = false
+    colorizeDepNames = false,
+    showClockTimes = false,
+    scriptStartTime,
+    scriptEndTime
 }) => {
     // Use customColor for full background if set, otherwise use grey.200 default
     const backgroundColor = element.customColor || "gray.300";
@@ -59,6 +65,94 @@ export const CueElement: React.FC<CueElementProps> = ({
         return `${deptPrefix}-${departmentCueCount.toString().padStart(2, '0')}`;
     })();
 
+    // Calculate time display (offset or clock time)
+    const timeDisplay = (() => {
+        const timeValue = (element as any).timeOffsetMs || 0;
+
+        if (showClockTimes && scriptStartTime) {
+            // Use the script's scheduled start time and add the offset
+            const showStartTime = new Date(scriptStartTime);
+            const clockTime = new Date(showStartTime.getTime() + timeValue);
+
+            // Format as H:MM:SS (12-hour format without AM/PM)
+            let hours = clockTime.getHours();
+            if (hours === 0) hours = 12; // 12 AM becomes 12
+            else if (hours > 12) hours = hours - 12; // PM hours become 1-11
+
+            const minutes = clockTime.getMinutes().toString().padStart(2, '0');
+            const seconds = clockTime.getSeconds().toString().padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        // Default to offset time (H:MM:SS)
+        const totalSeconds = Math.round(timeValue / 1000);
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
+        
+        if (hours > 0) {
+            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        } else {
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+    })();
+
+    // Calculate duration display
+    const durationDisplay = (() => {
+        // For all elements (including SHOW START), show duration in HH:MM:SS format if available
+        if (element.duration) {
+            const totalSeconds = element.duration;
+            const days = Math.floor(totalSeconds / 86400);
+            const hours = Math.floor((totalSeconds % 86400) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            
+            // Format: DD:HH:MM:SS for SHOW START NOTE (no leading zeros for days), HH:MM:SS for others
+            if (element.description?.toUpperCase() === 'SHOW START') {
+                if (days > 0) {
+                    return `${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else if (hours > 0) {
+                    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else {
+                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+            } else {
+                // Regular elements - HH:MM:SS format
+                if (hours > 0) {
+                    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else {
+                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }
+        }
+        
+        // Fallback: Calculate SHOW START duration on frontend if not in database yet
+        if (element.description?.toUpperCase() === 'SHOW START' && 
+            scriptStartTime && scriptEndTime) {
+            const startTime = new Date(scriptStartTime);
+            const endTime = new Date(scriptEndTime);
+            const durationMs = endTime.getTime() - startTime.getTime();
+            
+            if (durationMs > 0) {
+                const totalSeconds = Math.round(durationMs / 1000);
+                const days = Math.floor(totalSeconds / 86400);
+                const hours = Math.floor((totalSeconds % 86400) / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                
+                if (days > 0) {
+                    return `${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else if (hours > 0) {
+                    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else {
+                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }
+        }
+        
+        return '-';
+    })();
+
     return (
         <Box
             bg={backgroundColor}
@@ -84,33 +178,27 @@ export const CueElement: React.FC<CueElementProps> = ({
                 />
 
                 {/* Time Offset */}
-                <Box w="80px" pl={3} pr={4} borderRight={"1px solid"} borderColor={"gray.400"}>
+                <Box w="120px" pl={3} pr={4} borderRight={"1px solid"} borderColor={"gray.400"}>
                     <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight}>
-                        {(() => {
-                            const timeValue = (element as any).timeOffsetMs || 0;
-                            const totalSeconds = Math.round(timeValue / 1000);
-                            const minutes = Math.floor(totalSeconds / 60);
-                            const seconds = totalSeconds % 60;
-                            return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                        })()}
+                        {timeDisplay}
                     </Text>
                 </Box>
 
                 {/* Duration */}
                 <Box
-                    w="80px"
+                    w="100px"
                     px={3}
                     borderRight={colorizeDepNames && (element as any).elementType !== 'NOTE' ? 'none' : '1px solid'}
                     borderColor={"gray.400"}
                 >
                     <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight}>
-                        {element.duration ? `${element.duration}s` : '-'}
+                        {durationDisplay}
                     </Text>
                 </Box>
 
                 {/* Department Name */}
                 <Box
-                    w="130px"
+                    w="100px"
                     height="100%"
                     display="flex"
                     alignItems="center"
@@ -153,7 +241,7 @@ export const CueElement: React.FC<CueElementProps> = ({
 
                 {/* Cue Name/Description */}
                 <Box
-                    flex={1}
+                    w="200px"
                     pl={6}
                     pr={3}
                     borderRight={"1px solid"}
@@ -161,6 +249,18 @@ export const CueElement: React.FC<CueElementProps> = ({
                 >
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight}>
                         {element.description}
+                    </Text>
+                </Box>
+
+                {/* Cue Notes */}
+                <Box
+                    flex={1}
+                    px={3}
+                    borderRight={"1px solid"}
+                    borderColor={"gray.400"}
+                >
+                    <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight}>
+                        {(element as any).cueNotes || '\u00A0'}
                     </Text>
                 </Box>
 

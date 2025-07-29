@@ -26,6 +26,32 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["script-elements"])
 
+async def _auto_populate_show_start_duration(db: Session, script: models.Script, elements: List[models.ScriptElement]):
+    """Auto-populate SHOW START duration if missing and show times are available."""
+    
+    if not script.startTime or not script.endTime:
+        return
+    
+    # Find SHOW START element that has no duration set
+    show_start_element = None
+    for element in elements:
+        if (element.description and 
+            element.description.upper() == 'SHOW START' and 
+            not element.duration):
+            show_start_element = element
+            break
+    
+    if not show_start_element:
+        return
+    
+    # Calculate duration between script start and end times
+    duration_delta = script.endTime - script.startTime
+    duration_seconds = int(duration_delta.total_seconds())
+    
+    if duration_seconds > 0:
+        show_start_element.duration = duration_seconds
+        db.commit()
+
 def rate_limit(limit_config):
     """Decorator factory that conditionally applies rate limiting"""
     def decorator(func):
@@ -90,6 +116,9 @@ async def get_script_elements(
     
     # Apply pagination
     elements = query.offset(skip).limit(limit).all()
+    
+    # Auto-populate SHOW START cue duration if missing
+    await _auto_populate_show_start_duration(db, script, elements)
     
     return elements
 
@@ -168,7 +197,7 @@ async def create_script_element(
             triggerType=models.TriggerType(element.triggerType) if element.triggerType else models.TriggerType.MANUAL,
             cueID=element.cueID,
             description=element.description or "",
-            notes=element.notes,
+            cueNotes=element.cueNotes,
             departmentID=element.departmentID,
             location=models.LocationArea(element.location) if element.location else None,
             locationDetails=element.locationDetails,

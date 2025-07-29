@@ -89,18 +89,20 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
     const quickInfo = (
         <VStack align="stretch" spacing="1" color="detail.text" fontSize="sm">
             <HStack justify="space-between">
-                <HStack spacing="4">
-                    {venue.venueType && (
-                        <Badge variant="outline" colorScheme="green">
-                            {venue.venueType}
-                        </Badge>
-                    )}
-                    {venue.capacity && (
-                        <Text>
-                            Capacity: {formatCapacity(venue.capacity)}
-                        </Text>
-                    )}
-                </HStack>
+                {venue.venueType && (
+                    <Badge variant="outline" colorScheme="green">
+                        {venue.venueType}
+                    </Badge>
+                )}
+            </HStack>
+            <HStack justify="space-between">
+                {venue.capacity ? (
+                    <Text>
+                        Capacity: {formatCapacity(venue.capacity)}
+                    </Text>
+                ) : (
+                    <Box />
+                )}
                 <Text fontSize="xs">
                     Created: {formatDateTimeLocal(venue.dateCreated || venue.dateUpdated)}
                 </Text>

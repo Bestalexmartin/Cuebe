@@ -35,7 +35,7 @@ export const formatTimeLocal = (
   // Parse as UTC and display in local time
   const utcDate = new Date(utcDateTimeString + (utcDateTimeString.includes('Z') ? '' : 'Z'));
   return utcDate.toLocaleTimeString([], {
-    hour: '2-digit',
+    hour: 'numeric',
     minute: '2-digit'
   });
 };

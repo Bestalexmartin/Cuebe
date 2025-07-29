@@ -228,7 +228,7 @@ async def create_script_for_show(
     from datetime import timedelta
     show_start_cue = models.ScriptElement(
         scriptID=new_script.scriptID,
-        elementType=models.ElementType.CUE,
+        elementType=models.ElementType.NOTE,
         cueID=None,  # No cue ID needed for show start
         description="SHOW START",  # All caps title
         timeOffsetMs=0,  # Start at 00:00

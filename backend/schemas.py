@@ -133,6 +133,7 @@ class ShowCreate(BaseModel):
     showName: str
     venueID: Optional[UUID] = None
     showDate: Optional[datetime] = None
+    showDuration: Optional[datetime] = None  # End time of show
     showNotes: Optional[str] = None
     deadline: Optional[datetime] = None
 
@@ -142,6 +143,7 @@ class Show(BaseModel):
     showName: str
     venue: Optional[Venue] = None
     showDate: Optional[datetime] = None
+    showDuration: Optional[datetime] = None  # End time of show
     showNotes: Optional[str] = None
     deadline: Optional[datetime] = None
     dateCreated: datetime
@@ -161,6 +163,7 @@ class ScriptCreate(BaseModel):
     scriptName: Optional[str] = None
     scriptNotes: Optional[str] = None
     scriptStatus: Optional[str] = None
+    endTime: Optional[datetime] = None  # Planned end time
 
 class Script(BaseModel):
     scriptID: UUID  # ALREADY UUID
@@ -168,6 +171,7 @@ class Script(BaseModel):
     scriptNotes: Optional[str] = None
     scriptStatus: str
     startTime: Optional[datetime] = None
+    endTime: Optional[datetime] = None  # Planned end time
     showID: UUID  # ALREADY UUID
     dateCreated: datetime
     dateUpdated: datetime
@@ -183,6 +187,7 @@ class ScriptUpdate(BaseModel):
     scriptNotes: Optional[str] = None
     scriptStatus: Optional[str] = None
     startTime: Optional[datetime] = None
+    endTime: Optional[datetime] = None  # Planned end time
 
 # =============================================================================
 # SCRIPT ELEMENT SCHEMAS
@@ -215,13 +220,13 @@ class ScriptElement(BaseModel):
 
 class ScriptElementCreate(BaseModel):
     """Schema for creating new script elements"""
-    elementType: str  # 'CUE', 'NOTE', 'GROUP'
+    elementType: str  # 'CUE', 'NOTE'
     sequence: Optional[int] = None  # Auto-calculated if not provided
     timeOffsetMs: Optional[int] = 0  # Time offset in milliseconds
     triggerType: Optional[str] = "MANUAL"  # 'MANUAL', 'TIME', 'AUTO', 'FOLLOW', 'GO', 'STANDBY'
     cueID: Optional[str] = None
     description: str = ""
-    notes: Optional[str] = None
+    cueNotes: Optional[str] = None
     departmentID: Optional[UUID] = None
     location: Optional[str] = None  # LocationArea enum values
     locationDetails: Optional[str] = None
@@ -245,7 +250,7 @@ class ScriptElementUpdate(BaseModel):
     followsCueID: Optional[str] = None
     cueID: Optional[str] = None
     description: Optional[str] = None
-    notes: Optional[str] = None
+    cueNotes: Optional[str] = None
     departmentID: Optional[UUID] = None
     location: Optional[str] = None
     locationDetails: Optional[str] = None
@@ -317,7 +322,7 @@ class ScriptElementEnhanced(BaseModel):
     cueNumber: Optional[str] = None  # Legacy field
     description: str = ""
     elementDescription: Optional[str] = None  # Legacy field
-    notes: Optional[str] = None
+    cueNotes: Optional[str] = None
     
     # Location and visual
     departmentID: Optional[UUID] = None

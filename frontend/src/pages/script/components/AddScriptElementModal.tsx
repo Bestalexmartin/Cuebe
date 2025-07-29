@@ -11,8 +11,17 @@ import {
     Textarea,
     RadioGroup,
     Radio,
-    Text
+    Text,
+    Box,
+    Button,
+    Menu,
+    MenuButton,
+    MenuList,
+    MenuItem,
+    Flex,
+    Icon
 } from '@chakra-ui/react';
+import { ChevronDownIcon } from '@chakra-ui/icons';
 import { BaseModal } from '../../../components/base/BaseModal';
 import { useValidatedForm } from '../../../hooks/useValidatedForm';
 import { useResource } from '../../../hooks/useResource';
@@ -23,6 +32,7 @@ import { ScriptElementCreate, ElementType, TriggerType, PriorityLevel, LocationA
 interface Department {
     departmentID: string;
     departmentName: string;
+    departmentColor: string;
 }
 
 interface AddScriptElementModalProps {
@@ -38,7 +48,7 @@ const INITIAL_FORM_STATE: ScriptElementCreate = {
     timeOffsetMs: 0,
     triggerType: 'manual', // Will be set automatically
     cueID: '', // Will be auto-generated
-    notes: '',
+    cueNotes: '',
     departmentID: '',
     location: undefined, // Not needed in form
     priority: 'normal',
@@ -79,10 +89,10 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             }
         ]
     },
-    notes: {
+    cueNotes: {
         required: false,
         rules: [
-            ValidationRules.maxLength(500, 'Notes must be no more than 500 characters')
+            ValidationRules.maxLength(500, 'Cue Notes must be no more than 500 characters')
         ]
     }
 };
@@ -264,19 +274,62 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                 {/* Department */}
                 <FormControl isRequired={form.formData.elementType === 'cue'}>
                     <FormLabel>Department</FormLabel>
-                    <Select
-                        value={form.formData.departmentID}
-                        onChange={(e) => form.updateField('departmentID', e.target.value)}
-                        onBlur={() => form.validateField('departmentID')}
-                        placeholder={isLoadingDepartments ? "Loading departments..." : "Select department"}
-                        disabled={isLoadingDepartments}
-                    >
-                        {departments?.map((department) => (
-                            <option key={department.departmentID} value={department.departmentID}>
-                                {department.departmentName}
-                            </option>
-                        ))}
-                    </Select>
+                    <Menu>
+                        <MenuButton
+                            as={Button}
+                            rightIcon={<ChevronDownIcon />}
+                            variant="outline"
+                            width="100%"
+                            textAlign="left"
+                            isDisabled={isLoadingDepartments}
+                            bg="white"
+                            _dark={{ bg: "gray.800" }}
+                            height="40px"
+                        >
+                            <Flex align="center" gap={2}>
+                                {form.formData.departmentID ? (
+                                    <>
+                                        <Box
+                                            width="14px"
+                                            height="14px"
+                                            borderRadius="50%"
+                                            bg={departments?.find(d => d.departmentID === form.formData.departmentID)?.departmentColor || 'gray.400'}
+                                            flexShrink={0}
+                                        />
+                                        <Text isTruncated>
+                                            {departments?.find(d => d.departmentID === form.formData.departmentID)?.departmentName || 'Select department'}
+                                        </Text>
+                                    </>
+                                ) : (
+                                    <Text color="gray.400">
+                                        {isLoadingDepartments ? "Loading departments..." : "Select department"}
+                                    </Text>
+                                )}
+                            </Flex>
+                        </MenuButton>
+                        <MenuList>
+                            {departments?.map((department) => (
+                                <MenuItem
+                                    key={department.departmentID}
+                                    onClick={() => {
+                                        form.updateField('departmentID', department.departmentID);
+                                        form.validateField('departmentID');
+                                    }}
+                                >
+                                    <Flex align="center" gap={2}>
+                                        <Box
+                                            width="14px"
+                                            height="14px"
+                                            borderRadius="50%"
+                                            bg={department.departmentColor}
+                                            flexShrink={0}
+                                        />
+                                        <Text>{department.departmentName}</Text>
+                                    </Flex>
+                                </MenuItem>
+                            ))}
+                        </MenuList>
+                    </Menu>
                 </FormControl>
 
                 {/* Cue Event (Description) */}
@@ -331,13 +384,13 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                     </FormControl>
                 </HStack>
 
-                {/* Notes */}
+                {/* Cue Notes */}
                 <FormControl>
-                    <FormLabel>Notes</FormLabel>
+                    <FormLabel>Cue Notes</FormLabel>
                     <Textarea
-                        value={form.formData.notes}
-                        onChange={(e) => form.updateField('notes', e.target.value)}
-                        onBlur={() => form.validateField('notes')}
+                        value={form.formData.cueNotes}
+                        onChange={(e) => form.updateField('cueNotes', e.target.value)}
+                        onBlur={() => form.validateField('cueNotes')}
                         placeholder="Additional instructions or details..."
                         minHeight="60px"
                         resize="vertical"
