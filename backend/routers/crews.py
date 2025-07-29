@@ -202,7 +202,7 @@ async def update_crew_member(
         relationship_notes = update_data.pop('notes', None)
         
         # Don't allow changing certain fields for verified users when manager is editing
-        if crew_member.userStatus.is_(models.UserStatus.VERIFIED):
+        if crew_member.userStatus == models.UserStatus.VERIFIED:
             # Remove fields that shouldn't be changed for verified users (they own their contact info and role)
             protected_fields = ['emailAddress', 'phoneNumber', 'fullnameFirst', 'fullnameLast', 'userRole']
             for field in protected_fields:
@@ -228,7 +228,7 @@ async def update_crew_member(
                 logger.info(f"Updated relationship notes for crew member {crew_id}")
         
         # Clear user notes field for guest users (notes should be in relationship)
-        if crew_member.userStatus.is_(models.UserStatus.GUEST):
+        if crew_member.userStatus == models.UserStatus.GUEST:
             setattr(crew_member, 'notes', None)
     
     # Update the dateUpdated timestamp
