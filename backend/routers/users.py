@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-from datetime import datetime
 import logging
 
 import models

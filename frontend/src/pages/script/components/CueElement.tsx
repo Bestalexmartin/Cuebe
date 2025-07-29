@@ -6,13 +6,13 @@ import { ScriptElement } from '../../../types/scriptElements';
 
 const getTextColorForBackground = (hexColor: string): string => {
     if (!hexColor || hexColor === '') return 'black';
-    
+
     const color = hexColor.replace('#', '');
-    
+
     const r = parseInt(color.substr(0, 2), 16);
     const g = parseInt(color.substr(2, 2), 16);
     const b = parseInt(color.substr(4, 2), 16);
-    
+
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     return luminance < 0.5 ? 'white' : 'black';
 };
@@ -41,7 +41,7 @@ export const CueElement: React.FC<CueElementProps> = ({
     scriptEndTime
 }) => {
     const isNote = (element as any).elementType === 'NOTE';
-    
+
     const backgroundColor = element.customColor || "#E2E8F0";
     const hasCustomBackground = !!element.customColor && element.customColor !== "#E2E8F0";
     let textColor: string;
@@ -73,7 +73,7 @@ export const CueElement: React.FC<CueElementProps> = ({
             return '';
         }
 
-        const deptPrefix = element.departmentInitials || 
+        const deptPrefix = element.departmentInitials ||
             (element.departmentName ? element.departmentName.substring(0, 2).toUpperCase() : 'XX');
 
         let departmentCueCount = 0;
@@ -107,7 +107,7 @@ export const CueElement: React.FC<CueElementProps> = ({
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
-        
+
         if (hours > 0) {
             return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         } else {
@@ -122,7 +122,7 @@ export const CueElement: React.FC<CueElementProps> = ({
             const hours = Math.floor((totalSeconds % 86400) / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
-            
+
             if (element.description?.toUpperCase() === 'SHOW START') {
                 if (days > 0) {
                     return `${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
@@ -139,20 +139,20 @@ export const CueElement: React.FC<CueElementProps> = ({
                 }
             }
         }
-        
-        if (element.description?.toUpperCase() === 'SHOW START' && 
+
+        if (element.description?.toUpperCase() === 'SHOW START' &&
             scriptStartTime && scriptEndTime) {
             const startTime = new Date(scriptStartTime);
             const endTime = new Date(scriptEndTime);
             const durationMs = endTime.getTime() - startTime.getTime();
-            
+
             if (durationMs > 0) {
                 const totalSeconds = Math.round(durationMs / 1000);
                 const days = Math.floor(totalSeconds / 86400);
                 const hours = Math.floor((totalSeconds % 86400) / 3600);
                 const minutes = Math.floor((totalSeconds % 3600) / 60);
                 const seconds = totalSeconds % 60;
-                
+
                 if (days > 0) {
                     return `${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 } else if (hours > 0) {
@@ -162,7 +162,7 @@ export const CueElement: React.FC<CueElementProps> = ({
                 }
             }
         }
-        
+
         return '-';
     })();
 
@@ -172,7 +172,6 @@ export const CueElement: React.FC<CueElementProps> = ({
             border="2px solid"
             borderColor={(() => {
                 const color = isSelected ? "blue.400" : "transparent";
-                console.log(`CueElement border: isSelected=${isSelected}, color=${color}`);
                 return color;
             })()}
             mb="1px"

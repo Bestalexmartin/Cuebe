@@ -39,9 +39,9 @@ export interface EditModeRef {
     clearSelection: () => void;
 }
 
-export const EditMode = forwardRef<EditModeRef, EditModeProps>(({ 
-    scriptId, 
-    colorizeDepNames = false, 
+export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
+    scriptId,
+    colorizeDepNames = false,
     showClockTimes = false,
     autoSortCues = false,
     onAutoSortChange
@@ -49,7 +49,7 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     const { elements: serverElements, isLoading, error, refetchElements } = useScriptElements(scriptId);
     const { script } = useScript(scriptId);
     const { getToken } = useAuth();
-    
+
     const [localElements, setLocalElements] = useState(serverElements);
     const [dragModalOpen, setDragModalOpen] = useState(false);
     const [draggedElement, setDraggedElement] = useState<any>(null);
@@ -57,11 +57,11 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     const [elementBelow, setElementBelow] = useState<any>(null);
     const [pendingReorder, setPendingReorder] = useState<any>(null);
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-    
+
     useEffect(() => {
         setLocalElements(serverElements);
     }, [serverElements]);
-    
+
     // Expose refetch function and selection state to parent via ref
     useImperativeHandle(ref, () => ({
         refetchElements,
@@ -121,7 +121,7 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
 
     const handleMatchAbove = async () => {
         await applyReorder();
-        
+
         if (elementAbove && draggedElement) {
             await updateElementTimeOffset(draggedElement.elementID, elementAbove.timeOffsetMs);
         }
@@ -130,7 +130,7 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
 
     const handleMatchBelow = async () => {
         await applyReorder();
-        
+
         if (elementBelow && draggedElement) {
             await updateElementTimeOffset(draggedElement.elementID, elementBelow.timeOffsetMs);
         }
@@ -197,9 +197,9 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
             });
 
             if (response.ok) {
-                setLocalElements(prevElements => 
-                    prevElements.map(el => 
-                        el.elementID === elementId 
+                setLocalElements(prevElements =>
+                    prevElements.map(el =>
+                        el.elementID === elementId
                             ? { ...el, timeOffsetMs: newTimeOffsetMs }
                             : el
                     )
@@ -216,7 +216,7 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
         <VStack height="100%" spacing={0} align="stretch">
             {/* Header Row */}
             <ScriptElementsHeader />
-            
+
             {/* Elements List */}
             <Box flex={1} overflowY="auto" overflowX="hidden">
                 {isLoading && (
@@ -267,13 +267,10 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
                                             isDragEnabled={true}
                                             isSelected={(() => {
                                                 const isSelected = selectedElementId === element.elementID;
-                                                console.log(`Element ${element.elementID}: selectedElementId=${selectedElementId}, isSelected=${isSelected}`);
                                                 return isSelected;
                                             })()}
                                             onSelect={() => {
-                                                console.log('Setting selected element:', element.elementID);
                                                 setSelectedElementId(element.elementID);
-                                                console.log('Selected element set');
                                             }}
                                         />
                                     ))}
