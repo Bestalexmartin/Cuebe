@@ -51,9 +51,9 @@ export const ScriptElementsHeader: React.FC = () => {
                 </Box>
 
                 {/* Description Header */}
-                <Box w="200px" pl={6} pr={3} borderRight="1px solid" borderColor="gray.400">
+                <Box w="240px" pl={6} pr={3} borderRight="1px solid" borderColor="gray.400">
                     <Text fontSize="sm" color="white" fontWeight="bold" textAlign="left" isTruncated>
-                        DESCRIPTION
+                        CUE
                     </Text>
                 </Box>
 

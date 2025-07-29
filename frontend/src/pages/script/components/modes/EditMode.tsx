@@ -20,7 +20,6 @@ import {
 import { useScriptElements } from '../../hooks/useScriptElements';
 import { useScript } from '../../../../hooks/useScript';
 import { useAuth } from '@clerk/clerk-react';
-import { DraggableCueElement } from '../DraggableCueElement';
 import { CueElement } from '../CueElement';
 import { ScriptElementsHeader } from '../ScriptElementsHeader';
 import { DragReorderModal } from '../modals/DragReorderModal';
@@ -57,6 +56,7 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     const [elementBelow, setElementBelow] = useState<any>(null);
     const [pendingReorder, setPendingReorder] = useState<any>(null);
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+    
 
     useEffect(() => {
         setLocalElements(serverElements);
@@ -119,21 +119,39 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
         closeDragModal();
     };
 
-    const handleMatchAbove = async () => {
+    const handleMatchBefore = async () => {
+        console.log('=== MATCH BEFORE STARTED ===');
+        console.log('Dragged element:', draggedElement);
+        console.log('Element above:', elementAbove);
+        
         await applyReorder();
 
         if (elementAbove && draggedElement) {
+            console.log(`Updating element ${draggedElement.elementID} time offset from ${draggedElement.timeOffsetMs}ms to ${elementAbove.timeOffsetMs}ms`);
             await updateElementTimeOffset(draggedElement.elementID, elementAbove.timeOffsetMs);
+        } else {
+            console.log('Missing data for match before:', { elementAbove, draggedElement });
         }
+        
+        console.log('=== MATCH BEFORE COMPLETED ===');
         closeDragModal();
     };
 
-    const handleMatchBelow = async () => {
+    const handleMatchAfter = async () => {
+        console.log('=== MATCH AFTER STARTED ===');
+        console.log('Dragged element:', draggedElement);
+        console.log('Element below:', elementBelow);
+        
         await applyReorder();
 
         if (elementBelow && draggedElement) {
+            console.log(`Updating element ${draggedElement.elementID} time offset from ${draggedElement.timeOffsetMs}ms to ${elementBelow.timeOffsetMs}ms`);
             await updateElementTimeOffset(draggedElement.elementID, elementBelow.timeOffsetMs);
+        } else {
+            console.log('Missing data for match after:', { elementBelow, draggedElement });
         }
+        
+        console.log('=== MATCH AFTER COMPLETED ===');
         closeDragModal();
     };
 
@@ -143,6 +161,19 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
         setElementAbove(null);
         setElementBelow(null);
         setPendingReorder(null);
+    };
+
+    const handleCancelDrag = () => {
+        console.log('=== CANCEL DRAG STARTED ===');
+        console.log('Reverting elements back to server state');
+        
+        // Revert local elements back to server state
+        setLocalElements(serverElements);
+        
+        // Close modal and clear state
+        closeDragModal();
+        
+        console.log('=== CANCEL DRAG COMPLETED ===');
     };
 
     const applyReorder = async () => {
@@ -179,13 +210,23 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     };
 
     const updateElementTimeOffset = async (elementId: string, newTimeOffsetMs: number) => {
+        console.log('--- updateElementTimeOffset started ---');
+        console.log('Element ID:', elementId);
+        console.log('New time offset (ms):', newTimeOffsetMs);
+        
         try {
             const token = await getToken();
-            if (!token) return;
+            if (!token) {
+                console.log('ERROR: No authentication token available');
+                return;
+            }
 
             const updateData = {
                 timeOffsetMs: newTimeOffsetMs
             };
+            
+            console.log('Update data being sent:', updateData);
+            console.log('API endpoint:', `/api/elements/${elementId}`);
 
             const response = await fetch(`/api/elements/${elementId}`, {
                 method: 'PATCH',
@@ -196,20 +237,32 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
                 body: JSON.stringify(updateData)
             });
 
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+
             if (response.ok) {
-                setLocalElements(prevElements =>
-                    prevElements.map(el =>
+                console.log('API call successful, updating local elements...');
+                setLocalElements(prevElements => {
+                    const updatedElements = prevElements.map(el =>
                         el.elementID === elementId
                             ? { ...el, timeOffsetMs: newTimeOffsetMs }
                             : el
-                    )
-                );
+                    );
+                    console.log('Local elements updated. Element found and updated:', 
+                        updatedElements.find(el => el.elementID === elementId));
+                    return updatedElements;
+                });
             } else {
-                console.error('Failed to update element time offset');
+                const errorText = await response.text();
+                console.error('Failed to update element time offset. Status:', response.status);
+                console.error('Error response:', errorText);
             }
         } catch (error) {
             console.error('Error updating element time offset:', error);
+            console.log('Full error object:', error);
         }
+        
+        console.log('--- updateElementTimeOffset completed ---');
     };
 
     return (
@@ -218,7 +271,7 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
             <ScriptElementsHeader />
 
             {/* Elements List */}
-            <Box flex={1} overflowY="auto" overflowX="hidden">
+            <Box flex={1} overflowY="auto" overflowX="hidden" className="hide-scrollbar">
                 {isLoading && (
                     <Flex justify="center" align="center" height="200px">
                         <Text color="gray.500">Loading script elements...</Text>
@@ -255,7 +308,7 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
                             <Box>
                                 <VStack spacing={0} align="stretch">
                                     {localElements.map((element, index) => (
-                                        <DraggableCueElement
+                                        <CueElement
                                             key={element.elementID}
                                             element={element}
                                             index={index}
@@ -265,12 +318,13 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
                                             scriptStartTime={script?.startTime}
                                             scriptEndTime={script?.endTime}
                                             isDragEnabled={true}
-                                            isSelected={(() => {
-                                                const isSelected = selectedElementId === element.elementID;
-                                                return isSelected;
-                                            })()}
+                                            isSelected={selectedElementId === element.elementID}
                                             onSelect={() => {
-                                                setSelectedElementId(element.elementID);
+                                                if (selectedElementId === element.elementID) {
+                                                    setSelectedElementId(null); // Deselect if already selected
+                                                } else {
+                                                    setSelectedElementId(element.elementID); // Select if not selected
+                                                }
                                             }}
                                         />
                                     ))}
@@ -289,8 +343,9 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
                 elementAbove={elementAbove}
                 elementBelow={elementBelow}
                 onDisableAutoSort={handleDisableAutoSort}
-                onMatchAbove={handleMatchAbove}
-                onMatchBelow={handleMatchBelow}
+                onMatchBefore={handleMatchBefore}
+                onMatchAfter={handleMatchAfter}
+                onCancel={handleCancelDrag}
             />
         </VStack>
     );

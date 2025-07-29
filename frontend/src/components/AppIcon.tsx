@@ -2,13 +2,13 @@
 
 import React from "react";
 import { Icon, IconProps } from "@chakra-ui/react";
-import { ChevronDownIcon, DeleteIcon, CopyIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, CopyIcon } from '@chakra-ui/icons';
 import { TiPin } from "react-icons/ti";
 import { IoPeopleSharp } from "react-icons/io5";
 import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
 import { FaMasksTheater, FaMapLocationDot, FaScroll } from "react-icons/fa6";
-import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt } from "react-icons/fa";
+import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt, FaAngleDoubleUp, FaAngleDoubleDown } from "react-icons/fa";
 import { RiDashboard2Fill } from "react-icons/ri";
 import { EditIcon } from "@chakra-ui/icons";
 import { GoSortAsc, GoSortDesc, GoAlertFill } from "react-icons/go";
@@ -51,7 +51,10 @@ export type IconName =
   | 'dashboard'
   | 'planning'
   | 'add'
-  | 'group';
+  | 'group'
+  | 'element-edit'
+  | 'jump-top'
+  | 'jump-bottom';
 
 interface AppIconProps extends Omit<IconProps, 'as'> {
   name: IconName;
@@ -121,6 +124,12 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={FaPlus} {...props} />;
     case 'group':
       return <Icon as={FaLayerGroup} {...props} />;
+    case 'element-edit':
+      return <Icon as={FaEdit} {...props} />;
+    case 'jump-top':
+      return <Icon as={FaAngleDoubleUp} {...props} />;
+    case 'jump-bottom':
+      return <Icon as={FaAngleDoubleDown} {...props} />;
     default:
       return null;
   }

@@ -3,11 +3,9 @@
 import React from 'react';
 import {
     VStack,
-    HStack,
     Text,
     Button,
-    Box,
-    Icon
+    Box
 } from '@chakra-ui/react';
 import { BaseModal } from '../../../../components/base/BaseModal';
 
@@ -24,8 +22,9 @@ interface DragReorderModalProps {
     elementAbove: DraggedElement | null;
     elementBelow: DraggedElement | null;
     onDisableAutoSort: () => void;
-    onMatchAbove: () => void;
-    onMatchBelow: () => void;
+    onMatchBefore: () => void;
+    onMatchAfter: () => void;
+    onCancel: () => void;
 }
 
 // Helper function to format time offset
@@ -49,8 +48,9 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
     elementAbove,
     elementBelow,
     onDisableAutoSort,
-    onMatchAbove,
-    onMatchBelow
+    onMatchBefore,
+    onMatchAfter,
+    onCancel
 }) => {
     if (!draggedElement) return null;
 
@@ -83,6 +83,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
             };
         }
         
+        
         return {
             borderColor: "gray.300",
             _hover: { 
@@ -111,12 +112,14 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
         <BaseModal
             title="Cue Moved - Update Time Offset?"
             isOpen={isOpen}
-            onClose={onClose}
-            secondaryAction={{
-                label: "Cancel",
-                variant: "outline",
-                onClick: onClose
-            }}
+            onClose={onCancel}
+            customActions={[
+                {
+                    label: 'Cancel',
+                    onClick: onCancel,
+                    variant: 'outline'
+                }
+            ]}
             errorBoundaryContext="DragReorderModal"
         >
             <VStack spacing={6} align="stretch">
@@ -149,7 +152,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
                     {elementAbove && (
                         <Button
                             variant="outline"
-                            onClick={onMatchAbove}
+                            onClick={onMatchBefore}
                             textAlign="center"
                             border="1px solid"
                             py={4}
@@ -158,7 +161,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
                             {...getButtonStyle('normal')}
                         >
                             <VStack spacing={1}>
-                                <Text fontWeight="semibold">Match Time of Cue Above</Text>
+                                <Text fontWeight="semibold">Match Time of Cue Before</Text>
                                 <Text fontSize="xs" color="gray.500">
                                     Change offset to {formatTimeOffset(elementAbove.timeOffsetMs)} ("{elementAbove.description}")
                                 </Text>
@@ -169,7 +172,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
                     {elementBelow && (
                         <Button
                             variant="outline"
-                            onClick={onMatchBelow}
+                            onClick={onMatchAfter}
                             textAlign="center"
                             border="1px solid"
                             py={4}
@@ -178,7 +181,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
                             {...getButtonStyle('normal')}
                         >
                             <VStack spacing={1}>
-                                <Text fontWeight="semibold">Match Time of Cue Below</Text>
+                                <Text fontWeight="semibold">Match Time of Cue After</Text>
                                 <Text fontSize="xs" color="gray.500">
                                     Change offset to {formatTimeOffset(elementBelow.timeOffsetMs)} ("{elementBelow.description}")
                                 </Text>
