@@ -172,7 +172,7 @@ async def get_documentation(file_path: str):
         if not requested_file.exists():
             raise HTTPException(status_code=404, detail="Documentation file not found")
         
-        if not requested_file.suffix.lower() in ['.md', '.txt']:
+        if requested_file.suffix.lower() not in ['.md', '.txt', '.mc']:
             raise HTTPException(status_code=400, detail="Unsupported file type")
         
         # Read and return the file content
