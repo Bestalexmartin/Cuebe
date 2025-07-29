@@ -30,3 +30,4 @@ class TestBasicFunctionality:
         """Test that invalid endpoints return 404"""
         response = client.get("/api/nonexistent")
         assert response.status_code == 404
+        assert response.json()["detail"] == "Not Found"
