@@ -1,4 +1,4 @@
-# backend/tests/test_simple.py
+# backend/tests/test_api.py
 
 import pytest
 from fastapi.testclient import TestClient
