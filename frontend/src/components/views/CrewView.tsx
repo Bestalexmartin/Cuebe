@@ -18,6 +18,7 @@ interface CrewViewProps {
     sortBy: 'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated' | 'dateUpdated';
     sortDirection: 'asc' | 'desc';
     onSortChange: (sortBy: 'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated' | 'dateUpdated', sortDirection: 'asc' | 'desc') => void;
+    showCardRefs: React.MutableRefObject<Record<string, HTMLElement | null>>;
 }
 
 export const CrewView: React.FC<CrewViewProps> = ({
@@ -29,7 +30,8 @@ export const CrewView: React.FC<CrewViewProps> = ({
     onSaveNavigationState,
     sortBy,
     sortDirection,
-    onSortChange
+    onSortChange,
+    showCardRefs
 }) => {
     const navigate = useNavigate();
     const { crews, isLoading, error } = useCrews();
@@ -187,16 +189,17 @@ export const CrewView: React.FC<CrewViewProps> = ({
                         sortedCrews.length > 0 ? (
                             <VStack spacing={4} align="stretch">
                                 {sortedCrews.map(crewMember => (
-                                    <CrewCard
-                                        key={crewMember.userID}
-                                        crewMember={crewMember}
-                                        onEdit={handleEdit}
-                                        onCrewClick={onCrewClick}
-                                        isHovered={hoveredCardId === crewMember.userID}
-                                        isSelected={selectedCrewId === crewMember.userID}
-                                        onHover={setHoveredCardId}
-                                        onSaveNavigationState={onSaveNavigationState}
-                                    />
+                                    <div key={crewMember.userID} ref={el => { showCardRefs.current[crewMember.userID] = el; }}>
+                                        <CrewCard
+                                            crewMember={crewMember}
+                                            onEdit={handleEdit}
+                                            onCrewClick={onCrewClick}
+                                            isHovered={hoveredCardId === crewMember.userID}
+                                            isSelected={selectedCrewId === crewMember.userID}
+                                            onHover={setHoveredCardId}
+                                            onSaveNavigationState={onSaveNavigationState}
+                                        />
+                                    </div>
                                 ))}
                             </VStack>
                         ) : (

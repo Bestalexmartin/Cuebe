@@ -252,10 +252,22 @@ export const useDashboardState = (
           if (currentSelection) {
             const targetRef = showCardRefs.current[currentSelection];
             if (targetRef) {
-              targetRef.scrollIntoView({
-                behavior: "smooth",
-                block: "nearest",
-              });
+              const container = targetRef.closest('[class*="overflowY"]') || targetRef.parentElement?.closest('[style*="overflow-y: auto"]') || document.documentElement;
+              if (container && container !== document.documentElement) {
+                const containerRect = container.getBoundingClientRect();
+                const targetRect = targetRef.getBoundingClientRect();
+                const scrollTop = container.scrollTop;
+                const targetPosition = targetRect.top - containerRect.top + scrollTop - 10;
+                container.scrollTo({
+                  top: targetPosition,
+                  behavior: "smooth"
+                });
+              } else {
+                targetRef.scrollIntoView({
+                  behavior: "smooth",
+                  block: "nearest",
+                });
+              }
             }
           }
 
@@ -358,14 +370,26 @@ export const useDashboardState = (
     updateSelectedState("shows", "selectedShowId", newSelectedShowId);
     updateSelectedState("shows", "selectedScriptId", null);
 
-    // Scroll logic
+    // Scroll logic with 10px offset
     setTimeout(() => {
       const targetRef = showCardRefs.current[showId];
       if (targetRef) {
-        targetRef.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-        });
+        const container = targetRef.closest('[class*="overflowY"]') || targetRef.parentElement?.closest('[style*="overflow-y: auto"]') || document.documentElement;
+        if (container && container !== document.documentElement) {
+          const containerRect = container.getBoundingClientRect();
+          const targetRect = targetRef.getBoundingClientRect();
+          const scrollTop = container.scrollTop;
+          const targetPosition = targetRect.top - containerRect.top + scrollTop - 10;
+          container.scrollTo({
+            top: targetPosition,
+            behavior: "smooth"
+          });
+        } else {
+          targetRef.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+          });
+        }
       }
     }, SCROLL_DELAY);
   };
@@ -379,14 +403,26 @@ export const useDashboardState = (
     const newSelectedVenueId = selectedVenueId === venueId ? null : venueId;
     updateSelectedState("venues", "selectedVenueId", newSelectedVenueId);
 
-    // Scroll logic
+    // Scroll logic with 10px offset
     setTimeout(() => {
       const targetRef = showCardRefs.current[venueId];
       if (targetRef) {
-        targetRef.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-        });
+        const container = targetRef.closest('[class*="overflowY"]') || targetRef.parentElement?.closest('[style*="overflow-y: auto"]') || document.documentElement;
+        if (container && container !== document.documentElement) {
+          const containerRect = container.getBoundingClientRect();
+          const targetRect = targetRef.getBoundingClientRect();
+          const scrollTop = container.scrollTop;
+          const targetPosition = targetRect.top - containerRect.top + scrollTop - 10;
+          container.scrollTo({
+            top: targetPosition,
+            behavior: "smooth"
+          });
+        } else {
+          targetRef.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+          });
+        }
       }
     }, SCROLL_DELAY);
   };
@@ -400,14 +436,26 @@ export const useDashboardState = (
       newSelectedDepartmentId,
     );
 
-    // Scroll logic
+    // Scroll logic with 10px offset
     setTimeout(() => {
       const targetRef = showCardRefs.current[departmentId];
       if (targetRef) {
-        targetRef.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-        });
+        const container = targetRef.closest('[class*="overflowY"]') || targetRef.parentElement?.closest('[style*="overflow-y: auto"]') || document.documentElement;
+        if (container && container !== document.documentElement) {
+          const containerRect = container.getBoundingClientRect();
+          const targetRect = targetRef.getBoundingClientRect();
+          const scrollTop = container.scrollTop;
+          const targetPosition = targetRect.top - containerRect.top + scrollTop - 10;
+          container.scrollTo({
+            top: targetPosition,
+            behavior: "smooth"
+          });
+        } else {
+          targetRef.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+          });
+        }
       }
     }, SCROLL_DELAY);
   };
@@ -416,14 +464,26 @@ export const useDashboardState = (
     const newSelectedCrewId = selectedCrewId === crewId ? null : crewId;
     updateSelectedState("crew", "selectedCrewId", newSelectedCrewId);
 
-    // Scroll logic
+    // Scroll logic with 10px offset
     setTimeout(() => {
       const targetRef = showCardRefs.current[crewId];
       if (targetRef) {
-        targetRef.scrollIntoView({
-          behavior: "smooth",
-          block: "nearest",
-        });
+        const container = targetRef.closest('[class*="overflowY"]') || targetRef.parentElement?.closest('[style*="overflow-y: auto"]') || document.documentElement;
+        if (container && container !== document.documentElement) {
+          const containerRect = container.getBoundingClientRect();
+          const targetRect = targetRef.getBoundingClientRect();
+          const scrollTop = container.scrollTop;
+          const targetPosition = targetRect.top - containerRect.top + scrollTop - 10;
+          container.scrollTo({
+            top: targetPosition,
+            behavior: "smooth"
+          });
+        } else {
+          targetRef.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+          });
+        }
       }
     }, SCROLL_DELAY);
   };

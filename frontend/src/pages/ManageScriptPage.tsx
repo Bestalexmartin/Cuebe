@@ -736,6 +736,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 isOpen={isDuplicateModalOpen}
                 onClose={() => setIsDuplicateModalOpen(false)}
                 showId={script?.showID || ''}
+                scriptId={script?.scriptID || ''}
                 originalScriptName={script?.scriptName || ''}
                 onScriptDuplicated={handleScriptDuplicated}
                 onProcessingStart={handleProcessingStart}

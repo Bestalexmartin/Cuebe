@@ -18,6 +18,7 @@ interface VenuesViewProps {
     sortBy: 'venueName' | 'capacity' | 'venueType' | 'dateCreated' | 'dateUpdated';
     sortDirection: 'asc' | 'desc';
     onSortChange: (sortBy: 'venueName' | 'capacity' | 'venueType' | 'dateCreated' | 'dateUpdated', sortDirection: 'asc' | 'desc') => void;
+    showCardRefs: React.MutableRefObject<Record<string, HTMLElement | null>>;
 }
 
 export const VenuesView: React.FC<VenuesViewProps> = ({
@@ -29,7 +30,8 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
     onSaveNavigationState,
     sortBy,
     sortDirection,
-    onSortChange
+    onSortChange,
+    showCardRefs
 }) => {
     const navigate = useNavigate();
     const { venues, isLoading } = useVenues();
@@ -169,17 +171,18 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
                         sortedVenues.length > 0 ? (
                             <VStack spacing={4} align="stretch">
                                 {sortedVenues.map(venue => (
-                                    <VenueCard
-                                        key={venue.venueID}
-                                        venue={venue}
-                                        onEdit={handleEdit}
-                                        onVenueClick={onVenueClick}
-                                        showCount={0}
-                                        isHovered={hoveredCardId === venue.venueID}
-                                        isSelected={selectedVenueId === venue.venueID}
-                                        onHover={setHoveredCardId}
-                                        onSaveNavigationState={onSaveNavigationState}
-                                    />
+                                    <div key={venue.venueID} ref={el => { showCardRefs.current[venue.venueID] = el; }}>
+                                        <VenueCard
+                                            venue={venue}
+                                            onEdit={handleEdit}
+                                            onVenueClick={onVenueClick}
+                                            showCount={0}
+                                            isHovered={hoveredCardId === venue.venueID}
+                                            isSelected={selectedVenueId === venue.venueID}
+                                            onHover={setHoveredCardId}
+                                            onSaveNavigationState={onSaveNavigationState}
+                                        />
+                                    </div>
                                 ))}
                             </VStack>
                         ) : (

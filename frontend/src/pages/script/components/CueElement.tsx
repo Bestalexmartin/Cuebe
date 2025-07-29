@@ -170,7 +170,11 @@ export const CueElement: React.FC<CueElementProps> = ({
         <Box
             bg={backgroundColor}
             border="2px solid"
-            borderColor={isSelected ? "blue.400" : "transparent"}
+            borderColor={(() => {
+                const color = isSelected ? "blue.400" : "transparent";
+                console.log(`CueElement border: isSelected=${isSelected}, color=${color}`);
+                return color;
+            })()}
             mb="1px"
             _hover={{
                 borderColor: isSelected ? "blue.400" : "orange.400"

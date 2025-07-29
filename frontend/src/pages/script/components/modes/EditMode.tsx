@@ -35,6 +35,8 @@ interface EditModeProps {
 
 export interface EditModeRef {
     refetchElements: () => Promise<void>;
+    selectedElementId: string | null;
+    clearSelection: () => void;
 }
 
 export const EditMode = forwardRef<EditModeRef, EditModeProps>(({ 
@@ -54,15 +56,18 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     const [elementAbove, setElementAbove] = useState<any>(null);
     const [elementBelow, setElementBelow] = useState<any>(null);
     const [pendingReorder, setPendingReorder] = useState<any>(null);
+    const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
     
     useEffect(() => {
         setLocalElements(serverElements);
     }, [serverElements]);
     
-    // Expose refetch function to parent via ref
+    // Expose refetch function and selection state to parent via ref
     useImperativeHandle(ref, () => ({
-        refetchElements
-    }), [refetchElements]);
+        refetchElements,
+        selectedElementId,
+        clearSelection: () => setSelectedElementId(null)
+    }), [refetchElements, selectedElementId]);
 
     // Drag sensors
     const sensors = useSensors(
@@ -260,6 +265,16 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
                                             scriptStartTime={script?.startTime}
                                             scriptEndTime={script?.endTime}
                                             isDragEnabled={true}
+                                            isSelected={(() => {
+                                                const isSelected = selectedElementId === element.elementID;
+                                                console.log(`Element ${element.elementID}: selectedElementId=${selectedElementId}, isSelected=${isSelected}`);
+                                                return isSelected;
+                                            })()}
+                                            onSelect={() => {
+                                                console.log('Setting selected element:', element.elementID);
+                                                setSelectedElementId(element.elementID);
+                                                console.log('Selected element set');
+                                            }}
                                         />
                                     ))}
                                 </VStack>

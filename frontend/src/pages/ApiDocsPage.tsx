@@ -146,13 +146,16 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
             borderColor={borderColor}
             borderRadius="md"
             overflow="hidden"
-            bg={bgColor}
+            bg="white"
           >
             <iframe
               src="/docs"
               width="100%"
               height="100%"
-              style={{ border: 'none' }}
+              style={{ 
+                border: 'none',
+                backgroundColor: 'white'
+              }}
               title="API Explorer Documentation"
             />
           </Box>
@@ -186,13 +189,16 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
             borderColor={borderColor}
             borderRadius="md"
             overflow="hidden"
-            bg={bgColor}
+            bg="white"
           >
             <iframe
               src="/docs"
               width="100%"
               height="100%"
-              style={{ border: 'none' }}
+              style={{ 
+                border: 'none',
+                backgroundColor: 'white'
+              }}
               title="API Explorer Documentation"
             />
           </Box>
