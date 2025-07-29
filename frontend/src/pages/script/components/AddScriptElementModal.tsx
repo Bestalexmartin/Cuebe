@@ -125,8 +125,8 @@ const LOCATION_OPTIONS: { value: LocationArea; label: string }[] = [
 const NOTE_PRESET_COLORS = [
     { name: 'Default', value: '#E2E8F0' },
     { name: 'Red', value: '#EF4444' },
-    { name: 'Grey', value: '#6B7280' },
-    { name: 'Black', value: '#1F2937' },
+    { name: 'Grey', value: '#808080' },
+    { name: 'Black', value: '#10151C' },
     { name: 'Blue', value: '#3B82F6' },
     { name: 'Yellow', value: '#EAB308' },
 ];
@@ -139,9 +139,9 @@ const getTextColorForBackground = (hexColor: string): string => {
     const color = hexColor.replace('#', '');
     
     // Parse RGB values
-    const r = parseInt(color.substr(0, 2), 16);
-    const g = parseInt(color.substr(2, 2), 16);
-    const b = parseInt(color.substr(4, 2), 16);
+    const r = parseInt(color.substring(0, 2), 16);
+    const g = parseInt(color.substring(2, 4), 16);
+    const b = parseInt(color.substring(4, 6), 16);
     
     // Calculate relative luminance (perceived lightness)
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;

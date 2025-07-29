@@ -16,13 +16,14 @@ The CallMaster application features a comprehensive drag-and-drop system for reo
   - Modal-based conflict resolution for time offset mismatches
   - Server synchronization for persistent changes
 
-#### 2. DraggableCueElement Component (`/frontend/src/pages/script/components/DraggableCueElement.tsx`)
-- **Purpose**: Wrapper component that makes script elements draggable
+#### 2. CueElement Component with Integrated Dragging (`/frontend/src/pages/script/components/CueElement.tsx`)
+- **Purpose**: Unified script element component with integrated drag capabilities
 - **Key Features**:
-  - Full-row dragging (entire element is draggable)
-  - Visual feedback during drag operations with color blending
-  - Z-index management for proper layering during drag
-  - Maintains opacity and visual consistency
+  - Full-row dragging without separate drag handles
+  - Gesture-based interaction detection (150ms delay + 5px movement threshold)
+  - Click-to-select vs drag-to-reorder conflict resolution
+  - Visual feedback during drag operations
+  - Context-aware interaction modes (edit vs view)
 
 #### 3. DragReorderModal Component (`/frontend/src/pages/script/components/modals/DragReorderModal.tsx`)
 - **Purpose**: User choice modal for handling time offset conflicts
@@ -87,8 +88,9 @@ const style = {
 ## User Interaction Flow
 
 ### 1. Drag Initiation
-- User clicks and drags any script element in edit mode
-- Element becomes visually distinct with blended background color
+- User clicks and holds on any script element in edit mode for 150ms
+- System detects drag intent vs click intent through time and movement thresholds
+- Element becomes visually distinct during drag operation
 - Z-index ensures dragged element appears above other elements
 
 ### 2. Drop and Conflict Detection

@@ -1,6 +1,6 @@
 // frontend/src/pages/ManageScriptPage.tsx
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     Box,
     VStack,
@@ -31,6 +31,8 @@ import { FinalDeleteConfirmationModal } from '../components/modals/FinalDeleteCo
 import { DuplicateScriptModal } from './script/components/modals/DuplicateScriptModal';
 import { ProcessingModal } from './script/components/modals/ProcessingModal';
 import { OptionsModal } from './script/components/modals/OptionsModal';
+import { DeleteCueModal } from './script/components/modals/DeleteCueModal';
+import { DuplicateElementModal } from './script/components/modals/DuplicateElementModal';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { useValidatedForm } from '../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../types/validation';
@@ -61,14 +63,6 @@ interface ScriptFormData {
     scriptNotes: string;
 }
 
-// Script status options - matching the workflow states
-const SCRIPT_STATUS_OPTIONS = [
-    { value: 'DRAFT', label: 'Draft' },
-    { value: 'COPY', label: 'Copy' },
-    { value: 'WORKING', label: 'Working' },
-    { value: 'FINAL', label: 'Final' },
-    { value: 'BACKUP', label: 'Backup' },
-];
 
 const INITIAL_FORM_STATE: ScriptFormData = {
     scriptName: '',
@@ -105,7 +99,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
 
 interface ToolButton {
     id: string;
-    icon: 'view' | 'play' | 'info' | 'script-edit' | 'share' | 'dashboard' | 'add' | 'copy' | 'group' | 'delete';
+    icon: 'view' | 'play' | 'info' | 'script-edit' | 'share' | 'dashboard' | 'add' | 'copy' | 'group' | 'delete' | 'element-edit' | 'jump-top' | 'jump-bottom';
     label: string;
     description: string;
     isActive: boolean;
@@ -129,6 +123,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     // Element action state management
     const [isAddElementModalOpen, setIsAddElementModalOpen] = useState(false);
+    const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
     const viewModeRef = useRef<ViewModeRef>(null);
     const editModeRef = useRef<EditModeRef>(null);
 
@@ -137,6 +132,16 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const [colorizeDepNames, setColorizeDepNames] = useState(true);
     const [showClockTimes, setShowClockTimes] = useState(false);
     const [autoSortCues, setAutoSortCues] = useState(true);
+
+    // Delete cue state management  
+    const [isDeleteCueModalOpen, setIsDeleteCueModalOpen] = useState(false);
+    const [isDeletingCue, setIsDeletingCue] = useState(false);
+    const [selectedElementName, setSelectedElementName] = useState<string>('');
+
+    // Duplicate element state management
+    const [isDuplicateElementModalOpen, setIsDuplicateElementModalOpen] = useState(false);
+    const [isDuplicatingElement, setIsDuplicatingElement] = useState(false);
+    const [selectedElementTimeOffset, setSelectedElementTimeOffset] = useState<number>(0);
 
     // Responsive breakpoint for mobile layout
     const isMobile = useBreakpointValue({ base: true, lg: false });
@@ -193,10 +198,33 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         }
     }, [script, form.setFormData]);
 
+    // Sync selected element ID with EditMode for toolbar updates
+    React.useEffect(() => {
+        if (activeMode === 'edit' && editModeRef.current) {
+            const checkSelection = () => {
+                const editModeSelection = editModeRef.current?.selectedElementId;
+                if (editModeSelection !== selectedElementId) {
+                    setSelectedElementId(editModeSelection || null);
+                }
+            };
+            
+            // Check immediately and then periodically
+            checkSelection();
+            const interval = setInterval(checkSelection, 100);
+            
+            return () => clearInterval(interval);
+        } else {
+            // Clear selection when not in edit mode
+            setSelectedElementId(null);
+        }
+    }, [activeMode, selectedElementId]);
 
     // Tool buttons configuration - changes based on active mode
     const getToolButtons = (): ToolButton[] => {
         if (activeMode === 'edit') {
+            // Check if an element is selected in edit mode
+            const hasSelection = !!selectedElementId;
+            
             // In edit mode, show element action buttons
             return [
                 {
@@ -204,6 +232,22 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     icon: 'view',
                     label: 'View',
                     description: 'Switch to View Mode',
+                    isActive: false,
+                    isDisabled: false
+                },
+                {
+                    id: 'jump-top',
+                    icon: 'jump-top',
+                    label: 'Top',
+                    description: 'Jump to Top',
+                    isActive: false,
+                    isDisabled: false
+                },
+                {
+                    id: 'jump-bottom',
+                    icon: 'jump-bottom',
+                    label: 'Bottom',
+                    description: 'Jump to Bottom',
                     isActive: false,
                     isDisabled: false
                 },
@@ -216,12 +260,20 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     isDisabled: false
                 },
                 {
+                    id: 'edit-element',
+                    icon: 'element-edit',
+                    label: 'Edit',
+                    description: 'Edit Selected Element',
+                    isActive: false,
+                    isDisabled: !hasSelection
+                },
+                {
                     id: 'duplicate-element',
                     icon: 'copy',
                     label: 'Duplicate',
                     description: 'Duplicate Selected Element',
                     isActive: false,
-                    isDisabled: true // Will enable when element is selected
+                    isDisabled: !hasSelection
                 },
                 {
                     id: 'group-elements',
@@ -229,7 +281,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     label: 'Group',
                     description: 'Group Selected Elements',
                     isActive: false,
-                    isDisabled: true // Will enable when elements are selected
+                    isDisabled: true
                 },
                 {
                     id: 'delete-element',
@@ -237,7 +289,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     label: 'Delete',
                     description: 'Delete Selected Element',
                     isActive: false,
-                    isDisabled: true // Will enable when element is selected
+                    isDisabled: !hasSelection
                 },
                 {
                     id: 'dashboard',
@@ -251,47 +303,73 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         } else {
             // In view, info, play, share modes, show mode switching buttons
             const availableModes = getAvailableModes();
-            return [
-                ...availableModes.map(mode => {
-                    let icon: ToolButton['icon'];
-                    switch (mode.id) {
-                        case 'view':
-                            icon = 'view';
-                            break;
-                        case 'play':
-                            icon = 'play';
-                            break;
-                        case 'info':
-                            icon = 'info';
-                            break;
-                        case 'edit':
-                            icon = 'script-edit';
-                            break;
-                        case 'share':
-                            icon = 'share';
-                            break;
-                        default:
-                            icon = 'view';
-                            break;
-                    }
-                    return {
-                        id: mode.id,
-                        icon,
-                        label: mode.label,
-                        description: `${mode.label} Script`,
-                        isActive: activeMode === mode.id,
-                        isDisabled: mode.isDisabled
-                    };
-                }),
-                {
-                    id: 'dashboard',
-                    icon: 'dashboard',
-                    label: 'Dashboard',
-                    description: 'Return to Dashboard',
-                    isActive: false,
-                    isDisabled: false
+            const buttons: ToolButton[] = [];
+            
+            // Add each mode button and insert jump buttons after VIEW
+            availableModes.forEach(mode => {
+                let icon: ToolButton['icon'];
+                switch (mode.id) {
+                    case 'view':
+                        icon = 'view';
+                        break;
+                    case 'play':
+                        icon = 'play';
+                        break;
+                    case 'info':
+                        icon = 'info';
+                        break;
+                    case 'edit':
+                        icon = 'script-edit';
+                        break;
+                    case 'share':
+                        icon = 'share';
+                        break;
+                    default:
+                        icon = 'view';
+                        break;
                 }
-            ];
+                
+                buttons.push({
+                    id: mode.id,
+                    icon,
+                    label: mode.label,
+                    description: `${mode.label} Script`,
+                    isActive: activeMode === mode.id,
+                    isDisabled: mode.isDisabled
+                });
+                
+                // Add jump buttons after VIEW mode
+                if (mode.id === 'view') {
+                    buttons.push({
+                        id: 'jump-top',
+                        icon: 'jump-top',
+                        label: 'Top',
+                        description: 'Jump to Top',
+                        isActive: false,
+                        isDisabled: false
+                    });
+                    buttons.push({
+                        id: 'jump-bottom',
+                        icon: 'jump-bottom',
+                        label: 'Bottom',
+                        description: 'Jump to Bottom',
+                        isActive: false,
+                        isDisabled: false
+                    });
+                }
+            });
+            
+            // Add dashboard button at the end
+            buttons.push({
+                id: 'dashboard',
+                icon: 'dashboard',
+                label: 'Dashboard',
+                description: 'Return to Dashboard',
+                isActive: false,
+                isDisabled: false
+            });
+            
+            return buttons;
         }
     };
 
@@ -313,6 +391,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 case 'add-element':
                     setIsAddElementModalOpen(true);
                     return;
+                case 'edit-element':
+                    handleElementEdit();
+                    return;
                 case 'duplicate-element':
                     handleElementDuplicate();
                     return;
@@ -322,7 +403,23 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 case 'delete-element':
                     handleElementDelete();
                     return;
+                case 'jump-top':
+                    handleJumpToTop();
+                    return;
+                case 'jump-bottom':
+                    handleJumpToBottom();
+                    return;
             }
+        }
+
+        // Handle jump buttons for view, info, play, share modes
+        if (modeId === 'jump-top') {
+            handleJumpToTop();
+            return;
+        }
+        if (modeId === 'jump-bottom') {
+            handleJumpToBottom();
+            return;
         }
 
         // Handle mode switching for view, info, play, share modes
@@ -499,16 +596,274 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         }
     };
 
-    const handleElementDuplicate = () => {
-        showError('Element duplication feature is under development');
+    const handleElementDuplicate = async () => {
+        if (!selectedElementId) {
+            showError('No script element selected for duplication');
+            return;
+        }
+
+        // Fetch element details for the modal
+        try {
+            const token = await getToken();
+            if (!token) {
+                showError('Authentication required');
+                return;
+            }
+
+            const response = await fetch(`/api/elements/${selectedElementId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch element details');
+            }
+
+            const elementData = await response.json();
+            setSelectedElementName(elementData.description || 'Unknown Element');
+            setSelectedElementTimeOffset(elementData.timeOffsetMs || 0);
+            setIsDuplicateElementModalOpen(true);
+
+        } catch (error) {
+            console.error('Error fetching element details:', error);
+            showError('Failed to load element details. Please try again.');
+        }
+    };
+
+    const handleConfirmDuplicate = async (description: string, timeOffsetMs: number) => {
+        if (!selectedElementId || !scriptId) {
+            return;
+        }
+
+        setIsDuplicatingElement(true);
+        try {
+            const token = await getToken();
+            if (!token) {
+                showError('Authentication required');
+                return;
+            }
+
+            // First, get the original element data
+            const elementResponse = await fetch(`/api/elements/${selectedElementId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!elementResponse.ok) {
+                throw new Error('Failed to fetch element for duplication');
+            }
+
+            const elementData = await elementResponse.json();
+
+            // Create duplicate with new description and time offset
+            const duplicateData = {
+                ...elementData,
+                description,
+                timeOffsetMs,
+                // Remove fields that should not be duplicated
+                elementID: undefined,
+                created_at: undefined,
+                updated_at: undefined,
+                is_deleted: undefined
+            };
+
+            const response = await fetch(`/api/scripts/${scriptId}/elements`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(duplicateData)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to duplicate element');
+            }
+
+            showSuccess('Script Element Duplicated', 'Script element has been successfully duplicated');
+            
+            // Update local elements to show the new duplicate immediately
+            await response.json(); // Parse response but don't store
+            if (activeMode === 'edit' && editModeRef.current) {
+                await editModeRef.current.refetchElements();
+            }
+
+            setIsDuplicateElementModalOpen(false);
+
+        } catch (error) {
+            console.error('Error duplicating element:', error);
+            showError('Failed to duplicate script element. Please try again.');
+        } finally {
+            setIsDuplicatingElement(false);
+        }
     };
 
     const handleElementGroup = () => {
         showError('Element grouping feature is under development');
     };
 
-    const handleElementDelete = () => {
-        showError('Element deletion feature is under development');
+    const handleElementEdit = () => {
+        showError('Element editing feature is under development');
+    };
+
+    const handleJumpToTop = () => {
+        console.log('Jump to top clicked, active mode:', activeMode);
+        
+        // For edit and view modes, find the inner scrollable container (the one inside the mode component)
+        // For other modes, use the main container
+        let scrollContainer: HTMLElement | null = null;
+        
+        if (activeMode === 'edit' || activeMode === 'view') {
+            // Look for the hide-scrollbar container that contains the script elements
+            const hideScrollbarContainers = document.querySelectorAll('.hide-scrollbar');
+            console.log(`Found ${hideScrollbarContainers.length} hide-scrollbar containers`);
+            
+            // Find the one that's scrollable and has the most content (likely the elements list)
+            let maxScrollHeight = 0;
+            for (const container of hideScrollbarContainers) {
+                if (container instanceof HTMLElement && container.scrollHeight > container.clientHeight) {
+                    console.log(`Container with scrollHeight: ${container.scrollHeight}, clientHeight: ${container.clientHeight}`);
+                    if (container.scrollHeight > maxScrollHeight) {
+                        maxScrollHeight = container.scrollHeight;
+                        scrollContainer = container;
+                    }
+                }
+            }
+        } else {
+            // For info, play, share modes, use the main edit-form-container
+            const mainContainer = document.querySelector('.edit-form-container');
+            if (mainContainer instanceof HTMLElement) {
+                scrollContainer = mainContainer;
+            }
+        }
+        
+        if (scrollContainer) {
+            console.log('Scrolling to top, container:', scrollContainer);
+            scrollContainer.scrollTop = 0;
+        } else {
+            console.log('No scrollable container found');
+        }
+    };
+
+    const handleJumpToBottom = () => {
+        console.log('Jump to bottom clicked, active mode:', activeMode);
+        
+        // For edit and view modes, find the inner scrollable container (the one inside the mode component)
+        // For other modes, use the main container
+        let scrollContainer: HTMLElement | null = null;
+        
+        if (activeMode === 'edit' || activeMode === 'view') {
+            // Look for the hide-scrollbar container that contains the script elements
+            const hideScrollbarContainers = document.querySelectorAll('.hide-scrollbar');
+            console.log(`Found ${hideScrollbarContainers.length} hide-scrollbar containers`);
+            
+            // Find the one that's scrollable and has the most content (likely the elements list)
+            let maxScrollHeight = 0;
+            for (const container of hideScrollbarContainers) {
+                if (container instanceof HTMLElement && container.scrollHeight > container.clientHeight) {
+                    console.log(`Container with scrollHeight: ${container.scrollHeight}, clientHeight: ${container.clientHeight}`);
+                    if (container.scrollHeight > maxScrollHeight) {
+                        maxScrollHeight = container.scrollHeight;
+                        scrollContainer = container;
+                    }
+                }
+            }
+        } else {
+            // For info, play, share modes, use the main edit-form-container
+            const mainContainer = document.querySelector('.edit-form-container');
+            if (mainContainer instanceof HTMLElement) {
+                scrollContainer = mainContainer;
+            }
+        }
+        
+        if (scrollContainer) {
+            console.log('Scrolling to bottom, container:', scrollContainer, 'scrollHeight:', scrollContainer.scrollHeight);
+            scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        } else {
+            console.log('No scrollable container found');
+        }
+    };
+
+    const handleElementDelete = async () => {
+        if (!selectedElementId) {
+            showError('No script element selected for deletion');
+            return;
+        }
+
+        // Fetch element details for the modal
+        try {
+            const token = await getToken();
+            if (!token) {
+                showError('Authentication required');
+                return;
+            }
+
+            const response = await fetch(`/api/elements/${selectedElementId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch element details');
+            }
+
+            const elementData = await response.json();
+            setSelectedElementName(elementData.description || 'Unknown Element');
+            setIsDeleteCueModalOpen(true);
+
+        } catch (error) {
+            console.error('Error fetching element details:', error);
+            showError('Failed to load element details. Please try again.');
+        }
+    };
+
+    const handleConfirmDeleteCue = async () => {
+        if (!selectedElementId) {
+            return;
+        }
+
+        setIsDeletingCue(true);
+        try {
+            const token = await getToken();
+            if (!token) {
+                showError('Authentication required');
+                return;
+            }
+
+            const response = await fetch(`/api/elements/${selectedElementId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete element');
+            }
+
+            showSuccess('Script Element Deleted', 'Script element has been successfully deleted');
+            
+            // Clear selection and refetch elements
+            setSelectedElementId(null);
+            if (activeMode === 'edit' && editModeRef.current) {
+                await editModeRef.current.refetchElements();
+            }
+
+            setIsDeleteCueModalOpen(false);
+
+        } catch (error) {
+            console.error('Error deleting element:', error);
+            showError('Failed to delete script element. Please try again.');
+        } finally {
+            setIsDeletingCue(false);
+        }
     };
 
     // Configure actions menu
@@ -656,7 +1011,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                             <Box
                                 flex={1}
                                 p="4"
-                                pb="8"
                                 overflowY="auto"
                                 className="hide-scrollbar edit-form-container"
                                 minHeight={0}
@@ -788,6 +1142,25 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                         handleAutoSortElements();
                     }
                 }}
+            />
+
+            {/* Delete Cue Confirmation Modal */}
+            <DeleteCueModal
+                isOpen={isDeleteCueModalOpen}
+                onClose={() => setIsDeleteCueModalOpen(false)}
+                onConfirm={handleConfirmDeleteCue}
+                cueName={selectedElementName}
+                isDeleting={isDeletingCue}
+            />
+
+            {/* Duplicate Element Modal */}
+            <DuplicateElementModal
+                isOpen={isDuplicateElementModalOpen}
+                onClose={() => setIsDuplicateElementModalOpen(false)}
+                onConfirm={handleConfirmDuplicate}
+                originalElementName={selectedElementName}
+                originalTimeOffset={selectedElementTimeOffset}
+                isProcessing={isDuplicatingElement}
             />
 
             {/* Mobile Drawer Menu */}

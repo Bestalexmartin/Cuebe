@@ -192,6 +192,7 @@ Rules that determine whether a cue should execute based on:
 - **Sorting Options**: Sequence, time, department, cue ID
 - **Grouping Views**: Group by department, type, or none
 - **Department Colorization**: Optional colored backgrounds for department names with conditional border display
+- **Interactive Modes**: Edit mode with selection and drag capabilities, View mode with read-only navigation
 
 #### Department Colorization Feature
 When enabled through the Options modal:
@@ -200,6 +201,26 @@ When enabled through the Options modal:
 - Vertical borders are conditionally hidden for seamless colored backgrounds
 - NOTE elements maintain normal styling (no colorization, borders always visible)
 - Enhances visual organization during script viewing and performance
+
+### User Interface Integration
+
+#### Interactive Features (Edit Mode)
+- **Click-to-Select**: Single click selection with visual feedback through border highlighting
+- **Drag-to-Reorder**: Gesture-based reordering with 150ms delay and 5px movement threshold
+- **Context-Dependent Actions**: Selection-enabled toolbar buttons (Edit, Duplicate, Delete)
+- **Modal-Based Operations**: User-friendly interfaces for duplication and deletion
+- **Jump Navigation**: Quick scroll-to-top and scroll-to-bottom buttons
+
+#### Toolbar Controls
+- **Selection-Dependent Buttons**: Edit, Duplicate, Delete buttons enabled only when element is selected
+- **Mode Switching**: Seamless transitions between View, Edit, Info, Play, and Share modes
+- **Navigation Aids**: Jump-to-top and jump-to-bottom for long script navigation
+- **Auto-Sort Integration**: Toggle for automatic chronological ordering
+
+#### View Mode Features
+- **Read-Only Display**: All interactions disabled for distraction-free viewing
+- **Navigation Only**: Jump buttons available for script navigation
+- **Clean Interface**: Pointer events disabled, optimized for performance viewing
 
 ### Playback Integration
 - **Current Element Tracking**: Active cue highlighting
@@ -246,4 +267,4 @@ The TypeScript interfaces align with the backend database schema for:
 ---
 
 *Last Updated: July 2025*  
-*Documentation Version: 1.0*
+*Documentation Version: 1.1*

@@ -39,6 +39,7 @@ export const ViewMode = forwardRef<ViewModeRef, ViewModeProps>(({
             <Box 
                 flex={1} 
                 overflowY="auto"
+                className="hide-scrollbar"
                 sx={{
                     userSelect: "none",
                     WebkitUserSelect: "none",

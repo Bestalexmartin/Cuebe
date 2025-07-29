@@ -55,6 +55,13 @@ const DOCUMENTATION_FILES: DocFile[] = [
     icon: 'compass'
   },
   {
+    name: 'UI Interaction Improvements - July 2025',
+    path: 'development/ui-interaction-improvements-july-2025.md',
+    description: 'Comprehensive changelog of click-to-select, drag-to-reorder, and navigation improvements',
+    category: 'Architecture',
+    icon: 'component'
+  },
+  {
     name: 'Documentation Standards',
     path: 'standards/documentation-standards.md',
     description: 'File naming conventions, content guidelines, and maintenance practices',
@@ -102,6 +109,41 @@ const DOCUMENTATION_FILES: DocFile[] = [
     description: 'How documentation is integrated into the application',
     category: 'Architecture',
     icon: 'docs'
+  },
+  {
+    name: 'Script Elements Data Model',
+    path: 'architecture/script-elements-data-model.md',
+    description: 'Complete data model for script elements including cues, notes, and groups',
+    category: 'Architecture',
+    icon: 'component'
+  },
+  {
+    name: 'Script Elements Database Schema',
+    path: 'architecture/script-elements-database-schema.md',
+    description: 'Database schema and relationships for script elements',
+    category: 'Architecture',
+    icon: 'component'
+  },
+  {
+    name: 'Drag-and-Drop System',
+    path: 'architecture/drag-and-drop-system.md',
+    description: 'Script element reordering with @dnd-kit integration and conflict resolution',
+    category: 'Architecture',
+    icon: 'component'
+  },
+  {
+    name: 'Script Element Interaction System',
+    path: 'architecture/script-element-interaction-system.md',
+    description: 'Click-to-select and drag-to-reorder interaction patterns with gesture detection',
+    category: 'Architecture',
+    icon: 'component'
+  },
+  {
+    name: 'Note Color Customization',
+    path: 'architecture/note-color-customization.md',
+    description: 'Color selection and customization system for script notes',
+    category: 'Architecture',
+    icon: 'component'
   },
   {
     name: 'Testing Tools Guide',

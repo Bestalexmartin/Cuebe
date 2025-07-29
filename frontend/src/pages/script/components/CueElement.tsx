@@ -1,7 +1,9 @@
 // frontend/src/pages/script/components/CueElement.tsx
 
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import { Box, HStack, Text } from '@chakra-ui/react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { ScriptElement } from '../../../types/scriptElements';
 
 const getTextColorForBackground = (hexColor: string): string => {
@@ -9,9 +11,9 @@ const getTextColorForBackground = (hexColor: string): string => {
 
     const color = hexColor.replace('#', '');
 
-    const r = parseInt(color.substr(0, 2), 16);
-    const g = parseInt(color.substr(2, 2), 16);
-    const b = parseInt(color.substr(4, 2), 16);
+    const r = parseInt(color.substring(0, 2), 16);
+    const g = parseInt(color.substring(2, 4), 16);
+    const b = parseInt(color.substring(4, 6), 16);
 
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     return luminance < 0.5 ? 'white' : 'black';
@@ -21,25 +23,97 @@ interface CueElementProps {
     element: ScriptElement;
     index: number;
     allElements: ScriptElement[];
-    onClick?: () => void;
     isSelected?: boolean;
     colorizeDepNames?: boolean;
     showClockTimes?: boolean;
     scriptStartTime?: string;
     scriptEndTime?: string;
+    isDragEnabled?: boolean;
+    onSelect?: () => void;
 }
 
 export const CueElement: React.FC<CueElementProps> = ({
     element,
     index,
     allElements,
-    onClick,
     isSelected = false,
     colorizeDepNames = false,
     showClockTimes = false,
     scriptStartTime,
-    scriptEndTime
+    scriptEndTime,
+    isDragEnabled = false,
+    onSelect
 }) => {
+    // Drag functionality
+    const dragTimeoutRef = useRef<number | null>(null);
+    const isDragStartedRef = useRef(false);
+    const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
+    
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({
+        id: element.elementID,
+        disabled: !isDragEnabled
+    });
+
+    // Handle mouse down - start timer for drag detection
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        if (!isDragEnabled) {
+            // If drag is disabled, just handle click
+            if (onSelect) {
+                onSelect();
+            }
+            return;
+        }
+
+        mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
+        isDragStartedRef.current = false;
+
+        // Set a timeout to detect if this is a drag intent
+        dragTimeoutRef.current = setTimeout(() => {
+            isDragStartedRef.current = true;
+        }, 150); // 150ms delay before considering it a drag
+    }, [isDragEnabled, onSelect]);
+
+    // Handle mouse up - if no drag was started, treat as click
+    const handleMouseUp = useCallback(() => {
+        if (dragTimeoutRef.current) {
+            clearTimeout(dragTimeoutRef.current);
+            dragTimeoutRef.current = null;
+        }
+
+        // If drag wasn't started and we have a select handler, call it
+        if (!isDragStartedRef.current && onSelect) {
+            onSelect();
+        }
+
+        isDragStartedRef.current = false;
+        mouseDownPosRef.current = null;
+    }, [onSelect]);
+
+    // Handle mouse move - if significant movement, cancel click and allow drag
+    const handleMouseMove = useCallback((e: React.MouseEvent) => {
+        if (!mouseDownPosRef.current || !isDragEnabled) return;
+
+        const deltaX = Math.abs(e.clientX - mouseDownPosRef.current.x);
+        const deltaY = Math.abs(e.clientY - mouseDownPosRef.current.y);
+        const dragThreshold = 5; // pixels
+
+        // If movement exceeds threshold, consider it a drag
+        if (deltaX > dragThreshold || deltaY > dragThreshold) {
+            if (dragTimeoutRef.current) {
+                clearTimeout(dragTimeoutRef.current);
+                dragTimeoutRef.current = null;
+            }
+            isDragStartedRef.current = true;
+        }
+    }, [isDragEnabled]);
+
     const isNote = (element as any).elementType === 'NOTE';
 
     const backgroundColor = element.customColor || "#E2E8F0";
@@ -166,14 +240,20 @@ export const CueElement: React.FC<CueElementProps> = ({
         return '-';
     })();
 
+    const dragStyle = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: 1, // Explicitly prevent @dnd-kit from applying transparency
+        zIndex: isDragging ? 1000 : 'auto',
+    };
+
     return (
         <Box
+            ref={isDragEnabled ? setNodeRef : undefined}
+            style={isDragEnabled ? dragStyle : undefined}
             bg={backgroundColor}
             border="2px solid"
-            borderColor={(() => {
-                const color = isSelected ? "blue.400" : "transparent";
-                return color;
-            })()}
+            borderColor={isSelected ? "blue.400" : "transparent"}
             mb="1px"
             _hover={{
                 borderColor: isSelected ? "blue.400" : "orange.400"
@@ -181,8 +261,11 @@ export const CueElement: React.FC<CueElementProps> = ({
             transition="all 0s"
             borderRadius="none"
             overflow="hidden"
-            cursor={onClick ? "pointer" : "default"}
-            onClick={onClick}
+            cursor={isDragEnabled ? "pointer" : "default"}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            onMouseMove={handleMouseMove}
+            {...(isDragEnabled ? { ...attributes, ...listeners } : {})}
         >
             <HStack spacing={0} align="center" h="32px">
                 <Box
@@ -256,7 +339,7 @@ export const CueElement: React.FC<CueElementProps> = ({
 
                 {/* Cue Name/Description */}
                 <Box
-                    w="200px"
+                    w="240px"
                     pl={6}
                     pr={3}
                     borderRight={"1px solid"}
