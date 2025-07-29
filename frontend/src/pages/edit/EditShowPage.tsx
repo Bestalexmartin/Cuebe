@@ -25,6 +25,7 @@ interface ShowFormData {
     showName: string;
     showNotes: string;
     showDate: string;
+    showDuration: string;  // End Time of show
     deadline: string;
     venueID: string;
 }
@@ -38,6 +39,7 @@ const INITIAL_FORM_STATE: ShowFormData = {
     showName: '',
     showNotes: '',
     showDate: '',
+    showDuration: '',  // End Time of show
     deadline: '',
     venueID: ''
 };
@@ -103,6 +105,7 @@ export const EditShowPage: React.FC = () => {
                 showName: show.showName || '',
                 showNotes: show.showNotes || '',
                 showDate: convertUTCToLocal(show.showDate),
+                showDuration: convertUTCToLocal(show.showDuration),
                 deadline: convertUTCToLocal(show.deadline),
                 venueID: show.venue?.venueID || ''
             });
@@ -114,6 +117,7 @@ export const EditShowPage: React.FC = () => {
         showName: show.showName || '',
         showNotes: show.showNotes || '',
         showDate: convertUTCToLocal(show.showDate),
+        showDuration: convertUTCToLocal(show.showDuration),
         deadline: convertUTCToLocal(show.deadline),
         venueID: show.venue?.venueID || ''
     } : null;
@@ -149,6 +153,7 @@ export const EditShowPage: React.FC = () => {
                 ...form.formData,
                 venueID: form.formData.venueID || null,
                 showDate: convertLocalToUTC(form.formData.showDate),
+                showDuration: convertLocalToUTC(form.formData.showDuration),
                 deadline: convertLocalToUTC(form.formData.deadline),
                 showNotes: form.formData.showNotes || null,
             };
@@ -334,6 +339,14 @@ export const EditShowPage: React.FC = () => {
                                     type="datetime-local"
                                     value={form.formData.showDate}
                                     onChange={(e) => handleChange('showDate', e.target.value)}
+                                />
+                            </FormControl>
+                            <FormControl>
+                                <FormLabel>End Time</FormLabel>
+                                <Input
+                                    type="datetime-local"
+                                    value={form.formData.showDuration}
+                                    onChange={(e) => handleChange('showDuration', e.target.value)}
                                 />
                             </FormControl>
                             <FormControl>

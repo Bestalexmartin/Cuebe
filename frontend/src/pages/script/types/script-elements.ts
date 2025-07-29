@@ -27,7 +27,7 @@ export interface ScriptElement {
     cueNumber?: string; // Legacy field
     description: string;
     elementDescription?: string; // Legacy field
-    notes?: string;
+    cueNotes?: string;
     
     // Location and visual
     departmentID?: string;
@@ -59,7 +59,7 @@ export interface ScriptElement {
     conditional_rules?: ScriptElementConditionalRule[];
 }
 
-export type ElementType = 'cue' | 'note' | 'group';
+export type ElementType = 'cue' | 'note';
 
 export type TriggerType = 'manual' | 'time' | 'auto' | 'follow' | 'go' | 'standby';
 
@@ -102,7 +102,7 @@ export interface ScriptElementCreate {
     triggerType?: TriggerType;
     cueID?: string;
     description: string;
-    notes?: string;
+    cueNotes?: string;
     departmentID?: string;
     location?: LocationArea;
     locationDetails?: string;
@@ -126,7 +126,7 @@ export interface ScriptElementUpdate {
     followsCueID?: string;
     cueID?: string;
     description?: string;
-    notes?: string;
+    cueNotes?: string;
     departmentID?: string;
     location?: LocationArea;
     locationDetails?: string;

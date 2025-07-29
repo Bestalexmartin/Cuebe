@@ -130,6 +130,75 @@ The documentation is integrated into the CallMaster application at `/docs` route
 - Document versioning and history
 - Automated link checking
 
+## Coding Standards
+
+### Database ENUM Values
+
+**Standard: All ENUM values are UPPERCASE in the database and should be handled as uppercase throughout the application.**
+
+#### Rule
+- Database ENUM values are always stored in UPPERCASE format
+- Frontend and backend code should use UPPERCASE when setting or comparing ENUM values
+- UI display labels can be formatted differently, but underlying values must remain UPPERCASE
+
+#### Examples
+
+**✅ Correct Database ENUMs:**
+```sql
+-- Script status ENUM
+CREATE TYPE script_status AS ENUM ('DRAFT', 'COPY', 'WORKING', 'FINAL', 'BACKUP');
+
+-- Element type ENUM  
+CREATE TYPE element_type AS ENUM ('CUE', 'NOTE', 'GROUP');
+
+-- Priority ENUM
+CREATE TYPE priority_level AS ENUM ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL');
+```
+
+**✅ Correct Application Code:**
+```typescript
+// Frontend constants
+const SCRIPT_STATUS_OPTIONS = [
+    { value: 'DRAFT', label: 'Draft' },
+    { value: 'WORKING', label: 'Working' },
+    { value: 'FINAL', label: 'Final' }
+];
+
+// Backend validation
+if (element.elementType === 'CUE') {
+    // Process cue element
+}
+
+// Form submissions
+const scriptData = {
+    scriptStatus: 'DRAFT',  // Always uppercase
+    scriptName: formData.scriptName
+};
+```
+
+**❌ Avoid:**
+```typescript
+// Don't use lowercase ENUM values
+const badData = {
+    scriptStatus: 'draft',     // ❌ Wrong
+    elementType: 'cue',        // ❌ Wrong
+    priority: 'high'           // ❌ Wrong
+};
+```
+
+#### Rationale
+1. **Database Consistency**: Ensures all ENUM values are stored consistently
+2. **Query Reliability**: Prevents case-sensitivity issues in database queries
+3. **Migration Safety**: Avoids data corruption during schema updates
+4. **Cross-Platform Compatibility**: Works correctly across different database systems
+5. **Developer Clarity**: Makes it immediately obvious when working with ENUM values
+
+#### Migration History
+- **Migration 3845c61a05aa**: Updated existing ENUM values to uppercase format
+- All existing lowercase values were converted to maintain data integrity
+
+This convention should be followed for all new ENUM types and when working with existing ENUM values throughout the CallMaster application.
+
 ---
 
 *Last Updated: July 2025*

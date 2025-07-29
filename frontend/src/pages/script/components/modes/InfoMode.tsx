@@ -1,13 +1,14 @@
 // frontend/src/pages/script/components/modes/InfoMode.tsx
 
 import React from 'react';
-import { VStack, FormControl, FormLabel, Input, Select, Textarea } from '@chakra-ui/react';
+import { VStack, HStack, FormControl, FormLabel, Input, Select, Textarea } from '@chakra-ui/react';
 import { useValidatedForm } from '../../../../hooks/useValidatedForm';
 
 interface ScriptFormData {
     scriptName: string;
     scriptStatus: string;
     startTime: string;
+    endTime: string;
     scriptNotes: string;
 }
 
@@ -51,15 +52,27 @@ export const InfoMode: React.FC<InfoModeProps> = ({ form }) => {
                 </Select>
             </FormControl>
 
-            <FormControl>
-                <FormLabel>Start Time</FormLabel>
-                <Input
-                    type="datetime-local"
-                    value={form.formData.startTime}
-                    onChange={(e) => form.updateField('startTime', e.target.value)}
-                    placeholder="Select start time"
-                />
-            </FormControl>
+            {/* Time fields side-by-side */}
+            <HStack spacing={4}>
+                <FormControl>
+                    <FormLabel>Start Time</FormLabel>
+                    <Input
+                        type="datetime-local"
+                        value={form.formData.startTime}
+                        onChange={(e) => form.updateField('startTime', e.target.value)}
+                        placeholder="Select start time"
+                    />
+                </FormControl>
+                <FormControl>
+                    <FormLabel>End Time</FormLabel>
+                    <Input
+                        type="datetime-local"
+                        value={form.formData.endTime}
+                        onChange={(e) => form.updateField('endTime', e.target.value)}
+                        placeholder="Select end time"
+                    />
+                </FormControl>
+            </HStack>
 
             <FormControl>
                 <FormLabel>Notes</FormLabel>

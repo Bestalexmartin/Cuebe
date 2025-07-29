@@ -117,3 +117,4 @@ Sunday Jul 27, 2025
 
 Monday Jul 28, 2025
 1) Refactored EditScript page to acknowledge central role, created script API endpoints, added cue view, updated docs, added script element CRUD loop
+2) Improvements to script cue element, added duration and run time, started user options interface, started using OpenAI Codex on github to clean and debug so that claude doesn't have to do it

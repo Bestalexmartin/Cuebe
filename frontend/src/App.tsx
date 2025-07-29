@@ -69,7 +69,7 @@ const App: React.FC = () => {
           {/* Script management route - elevated from edit hierarchy */}
           <Route path="/scripts/:scriptId/manage" element={
             <ProtectedRoute>
-              <ManageScriptPage />
+              <ManageScriptPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
             </ProtectedRoute>
           } />
 

@@ -23,21 +23,21 @@ export const ScriptElementsHeader: React.FC = () => {
                 />
 
                 {/* Time Offset Header */}
-                <Box w="82px" pl={3} pr={4} borderRight="1px solid" borderColor="gray.400">
+                <Box w="122px" pl={3} pr={4} borderRight="1px solid" borderColor="gray.400">
                     <Text fontSize="sm" color="white" fontWeight="bold" textAlign="center">
                         TIME
                     </Text>
                 </Box>
 
                 {/* Duration Header */}
-                <Box w="80px" px={3} borderRight="1px solid" borderColor="gray.400">
+                <Box w="100px" px={3} borderRight="1px solid" borderColor="gray.400">
                     <Text fontSize="sm" color="white" fontWeight="bold" textAlign="center">
                         DUR
                     </Text>
                 </Box>
 
                 {/* Department Header */}
-                <Box w="130px" height="100%" display="flex" alignItems="center" px={3}>
+                <Box w="100px" height="100%" display="flex" alignItems="center" px={3}>
                     <Text fontSize="sm" color="white" fontWeight="bold" textAlign="center" isTruncated width="100%">
                         DEPT
                     </Text>
@@ -51,9 +51,16 @@ export const ScriptElementsHeader: React.FC = () => {
                 </Box>
 
                 {/* Description Header */}
-                <Box flex={1} pl={6} pr={3} borderRight="1px solid" borderColor="gray.400">
+                <Box w="200px" pl={6} pr={3} borderRight="1px solid" borderColor="gray.400">
                     <Text fontSize="sm" color="white" fontWeight="bold" textAlign="left" isTruncated>
                         DESCRIPTION
+                    </Text>
+                </Box>
+
+                {/* Cue Notes Header */}
+                <Box flex={1} px={3} borderRight="1px solid" borderColor="gray.400">
+                    <Text fontSize="sm" color="white" fontWeight="bold" textAlign="left" isTruncated>
+                        NOTES
                     </Text>
                 </Box>
 

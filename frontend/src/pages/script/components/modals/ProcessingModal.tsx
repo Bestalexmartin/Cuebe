@@ -1,4 +1,4 @@
-// frontend/src/components/modals/ProcessingsModal.tsx
+// frontend/src/pages/script/components/modals/ProcessingModal.tsx
 
 import React from 'react';
 import {

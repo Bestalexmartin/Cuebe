@@ -1,7 +1,7 @@
 // frontend/src/types/scriptElements.ts
 
 // Base types and enums
-export type ScriptElementType = 'cue' | 'note' | 'group';
+export type ScriptElementType = 'cue' | 'note';
 
 export type TriggerType = 
   | 'manual'        // Operator triggered
@@ -43,7 +43,7 @@ export interface ScriptElementBase {
   // Content and identification
   cueID?: string;                      // LX5, SND12, etc.
   description: string;
-  notes?: string;
+  cueNotes?: string;
   
   // Department and visual
   departmentID?: string;               // Link to department
@@ -114,17 +114,8 @@ export interface NoteElement extends ScriptElementBase {
   customColor: string;                 // Required for visual distinction
 }
 
-export interface GroupElement extends ScriptElementBase {
-  type: 'group';
-  childElementIDs: string[];           // Elements in this group
-  isCollapsed: boolean;                // Group collapse state
-  groupColor?: string;                 // Visual grouping color
-  departmentName?: string;             // Department name from relationship
-  departmentColor?: string;            // Department color from relationship
-}
-
 // Union type for all elements
-export type ScriptElement = CueElement | NoteElement | GroupElement;
+export type ScriptElement = CueElement | NoteElement;
 
 // Department information for display
 export interface Department {
@@ -170,7 +161,7 @@ export interface ScriptElementFormData {
   type: ScriptElementType;
   cueID?: string;
   description: string;
-  notes?: string;
+  cueNotes?: string;
   departmentID?: string;
   timeOffset: number;
   triggerType: TriggerType;

@@ -31,6 +31,13 @@ Technical and performance cues with specific department assignments.
 - `departmentID`: Must be assigned to a department
 - `description`: What the cue accomplishes
 
+**Dynamic Cue ID Generation:**
+When no explicit `cueID` is provided, the system automatically generates IDs using the pattern:
+- Format: `[DEPT_PREFIX]-[##]` (e.g., `FL-01`, `SM-03`, `LX-12`)
+- Department prefix: First 2 characters of department name, uppercased
+- Sequential numbering: Zero-padded 2-digit counter per department
+- Maintains chronological order within each department throughout the script
+
 **Common Use Cases:**
 - Lighting changes and effects
 - Sound effects and music playback
@@ -88,10 +95,12 @@ Organizational containers for related elements.
 - **Failed**: Execution encountered error
 
 ### Timing Controls
-- **timeOffset**: Milliseconds from script start
+- **timeOffsetMs**: Milliseconds from script start (high precision timing)
 - **duration**: Runtime for timed elements
 - **fadeIn/fadeOut**: Transition timing in milliseconds
 - **sequence**: Auto-incrementing order number
+
+> **Note**: The legacy `timeOffset` field has been removed in favor of `timeOffsetMs` for better precision and consistency. All time calculations now use millisecond precision throughout the system.
 
 ## Location System
 
@@ -182,6 +191,15 @@ Rules that determine whether a cue should execute based on:
 - **Priority Filtering**: Filter by priority levels
 - **Sorting Options**: Sequence, time, department, cue ID
 - **Grouping Views**: Group by department, type, or none
+- **Department Colorization**: Optional colored backgrounds for department names with conditional border display
+
+#### Department Colorization Feature
+When enabled through the Options modal:
+- Department names display with colored backgrounds using `departmentColor`
+- Text changes to bold white for better contrast
+- Vertical borders are conditionally hidden for seamless colored backgrounds
+- NOTE elements maintain normal styling (no colorization, borders always visible)
+- Enhances visual organization during script viewing and performance
 
 ### Playback Integration
 - **Current Element Tracking**: Active cue highlighting

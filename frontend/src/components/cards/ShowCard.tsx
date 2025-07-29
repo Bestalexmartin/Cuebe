@@ -25,6 +25,7 @@ interface Script {
   scriptStatus: string;
   showID: string;
   startTime: string;
+  endTime?: string;
   dateCreated: string;
   dateUpdated: string;
   lastUsed?: string;
@@ -34,6 +35,7 @@ interface Show {
   showID: string;
   showName: string;
   showDate?: string;
+  showDuration?: string;
   dateCreated: string;
   dateUpdated: string;
   venue?: Venue;
@@ -133,17 +135,19 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
         <Text>
           {venueName} • {formatDateFriendly(show.showDate)}
         </Text>
+      </HStack>
+      <HStack justify="space-between" fontSize="sm" color="detail.text" mt={1}>
+        <Text>
+          Start Time: {show.showDate ? formatTimeLocal(show.showDate) : 'Not set'}
+        </Text>
         <Text fontSize="xs">
           Created: {formatDateTimeLocal(show.dateCreated)}
         </Text>
       </HStack>
-      <HStack
-        justify="space-between"
-        fontSize="sm"
-        color="detail.text"
-        mt={1}
-      >
-        <Text>Scripts: {show.scripts ? show.scripts.length : 0}</Text>
+      <HStack justify="space-between" fontSize="sm" color="detail.text" mt={1}>
+        <Text>
+          End Time: {show.showDuration ? formatTimeLocal(show.showDuration) : 'Not set'}
+        </Text>
         <Text fontSize="xs">
           Updated: {formatDateTimeLocal(show.dateUpdated)}
         </Text>
@@ -153,7 +157,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
 
   const expandedContent = (
     <Box>
-      <HStack justify="space-between" align="center" flexShrink={0} mb={4}>
+      <HStack justify="space-between" align="center" flexShrink={0} pt={2} mb={4} pl="4">
         <Text fontWeight="semibold">
           Scripts
         </Text>
@@ -200,24 +204,34 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                     color="detail.text"
                     mt={2}
                   >
-                    <Badge variant="solid" colorScheme="blue" size="sm">
+                    <Badge variant="solid" colorScheme="blue">
                       {script.scriptStatus.toUpperCase()}
                     </Badge>
+                  </HStack>
+                  <HStack
+                    justify="space-between"
+                    fontSize="sm"
+                    color="detail.text"
+                  >
                     <Text>
+                      Start Time:{" "}
+                      {script.startTime ? formatTimeLocal(script.startTime) : 'Not set'}
+                    </Text>
+                    <Text fontSize="xs">
                       Created:{" "}
                       {formatDateTimeLocal(script.dateCreated)}
                     </Text>
                   </HStack>
                   <HStack
                     justify="space-between"
-                    fontSize="xs"
+                    fontSize="sm"
                     color="detail.text"
                   >
                     <Text>
-                      Start Time:{" "}
-                      {formatTimeLocal(script.startTime)}
+                      End Time:{" "}
+                      {script.endTime ? formatTimeLocal(script.endTime) : 'Not set'}
                     </Text>
-                    <Text>
+                    <Text fontSize="xs">
                       Updated:{" "}
                       {formatDateTimeLocal(script.dateUpdated)}
                     </Text>

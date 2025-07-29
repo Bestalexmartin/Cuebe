@@ -3,20 +3,23 @@
 import React, { forwardRef, useImperativeHandle } from 'react';
 import { VStack, Text, Box, Flex } from '@chakra-ui/react';
 import { useScriptElements } from '../../hooks/useScriptElements';
+import { useScript } from '../../../../hooks/useScript';
 import { CueElement } from '../CueElement';
 import { ScriptElementsHeader } from '../ScriptElementsHeader';
 
 interface EditModeProps {
     scriptId: string;
     colorizeDepNames?: boolean;
+    showClockTimes?: boolean;
 }
 
 export interface EditModeRef {
     refetchElements: () => Promise<void>;
 }
 
-export const EditMode = forwardRef<EditModeRef, EditModeProps>(({ scriptId, colorizeDepNames = false }, ref) => {
+export const EditMode = forwardRef<EditModeRef, EditModeProps>(({ scriptId, colorizeDepNames = false, showClockTimes = false }, ref) => {
     const { elements, isLoading, error, refetchElements } = useScriptElements(scriptId);
+    const { script } = useScript(scriptId);
     
     // Expose refetch function to parent via ref
     useImperativeHandle(ref, () => ({
@@ -62,6 +65,9 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({ scriptId, colo
                                 index={index}
                                 allElements={elements}
                                 colorizeDepNames={colorizeDepNames}
+                                showClockTimes={showClockTimes}
+                                scriptStartTime={script?.startTime}
+                                scriptEndTime={script?.endTime}
                                 onClick={() => console.log('Element clicked:', element.elementID)}
                             />
                         ))}

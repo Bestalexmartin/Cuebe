@@ -11,6 +11,7 @@ interface Script {
   scriptStatus: string;
   showID: string;
   startTime: string;
+  endTime?: string;
   dateCreated: string;
   dateUpdated: string;
   lastUsed?: string;
