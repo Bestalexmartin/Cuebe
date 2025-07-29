@@ -1,6 +1,10 @@
 // frontend/src/utils/errorHandler.ts
 
-import { createApiError, EnhancedError, ERROR_CATEGORIES } from '../types/errorTypes';
+import {
+  createApiError,
+  EnhancedError,
+  ERROR_CATEGORIES,
+} from "../types/errorTypes";
 
 export interface RetryConfig {
   maxRetries: number;
@@ -20,7 +24,7 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxRetries: 3,
   baseDelay: 1000,
   maxDelay: 10000,
-  exponentialBase: 2
+  exponentialBase: 2,
 };
 
 export class ErrorHandler {
@@ -32,7 +36,7 @@ export class ErrorHandler {
   async handleApiError(
     error: any,
     context: string,
-    _options: ErrorHandlerOptions = {}
+    _options: ErrorHandlerOptions = {},
   ): Promise<EnhancedError> {
     let apiError: EnhancedError;
 
@@ -41,12 +45,12 @@ export class ErrorHandler {
       // Fetch response error
       const status = error.status;
       let message = `Request failed with status ${status}`;
-      let details = '';
+      let details = "";
 
       try {
         const errorData = await error.json();
         message = errorData.message || errorData.detail || message;
-        details = errorData.details || '';
+        details = errorData.details || "";
       } catch {
         // Could not parse JSON, use default message
       }
@@ -54,44 +58,45 @@ export class ErrorHandler {
       apiError = createApiError(message, status, details);
     } else if (error instanceof Error) {
       // Network or JavaScript error
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      if (error.name === "TypeError" && error.message.includes("fetch")) {
         // Network error
         apiError = {
-          message: 'Unable to connect to the server. Please check your internet connection.',
-          severity: 'error',
+          message:
+            "Unable to connect to the server. Please check your internet connection.",
+          severity: "error",
           retryable: true,
-          code: ERROR_CATEGORIES.NETWORK.code
+          code: ERROR_CATEGORIES.NETWORK.code,
         };
       } else {
         // Generic JavaScript error
         apiError = {
-          message: error.message || 'An unexpected error occurred',
-          severity: 'error',
+          message: error.message || "An unexpected error occurred",
+          severity: "error",
           retryable: false,
-          code: 'UNKNOWN_ERROR'
+          code: "UNKNOWN_ERROR",
         };
       }
-    } else if (typeof error === 'string') {
+    } else if (typeof error === "string") {
       // String error message
       apiError = {
         message: error,
-        severity: 'error',
+        severity: "error",
         retryable: false,
-        code: 'UNKNOWN_ERROR'
+        code: "UNKNOWN_ERROR",
       };
     } else {
       // Unknown error type
       apiError = {
-        message: 'An unexpected error occurred',
-        severity: 'error',
+        message: "An unexpected error occurred",
+        severity: "error",
         retryable: false,
-        code: 'UNKNOWN_ERROR'
+        code: "UNKNOWN_ERROR",
       };
     }
 
     // Add context to error
     if (context) {
-      apiError.details = apiError.details 
+      apiError.details = apiError.details
         ? `${apiError.details} (Context: ${context})`
         : `Context: ${context}`;
     }
@@ -100,7 +105,7 @@ export class ErrorHandler {
     console.error(`[ErrorHandler] ${context}:`, {
       error: apiError,
       originalError: error,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     return apiError;
@@ -112,7 +117,7 @@ export class ErrorHandler {
   async executeWithRetry<T>(
     operation: () => Promise<T>,
     operationId: string,
-    options: ErrorHandlerOptions = {}
+    options: ErrorHandlerOptions = {},
   ): Promise<T> {
     const config = { ...DEFAULT_RETRY_CONFIG, ...options.retryConfig };
     const currentAttempts = this.retryAttempts.get(operationId) || 0;
@@ -123,26 +128,28 @@ export class ErrorHandler {
       this.retryAttempts.delete(operationId);
       return result;
     } catch (error) {
-      const apiError = await this.handleApiError(error, options.context || operationId, options);
+      const apiError = await this.handleApiError(
+        error,
+        options.context || operationId,
+        options,
+      );
 
       // Check if we should retry
       if (apiError.retryable && currentAttempts < config.maxRetries) {
         // Calculate delay with exponential backoff
         const delay = Math.min(
           config.baseDelay * Math.pow(config.exponentialBase, currentAttempts),
-          config.maxDelay
+          config.maxDelay,
         );
 
         // Add some jitter to prevent thundering herd
         const jitteredDelay = delay + Math.random() * 1000;
 
-        console.log(`[ErrorHandler] Retrying ${operationId} in ${jitteredDelay}ms (attempt ${currentAttempts + 1}/${config.maxRetries})`);
-
         // Update retry count
         this.retryAttempts.set(operationId, currentAttempts + 1);
 
         // Wait before retrying
-        await new Promise(resolve => setTimeout(resolve, jitteredDelay));
+        await new Promise((resolve) => setTimeout(resolve, jitteredDelay));
 
         // Retry the operation
         return this.executeWithRetry(operation, operationId, options);
@@ -186,22 +193,22 @@ export async function enhancedFetch(
   url: string,
   options: RequestInit = {},
   context?: string,
-  retryConfig?: Partial<RetryConfig>
+  retryConfig?: Partial<RetryConfig>,
 ): Promise<Response> {
-  const operationId = `fetch-${url}-${options.method || 'GET'}`;
-  
+  const operationId = `fetch-${url}-${options.method || "GET"}`;
+
   return globalErrorHandler.executeWithRetry(
     async () => {
       const response = await fetch(url, options);
-      
+
       if (!response.ok) {
         throw response; // Will be handled by error handler
       }
-      
+
       return response;
     },
     operationId,
-    { context, retryConfig }
+    { context, retryConfig },
   );
 }
 
@@ -209,7 +216,7 @@ export async function enhancedFetch(
  * Check if the current environment supports network status detection
  */
 export function supportsNetworkStatus(): boolean {
-  return typeof navigator !== 'undefined' && 'onLine' in navigator;
+  return typeof navigator !== "undefined" && "onLine" in navigator;
 }
 
 /**

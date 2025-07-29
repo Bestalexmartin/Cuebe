@@ -123,3 +123,4 @@ Tuesday Jul 29, 2025
 • Several small Codex pull requests
 1) Added auto-sorting and drag sorting of cue elements, note creation with background color, drag sorting
 2) Renamed API Test page, various UI cleanup, fixed script duplication issue, began work on cue element select and delete
+3) Applied small improvements recommended by Codex

@@ -7,7 +7,6 @@ import { MoonIcon, SunIcon } from '@chakra-ui/icons';
 import { CiMenuBurger } from 'react-icons/ci';
 
 // TypeScript interfaces
-interface DarkModeSwitchProps { }
 
 interface HeaderProps {
   onMenuOpen: () => void;

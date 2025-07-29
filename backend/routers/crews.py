@@ -298,12 +298,6 @@ async def delete_crew_relationship(
     
     if not relationship_to_delete:
         raise HTTPException(status_code=404, detail="Crew relationship not found")
-
-    # TODO: Future enhancement - Remove crew member from any show assignments
-    # When show assignments are implemented, add logic here to:
-    # 1. Find all show assignments for this crew member under this manager
-    # 2. Delete or deactivate those assignments
-    # 3. Log the cleanup for debugging
     
     # For now, just log that this will be needed
     logger.info(f"Deleting crew relationship between manager {user.userID} and crew member {crew_user_id}")

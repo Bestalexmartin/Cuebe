@@ -182,12 +182,8 @@ async def test_diagnostics(request: Request):
 async def run_tests(
     request: Request,
     test_suite: str = "all"
-    # TODO: Re-enable authentication: user: models.User = Depends(get_current_user)
 ):
-    """
-    Run test suites and return results for TestToolsPage integration.
-    Only available in development mode.
-    """
+
     backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     try:

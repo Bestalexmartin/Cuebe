@@ -21,3 +21,6 @@ docker-compose.override.yml
 
 # Environment variables
 .env
+
+# Personal logs
+readme.txt
