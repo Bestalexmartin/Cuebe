@@ -239,6 +239,7 @@ class Department(Base):
     departmentName = Column(String, nullable=False)
     departmentDescription = Column(String, nullable=True)
     departmentColor = Column(String, nullable=True)  # e.g., "#FF5733"
+    departmentInitials = Column(String(5), nullable=True)  # e.g., "LX", "SND"
     
     # Owner - NEW FIELD
     ownerID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)

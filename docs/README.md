@@ -17,6 +17,8 @@ Welcome to the CallMaster documentation! This comprehensive guide covers all asp
 - **[Component Architecture](./architecture/component-architecture.md)** - BaseCard/BaseModal patterns and implementation guide
 - **[Script Elements Data Model](./architecture/script-elements-data-model.md)** - Complete data structure for script cues, notes, and groups
 - **[Script Elements Database Schema](./architecture/script-elements-database-schema.md)** - Database tables and API endpoints for script elements
+- **[Drag-and-Drop System](./architecture/drag-and-drop-system.md)** - Script element reordering with conflict resolution and modal interactions
+- **[Note Color Customization](./architecture/note-color-customization.md)** - Color picker system with smart text contrast and preset colors
 - **[Performance Optimizations](./architecture/performance-optimizations.md)** - React.memo, component optimization, and performance monitoring
 - **[Error Handling](./architecture/error-handling.md)** - Error boundaries, validation, and recovery strategies
 - **[Documentation Integration](./architecture/documentation-integration.md)** - How documentation is integrated into the application
@@ -70,6 +72,8 @@ CallMaster is built with:
 
 ### Major Achievements
 - **Script Elements API**: Complete CRUD operations for theater script management
+- **Drag-and-Drop System**: Intuitive script element reordering with intelligent conflict resolution
+- **Note Color Customization**: Visual organization system with smart text contrast and preset colors
 - **Enterprise-Grade Testing Suite**: 6 comprehensive testing tools
 - **Performance Optimized**: React.memo implementation across all components
 - **DRY Architecture**: Base component system eliminates code duplication

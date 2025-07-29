@@ -17,7 +17,11 @@ export interface ViewModeRef {
     refetchElements: () => Promise<void>;
 }
 
-export const ViewMode = forwardRef<ViewModeRef, ViewModeProps>(({ scriptId, colorizeDepNames = false, showClockTimes = false }, ref) => {
+export const ViewMode = forwardRef<ViewModeRef, ViewModeProps>(({ 
+    scriptId, 
+    colorizeDepNames = false, 
+    showClockTimes = false
+}, ref) => {
     const { elements, isLoading, error, refetchElements } = useScriptElements(scriptId);
     const { script } = useScript(scriptId);
     
@@ -32,7 +36,16 @@ export const ViewMode = forwardRef<ViewModeRef, ViewModeProps>(({ scriptId, colo
             <ScriptElementsHeader />
             
             {/* Elements List */}
-            <Box flex={1} overflowY="auto">
+            <Box 
+                flex={1} 
+                overflowY="auto"
+                sx={{
+                    userSelect: "none",
+                    WebkitUserSelect: "none",
+                    MozUserSelect: "none",
+                    msUserSelect: "none"
+                }}
+            >
                 {isLoading && (
                     <Flex justify="center" align="center" height="200px">
                         <Text color="gray.500">Loading script elements...</Text>
@@ -57,7 +70,36 @@ export const ViewMode = forwardRef<ViewModeRef, ViewModeProps>(({ scriptId, colo
                 )}
 
                 {!isLoading && !error && elements.length > 0 && (
-                    <VStack spacing={0} align="stretch">
+                    <VStack 
+                        spacing={0} 
+                        align="stretch"
+                        css={{
+                            '& > *': {
+                                userSelect: 'none !important',
+                                WebkitUserSelect: 'none !important',
+                                MozUserSelect: 'none !important',
+                                msUserSelect: 'none !important',
+                                pointerEvents: 'none !important',
+                                cursor: 'default !important',
+                                '&:hover': {
+                                    backgroundColor: 'inherit !important',
+                                    borderColor: 'inherit !important',
+                                    color: 'inherit !important',
+                                    transform: 'none !important'
+                                },
+                                '&:active': {
+                                    backgroundColor: 'inherit !important',
+                                    borderColor: 'inherit !important',
+                                    color: 'inherit !important',
+                                    transform: 'none !important'
+                                },
+                                '&:focus': {
+                                    outline: 'none !important',
+                                    boxShadow: 'none !important'
+                                }
+                            }
+                        }}
+                    >
                         {elements.map((element, index) => (
                             <CueElement
                                 key={element.elementID}

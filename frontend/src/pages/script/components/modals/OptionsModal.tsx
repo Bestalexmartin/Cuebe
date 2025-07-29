@@ -17,6 +17,8 @@ interface OptionsModalProps {
     onColorizeDepNamesChange: (value: boolean) => void;
     showClockTimes: boolean;
     onShowClockTimesChange: (value: boolean) => void;
+    autoSortCues: boolean;
+    onAutoSortCuesChange: (value: boolean) => void;
 }
 
 export const OptionsModal: React.FC<OptionsModalProps> = ({
@@ -25,7 +27,9 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
     colorizeDepNames,
     onColorizeDepNamesChange,
     showClockTimes,
-    onShowClockTimesChange
+    onShowClockTimesChange,
+    autoSortCues,
+    onAutoSortCuesChange
 }) => {
     const handleColorizeChange = (checked: boolean) => {
         onColorizeDepNamesChange(checked);
@@ -33,6 +37,10 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
 
     const handleClockTimesChange = (checked: boolean) => {
         onShowClockTimesChange(checked);
+    };
+
+    const handleAutoSortChange = (checked: boolean) => {
+        onAutoSortCuesChange(checked);
     };
 
     return (
@@ -47,7 +55,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
             }}
             errorBoundaryContext="OptionsModal"
         >
-            <VStack spacing={6} align="stretch">
+            <VStack spacing={3} align="stretch">
                 <FormControl>
                     <HStack align="center">
                         <Checkbox
@@ -62,6 +70,24 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                             cursor="pointer"
                         >
                             Colorize Department Names
+                        </FormLabel>
+                    </HStack>
+                </FormControl>
+
+                <FormControl>
+                    <HStack align="center">
+                        <Checkbox
+                            isChecked={autoSortCues}
+                            onChange={(e) => handleAutoSortChange(e.target.checked)}
+                        />
+                        <FormLabel
+                            mb="0"
+                            fontSize="md"
+                            fontWeight="semibold"
+                            onClick={() => handleAutoSortChange(!autoSortCues)}
+                            cursor="pointer"
+                        >
+                            Auto-Sort Cues
                         </FormLabel>
                     </HStack>
                 </FormControl>

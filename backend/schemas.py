@@ -113,12 +113,14 @@ class DepartmentCreate(BaseModel):
     departmentName: str
     departmentDescription: Optional[str] = None
     departmentColor: str
+    departmentInitials: Optional[str] = None
 
 class Department(BaseModel):
     departmentID: UUID  # CHANGED TO UUID
     departmentName: str
     departmentDescription: Optional[str] = None
     departmentColor: str
+    departmentInitials: Optional[str] = None
     dateCreated: datetime
     dateUpdated: datetime
 
@@ -328,6 +330,7 @@ class ScriptElementEnhanced(BaseModel):
     departmentID: Optional[UUID] = None
     departmentName: Optional[str] = None  # Computed from department relationship
     departmentColor: Optional[str] = None  # Computed from department relationship
+    departmentInitials: Optional[str] = None  # Computed from department relationship
     location: Optional[str] = None
     locationDetails: Optional[str] = None
     customColor: Optional[str] = None
@@ -360,17 +363,19 @@ class ScriptElementEnhanced(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def populate_department_fields(cls, data):
-        """Populate department name and color from department relationship"""
+        """Populate department name, color, and initials from department relationship"""
         if hasattr(data, 'department') and data.department:
             # If this is a SQLAlchemy model instance with department relationship
             data.departmentName = data.department.departmentName
             data.departmentColor = data.department.departmentColor
+            data.departmentInitials = data.department.departmentInitials
         elif isinstance(data, dict):
             # If this is already a dict, check if department data is available
             department = data.get('department')
             if department:
                 data['departmentName'] = department.get('departmentName')
                 data['departmentColor'] = department.get('departmentColor')
+                data['departmentInitials'] = department.get('departmentInitials')
         return data
 
 # Update the main ScriptElement schema to use enhanced version

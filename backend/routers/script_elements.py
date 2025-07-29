@@ -27,28 +27,31 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["script-elements"])
 
 async def _auto_populate_show_start_duration(db: Session, script: models.Script, elements: List[models.ScriptElement]):
-    """Auto-populate SHOW START duration if missing and show times are available."""
+    """Auto-populate SHOW START duration based on script start and end times."""
     
     if not script.startTime or not script.endTime:
-        return
-    
-    # Find SHOW START element that has no duration set
-    show_start_element = None
-    for element in elements:
-        if (element.description and 
-            element.description.upper() == 'SHOW START' and 
-            not element.duration):
-            show_start_element = element
-            break
-    
-    if not show_start_element:
         return
     
     # Calculate duration between script start and end times
     duration_delta = script.endTime - script.startTime
     duration_seconds = int(duration_delta.total_seconds())
     
-    if duration_seconds > 0:
+    if duration_seconds <= 0:
+        return
+    
+    # Find SHOW START element
+    show_start_element = None
+    for element in elements:
+        if (element.description and 
+            element.description.upper() == 'SHOW START'):
+            show_start_element = element
+            break
+    
+    if not show_start_element:
+        return
+    
+    # Update duration if it's different from calculated duration
+    if show_start_element.duration != duration_seconds:
         show_start_element.duration = duration_seconds
         db.commit()
 
@@ -65,7 +68,7 @@ def rate_limit(limit_config):
 # SCRIPT ELEMENT ENDPOINTS
 # =============================================================================
 
-@router.get("/scripts/{script_id}/elements", response_model=List[schemas.ScriptElement])
+@router.get("/scripts/{script_id}/elements", response_model=List[schemas.ScriptElementEnhanced])
 async def get_script_elements(
     script_id: UUID,
     user: models.User = Depends(get_current_user),
@@ -155,7 +158,8 @@ async def create_script_element(
     script_id: UUID,
     element: schemas.ScriptElementCreate,
     user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    auto_sort: bool = Query(False, description="Whether to insert element in time-sorted position")
 ):
     """Create a new script element."""
     
@@ -180,12 +184,46 @@ async def create_script_element(
         if not department:
             raise HTTPException(status_code=404, detail="Department not found or not accessible")
     
-    # Calculate next sequence number if not provided
+    # Calculate sequence number - conditionally sort by time offset if auto_sort is enabled
     if element.sequence is None:
-        max_sequence = db.query(models.ScriptElement.sequence).filter(
-            models.ScriptElement.scriptID == script_id
-        ).order_by(models.ScriptElement.sequence.desc()).first()
-        element.sequence = (max_sequence[0] + 1) if max_sequence and max_sequence[0] else 1
+        if auto_sort:
+            # AUTO-SORT ON: Insert element in correct time-based position
+            # Get all existing elements ordered by time offset, then by current sequence
+            existing_elements = db.query(models.ScriptElement).filter(
+                models.ScriptElement.scriptID == script_id,
+                models.ScriptElement.isActive == True
+            ).order_by(
+                models.ScriptElement.timeOffsetMs.asc(),
+                models.ScriptElement.sequence.asc()
+            ).all()
+            
+            # Find the correct position to insert this element based on timeOffsetMs
+            insert_position = 1
+            for existing_element in existing_elements:
+                if existing_element.timeOffsetMs <= (element.timeOffsetMs or 0):
+                    insert_position = existing_element.sequence + 1
+                else:
+                    break
+            
+            # Update sequence numbers of elements that should come after this one
+            elements_to_update = db.query(models.ScriptElement).filter(
+                models.ScriptElement.scriptID == script_id,
+                models.ScriptElement.sequence >= insert_position,
+                models.ScriptElement.isActive == True
+            ).all()
+            
+            for elem in elements_to_update:
+                elem.sequence += 1
+                elem.elementOrder = elem.sequence  # Update legacy field too
+            
+            # Set the sequence for the new element
+            element.sequence = insert_position
+        else:
+            # AUTO-SORT OFF: Simply add to end of sequence
+            max_sequence = db.query(models.ScriptElement.sequence).filter(
+                models.ScriptElement.scriptID == script_id
+            ).order_by(models.ScriptElement.sequence.desc()).first()
+            element.sequence = (max_sequence[0] + 1) if max_sequence and max_sequence[0] else 1
     
     # Create the element
     try:
@@ -386,6 +424,93 @@ async def restore_script_element(
         db.rollback()
         logger.error(f"Failed to restore script element {element_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to restore element: {str(e)}")
+
+
+@router.post("/scripts/{script_id}/calculate-show-start-duration")
+async def calculate_show_start_duration(
+    script_id: UUID,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Calculate and update SHOW START duration for view/edit modes."""
+    
+    # Verify the script exists and user has access
+    script = db.query(models.Script).options(
+        joinedload(models.Script.show)
+    ).filter(models.Script.scriptID == script_id).first()
+    
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
+    
+    # Security check: ensure user owns the show
+    if script.show.ownerID != user.userID:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this script")
+    
+    try:
+        # Get all elements for this script
+        elements = db.query(models.ScriptElement).filter(
+            models.ScriptElement.scriptID == script_id,
+            models.ScriptElement.isActive == True
+        ).all()
+        
+        # Auto-populate SHOW START duration if missing
+        await _auto_populate_show_start_duration(db, script, elements)
+        
+        return {"message": "SHOW START duration calculated successfully"}
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to calculate SHOW START duration for script {script_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to calculate duration: {str(e)}")
+
+
+@router.post("/scripts/{script_id}/auto-sort-elements")
+async def auto_sort_script_elements(
+    script_id: UUID,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Auto-sort all script elements by time offset."""
+    
+    # Verify the script exists and user has access
+    script = db.query(models.Script).options(
+        joinedload(models.Script.show)
+    ).filter(models.Script.scriptID == script_id).first()
+    
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
+    
+    # Security check: ensure user owns the show
+    if script.show.ownerID != user.userID:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this script")
+    
+    try:
+        # Get all active elements for this script ordered by time offset
+        elements = db.query(models.ScriptElement).filter(
+            models.ScriptElement.scriptID == script_id,
+            models.ScriptElement.isActive == True
+        ).order_by(
+            models.ScriptElement.timeOffsetMs.asc(),
+            models.ScriptElement.sequence.asc()
+        ).all()
+        
+        # Update sequence numbers based on time offset order
+        for index, element in enumerate(elements, 1):
+            element.sequence = index
+            element.elementOrder = index  # Update legacy field too
+            element.updatedBy = user.userID
+            element.version = element.version + 1
+            element.dateUpdated = datetime.now(timezone.utc)
+        
+        db.commit()
+        logger.info(f"Auto-sorted {len(elements)} elements in script {script_id}")
+        
+        return {"message": f"Successfully auto-sorted {len(elements)} elements by time offset"}
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to auto-sort elements in script {script_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to auto-sort elements: {str(e)}")
 
 
 # =============================================================================

@@ -54,6 +54,7 @@ async def create_department(
         departmentName=department.departmentName,
         departmentDescription=department.departmentDescription,
         departmentColor=department.departmentColor,
+        departmentInitials=department.departmentInitials,
         ownerID=user.userID
     )
     db.add(new_department)

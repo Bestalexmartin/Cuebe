@@ -40,6 +40,7 @@ interface AddScriptElementModalProps {
     onClose: () => void;
     scriptId: string;
     onElementCreated: () => void;
+    autoSortCues: boolean;
 }
 
 const INITIAL_FORM_STATE: ScriptElementCreate = {
@@ -52,7 +53,8 @@ const INITIAL_FORM_STATE: ScriptElementCreate = {
     departmentID: '',
     location: undefined, // Not needed in form
     priority: 'normal',
-    isSafetyCritical: false
+    isSafetyCritical: false,
+    customColor: '' // For note background color
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
@@ -63,28 +65,13 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             ValidationRules.maxLength(200, 'Cue Event must be no more than 200 characters')
         ]
     },
-    departmentID: {
-        required: false, // Will be conditionally required based on element type
-        rules: [
-            {
-                validator: (value: string, formData?: any) => {
-                    // Only require department for cues, not for notes
-                    if (formData?.elementType === 'cue') {
-                        return value && value.trim().length > 0;
-                    }
-                    return true; // Notes don't require a department
-                },
-                message: 'Please select a department for cues',
-                code: 'DEPARTMENT_REQUIRED_FOR_CUE'
-            }
-        ]
-    },
+    // departmentID validation is handled manually in canSubmit logic
     timeOffsetMs: {
         required: true,
         rules: [
             {
-                validator: (value: number) => value > 0,
-                message: 'Time offset must be greater than 00:00',
+                validator: (value: number) => value >= 0,
+                message: 'Time offset must be 00:00 or greater',
                 code: 'INVALID_TIME'
             }
         ]
@@ -134,6 +121,35 @@ const LOCATION_OPTIONS: { value: LocationArea; label: string }[] = [
     { value: 'other', label: 'Other' }
 ];
 
+// Preset colors for note backgrounds
+const NOTE_PRESET_COLORS = [
+    { name: 'Default', value: '#E2E8F0' },
+    { name: 'Red', value: '#EF4444' },
+    { name: 'Grey', value: '#6B7280' },
+    { name: 'Black', value: '#1F2937' },
+    { name: 'Blue', value: '#3B82F6' },
+    { name: 'Yellow', value: '#EAB308' },
+];
+
+// Helper function to calculate color lightness and determine text color
+const getTextColorForBackground = (hexColor: string): string => {
+    if (!hexColor || hexColor === '') return 'black';
+    
+    // Remove # if present
+    const color = hexColor.replace('#', '');
+    
+    // Parse RGB values
+    const r = parseInt(color.substr(0, 2), 16);
+    const g = parseInt(color.substr(2, 2), 16);
+    const b = parseInt(color.substr(4, 2), 16);
+    
+    // Calculate relative luminance (perceived lightness)
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return white for dark backgrounds (< 50% lightness), black for light backgrounds
+    return luminance < 0.5 ? 'white' : 'black';
+};
+
 // Helper functions for MM:SS duration conversion
 const msToDurationString = (ms: number): string => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -161,7 +177,8 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
     isOpen,
     onClose,
     scriptId,
-    onElementCreated
+    onElementCreated,
+    autoSortCues
 }) => {
     // Separate state for time input to allow free typing
     const [timeInputValue, setTimeInputValue] = useState('00:00');
@@ -199,11 +216,13 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                 ...form.formData,
                 elementType: form.formData.elementType.toUpperCase(),
                 triggerType: form.formData.triggerType?.toUpperCase() || 'MANUAL',
-                priority: form.formData.priority?.toUpperCase() || 'NORMAL'
+                priority: form.formData.priority?.toUpperCase() || 'NORMAL',
+                // Convert empty departmentID to null for notes
+                departmentID: form.formData.departmentID && form.formData.departmentID.trim() ? form.formData.departmentID : null
             };
 
             await form.submitForm(
-                `/api/scripts/${scriptId}/elements`,
+                `/api/scripts/${scriptId}/elements?auto_sort=${autoSortCues}`,
                 'POST',
                 'Script element created successfully',
                 submitData
@@ -221,7 +240,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
     const canSubmit = form.formData.description.trim().length >= 3 && 
                      // Department only required for cues, not notes
                      (form.formData.elementType === 'note' || form.formData.departmentID.trim().length > 0) &&
-                     form.formData.timeOffsetMs > 0 &&
+                     form.formData.timeOffsetMs >= 0 &&
                      form.fieldErrors.length === 0;
 
     return (
@@ -257,8 +276,6 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                             if (value === 'note') {
                                 form.updateField('departmentID', '');
                             }
-                            // Re-validate department field when element type changes
-                            form.validateField('departmentID');
                         }}
                     >
                         <HStack spacing={6}>
@@ -271,10 +288,11 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                     </RadioGroup>
                 </FormControl>
 
-                {/* Department */}
-                <FormControl isRequired={form.formData.elementType === 'cue'}>
-                    <FormLabel>Department</FormLabel>
-                    <Menu>
+                {/* Department for Cues, Color Picker for Notes */}
+                {form.formData.elementType === 'cue' ? (
+                    <FormControl isRequired>
+                        <FormLabel>Department</FormLabel>
+                        <Menu>
                         <MenuButton
                             as={Button}
                             rightIcon={<ChevronDownIcon />}
@@ -313,7 +331,6 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                                     key={department.departmentID}
                                     onClick={() => {
                                         form.updateField('departmentID', department.departmentID);
-                                        form.validateField('departmentID');
                                     }}
                                 >
                                     <Flex align="center" gap={2}>
@@ -331,6 +348,48 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                         </MenuList>
                     </Menu>
                 </FormControl>
+                ) : (
+                    <FormControl>
+                        <FormLabel>Background Color</FormLabel>
+                        <HStack spacing={3} align="center">
+                            <Input
+                                type="color"
+                                value={form.formData.customColor || '#E2E8F0'}
+                                onChange={(e) => form.updateField('customColor', e.target.value)}
+                                width="60px"
+                                height="40px"
+                                padding="1"
+                                cursor="pointer"
+                            />
+                            <Input
+                                value={form.formData.customColor || '#E2E8F0'}
+                                onChange={(e) => form.updateField('customColor', e.target.value)}
+                                placeholder="#E2E8F0"
+                                width="120px"
+                                fontFamily="mono"
+                            />
+                            <HStack spacing={1} ml={2}>
+                                {/* Preset color buttons */}
+                                {NOTE_PRESET_COLORS.map((color) => (
+                                    <Button
+                                        key={color.value}
+                                        size="sm"
+                                        height="30px"
+                                        width="30px"
+                                        minWidth="30px"
+                                        backgroundColor={color.value}
+                                        border={form.formData.customColor === color.value ? '3px solid' : '1px solid'}
+                                        borderColor={form.formData.customColor === color.value ? 'white' : 'gray.300'}
+                                        onClick={() => form.updateField('customColor', color.value)}
+                                        _hover={{ transform: 'scale(1.1)' }}
+                                        title={color.name}
+                                        tabIndex={-1}
+                                    />
+                                ))}
+                            </HStack>
+                        </HStack>
+                    </FormControl>
+                )}
 
                 {/* Cue Event (Description) */}
                 <FormControl isRequired>
