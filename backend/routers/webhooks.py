@@ -200,7 +200,7 @@ async def run_tests(
             "all": [python_exec, "-m", "pytest", "tests/", "-v", "--tb=short"],
             "auth": [python_exec, "-m", "pytest", "tests/test_auth.py", "-v", "--tb=short"],  
             "critical": [python_exec, "-m", "pytest", "tests/test_api_critical.py", "-v", "--tb=short"],
-            "health": [python_exec, "-m", "pytest", "tests/test_simple.py", "-v", "--tb=short"]
+            "health": [python_exec, "-m", "pytest", "tests/test_api.py", "-v", "--tb=short"]
         }
         
         if test_suite not in test_commands:
