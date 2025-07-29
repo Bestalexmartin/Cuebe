@@ -251,6 +251,183 @@ async def create_script_for_show(
     return new_script
 
 
+@rate_limit(RateLimitConfig.CRUD_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+@router.post("/scripts/{script_id}/duplicate", response_model=schemas.Script)
+async def duplicate_script(
+    request: Request,
+    script_id: UUID,
+    script: schemas.ScriptCreate,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Duplicate an existing script with all its elements and relationships."""
+    # Find the original script
+    original_script = db.query(models.Script).options(
+        joinedload(models.Script.show)
+    ).filter(models.Script.scriptID == script_id).first()
+    
+    if not original_script:
+        raise HTTPException(status_code=404, detail="Original script not found")
+
+    # Security Check: Make sure the current user owns the show
+    if original_script.show.ownerID != user.userID:
+        raise HTTPException(status_code=403, detail="Not authorized to duplicate this script")
+
+    # Create the new script
+    new_script = models.Script(
+        showID=original_script.showID,
+        scriptName=script.scriptName or f"{original_script.scriptName} copy",
+        scriptStatus=models.ScriptStatus(script.scriptStatus) if script.scriptStatus is not None else models.ScriptStatus.COPY,
+        startTime=original_script.startTime,
+        endTime=original_script.endTime,
+        scriptNotes=original_script.scriptNotes,
+        ownerID=user.userID
+    )
+    db.add(new_script)
+    db.commit()
+    db.refresh(new_script)
+
+    # Get all elements for the original script
+    original_elements = db.query(models.ScriptElement).filter(
+        models.ScriptElement.scriptID == script_id
+    ).all()
+
+    # Track element ID mapping for relationships
+    element_id_mapping = {}
+
+    # Duplicate all script elements
+    for original_element in original_elements:
+        new_element = models.ScriptElement(
+            scriptID=new_script.scriptID,
+            elementType=original_element.elementType,
+            departmentID=original_element.departmentID,
+            parentElementID=None,  # Will be updated later for hierarchical elements
+            cueID=original_element.cueID,
+            cueNumber=original_element.cueNumber,
+            description=original_element.description,
+            elementDescription=original_element.elementDescription,
+            timeOffsetMs=original_element.timeOffsetMs,
+            duration=original_element.duration,
+            fadeIn=original_element.fadeIn,
+            fadeOut=original_element.fadeOut,
+            triggerType=original_element.triggerType,
+            followsCueID=original_element.followsCueID,
+            executionStatus=models.ExecutionStatus.PENDING,  # Reset to pending
+            priority=original_element.priority,
+            customColor=original_element.customColor,
+            departmentColor=original_element.departmentColor,
+            sequence=original_element.sequence,
+            elementOrder=original_element.elementOrder,
+            location=original_element.location,
+            locationDetails=original_element.locationDetails,
+            isActive=original_element.isActive,
+            groupLevel=original_element.groupLevel,
+            isCollapsed=original_element.isCollapsed,
+            isSafetyCritical=original_element.isSafetyCritical,
+            cueNotes=original_element.cueNotes,
+            safetyNotes=original_element.safetyNotes,
+            version=1,  # Reset version to 1 for new duplicate
+            createdBy=user.userID
+        )
+        db.add(new_element)
+        db.commit()
+        db.refresh(new_element)
+        
+        # Store mapping for relationship updates
+        element_id_mapping[original_element.elementID] = new_element.elementID
+
+    # Duplicate all related data separately to avoid complex joins
+    # Duplicate equipment relationships
+    original_equipment = db.query(models.ScriptElementEquipment).join(
+        models.ScriptElement
+    ).filter(models.ScriptElement.scriptID == script_id).all()
+    
+    for equipment in original_equipment:
+        if equipment.elementID in element_id_mapping:
+            new_equipment = models.ScriptElementEquipment(
+                elementID=element_id_mapping[equipment.elementID],
+                equipmentName=equipment.equipmentName,
+                isRequired=equipment.isRequired,
+                notes=equipment.notes
+            )
+            db.add(new_equipment)
+
+    # Duplicate crew assignments
+    original_crew_assignments = db.query(models.ScriptElementCrewAssignment).join(
+        models.ScriptElement
+    ).filter(models.ScriptElement.scriptID == script_id).all()
+    
+    for crew_assignment in original_crew_assignments:
+        if crew_assignment.elementID in element_id_mapping:
+            new_crew_assignment = models.ScriptElementCrewAssignment(
+                elementID=element_id_mapping[crew_assignment.elementID],
+                crewID=crew_assignment.crewID,
+                assignmentRole=crew_assignment.assignmentRole,
+                isLead=crew_assignment.isLead
+            )
+            db.add(new_crew_assignment)
+
+    # Duplicate performer assignments
+    original_performer_assignments = db.query(models.ScriptElementPerformerAssignment).join(
+        models.ScriptElement
+    ).filter(models.ScriptElement.scriptID == script_id).all()
+    
+    for performer_assignment in original_performer_assignments:
+        if performer_assignment.elementID in element_id_mapping:
+            new_performer_assignment = models.ScriptElementPerformerAssignment(
+                elementID=element_id_mapping[performer_assignment.elementID],
+                performerID=performer_assignment.performerID,
+                characterName=performer_assignment.characterName,
+                notes=performer_assignment.notes
+            )
+            db.add(new_performer_assignment)
+
+    # Duplicate conditional rules
+    original_conditional_rules = db.query(models.ScriptElementConditionalRule).join(
+        models.ScriptElement
+    ).filter(models.ScriptElement.scriptID == script_id).all()
+    
+    for conditional_rule in original_conditional_rules:
+        if conditional_rule.elementID in element_id_mapping:
+            new_conditional_rule = models.ScriptElementConditionalRule(
+                elementID=element_id_mapping[conditional_rule.elementID],
+                conditionType=conditional_rule.conditionType,
+                operator=conditional_rule.operator,
+                conditionValue=conditional_rule.conditionValue,
+                description=conditional_rule.description,
+                isActive=conditional_rule.isActive
+            )
+            db.add(new_conditional_rule)
+
+    # Second pass: Update parent relationships and group relationships
+    for original_element in original_elements:
+        new_element_id = element_id_mapping[original_element.elementID]
+        
+        # Update parent element relationships
+        if original_element.parentElementID and original_element.parentElementID in element_id_mapping:
+            new_parent_id = element_id_mapping[original_element.parentElementID]
+            db.query(models.ScriptElement).filter(
+                models.ScriptElement.elementID == new_element_id
+            ).update({"parentElementID": new_parent_id})
+
+    # Duplicate group relationships
+    original_group_relationships = db.query(models.ScriptElementGroup).join(
+        models.ScriptElement, models.ScriptElementGroup.groupID == models.ScriptElement.elementID
+    ).filter(models.ScriptElement.scriptID == script_id).all()
+    
+    for group_rel in original_group_relationships:
+        if group_rel.groupID in element_id_mapping and group_rel.childElementID in element_id_mapping:
+            new_group_rel = models.ScriptElementGroup(
+                groupID=element_id_mapping[group_rel.groupID],
+                childElementID=element_id_mapping[group_rel.childElementID],
+                orderInGroup=group_rel.orderInGroup
+            )
+            db.add(new_group_rel)
+
+    db.commit()
+    return new_script
+
+
 @router.get("/scripts/{script_id}", response_model=schemas.Script)
 async def get_script(
     script_id: UUID,

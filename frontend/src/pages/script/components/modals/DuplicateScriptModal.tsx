@@ -30,6 +30,7 @@ interface DuplicateScriptModalProps {
     isOpen: boolean;
     onClose: () => void;
     showId: string;
+    scriptId: string;
     originalScriptName: string;
     onScriptDuplicated: (newScriptId: string) => void;
     onProcessingStart: () => void;
@@ -59,6 +60,7 @@ export const DuplicateScriptModal: React.FC<DuplicateScriptModalProps> = ({
     isOpen,
     onClose,
     showId,
+    scriptId,
     originalScriptName,
     onScriptDuplicated,
     onProcessingStart,
@@ -96,9 +98,9 @@ export const DuplicateScriptModal: React.FC<DuplicateScriptModalProps> = ({
             };
 
             const response = await form.submitForm(
-                `/api/shows/${showId}/scripts/`,
+                `/api/scripts/${scriptId}/duplicate`,
                 'POST',
-                `"${form.formData.scriptName}" has been created successfully`,
+                `"${form.formData.scriptName}" has been duplicated successfully`,
                 scriptData
             );
 

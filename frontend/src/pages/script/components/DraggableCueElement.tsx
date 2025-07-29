@@ -16,6 +16,8 @@ interface DraggableCueElementProps {
     scriptStartTime?: string;
     scriptEndTime?: string;
     isDragEnabled?: boolean;
+    isSelected?: boolean;
+    onSelect?: () => void;
 }
 
 export const DraggableCueElement: React.FC<DraggableCueElementProps> = ({
@@ -26,7 +28,9 @@ export const DraggableCueElement: React.FC<DraggableCueElementProps> = ({
     showClockTimes = false,
     scriptStartTime,
     scriptEndTime,
-    isDragEnabled = true
+    isDragEnabled = true,
+    isSelected = false,
+    onSelect
 }) => {
     const {
         attributes,
@@ -69,10 +73,10 @@ export const DraggableCueElement: React.FC<DraggableCueElementProps> = ({
         <Box
             ref={setNodeRef}
             style={style}
-            cursor={isDragEnabled ? "grab" : "default"}
+            cursor={isDragEnabled ? "grab" : "pointer"}
             _active={isDragEnabled ? { cursor: "grabbing" } : {}}
             {...attributes}
-            {...(isDragEnabled ? listeners : {})}
+            {...(false ? listeners : {})}
         >
             <CueElement
                 element={element}
@@ -82,6 +86,7 @@ export const DraggableCueElement: React.FC<DraggableCueElementProps> = ({
                 showClockTimes={showClockTimes}
                 scriptStartTime={scriptStartTime}
                 scriptEndTime={scriptEndTime}
+                isSelected={isSelected}
             />
         </Box>
     );

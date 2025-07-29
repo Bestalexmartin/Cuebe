@@ -19,6 +19,7 @@ interface DepartmentsViewProps {
     sortBy: 'departmentName' | 'departmentColor' | 'dateCreated' | 'dateUpdated';
     sortDirection: 'asc' | 'desc';
     onSortChange: (sortBy: 'departmentName' | 'departmentColor' | 'dateCreated' | 'dateUpdated', sortDirection: 'asc' | 'desc') => void;
+    showCardRefs: React.MutableRefObject<Record<string, HTMLElement | null>>;
 }
 
 export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
@@ -30,7 +31,8 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
     onSaveNavigationState,
     sortBy,
     sortDirection,
-    onSortChange
+    onSortChange,
+    showCardRefs
 }) => {
     const navigate = useNavigate();
     const { departments, isLoading, error } = useDepartments();
@@ -180,16 +182,17 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
                         sortedDepartments.length > 0 ? (
                             <VStack spacing={4} align="stretch">
                                 {sortedDepartments.map(department => (
-                                    <DepartmentCard
-                                        key={department.departmentID}
-                                        department={department}
-                                        onEdit={handleEdit}
-                                        onDepartmentClick={onDepartmentClick}
-                                        isHovered={hoveredCardId === department.departmentID}
-                                        isSelected={selectedDepartmentId === department.departmentID}
-                                        onHover={setHoveredCardId}
-                                        onSaveNavigationState={onSaveNavigationState}
-                                    />
+                                    <div key={department.departmentID} ref={el => { showCardRefs.current[department.departmentID] = el; }}>
+                                        <DepartmentCard
+                                            department={department}
+                                            onEdit={handleEdit}
+                                            onDepartmentClick={onDepartmentClick}
+                                            isHovered={hoveredCardId === department.departmentID}
+                                            isSelected={selectedDepartmentId === department.departmentID}
+                                            onHover={setHoveredCardId}
+                                            onSaveNavigationState={onSaveNavigationState}
+                                        />
+                                    </div>
                                 ))}
                             </VStack>
                         ) : (

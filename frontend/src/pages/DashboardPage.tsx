@@ -192,6 +192,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
               sortBy={sortState.venues.sortBy}
               sortDirection={sortState.venues.sortDirection}
               onSortChange={(sortBy, sortDirection) => updateSortState('venues', sortBy, sortDirection)}
+              showCardRefs={showCardRefs}
             />
           )}
           {currentView === 'departments' && (
@@ -206,6 +207,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
               sortBy={sortState.departments.sortBy}
               sortDirection={sortState.departments.sortDirection}
               onSortChange={(sortBy, sortDirection) => updateSortState('departments', sortBy, sortDirection)}
+              showCardRefs={showCardRefs}
             />
           )}
           {currentView === 'crew' && (
@@ -220,6 +222,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
               sortBy={sortState.crew.sortBy}
               sortDirection={sortState.crew.sortDirection}
               onSortChange={(sortBy, sortDirection) => updateSortState('crew', sortBy, sortDirection)}
+              showCardRefs={showCardRefs}
             />
           )}
         </Box>
