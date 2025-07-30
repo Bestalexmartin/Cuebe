@@ -22,6 +22,7 @@ class User(BaseModel):
     userRole: str
     createdBy: Optional[UUID] = None  # CHANGED TO UUID
     notes: Optional[str] = None
+    userOptions: Optional[dict] = None
     isActive: bool
     dateCreated: datetime
     dateUpdated: datetime

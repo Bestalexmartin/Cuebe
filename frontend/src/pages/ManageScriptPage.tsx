@@ -38,6 +38,7 @@ import { useValidatedForm } from '../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../types/validation';
 import { convertUTCToLocal, convertLocalToUTC } from '../utils/dateTimeUtils';
 import { useChangeDetection } from '../hooks/useChangeDetection';
+import { useUserOptions, UserOptions } from '../hooks/useUserOptions';
 
 // Import script-specific components
 import { ScriptToolbar } from './script/components/ScriptToolbar';
@@ -129,9 +130,17 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     // Options state management
     const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
-    const [colorizeDepNames, setColorizeDepNames] = useState(true);
-    const [showClockTimes, setShowClockTimes] = useState(false);
-    const [autoSortCues, setAutoSortCues] = useState(true);
+    const [previewOptions, setPreviewOptions] = useState<UserOptions | null>(null);
+    const { 
+        options: { colorizeDepNames, showClockTimes, autoSortCues }, 
+        updateOption,
+        updateOptions
+    } = useUserOptions();
+
+    // Use preview options when modal is open, otherwise use saved options
+    const activeOptions = isOptionsModalOpen && previewOptions 
+        ? previewOptions 
+        : { colorizeDepNames, showClockTimes, autoSortCues };
 
     // Delete cue state management  
     const [isDeleteCueModalOpen, setIsDeleteCueModalOpen] = useState(false);
@@ -1017,8 +1026,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                             >
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
-                                {activeMode === 'view' && <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={colorizeDepNames} showClockTimes={showClockTimes} />}
-                                {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={colorizeDepNames} showClockTimes={showClockTimes} autoSortCues={autoSortCues} onAutoSortChange={setAutoSortCues} />}
+                                {activeMode === 'view' && <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activeOptions.colorizeDepNames} showClockTimes={activeOptions.showClockTimes} />}
+                                {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={activeOptions.colorizeDepNames} showClockTimes={activeOptions.showClockTimes} autoSortCues={activeOptions.autoSortCues} onAutoSortChange={async (value) => await updateOption('autoSortCues', value)} />}
                                 {activeMode === 'play' && <PlayMode />}
                                 {activeMode === 'share' && <ShareMode />}
                             </Box>
@@ -1123,22 +1132,23 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onClose={() => setIsAddElementModalOpen(false)}
                 scriptId={scriptId || ''}
                 onElementCreated={handleElementCreated}
-                autoSortCues={autoSortCues}
+                autoSortCues={activeOptions.autoSortCues}
             />
 
             {/* Options Modal */}
             <OptionsModal
                 isOpen={isOptionsModalOpen}
-                onClose={() => setIsOptionsModalOpen(false)}
-                colorizeDepNames={colorizeDepNames}
-                onColorizeDepNamesChange={setColorizeDepNames}
-                showClockTimes={showClockTimes}
-                onShowClockTimesChange={setShowClockTimes}
-                autoSortCues={autoSortCues}
-                onAutoSortCuesChange={(value) => {
-                    setAutoSortCues(value);
+                onClose={() => {
+                    setIsOptionsModalOpen(false);
+                    setPreviewOptions(null);
+                }}
+                initialOptions={{ colorizeDepNames, autoSortCues, showClockTimes }}
+                onPreview={(options) => setPreviewOptions(options)}
+                onSave={async (newOptions) => {
+                    const success = await updateOptions(newOptions);
+                    setPreviewOptions(null);
                     // If auto-sort is being enabled, trigger immediate re-sort
-                    if (value && scriptId) {
+                    if (success && newOptions.autoSortCues && !autoSortCues && scriptId) {
                         handleAutoSortElements();
                     }
                 }}
