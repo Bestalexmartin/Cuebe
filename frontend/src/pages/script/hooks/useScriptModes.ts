@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 
-export type ScriptMode = 'view' | 'play' | 'info' | 'edit' | 'share';
+export type ScriptMode = 'view' | 'play' | 'info' | 'edit' | 'share' | 'history';
 
 interface UseScriptModesReturn {
     activeMode: ScriptMode;
@@ -15,7 +15,7 @@ export const useScriptModes = (initialMode: ScriptMode = 'view'): UseScriptModes
     const [activeMode, setActiveModeState] = useState<ScriptMode>(initialMode);
 
     const isValidMode = useCallback((mode: string): mode is ScriptMode => {
-        return ['view', 'play', 'info', 'edit', 'share'].includes(mode);
+        return ['view', 'play', 'info', 'edit', 'share', 'history'].includes(mode);
     }, []);
 
     const setActiveMode = useCallback((mode: ScriptMode) => {
@@ -30,6 +30,7 @@ export const useScriptModes = (initialMode: ScriptMode = 'view'): UseScriptModes
         { id: 'info' as ScriptMode, label: 'Info', isDisabled: false },
         { id: 'edit' as ScriptMode, label: 'Edit', isDisabled: false }, // Now enabled for script element editing
         { id: 'share' as ScriptMode, label: 'Share', isDisabled: true }, // Will be enabled in future phases
+        // History mode moved to edit mode toolbar section
     ], []);
 
     return {

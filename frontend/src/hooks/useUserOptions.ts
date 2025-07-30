@@ -111,8 +111,6 @@ export const useUserOptions = () => {
         key: K,
         value: UserOptions[K]
     ): Promise<boolean> => {
-        console.log(`updateOption called: ${key} = ${value}`);
-        
         // Store the current state before making changes for potential rollback
         const previousOptions = { ...options };
         
@@ -144,10 +142,6 @@ export const useUserOptions = () => {
 
             if (response.ok) {
                 const serverOptions = await response.json();
-                console.log(`Option ${key} updated successfully. Server returned:`, serverOptions);
-                console.log(`Previous options were:`, previousOptions);
-                console.log(`Expected change: ${key} = ${value}`);
-                // Update with server response to ensure consistency
                 setOptions(serverOptions);
                 saveOptionsToStorage(serverOptions);
                 return true;

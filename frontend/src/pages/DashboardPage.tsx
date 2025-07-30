@@ -247,7 +247,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
 
       <Drawer isOpen={isMenuOpen} placement="right" onClose={onMenuClose}>
         <DrawerOverlay />
-        <DrawerContent>
+        <DrawerContent bg="page.background">
           <DrawerCloseButton
             borderRadius="full"
             border="3px solid"

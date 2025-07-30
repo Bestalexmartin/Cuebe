@@ -1,6 +1,6 @@
 // frontend/src/pages/ManageScriptPage.tsx
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     Box,
     VStack,
@@ -19,7 +19,7 @@ import {
     DrawerContent,
     DrawerCloseButton
 } from "@chakra-ui/react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useScript } from "../hooks/useScript";
 import { useShow } from "../hooks/useShow";
@@ -33,12 +33,16 @@ import { ProcessingModal } from './script/components/modals/ProcessingModal';
 import { OptionsModal } from './script/components/modals/OptionsModal';
 import { DeleteCueModal } from './script/components/modals/DeleteCueModal';
 import { DuplicateElementModal } from './script/components/modals/DuplicateElementModal';
+import { UnsavedChangesModal } from '../components/modals/UnsavedChangesModal';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { useValidatedForm } from '../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../types/validation';
 import { convertUTCToLocal, convertLocalToUTC } from '../utils/dateTimeUtils';
 import { useChangeDetection } from '../hooks/useChangeDetection';
-import { useUserOptions, UserOptions } from '../hooks/useUserOptions';
+import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
+import { EditHistoryView } from '../components/EditHistoryView';
+import { useScriptElementsWithEditQueue } from '../hooks/useScriptElementsWithEditQueue';
+import { EditQueueFormatter } from '../utils/editQueueFormatter';
 
 // Import script-specific components
 import { ScriptToolbar } from './script/components/ScriptToolbar';
@@ -100,7 +104,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
 
 interface ToolButton {
     id: string;
-    icon: 'view' | 'play' | 'info' | 'script-edit' | 'share' | 'dashboard' | 'add' | 'copy' | 'group' | 'delete' | 'element-edit' | 'jump-top' | 'jump-bottom';
+    icon: 'view' | 'play' | 'info' | 'script-edit' | 'share' | 'dashboard' | 'add' | 'copy' | 'group' | 'delete' | 'element-edit' | 'jump-top' | 'jump-bottom' | 'history';
     label: string;
     description: string;
     isActive: boolean;
@@ -130,25 +134,37 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     // Options state management
     const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
-    const [previewOptions, setPreviewOptions] = useState<UserOptions | null>(null);
+    const [previewPreferences, setPreviewPreferences] = useState<UserPreferences | null>(null);
     const { 
-        options: { colorizeDepNames, showClockTimes, autoSortCues }, 
-        updateOption,
-        updateOptions
-    } = useUserOptions();
+        preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues }, 
+        updatePreference,
+        updatePreferences
+    } = useUserPreferences();
 
-    // Use preview options when modal is open, otherwise use saved options
-    const activeOptions = isOptionsModalOpen && previewOptions 
-        ? previewOptions 
-        : { colorizeDepNames, showClockTimes, autoSortCues };
+    // Use preview preferences when modal is open, otherwise use saved preferences
+    const activePreferences = isOptionsModalOpen && previewPreferences 
+        ? previewPreferences 
+        : { darkMode, colorizeDepNames, showClockTimes, autoSortCues };
 
     // Delete cue state management  
     const [isDeleteCueModalOpen, setIsDeleteCueModalOpen] = useState(false);
     const [isDeletingCue, setIsDeletingCue] = useState(false);
+
+    // Scroll state for jump button ghosting
+    const [scrollState, setScrollState] = useState({
+        isAtTop: true,
+        isAtBottom: false,
+        allElementsFitOnScreen: true
+    });
     const [selectedElementName, setSelectedElementName] = useState<string>('');
 
     // Duplicate element state management
     const [isDuplicateElementModalOpen, setIsDuplicateElementModalOpen] = useState(false);
+    const [isUnsavedChangesModalOpen, setIsUnsavedChangesModalOpen] = useState(false);
+    const [isClearHistoryModalOpen, setIsClearHistoryModalOpen] = useState(false);
+    const [isFinalClearHistoryModalOpen, setIsFinalClearHistoryModalOpen] = useState(false);
+    const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+    const [isSavingChanges, setIsSavingChanges] = useState(false);
     const [isDuplicatingElement, setIsDuplicatingElement] = useState(false);
     const [selectedElementTimeOffset, setSelectedElementTimeOffset] = useState<number>(0);
 
@@ -168,6 +184,17 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     // Fetch the show data using the script's showID
     const { show } = useShow(script?.showID);
+
+    // Edit queue for tracking changes
+    const editQueueHook = useScriptElementsWithEditQueue(scriptId);
+    const { 
+        elements: editQueueElements, 
+        pendingOperations, 
+        hasUnsavedChanges,
+        revertToPoint,
+        applyLocalChange,
+        discardChanges
+    } = editQueueHook;
 
     // Active mode state using script-specific hook
     const { activeMode, setActiveMode, getAvailableModes } = useScriptModes('view');
@@ -228,175 +255,296 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         }
     }, [activeMode, selectedElementId]);
 
-    // Tool buttons configuration - changes based on active mode
-    const getToolButtons = (): ToolButton[] => {
-        if (activeMode === 'edit') {
-            // Check if an element is selected in edit mode
-            const hasSelection = !!selectedElementId;
-            
-            // In edit mode, show element action buttons
-            return [
-                {
-                    id: 'view',
-                    icon: 'view',
-                    label: 'View',
-                    description: 'Switch to View Mode',
-                    isActive: false,
-                    isDisabled: false
-                },
-                {
-                    id: 'jump-top',
-                    icon: 'jump-top',
-                    label: 'Top',
-                    description: 'Jump to Top',
-                    isActive: false,
-                    isDisabled: false
-                },
-                {
-                    id: 'jump-bottom',
-                    icon: 'jump-bottom',
-                    label: 'Bottom',
-                    description: 'Jump to Bottom',
-                    isActive: false,
-                    isDisabled: false
-                },
-                {
-                    id: 'add-element',
-                    icon: 'add',
-                    label: 'Add',
-                    description: 'Add Script Element',
-                    isActive: false,
-                    isDisabled: false
-                },
-                {
-                    id: 'edit-element',
-                    icon: 'element-edit',
-                    label: 'Edit',
-                    description: 'Edit Selected Element',
-                    isActive: false,
-                    isDisabled: !hasSelection
-                },
-                {
-                    id: 'duplicate-element',
-                    icon: 'copy',
-                    label: 'Duplicate',
-                    description: 'Duplicate Selected Element',
-                    isActive: false,
-                    isDisabled: !hasSelection
-                },
-                {
-                    id: 'group-elements',
-                    icon: 'group',
-                    label: 'Group',
-                    description: 'Group Selected Elements',
-                    isActive: false,
-                    isDisabled: true
-                },
-                {
-                    id: 'delete-element',
-                    icon: 'delete',
-                    label: 'Delete',
-                    description: 'Delete Selected Element',
-                    isActive: false,
-                    isDisabled: !hasSelection
-                },
-                {
-                    id: 'dashboard',
-                    icon: 'dashboard',
-                    label: 'Dashboard',
-                    description: 'Return to Dashboard',
-                    isActive: false,
-                    isDisabled: false
-                }
-            ];
+    // Handle browser beforeunload event (tab close, refresh, etc.)
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (hasUnsavedChanges) {
+                event.preventDefault();
+                event.returnValue = ''; // Required for Chrome
+                return ''; // Required for some older browsers
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedChanges]);
+
+    // Custom navigation handler that checks for unsaved changes
+    const handleNavigateWithGuard = (targetPath: string) => {
+        if (hasUnsavedChanges) {
+            setPendingNavigation(targetPath);
+            setIsUnsavedChangesModalOpen(true);
         } else {
-            // In view, info, play, share modes, show mode switching buttons
-            const availableModes = getAvailableModes();
-            const buttons: ToolButton[] = [];
-            
-            // Add each mode button and insert jump buttons after VIEW
-            availableModes.forEach(mode => {
-                let icon: ToolButton['icon'];
-                switch (mode.id) {
-                    case 'view':
-                        icon = 'view';
-                        break;
-                    case 'play':
-                        icon = 'play';
-                        break;
-                    case 'info':
-                        icon = 'info';
-                        break;
-                    case 'edit':
-                        icon = 'script-edit';
-                        break;
-                    case 'share':
-                        icon = 'share';
-                        break;
-                    default:
-                        icon = 'view';
-                        break;
+            navigate(targetPath);
+        }
+    };
+
+    // Modal handlers
+    const handleSaveAndContinue = async () => {
+        setIsSavingChanges(true);
+        try {
+            const success = await saveChanges();
+            if (success && pendingNavigation) {
+                setIsUnsavedChangesModalOpen(false);
+                // Handle dashboard navigation with state
+                if (pendingNavigation === '/dashboard') {
+                    navigate(pendingNavigation, {
+                        state: {
+                            view: 'shows',
+                            selectedShowId: script?.showID,
+                            selectedScriptId: scriptId,
+                            returnFromManage: true
+                        }
+                    });
+                } else {
+                    navigate(pendingNavigation);
                 }
-                
-                buttons.push({
-                    id: mode.id,
-                    icon,
-                    label: mode.label,
-                    description: `${mode.label} Script`,
-                    isActive: activeMode === mode.id,
-                    isDisabled: mode.isDisabled
+                setPendingNavigation(null);
+            }
+        } finally {
+            setIsSavingChanges(false);
+        }
+    };
+
+    const handleDiscardChanges = () => {
+        discardChanges();
+        setIsUnsavedChangesModalOpen(false);
+        if (pendingNavigation) {
+            // Handle dashboard navigation with state
+            if (pendingNavigation === '/dashboard') {
+                navigate(pendingNavigation, {
+                    state: {
+                        view: 'shows',
+                        selectedShowId: script?.showID,
+                        selectedScriptId: scriptId,
+                        returnFromManage: true
+                    }
                 });
-                
-                // Add jump buttons after VIEW mode
-                if (mode.id === 'view') {
-                    buttons.push({
-                        id: 'jump-top',
-                        icon: 'jump-top',
-                        label: 'Top',
-                        description: 'Jump to Top',
-                        isActive: false,
-                        isDisabled: false
-                    });
-                    buttons.push({
-                        id: 'jump-bottom',
-                        icon: 'jump-bottom',
-                        label: 'Bottom',
-                        description: 'Jump to Bottom',
-                        isActive: false,
-                        isDisabled: false
-                    });
-                }
-            });
-            
-            // Add dashboard button at the end
+            } else {
+                navigate(pendingNavigation);
+            }
+            setPendingNavigation(null);
+        }
+    };
+
+    const handleCancelNavigation = () => {
+        setIsUnsavedChangesModalOpen(false);
+        setPendingNavigation(null);
+    };
+
+    // Callback for child components to update scroll state
+    const handleScrollStateChange = (newScrollState: {
+        isAtTop: boolean;
+        isAtBottom: boolean;
+        allElementsFitOnScreen: boolean;
+    }) => {
+        setScrollState(newScrollState);
+    };
+
+    // Tool buttons configuration - separate view states from tools
+    const getToolButtons = (): ToolButton[] => {
+        const buttons: ToolButton[] = [];
+        
+        // NAVIGATION BUTTONS - At the very top
+        buttons.push({
+            id: 'jump-top',
+            icon: 'jump-top',
+            label: 'HEAD',
+            description: 'Jump to Top',
+            isActive: false,
+            isDisabled: scrollState.allElementsFitOnScreen || scrollState.isAtTop
+        });
+        
+        buttons.push({
+            id: 'jump-bottom',
+            icon: 'jump-bottom',
+            label: 'TAIL',
+            description: 'Jump to Bottom',
+            isActive: false,
+            isDisabled: scrollState.allElementsFitOnScreen || scrollState.isAtBottom
+        });
+        
+        // VIEW STATES
+        buttons.push({
+            id: 'view',
+            icon: 'view',
+            label: 'VIEW',
+            description: 'View Mode',
+            isActive: activeMode === 'view',
+            isDisabled: false
+        });
+        
+        buttons.push({
+            id: 'edit',
+            icon: 'script-edit',
+            label: 'EDIT',
+            description: 'Edit Mode',
+            isActive: activeMode === 'edit',
+            isDisabled: false
+        });
+        
+        buttons.push({
+            id: 'info',
+            icon: 'info',
+            label: 'INFO',
+            description: 'Script Information',
+            isActive: activeMode === 'info',
+            isDisabled: false
+        });
+        
+        buttons.push({
+            id: 'history',
+            icon: 'history',
+            label: 'HISTORY',
+            description: 'View Edit History',
+            isActive: activeMode === 'history',
+            isDisabled: !hasUnsavedChanges
+        });
+        
+        buttons.push({
+            id: 'exit',
+            icon: 'exit',
+            label: 'EXIT',
+            description: 'Return to Dashboard',
+            isActive: false,
+            isDisabled: false
+        });
+        
+        // MODE-SPECIFIC TOOLS
+        if (activeMode === 'view') {
             buttons.push({
-                id: 'dashboard',
-                icon: 'dashboard',
-                label: 'Dashboard',
-                description: 'Return to Dashboard',
+                id: 'play',
+                icon: 'play',
+                label: 'PLAY',
+                description: 'Performance Mode',
                 isActive: false,
                 isDisabled: false
             });
             
-            return buttons;
+            buttons.push({
+                id: 'share',
+                icon: 'share',
+                label: 'SHARE',
+                description: 'Share Script',
+                isActive: false,
+                isDisabled: false
+            });
+        } else if (activeMode === 'history') {
+            buttons.push({
+                id: 'clear-history',
+                icon: 'delete',
+                label: 'CLEAR',
+                description: 'Clear Edit History',
+                isActive: false,
+                isDisabled: !hasUnsavedChanges
+            });
+        } else if (activeMode === 'edit') {
+            const hasSelection = !!selectedElementId;
+            
+            buttons.push({
+                id: 'add-element',
+                icon: 'add',
+                label: 'ADD',
+                description: 'Add Script Element',
+                isActive: false,
+                isDisabled: false
+            });
+            
+            buttons.push({
+                id: 'edit-element',
+                icon: 'element-edit',
+                label: 'MODIFY',
+                description: 'Edit Selected Element',
+                isActive: false,
+                isDisabled: !hasSelection
+            });
+            
+            buttons.push({
+                id: 'duplicate-element',
+                icon: 'copy',
+                label: 'COPY',
+                description: 'Duplicate Selected Element',
+                isActive: false,
+                isDisabled: !hasSelection
+            });
+            
+            buttons.push({
+                id: 'group-elements',
+                icon: 'group',
+                label: 'STACK',
+                description: 'Group Selected Elements',
+                isActive: false,
+                isDisabled: true // Not implemented yet
+            });
+            
+            buttons.push({
+                id: 'delete-element',
+                icon: 'delete',
+                label: 'TRASH',
+                description: 'Delete Selected Element',
+                isActive: false,
+                isDisabled: !hasSelection
+            });
         }
+        // INFO mode has no tools - just view states
+        
+        return buttons;
     };
 
     const toolButtons = getToolButtons();
 
     const handleModeChange = (modeId: string) => {
-        // Handle dashboard navigation separately
-        if (modeId === 'dashboard') {
+        // Handle EXIT button (replaces dashboard)
+        if (modeId === 'exit') {
             handleCancel();
             return;
         }
 
-        // Handle element actions in edit mode
+        // Handle separators (do nothing)
+        if (modeId === 'separator' || modeId === 'nav-separator') {
+            return;
+        }
+
+        // Handle view state buttons
+        if (modeId === 'view' || modeId === 'info' || modeId === 'edit' || modeId === 'history') {
+            setActiveMode(modeId);
+            return;
+        }
+
+        // Handle navigation buttons
+        if (modeId === 'jump-top') {
+            handleJumpToTop();
+            return;
+        }
+        if (modeId === 'jump-bottom') {
+            handleJumpToBottom();
+            return;
+        }
+
+        // Handle VIEW mode tools
+        if (activeMode === 'view') {
+            switch (modeId) {
+                case 'play':
+                    setActiveMode('play');
+                    return;
+                case 'share':
+                    setActiveMode('share');
+                    return;
+            }
+        }
+
+        // Handle HISTORY mode tools
+        if (activeMode === 'history') {
+            switch (modeId) {
+                case 'clear-history':
+                    handleClearHistory();
+                    return;
+            }
+        }
+
+        // Handle EDIT mode tools
         if (activeMode === 'edit') {
             switch (modeId) {
-                case 'view':
-                    setActiveMode('view');
-                    return;
                 case 'add-element':
                     setIsAddElementModalOpen(true);
                     return;
@@ -412,29 +560,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 case 'delete-element':
                     handleElementDelete();
                     return;
-                case 'jump-top':
-                    handleJumpToTop();
-                    return;
-                case 'jump-bottom':
-                    handleJumpToBottom();
-                    return;
             }
-        }
-
-        // Handle jump buttons for view, info, play, share modes
-        if (modeId === 'jump-top') {
-            handleJumpToTop();
-            return;
-        }
-        if (modeId === 'jump-bottom') {
-            handleJumpToBottom();
-            return;
-        }
-
-        // Handle mode switching for view, info, play, share modes
-        const tool = toolButtons.find(t => t.id === modeId);
-        if (tool && !tool.isDisabled) {
-            setActiveMode(modeId as any); // Type assertion for now, will be improved with better types
         }
     };
 
@@ -473,14 +599,43 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     };
 
     const handleCancel = () => {
-        navigate('/dashboard', {
-            state: {
-                view: 'shows',
-                selectedShowId: script?.showID,
-                selectedScriptId: scriptId,
-                returnFromManage: true
-            }
-        });
+        const dashboardPath = '/dashboard';
+        if (hasUnsavedChanges) {
+            setPendingNavigation(dashboardPath);
+            setIsUnsavedChangesModalOpen(true);
+        } else {
+            navigate(dashboardPath, {
+                state: {
+                    view: 'shows',
+                    selectedShowId: script?.showID,
+                    selectedScriptId: scriptId,
+                    returnFromManage: true
+                }
+            });
+        }
+    };
+
+    // Clear history functionality
+    const handleClearHistory = () => {
+        setIsClearHistoryModalOpen(true);
+    };
+
+    const handleInitialClearHistoryConfirm = () => {
+        setIsClearHistoryModalOpen(false);
+        setIsFinalClearHistoryModalOpen(true);
+    };
+
+    const handleFinalClearHistoryConfirm = () => {
+        // Clear the edit queue (restore to server state)
+        discardChanges();
+        setIsFinalClearHistoryModalOpen(false);
+        setActiveMode('view'); // Return to view mode
+        showSuccess('Edit History Cleared', 'All changes have been discarded and the script has been restored to its original state.');
+    };
+
+    const handleClearHistoryCancel = () => {
+        setIsClearHistoryModalOpen(false);
+        setIsFinalClearHistoryModalOpen(false);
     };
 
     // Delete functionality
@@ -556,16 +711,53 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     };
 
     // Element action handlers
-    const handleElementCreated = async () => {
-        // Close the modal and refetch elements to show the new cue in context
-        setIsAddElementModalOpen(false);
-
-        // Call refetch on the active mode (element is already in correct position)
-        if (activeMode === 'view' && viewModeRef.current) {
-            await viewModeRef.current.refetchElements();
-        } else if (activeMode === 'edit' && editModeRef.current) {
-            await editModeRef.current.refetchElements();
+    const handleElementCreated = async (elementData: any) => {
+        // Handle auto-sort by finding correct position if enabled
+        if (elementData._autoSort) {
+            // Get current elements to find insertion position
+            const currentElements = editQueueElements;
+            
+            // Find the position where this element should be inserted based on timeOffsetMs
+            let insertIndex = currentElements.length; // Default to end
+            
+            for (let i = 0; i < currentElements.length; i++) {
+                if (currentElements[i].timeOffsetMs > elementData.timeOffsetMs) {
+                    insertIndex = i;
+                    break;
+                }
+            }
+            
+            // Remove the auto-sort flag before storing
+            const { _autoSort, ...cleanElementData } = elementData;
+            
+            // If inserting at the end, use CREATE_ELEMENT
+            if (insertIndex === currentElements.length) {
+                applyLocalChange({
+                    type: 'CREATE_ELEMENT',
+                    elementId: cleanElementData.elementID,
+                    elementData: cleanElementData
+                });
+            } else {
+                // Insert at specific position using CREATE_ELEMENT_AT_INDEX
+                applyLocalChange({
+                    type: 'CREATE_ELEMENT_AT_INDEX',
+                    elementId: cleanElementData.elementID,
+                    elementData: cleanElementData,
+                    insertIndex: insertIndex
+                });
+            }
+        } else {
+            // No auto-sort, just add to the end
+            const { _autoSort, ...cleanElementData } = elementData;
+            applyLocalChange({
+                type: 'CREATE_ELEMENT',
+                elementId: cleanElementData.elementID,
+                elementData: cleanElementData
+            });
         }
+        
+        setIsAddElementModalOpen(false);
+        showSuccess('Script Element Created', 'New element added to script. Save to apply changes.');
     };
 
     const handleAutoSortElements = async () => {
@@ -648,59 +840,63 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
         setIsDuplicatingElement(true);
         try {
-            const token = await getToken();
-            if (!token) {
-                showError('Authentication required');
-                return;
+            // Find the original element in the current elements
+            const originalElement = editQueueElements.find(el => el.elementID === selectedElementId);
+            if (!originalElement) {
+                throw new Error('Original element not found');
             }
-
-            // First, get the original element data
-            const elementResponse = await fetch(`/api/elements/${selectedElementId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!elementResponse.ok) {
-                throw new Error('Failed to fetch element for duplication');
-            }
-
-            const elementData = await elementResponse.json();
 
             // Create duplicate with new description and time offset
             const duplicateData = {
-                ...elementData,
+                ...originalElement,
                 description,
                 timeOffsetMs,
-                // Remove fields that should not be duplicated
-                elementID: undefined,
+                // Generate a temporary ID for the duplicate (will be replaced by server)
+                elementID: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                // Remove server-only fields
                 created_at: undefined,
                 updated_at: undefined,
                 is_deleted: undefined
             };
 
-            const response = await fetch(`/api/scripts/${scriptId}/elements`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(duplicateData)
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to duplicate element');
+            // Handle auto-sort for duplicated element
+            if (activePreferences.autoSortCues) {
+                // Find the position where this element should be inserted based on timeOffsetMs
+                let insertIndex = editQueueElements.length; // Default to end
+                
+                for (let i = 0; i < editQueueElements.length; i++) {
+                    if (editQueueElements[i].timeOffsetMs > duplicateData.timeOffsetMs) {
+                        insertIndex = i;
+                        break;
+                    }
+                }
+                
+                // If inserting at the end, use CREATE_ELEMENT
+                if (insertIndex === editQueueElements.length) {
+                    applyLocalChange({
+                        type: 'CREATE_ELEMENT',
+                        elementId: duplicateData.elementID,
+                        elementData: duplicateData
+                    });
+                } else {
+                    // Insert at specific position using CREATE_ELEMENT_AT_INDEX
+                    applyLocalChange({
+                        type: 'CREATE_ELEMENT_AT_INDEX',
+                        elementId: duplicateData.elementID,
+                        elementData: duplicateData,
+                        insertIndex: insertIndex
+                    });
+                }
+            } else {
+                // No auto-sort, just add to the end
+                applyLocalChange({
+                    type: 'CREATE_ELEMENT',
+                    elementId: duplicateData.elementID,
+                    elementData: duplicateData
+                });
             }
 
-            showSuccess('Script Element Duplicated', 'Script element has been successfully duplicated');
-            
-            // Update local elements to show the new duplicate immediately
-            await response.json(); // Parse response but don't store
-            if (activeMode === 'edit' && editModeRef.current) {
-                await editModeRef.current.refetchElements();
-            }
-
+            showSuccess('Script Element Duplicated', 'Script element has been duplicated. Save to apply changes.');
             setIsDuplicateElementModalOpen(false);
 
         } catch (error) {
@@ -803,33 +999,15 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             return;
         }
 
-        // Fetch element details for the modal
-        try {
-            const token = await getToken();
-            if (!token) {
-                showError('Authentication required');
-                return;
-            }
-
-            const response = await fetch(`/api/elements/${selectedElementId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch element details');
-            }
-
-            const elementData = await response.json();
-            setSelectedElementName(elementData.description || 'Unknown Element');
-            setIsDeleteCueModalOpen(true);
-
-        } catch (error) {
-            console.error('Error fetching element details:', error);
-            showError('Failed to load element details. Please try again.');
+        // Find element details in the local edit queue instead of fetching from API
+        const elementToDelete = editQueueElements.find(el => el.elementID === selectedElementId);
+        if (!elementToDelete) {
+            showError('Selected element not found in current script');
+            return;
         }
+
+        setSelectedElementName(elementToDelete.description || 'Unknown Element');
+        setIsDeleteCueModalOpen(true);
     };
 
     const handleConfirmDeleteCue = async () => {
@@ -839,32 +1017,23 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
         setIsDeletingCue(true);
         try {
-            const token = await getToken();
-            if (!token) {
-                showError('Authentication required');
-                return;
+            // Find the element to delete in the current elements
+            const elementToDelete = editQueueElements.find(el => el.elementID === selectedElementId);
+            if (!elementToDelete) {
+                throw new Error('Element to delete not found');
             }
 
-            const response = await fetch(`/api/elements/${selectedElementId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
+            // Add the delete operation to the edit queue
+            applyLocalChange({
+                type: 'DELETE_ELEMENT',
+                elementId: selectedElementId,
+                elementData: elementToDelete
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to delete element');
-            }
-
-            showSuccess('Script Element Deleted', 'Script element has been successfully deleted');
+            showSuccess('Script Element Deleted', 'Script element has been deleted. Save to apply changes.');
             
-            // Clear selection and refetch elements
+            // Clear selection and close modal
             setSelectedElementId(null);
-            if (activeMode === 'edit' && editModeRef.current) {
-                await editModeRef.current.refetchElements();
-            }
-
             setIsDeleteCueModalOpen(false);
 
         } catch (error) {
@@ -983,8 +1152,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     {/* Left: Script Content Area - matches BaseEditPage dimensions but shifted left */}
                     <Box
                         flex={1}
-                        bg="white"
-                        _dark={{ bg: "gray.700" }}
+                        bg="window.background"
                         borderRadius="md"
                         mr={isMobile ? "0" : "8"}
                         position="relative"
@@ -1026,10 +1194,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                             >
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
-                                {activeMode === 'view' && <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activeOptions.colorizeDepNames} showClockTimes={activeOptions.showClockTimes} />}
-                                {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={activeOptions.colorizeDepNames} showClockTimes={activeOptions.showClockTimes} autoSortCues={activeOptions.autoSortCues} onAutoSortChange={async (value) => await updateOption('autoSortCues', value)} />}
+                                {activeMode === 'view' && <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} />}
+                                {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} onAutoSortChange={async (value) => await updatePreference('autoSortCues', value)} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} onApplyLocalChange={editQueueHook.applyLocalChange} />}
                                 {activeMode === 'play' && <PlayMode />}
                                 {activeMode === 'share' && <ShareMode />}
+                                {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={editQueueElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} />}
                             </Box>
                         )}
                     </Box>
@@ -1053,6 +1222,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                             <ScriptToolbar
                                 toolButtons={toolButtons}
                                 onModeChange={handleModeChange}
+                                activeMode={activeMode}
                             />
                         </Box>
                     )}
@@ -1126,13 +1296,32 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 warningMessage="Deleting this script will permanently remove all script elements and cannot be undone."
             />
 
+            {/* Clear History Confirmation Modals */}
+            <DeleteConfirmationModal
+                isOpen={isClearHistoryModalOpen}
+                onClose={handleClearHistoryCancel}
+                onConfirm={handleInitialClearHistoryConfirm}
+                entityType="Edit History"
+                entityName={`${pendingOperations.length} unsaved changes`}
+            />
+
+            <FinalDeleteConfirmationModal
+                isOpen={isFinalClearHistoryModalOpen}
+                onClose={handleClearHistoryCancel}
+                onConfirm={handleFinalClearHistoryConfirm}
+                isLoading={false}
+                entityType="Edit History"
+                entityName="All unsaved changes"
+                warningMessage="This will permanently discard all your unsaved changes and restore the script to its original loaded state. This action cannot be undone."
+            />
+
             {/* Add Script Element Modal */}
             <AddScriptElementModal
                 isOpen={isAddElementModalOpen}
                 onClose={() => setIsAddElementModalOpen(false)}
                 scriptId={scriptId || ''}
                 onElementCreated={handleElementCreated}
-                autoSortCues={activeOptions.autoSortCues}
+                autoSortCues={activePreferences.autoSortCues}
             />
 
             {/* Options Modal */}
@@ -1140,15 +1329,15 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 isOpen={isOptionsModalOpen}
                 onClose={() => {
                     setIsOptionsModalOpen(false);
-                    setPreviewOptions(null);
+                    setPreviewPreferences(null);
                 }}
-                initialOptions={{ colorizeDepNames, autoSortCues, showClockTimes }}
-                onPreview={(options) => setPreviewOptions(options)}
-                onSave={async (newOptions) => {
-                    const success = await updateOptions(newOptions);
-                    setPreviewOptions(null);
+                initialOptions={{ darkMode, colorizeDepNames, autoSortCues, showClockTimes }}
+                onPreview={(preferences) => setPreviewPreferences(preferences)}
+                onSave={async (newPreferences) => {
+                    const success = await updatePreferences(newPreferences);
+                    setPreviewPreferences(null);
                     // If auto-sort is being enabled, trigger immediate re-sort
-                    if (success && newOptions.autoSortCues && !autoSortCues && scriptId) {
+                    if (success && newPreferences.autoSortCues && !autoSortCues && scriptId) {
                         handleAutoSortElements();
                     }
                 }}
@@ -1173,10 +1362,19 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 isProcessing={isDuplicatingElement}
             />
 
+            <UnsavedChangesModal
+                isOpen={isUnsavedChangesModalOpen}
+                onClose={handleCancelNavigation}
+                onSave={handleSaveAndContinue}
+                onDiscard={handleDiscardChanges}
+                changesCount={pendingOperations.length}
+                isSaving={isSavingChanges}
+            />
+
             {/* Mobile Drawer Menu */}
             <Drawer isOpen={isMenuOpen} placement="right" onClose={onMenuClose}>
                 <DrawerOverlay />
-                <DrawerContent key={activeMode}>
+                <DrawerContent key={activeMode} bg="page.background">
                     <DrawerCloseButton
                         borderRadius="full"
                         border="3px solid"
@@ -1187,7 +1385,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     <DrawerHeader>Script Tools</DrawerHeader>
                     <DrawerBody>
                         <VStack spacing={4} align="stretch">
-                            {toolButtons.map((tool) => (
+                            {/* Navigation buttons */}
+                            {toolButtons
+                                .filter(tool => tool.id === 'jump-top' || tool.id === 'jump-bottom')
+                                .map((tool) => (
                                 <Button
                                     key={tool.id}
                                     leftIcon={
@@ -1196,8 +1397,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                             boxSize="20px"
                                         />
                                     }
-                                    variant={tool.isActive ? "solid" : "outline"}
-                                    colorScheme={tool.isActive ? "blue" : "gray"}
+                                    bg={tool.isActive && !tool.isDisabled ? "blue.400" : tool.isDisabled ? "button.disabled.bg" : "card.background"}
+                                    color={tool.isActive && !tool.isDisabled ? "white" : tool.isDisabled ? "button.disabled.text" : "button.text"}
+                                    border="1px solid"
+                                    borderColor={tool.isActive && !tool.isDisabled ? "blue.400" : "container.border"}
                                     isDisabled={tool.isDisabled}
                                     onClick={() => {
                                         if (!tool.isDisabled) {
@@ -1208,10 +1411,112 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                     justifyContent="flex-start"
                                     width="100%"
                                     _hover={tool.isDisabled ? {} : {
-                                        bg: tool.isActive ? "orange.400" : "orange.500",
+                                        bg: "orange.400",
                                         color: "white",
-                                        borderColor: "orange.300"
+                                        borderColor: "orange.400"
                                     }}
+                                    _active={tool.isDisabled ? {} : {
+                                        transform: "scale(0.98)"
+                                    }}
+                                    transition="all 0.2s"
+                                    cursor={tool.isDisabled ? "not-allowed" : "pointer"}
+                                    opacity={tool.isDisabled ? 0.4 : 1}
+                                >
+                                    {tool.label}
+                                </Button>
+                            ))}
+                            
+                            {/* Separator after navigation */}
+                            {toolButtons.some(tool => tool.id === 'jump-top' || tool.id === 'jump-bottom') && (
+                                <Divider borderColor="container.border" />
+                            )}
+                            
+                            {/* View state buttons */}
+                            {toolButtons
+                                .filter(tool => ['view', 'edit', 'info', 'history', 'exit'].includes(tool.id))
+                                .map((tool) => (
+                                <Button
+                                    key={tool.id}
+                                    leftIcon={
+                                        <AppIcon
+                                            name={tool.icon}
+                                            boxSize="20px"
+                                        />
+                                    }
+                                    bg={tool.isActive && !tool.isDisabled ? "blue.400" : tool.isDisabled ? "button.disabled.bg" : "card.background"}
+                                    color={tool.isActive && !tool.isDisabled ? "white" : tool.isDisabled ? "button.disabled.text" : "button.text"}
+                                    border="1px solid"
+                                    borderColor={tool.isActive && !tool.isDisabled ? "blue.400" : "container.border"}
+                                    isDisabled={tool.isDisabled}
+                                    onClick={() => {
+                                        if (!tool.isDisabled) {
+                                            handleModeChange(tool.id);
+                                            onMenuClose();
+                                        }
+                                    }}
+                                    justifyContent="flex-start"
+                                    width="100%"
+                                    _hover={tool.isDisabled ? {} : {
+                                        bg: "orange.400",
+                                        color: "white",
+                                        borderColor: "orange.400"
+                                    }}
+                                    _active={tool.isDisabled ? {} : {
+                                        transform: "scale(0.98)"
+                                    }}
+                                    transition="all 0.2s"
+                                    cursor={tool.isDisabled ? "not-allowed" : "pointer"}
+                                    opacity={tool.isDisabled ? 0.4 : 1}
+                                >
+                                    {tool.label}
+                                </Button>
+                            ))}
+                            
+                            {/* Separator before tools */}
+                            {toolButtons.some(tool => 
+                                !['jump-top', 'jump-bottom', 'view', 'edit', 'info', 'history', 'exit'].includes(tool.id)
+                            ) && activeMode !== 'info' && (
+                                <Divider borderColor="container.border" />
+                            )}
+                            
+                            {/* Tool buttons */}
+                            {toolButtons
+                                .filter(tool => 
+                                    !['jump-top', 'jump-bottom', 'view', 'edit', 'info', 'history', 'exit'].includes(tool.id)
+                                )
+                                .map((tool) => (
+                                <Button
+                                    key={tool.id}
+                                    leftIcon={
+                                        <AppIcon
+                                            name={tool.icon}
+                                            boxSize="20px"
+                                        />
+                                    }
+                                    bg={tool.isActive && !tool.isDisabled ? "blue.400" : tool.isDisabled ? "button.disabled.bg" : "card.background"}
+                                    color={tool.isActive && !tool.isDisabled ? "white" : tool.isDisabled ? "button.disabled.text" : "button.text"}
+                                    border="1px solid"
+                                    borderColor={tool.isActive && !tool.isDisabled ? "blue.400" : "container.border"}
+                                    isDisabled={tool.isDisabled}
+                                    onClick={() => {
+                                        if (!tool.isDisabled) {
+                                            handleModeChange(tool.id);
+                                            onMenuClose();
+                                        }
+                                    }}
+                                    justifyContent="flex-start"
+                                    width="100%"
+                                    _hover={tool.isDisabled ? {} : {
+                                        bg: "orange.400",
+                                        color: "white",
+                                        borderColor: "orange.400"
+                                    }}
+                                    _active={tool.isDisabled ? {} : {
+                                        transform: "scale(0.98)"
+                                    }}
+                                    transition="all 0.2s"
+                                    cursor={tool.isDisabled ? "not-allowed" : "pointer"}
+                                    opacity={tool.isDisabled ? 0.4 : 1}
                                 >
                                     {tool.label}
                                 </Button>
