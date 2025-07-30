@@ -1,3 +1,5 @@
+// frontend/src/ChakraTheme.ts
+
 import { extendTheme } from '@chakra-ui/react';
 
 // TypeScript interfaces

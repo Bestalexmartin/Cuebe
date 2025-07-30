@@ -1,3 +1,5 @@
+// frontend/src/components/base/BaseModal.tsx
+
 import React from 'react';
 import {
   Modal,
