@@ -8,7 +8,7 @@ import { IoPeopleSharp } from "react-icons/io5";
 import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
 import { FaMasksTheater, FaMapLocationDot, FaScroll } from "react-icons/fa6";
-import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt, FaAngleDoubleUp, FaAngleDoubleDown } from "react-icons/fa";
+import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt, FaAngleDoubleUp, FaAngleDoubleDown, FaHistory } from "react-icons/fa";
 import { RiDashboard2Fill } from "react-icons/ri";
 import { EditIcon } from "@chakra-ui/icons";
 import { GoSortAsc, GoSortDesc, GoAlertFill } from "react-icons/go";
@@ -18,6 +18,7 @@ import { VscCode } from "react-icons/vsc";
 import { MdSpeed } from "react-icons/md";
 import { BiTestTube } from "react-icons/bi";
 import { FaArchive } from "react-icons/fa";
+import { ImExit } from "react-icons/im";
 
 // TypeScript interfaces
 export type IconName =
@@ -54,7 +55,9 @@ export type IconName =
   | 'group'
   | 'element-edit'
   | 'jump-top'
-  | 'jump-bottom';
+  | 'jump-bottom'
+  | 'history'
+  | 'exit';
 
 interface AppIconProps extends Omit<IconProps, 'as'> {
   name: IconName;
@@ -130,6 +133,10 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={FaAngleDoubleUp} {...props} />;
     case 'jump-bottom':
       return <Icon as={FaAngleDoubleDown} {...props} />;
+    case 'history':
+      return <Icon as={FaHistory} {...props} />;
+    case 'exit':
+      return <Icon as={ImExit} {...props} />;
     default:
       return null;
   }

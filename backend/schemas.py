@@ -3,7 +3,7 @@
 from pydantic import BaseModel, model_validator, field_validator
 from datetime import date, timedelta, datetime
 from uuid import UUID
-from typing import List, Optional
+from typing import List, Optional, Any
 
 # =============================================================================
 # USER SCHEMAS
@@ -22,7 +22,7 @@ class User(BaseModel):
     userRole: str
     createdBy: Optional[UUID] = None  # CHANGED TO UUID
     notes: Optional[str] = None
-    userOptions: Optional[dict] = None
+    userPrefsJSON: Optional[dict] = None
     isActive: bool
     dateCreated: datetime
     dateUpdated: datetime
@@ -404,4 +404,53 @@ class ScriptElementBulkUpdate(BaseModel):
     location: Optional[str] = None
     is_safety_critical: Optional[bool] = None
     custom_color: Optional[str] = None
+
+# Edit Queue Batch Operations
+class EditQueueOperation(BaseModel):
+    """Base schema for edit queue operations"""
+    id: str
+    timestamp: int
+    elementId: str
+    description: str
+    type: str
+
+class ReorderEditOperation(EditQueueOperation):
+    """Schema for reorder operations"""
+    type: str = "REORDER"
+    oldIndex: int
+    newIndex: int
+    oldSequence: int
+    newSequence: int
+
+class UpdateFieldEditOperation(EditQueueOperation):
+    """Schema for field update operations"""
+    type: str = "UPDATE_FIELD"
+    field: str
+    oldValue: Optional[Any] = None
+    newValue: Optional[Any] = None
+
+class UpdateTimeOffsetEditOperation(EditQueueOperation):
+    """Schema for time offset update operations"""
+    type: str = "UPDATE_TIME_OFFSET"
+    oldTimeOffsetMs: int
+    newTimeOffsetMs: int
+
+class CreateElementEditOperation(EditQueueOperation):
+    """Schema for element creation operations"""
+    type: str = "CREATE_ELEMENT"
+    elementData: dict
+
+class DeleteElementEditOperation(EditQueueOperation):
+    """Schema for element deletion operations"""
+    type: str = "DELETE_ELEMENT"
+    elementData: dict
+
+class BulkReorderEditOperation(EditQueueOperation):
+    """Schema for bulk reorder operations"""
+    type: str = "BULK_REORDER"
+    elementChanges: List[dict]
+
+class EditQueueBatchRequest(BaseModel):
+    """Schema for batch processing edit queue operations"""
+    operations: List[dict]  # Will be parsed based on 'type' field
 

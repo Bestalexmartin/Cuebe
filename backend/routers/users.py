@@ -2,12 +2,19 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 import logging
 
 import models
 import schemas
 from database import get_db
 from .auth import get_current_user
+from utils.user_preferences import (
+    bitmap_to_preferences,
+    preferences_to_bitmap_updates,
+    validate_preferences,
+    DEFAULT_PREFERENCES_BITMAP
+)
 
 # Optional rate limiting import
 try:
@@ -106,7 +113,7 @@ async def get_user_options(
         "showClockTimes": False
     }
     
-    return user.userOptions or default_options
+    return user.userPrefsJSON or default_options
 
 
 @router.patch("/options", response_model=dict)
@@ -141,7 +148,7 @@ async def update_user_options(
         )
     
     # Get current options or defaults
-    current_options = user.userOptions or {
+    current_options = user.userPrefsJSON or {
         "colorizeDepNames": True,
         "autoSortCues": True,
         "showClockTimes": False
@@ -151,10 +158,65 @@ async def update_user_options(
     current_options.update(filtered_options)
     
     # Save to database
-    user.userOptions = current_options
+    user.userPrefsJSON = current_options
+    flag_modified(user, 'userPrefsJSON')
     db.commit()
     db.refresh(user)
     
     logger.info(f"Updated user options for user {user.userID}: {filtered_options}")
     
     return current_options
+
+
+@router.get("/preferences", response_model=dict)
+@rate_limit(RateLimitConfig.READ_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+async def get_user_preferences(
+    request: Request,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get user's preference settings using bitmap system."""
+    bitmap = user.userPrefsBitmap
+    if bitmap is None:
+        bitmap = DEFAULT_PREFERENCES_BITMAP
+    
+    preferences = bitmap_to_preferences(bitmap)
+    return preferences
+
+
+@router.patch("/preferences", response_model=dict)
+@rate_limit(RateLimitConfig.CRUD_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+async def update_user_preferences(
+    request: Request,
+    preference_updates: dict,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update user's preference settings using bitmap system."""
+    # Validate preference updates
+    validation_errors = validate_preferences(preference_updates)
+    if validation_errors:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid preferences: {validation_errors}"
+        )
+    
+    # Get current bitmap
+    current_bitmap = user.userPrefsBitmap
+    if current_bitmap is None:
+        current_bitmap = DEFAULT_PREFERENCES_BITMAP
+    
+    # Apply updates to bitmap
+    updated_bitmap = preferences_to_bitmap_updates(current_bitmap, preference_updates)
+    
+    # Save to database
+    user.userPrefsBitmap = updated_bitmap
+    db.commit()
+    db.refresh(user)
+    
+    # Return updated preferences
+    updated_preferences = bitmap_to_preferences(updated_bitmap)
+    
+    logger.info(f"Updated user preferences for user {user.userID}: {preference_updates} -> bitmap: {updated_bitmap}")
+    
+    return updated_preferences

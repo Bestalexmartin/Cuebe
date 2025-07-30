@@ -39,7 +39,7 @@ interface AddScriptElementModalProps {
     isOpen: boolean;
     onClose: () => void;
     scriptId: string;
-    onElementCreated: () => void;
+    onElementCreated: (elementData: any) => void;
     autoSortCues: boolean;
 }
 
@@ -210,31 +210,38 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
         
-        try {
-            // Convert enum values to uppercase for database
-            const submitData = {
-                ...form.formData,
-                elementType: form.formData.elementType.toUpperCase(),
-                triggerType: form.formData.triggerType?.toUpperCase() || 'MANUAL',
-                priority: form.formData.priority?.toUpperCase() || 'NORMAL',
-                // Convert empty departmentID to null for notes
-                departmentID: form.formData.departmentID && form.formData.departmentID.trim() ? form.formData.departmentID : null
-            };
-
-            await form.submitForm(
-                `/api/scripts/${scriptId}/elements?auto_sort=${autoSortCues}`,
-                'POST',
-                'Script element created successfully',
-                submitData
-            );
-            
-            // Reset form and close modal
-            form.resetForm();
-            onClose();
-            onElementCreated();
-        } catch (error) {
-            // Error handling is done in submitForm
-        }
+        // Find selected department to include department info
+        const selectedDepartment = form.formData.departmentID && form.formData.departmentID.trim() 
+            ? departments?.find(d => d.departmentID === form.formData.departmentID)
+            : null;
+        
+        // Create element data locally instead of submitting to API
+        const elementData = {
+            ...form.formData,
+            elementID: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary ID
+            elementType: form.formData.elementType.toUpperCase(),
+            triggerType: form.formData.triggerType?.toUpperCase() || 'MANUAL',
+            priority: form.formData.priority?.toUpperCase() || 'NORMAL',
+            // Convert empty departmentID to null for notes
+            departmentID: form.formData.departmentID && form.formData.departmentID.trim() ? form.formData.departmentID : null,
+            // Include department information
+            departmentName: selectedDepartment?.departmentName || null,
+            departmentColor: selectedDepartment?.departmentColor || null,
+            departmentPrefix: selectedDepartment?.departmentPrefix || null,
+            scriptID: scriptId,
+            sequence: 1, // Will be handled by edit queue / auto-sort
+            isActive: true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            is_deleted: false,
+            // Pass auto-sort flag to parent
+            _autoSort: autoSortCues
+        };
+        
+        // Reset form and close modal
+        form.resetForm();
+        onClose();
+        onElementCreated(elementData);
     };
 
     const canSubmit = form.formData.description.trim().length >= 3 && 
@@ -253,7 +260,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                 label: "Create Element",
                 variant: "primary",
                 type: "submit",
-                isLoading: form.isSubmitting,
+                isLoading: false,
                 isDisabled: !canSubmit
             }}
             secondaryAction={{

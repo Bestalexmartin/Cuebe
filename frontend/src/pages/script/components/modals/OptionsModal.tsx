@@ -9,14 +9,14 @@ import {
     HStack
 } from '@chakra-ui/react';
 import { BaseModal } from '../../../../components/base/BaseModal';
-import { UserOptions } from '../../../../hooks/useUserOptions';
+import { UserPreferences } from '../../../../hooks/useUserPreferences';
 
 interface OptionsModalProps {
     isOpen: boolean;
     onClose: () => void;
-    initialOptions: UserOptions;
-    onSave: (options: UserOptions) => Promise<void>;
-    onPreview?: (options: UserOptions) => void;
+    initialOptions: UserPreferences;
+    onSave: (preferences: UserPreferences) => Promise<void>;
+    onPreview?: (preferences: UserPreferences) => void;
 }
 
 export const OptionsModal: React.FC<OptionsModalProps> = ({
@@ -26,36 +26,36 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
     onSave,
     onPreview
 }) => {
-    const [localOptions, setLocalOptions] = useState<UserOptions>(initialOptions);
+    const [localPreferences, setLocalPreferences] = useState<UserPreferences>(initialOptions);
 
     // Update local state only when modal first opens
     useEffect(() => {
         if (isOpen) {
-            setLocalOptions(initialOptions);
+            setLocalPreferences(initialOptions);
         }
-    }, [isOpen]); // Remove initialOptions dependency!
+    }, [isOpen]);
 
     const handleColorizeChange = (checked: boolean) => {
-        const newOptions = { ...localOptions, colorizeDepNames: checked };
-        setLocalOptions(newOptions);
-        onPreview?.(newOptions);
+        const newPreferences = { ...localPreferences, colorizeDepNames: checked };
+        setLocalPreferences(newPreferences);
+        onPreview?.(newPreferences);
     };
 
     const handleClockTimesChange = (checked: boolean) => {
-        const newOptions = { ...localOptions, showClockTimes: checked };
-        setLocalOptions(newOptions);
-        onPreview?.(newOptions);
+        const newPreferences = { ...localPreferences, showClockTimes: checked };
+        setLocalPreferences(newPreferences);
+        onPreview?.(newPreferences);
     };
 
     const handleAutoSortChange = (checked: boolean) => {
-        const newOptions = { ...localOptions, autoSortCues: checked };
-        setLocalOptions(newOptions);
-        onPreview?.(newOptions);
+        const newPreferences = { ...localPreferences, autoSortCues: checked };
+        setLocalPreferences(newPreferences);
+        onPreview?.(newPreferences);
     };
 
     const handleClose = async () => {
-        // Save options before closing
-        await onSave(localOptions);
+        // Save preferences before closing
+        await onSave(localPreferences);
         onClose();
     };
 
@@ -75,14 +75,14 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                 <FormControl>
                     <HStack align="center">
                         <Checkbox
-                            isChecked={localOptions.colorizeDepNames}
+                            isChecked={localPreferences.colorizeDepNames}
                             onChange={(e) => handleColorizeChange(e.target.checked)}
                         />
                         <FormLabel
                             mb="0"
                             fontSize="md"
                             fontWeight="semibold"
-                            onClick={() => handleColorizeChange(!localOptions.colorizeDepNames)}
+                            onClick={() => handleColorizeChange(!localPreferences.colorizeDepNames)}
                             cursor="pointer"
                         >
                             Colorize Department Names
@@ -93,14 +93,14 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                 <FormControl>
                     <HStack align="center">
                         <Checkbox
-                            isChecked={localOptions.autoSortCues}
+                            isChecked={localPreferences.autoSortCues}
                             onChange={(e) => handleAutoSortChange(e.target.checked)}
                         />
                         <FormLabel
                             mb="0"
                             fontSize="md"
                             fontWeight="semibold"
-                            onClick={() => handleAutoSortChange(!localOptions.autoSortCues)}
+                            onClick={() => handleAutoSortChange(!localPreferences.autoSortCues)}
                             cursor="pointer"
                         >
                             Auto-Sort Cues
@@ -111,14 +111,14 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                 <FormControl>
                     <HStack align="center">
                         <Checkbox
-                            isChecked={localOptions.showClockTimes}
+                            isChecked={localPreferences.showClockTimes}
                             onChange={(e) => handleClockTimesChange(e.target.checked)}
                         />
                         <FormLabel
                             mb="0"
                             fontSize="md"
                             fontWeight="semibold"
-                            onClick={() => handleClockTimesChange(!localOptions.showClockTimes)}
+                            onClick={() => handleClockTimesChange(!localPreferences.showClockTimes)}
                             cursor="pointer"
                         >
                             Show Clock Times

@@ -135,7 +135,8 @@ class User(Base):
     notes = Column(Text, nullable=True)
     
     # User preferences and options
-    userOptions = Column(JSON, nullable=True)
+    userPrefsJSON = Column(JSON, nullable=True)  # For complex preferences
+    userPrefsBitmap = Column(Integer, nullable=True, default=6)  # bitmap for boolean preferences
     
     # Status and timestamps
     isActive = Column(Boolean, default=True)

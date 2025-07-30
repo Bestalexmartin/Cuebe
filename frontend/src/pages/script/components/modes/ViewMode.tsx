@@ -1,16 +1,23 @@
 // frontend/src/pages/script/components/modes/ViewMode.tsx
 
-import React, { forwardRef, useImperativeHandle } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef, useEffect } from 'react';
 import { VStack, Text, Box, Flex } from '@chakra-ui/react';
 import { useScriptElements } from '../../hooks/useScriptElements';
 import { useScript } from '../../../../hooks/useScript';
 import { CueElement } from '../CueElement';
 import { ScriptElementsHeader } from '../ScriptElementsHeader';
+import { ScriptElement } from '../../../../types/scriptElements';
 
 interface ViewModeProps {
     scriptId: string;
     colorizeDepNames?: boolean;
     showClockTimes?: boolean;
+    elements?: ScriptElement[]; // Optional prop to override default fetching
+    onScrollStateChange?: (state: {
+        isAtTop: boolean;
+        isAtBottom: boolean;
+        allElementsFitOnScreen: boolean;
+    }) => void;
 }
 
 export interface ViewModeRef {
@@ -20,15 +27,63 @@ export interface ViewModeRef {
 export const ViewMode = forwardRef<ViewModeRef, ViewModeProps>(({ 
     scriptId, 
     colorizeDepNames = false, 
-    showClockTimes = false
+    showClockTimes = false,
+    elements: providedElements,
+    onScrollStateChange
 }, ref) => {
-    const { elements, isLoading, error, refetchElements } = useScriptElements(scriptId);
+    // Only fetch elements if none are provided
+    const shouldFetchElements = !providedElements;
+    const { elements: fetchedElements, isLoading, error, refetchElements } = useScriptElements(
+        shouldFetchElements ? scriptId : undefined
+    );
     const { script } = useScript(scriptId);
+    
+    // Use provided elements if available, otherwise use fetched elements
+    const elements = providedElements || fetchedElements;
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     
     // Expose refetch function to parent via ref
     useImperativeHandle(ref, () => ({
         refetchElements
     }), [refetchElements]);
+
+    // Function to check scroll state
+    const checkScrollState = () => {
+        if (!scrollContainerRef.current || !onScrollStateChange) return;
+        
+        const container = scrollContainerRef.current;
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        
+        const isAtTop = scrollTop <= 1; // Allow for 1px tolerance
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1; // Allow for 1px tolerance
+        const allElementsFitOnScreen = scrollHeight <= clientHeight;
+        
+        onScrollStateChange({
+            isAtTop,
+            isAtBottom,
+            allElementsFitOnScreen
+        });
+    };
+
+    // Check scroll state when elements change or component mounts
+    useEffect(() => {
+        checkScrollState();
+    }, [elements, shouldFetchElements ? isLoading : false]);
+
+    // Add scroll event listener
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        container.addEventListener('scroll', checkScrollState);
+        
+        // Check initial state
+        setTimeout(checkScrollState, 100); // Small delay to ensure rendering is complete
+        
+        return () => {
+            container.removeEventListener('scroll', checkScrollState);
+        };
+    }, [elements]);
 
     return (
         <VStack height="100%" spacing={0} align="stretch">
@@ -37,6 +92,7 @@ export const ViewMode = forwardRef<ViewModeRef, ViewModeProps>(({
             
             {/* Elements List */}
             <Box 
+                ref={scrollContainerRef}
                 flex={1} 
                 overflowY="auto"
                 className="hide-scrollbar"
@@ -47,19 +103,19 @@ export const ViewMode = forwardRef<ViewModeRef, ViewModeProps>(({
                     msUserSelect: "none"
                 }}
             >
-                {isLoading && (
+                {shouldFetchElements && isLoading && (
                     <Flex justify="center" align="center" height="200px">
                         <Text color="gray.500">Loading script elements...</Text>
                     </Flex>
                 )}
 
-                {error && (
+                {shouldFetchElements && error && (
                     <Flex justify="center" align="center" height="200px">
                         <Text color="red.500">Error: {error}</Text>
                     </Flex>
                 )}
 
-                {!isLoading && !error && elements.length === 0 && (
+                {(shouldFetchElements ? (!isLoading && !error) : true) && elements.length === 0 && (
                     <Flex justify="center" align="center" height="200px" direction="column" spacing={4}>
                         <Text color="gray.500" fontSize="lg">
                             No script elements yet
@@ -70,7 +126,7 @@ export const ViewMode = forwardRef<ViewModeRef, ViewModeProps>(({
                     </Flex>
                 )}
 
-                {!isLoading && !error && elements.length > 0 && (
+                {(shouldFetchElements ? (!isLoading && !error) : true) && elements.length > 0 && (
                     <VStack 
                         spacing={0} 
                         align="stretch"

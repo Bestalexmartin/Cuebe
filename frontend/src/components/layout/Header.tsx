@@ -2,9 +2,10 @@
 
 import React from "react";
 import { SignedIn, UserButton } from "@clerk/clerk-react";
-import { Flex, Heading, Image, useColorMode, IconButton } from "@chakra-ui/react";
+import { Flex, Heading, Image, IconButton } from "@chakra-ui/react";
 import { MoonIcon, SunIcon } from '@chakra-ui/icons';
 import { CiMenuBurger } from 'react-icons/ci';
+import { useIntegratedColorMode } from '../../hooks/useIntegratedColorMode';
 
 // TypeScript interfaces
 
@@ -14,7 +15,7 @@ interface HeaderProps {
 }
 
 const DarkModeSwitch: React.FC<DarkModeSwitchProps> = () => {
-  const { colorMode, toggleColorMode } = useColorMode();
+  const { colorMode, toggleColorMode } = useIntegratedColorMode();
 
   const handleToggle = (): void => {
     toggleColorMode();

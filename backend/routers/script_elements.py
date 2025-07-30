@@ -630,3 +630,251 @@ async def bulk_update_script_elements(
         db.rollback()
         logger.error(f"Failed to bulk update elements in script {script_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to bulk update elements: {str(e)}")
+
+
+@router.patch("/scripts/{script_id}/elements/batch-update")
+async def batch_update_from_edit_queue(
+    script_id: UUID,
+    batch_request: schemas.EditQueueBatchRequest,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Process a batch of edit queue operations."""
+    
+    # Verify the script exists and user has access
+    script = db.query(models.Script).options(
+        joinedload(models.Script.show)
+    ).filter(models.Script.scriptID == script_id).first()
+    
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
+    
+    # Security check: ensure user owns the show
+    if script.show.ownerID != user.userID:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this script")
+    
+    try:
+        processed_operations = 0
+        operation_results = []
+        
+        # Process each operation in sequence
+        for operation_data in batch_request.operations:
+            try:
+                result = await _process_edit_operation(db, script_id, operation_data, user)
+                operation_results.append({
+                    "operation_id": operation_data.get("id"),
+                    "status": "success",
+                    "result": result
+                })
+                processed_operations += 1
+            except Exception as op_error:
+                logger.error(f"Failed to process operation {operation_data.get('id')}: {op_error}")
+                operation_results.append({
+                    "operation_id": operation_data.get("id"),
+                    "status": "error",
+                    "error": str(op_error)
+                })
+                # Continue with other operations rather than failing the entire batch
+        
+        # Commit all successful operations
+        db.commit()
+        
+        # Update SHOW START duration if needed
+        elements = db.query(models.ScriptElement).filter(
+            models.ScriptElement.scriptID == script_id
+        ).all()
+        await _auto_populate_show_start_duration(db, script, elements)
+        
+        logger.info(f"Processed {processed_operations} operations for script {script_id}")
+        
+        return {
+            "message": f"Processed {processed_operations}/{len(batch_request.operations)} operations",
+            "processed_count": processed_operations,
+            "total_count": len(batch_request.operations),
+            "results": operation_results
+        }
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to process batch operations for script {script_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to process batch operations: {str(e)}")
+
+
+async def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+    """Process a single edit queue operation."""
+    
+    operation_type = operation_data.get("type")
+    element_id = operation_data.get("elementId")
+    
+    if operation_type == "REORDER":
+        return await _process_reorder_operation(db, script_id, operation_data, user)
+    
+    elif operation_type == "UPDATE_FIELD":
+        return await _process_update_field_operation(db, element_id, operation_data, user)
+    
+    elif operation_type == "UPDATE_TIME_OFFSET":
+        return await _process_update_time_offset_operation(db, element_id, operation_data, user)
+    
+    elif operation_type == "CREATE_ELEMENT":
+        return await _process_create_element_operation(db, script_id, operation_data, user)
+    
+    elif operation_type == "DELETE_ELEMENT":
+        return await _process_delete_element_operation(db, element_id, user)
+    
+    elif operation_type == "BULK_REORDER":
+        return await _process_bulk_reorder_operation(db, script_id, operation_data, user)
+    
+    else:
+        raise ValueError(f"Unknown operation type: {operation_type}")
+
+
+async def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+    """Process a single element reorder operation."""
+    
+    element_id = operation_data.get("elementId")
+    new_sequence = operation_data.get("newSequence")
+    
+    element = db.query(models.ScriptElement).filter(
+        and_(
+            models.ScriptElement.elementID == UUID(element_id),
+            models.ScriptElement.scriptID == script_id
+        )
+    ).first()
+    
+    if not element:
+        raise ValueError(f"Element {element_id} not found")
+    
+    element.sequence = new_sequence
+    element.updatedBy = user.userID
+    element.version = element.version + 1
+    element.dateUpdated = datetime.now(timezone.utc)
+    
+    return {"element_id": element_id, "new_sequence": new_sequence}
+
+
+async def _process_update_field_operation(db: Session, element_id: str, operation_data: dict, user: models.User):
+    """Process a field update operation."""
+    
+    field = operation_data.get("field")
+    new_value = operation_data.get("newValue")
+    
+    element = db.query(models.ScriptElement).filter(
+        models.ScriptElement.elementID == UUID(element_id)
+    ).first()
+    
+    if not element:
+        raise ValueError(f"Element {element_id} not found")
+    
+    # Update the specified field
+    if hasattr(element, field):
+        # Handle special cases for enum fields
+        if field == "priority" and new_value:
+            setattr(element, field, models.PriorityLevel(new_value))
+        elif field == "executionStatus" and new_value:
+            setattr(element, field, models.ExecutionStatus(new_value))
+        elif field == "location" and new_value:
+            setattr(element, field, models.LocationArea(new_value))
+        else:
+            setattr(element, field, new_value)
+    else:
+        raise ValueError(f"Invalid field: {field}")
+    
+    element.updatedBy = user.userID
+    element.version = element.version + 1
+    element.dateUpdated = datetime.now(timezone.utc)
+    
+    return {"element_id": element_id, "field": field, "new_value": new_value}
+
+
+async def _process_update_time_offset_operation(db: Session, element_id: str, operation_data: dict, user: models.User):
+    """Process a time offset update operation."""
+    
+    new_time_offset = operation_data.get("newTimeOffsetMs")
+    
+    element = db.query(models.ScriptElement).filter(
+        models.ScriptElement.elementID == UUID(element_id)
+    ).first()
+    
+    if not element:
+        raise ValueError(f"Element {element_id} not found")
+    
+    element.timeOffsetMs = new_time_offset
+    element.updatedBy = user.userID
+    element.version = element.version + 1
+    element.dateUpdated = datetime.now(timezone.utc)
+    
+    return {"element_id": element_id, "new_time_offset": new_time_offset}
+
+
+async def _process_create_element_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+    """Process an element creation operation."""
+    
+    element_data = operation_data.get("elementData", {})
+    
+    # Create new script element
+    new_element = models.ScriptElement(
+        scriptID=script_id,
+        elementType=element_data.get("elementType", "CUE"),
+        sequence=element_data.get("sequence", 1),
+        timeOffsetMs=element_data.get("timeOffsetMs", 0),
+        description=element_data.get("description", ""),
+        cueNotes=element_data.get("cueNotes"),
+        departmentID=UUID(element_data["departmentID"]) if element_data.get("departmentID") else None,
+        priority=models.PriorityLevel(element_data["priority"]) if element_data.get("priority") else models.PriorityLevel.LOW,
+        customColor=element_data.get("customColor"),
+        createdBy=user.userID,
+        updatedBy=user.userID,
+        dateCreated=datetime.now(timezone.utc),
+        dateUpdated=datetime.now(timezone.utc)
+    )
+    
+    db.add(new_element)
+    db.flush()  # Get the generated ID
+    
+    return {"element_id": str(new_element.elementID), "created": True}
+
+
+async def _process_delete_element_operation(db: Session, element_id: str, user: models.User):
+    """Process an element deletion operation."""
+    
+    element = db.query(models.ScriptElement).filter(
+        models.ScriptElement.elementID == UUID(element_id)
+    ).first()
+    
+    if not element:
+        raise ValueError(f"Element {element_id} not found")
+    
+    # Soft delete by setting isActive to False
+    element.isActive = False
+    element.updatedBy = user.userID
+    element.version = element.version + 1
+    element.dateUpdated = datetime.now(timezone.utc)
+    
+    return {"element_id": element_id, "deleted": True}
+
+
+async def _process_bulk_reorder_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+    """Process a bulk reorder operation."""
+    
+    element_changes = operation_data.get("elementChanges", [])
+    updated_count = 0
+    
+    for change in element_changes:
+        element_id = change.get("elementId")
+        new_sequence = change.get("newSequence")
+        
+        element = db.query(models.ScriptElement).filter(
+            and_(
+                models.ScriptElement.elementID == UUID(element_id),
+                models.ScriptElement.scriptID == script_id
+            )
+        ).first()
+        
+        if element:
+            element.sequence = new_sequence
+            element.updatedBy = user.userID
+            element.version = element.version + 1
+            element.dateUpdated = datetime.now(timezone.utc)
+            updated_count += 1
+    
+    return {"updated_count": updated_count, "total_changes": len(element_changes)}

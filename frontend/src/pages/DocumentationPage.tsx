@@ -35,7 +35,7 @@ interface DocFile {
   name: string;
   path: string;
   description: string;
-  category: 'Planning' | 'Quick Start' | 'Architecture' | 'Testing' | 'Archive';
+  category: 'Planning' | 'Quick Start' | 'System Architecture' | 'Component Architecture' | 'Data Management' | 'User Interface' | 'Testing' | 'Archive';
   icon: 'planning' | 'roadmap' | 'compass' | 'docs' | 'component' | 'performance' | 'warning' | 'test' | 'archive';
 }
 
@@ -58,7 +58,7 @@ const DOCUMENTATION_FILES: DocFile[] = [
     name: 'UI Interaction Improvements - July 2025',
     path: 'development/ui-interaction-improvements-july-2025.md',
     description: 'Comprehensive changelog of click-to-select, drag-to-reorder, and navigation improvements',
-    category: 'Architecture',
+    category: 'User Interface',
     icon: 'component'
   },
   {
@@ -79,70 +79,84 @@ const DOCUMENTATION_FILES: DocFile[] = [
     name: 'System Architecture',
     path: 'architecture/system-architecture.md',
     description: 'Docker containers, database setup, and infrastructure overview',
-    category: 'Architecture',
+    category: 'System Architecture',
     icon: 'component'
   },
   {
     name: 'Component Architecture',
     path: 'architecture/component-architecture.md',
     description: 'BaseCard/BaseModal patterns and implementation guide',
-    category: 'Architecture',
+    category: 'Component Architecture',
     icon: 'component'
   },
   {
     name: 'Performance Optimizations',
     path: 'architecture/performance-optimizations.md',
     description: 'React.memo implementation and performance monitoring',
-    category: 'Architecture',
+    category: 'System Architecture',
     icon: 'performance'
   },
   {
     name: 'Error Handling',
     path: 'architecture/error-handling.md',
     description: 'Error boundaries, validation, and recovery strategies',
-    category: 'Architecture',
+    category: 'System Architecture',
     icon: 'warning'
   },
   {
     name: 'Documentation Integration',
     path: 'architecture/documentation-integration.md',
     description: 'How documentation is integrated into the application',
-    category: 'Architecture',
+    category: 'System Architecture',
     icon: 'docs'
   },
   {
     name: 'Script Elements Data Model',
     path: 'architecture/script-elements-data-model.md',
     description: 'Complete data model for script elements including cues, notes, and groups',
-    category: 'Architecture',
+    category: 'Data Management',
     icon: 'component'
   },
   {
     name: 'Script Elements Database Schema',
     path: 'architecture/script-elements-database-schema.md',
     description: 'Database schema and relationships for script elements',
-    category: 'Architecture',
+    category: 'Data Management',
+    icon: 'component'
+  },
+  {
+    name: 'Edit Queue System',
+    path: 'architecture/edit-queue-system.md',
+    description: 'Professional non-destructive editing with undo/redo, change tracking, and batch saves',
+    category: 'Data Management',
+    icon: 'component'
+  },
+  {
+    name: 'User Preferences Bitmap System',
+    path: 'architecture/user-preferences-bitmap-system.md',
+    description: 'Efficient bitmap-based system for storing and managing boolean user preferences',
+    category: 'Data Management',
     icon: 'component'
   },
   {
     name: 'Drag-and-Drop System',
     path: 'architecture/drag-and-drop-system.md',
     description: 'Script element reordering with @dnd-kit integration and conflict resolution',
-    category: 'Architecture',
+    category: 'User Interface',
     icon: 'component'
   },
   {
     name: 'Script Element Interaction System',
     path: 'architecture/script-element-interaction-system.md',
     description: 'Click-to-select and drag-to-reorder interaction patterns with gesture detection',
-    category: 'Architecture',
+    category: 'User Interface',
     icon: 'component'
   },
   {
     name: 'Note Color Customization',
     path: 'architecture/note-color-customization.md',
     description: 'Color selection and customization system for script notes',
-    category: 'Architecture',
+    category: 'User Interface',
     icon: 'component'
   },
   {
@@ -311,12 +325,36 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
       onClick: () => loadCategory('Quick Start')
     },
     {
-      id: 'architecture',
-      title: 'Architecture',
-      description: 'Component patterns and performance guides',
+      id: 'system-architecture',
+      title: 'System Architecture',
+      description: 'Infrastructure, performance, and core systems',
       icon: 'component' as const,
       isDisabled: false,
-      onClick: () => loadCategory('Architecture')
+      onClick: () => loadCategory('System Architecture')
+    },
+    {
+      id: 'component-architecture',
+      title: 'Component Architecture',
+      description: 'UI patterns and React component design',
+      icon: 'component' as const,
+      isDisabled: false,
+      onClick: () => loadCategory('Component Architecture')
+    },
+    {
+      id: 'data-management',
+      title: 'Data Management',
+      description: 'Data models, schemas, and edit systems',
+      icon: 'component' as const,
+      isDisabled: false,
+      onClick: () => loadCategory('Data Management')
+    },
+    {
+      id: 'user-interface',
+      title: 'User Interface',
+      description: 'Interactions, drag-and-drop, and customization',
+      icon: 'component' as const,
+      isDisabled: false,
+      onClick: () => loadCategory('User Interface')
     },
     {
       id: 'testing',
@@ -391,16 +429,33 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
           <CardBody>
             <VStack align="stretch" spacing={3}>
               <HStack spacing={2}>
-                <Badge colorScheme="blue" size="sm">
+                <Badge 
+                  colorScheme="blue" 
+                  size="sm"
+                  cursor="pointer"
+                  _hover={{ bg: "blue.600", color: "white" }}
+                  transition="all 0.2s"
+                  onClick={() => loadCategory(category)}
+                >
                   {category}
                 </Badge>
                 <Text fontWeight="semibold" fontSize="sm" color={textColor}>
-                  {docs.length} document{docs.length > 1 ? 's' : ''}
+                  {docs.length} document{docs.length > 1 ? 's' : ''} - Click category or documents to navigate
                 </Text>
               </HStack>
               <VStack spacing={2} align="stretch">
                 {docs.map((doc) => (
-                  <HStack key={doc.name} spacing={3} p={2} rounded="md" bg={itemBg}>
+                  <HStack 
+                    key={doc.name} 
+                    spacing={3} 
+                    p={2} 
+                    rounded="md" 
+                    bg={itemBg}
+                    cursor="pointer"
+                    _hover={{ bg: itemHoverBg, transform: "scale(1.02)" }}
+                    transition="all 0.2s"
+                    onClick={() => loadDocument(doc.name)}
+                  >
                     <Box px={2}>
                       <AppIcon name={doc.icon} boxSize="25px" color={iconColor} />
                     </Box>

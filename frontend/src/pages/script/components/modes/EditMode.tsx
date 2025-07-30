@@ -1,6 +1,6 @@
 // frontend/src/pages/script/components/modes/EditMode.tsx
 
-import React, { forwardRef, useImperativeHandle, useState, useEffect } from 'react';
+import React, { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
 import { VStack, Text, Box, Flex } from '@chakra-ui/react';
 import {
     DndContext,
@@ -30,6 +30,14 @@ interface EditModeProps {
     showClockTimes?: boolean;
     autoSortCues?: boolean;
     onAutoSortChange?: (value: boolean) => void;
+    onScrollStateChange?: (state: {
+        isAtTop: boolean;
+        isAtBottom: boolean;
+        allElementsFitOnScreen: boolean;
+    }) => void;
+    // Edit queue props
+    elements?: any[];
+    onApplyLocalChange?: (operation: any) => void;
 }
 
 export interface EditModeRef {
@@ -43,24 +51,30 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     colorizeDepNames = false,
     showClockTimes = false,
     autoSortCues = false,
-    onAutoSortChange
+    onAutoSortChange,
+    onScrollStateChange,
+    elements: externalElements,
+    onApplyLocalChange
 }, ref) => {
+    // Use external elements if provided (from edit queue), otherwise fallback to direct hook
     const { elements: serverElements, isLoading, error, refetchElements } = useScriptElements(scriptId);
     const { script } = useScript(scriptId);
     const { getToken } = useAuth();
 
-    const [localElements, setLocalElements] = useState(serverElements);
+    const elements = externalElements || serverElements;
+    const [localElements, setLocalElements] = useState(elements);
     const [dragModalOpen, setDragModalOpen] = useState(false);
     const [draggedElement, setDraggedElement] = useState<any>(null);
     const [elementAbove, setElementAbove] = useState<any>(null);
     const [elementBelow, setElementBelow] = useState<any>(null);
     const [pendingReorder, setPendingReorder] = useState<any>(null);
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
     
 
     useEffect(() => {
-        setLocalElements(serverElements);
-    }, [serverElements]);
+        setLocalElements(elements);
+    }, [elements]);
 
     // Expose refetch function and selection state to parent via ref
     useImperativeHandle(ref, () => ({
@@ -168,7 +182,7 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
         console.log('Reverting elements back to server state');
         
         // Revert local elements back to server state
-        setLocalElements(serverElements);
+        setLocalElements(elements);
         
         // Close modal and clear state
         closeDragModal();
@@ -179,6 +193,23 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     const applyReorder = async () => {
         if (!pendingReorder) return;
 
+        // If we have edit queue functionality, use it
+        if (onApplyLocalChange) {
+            // Create reorder operation for edit queue
+            const reorderOperation = {
+                type: 'REORDER',
+                elementId: draggedElement?.elementID,
+                oldIndex: pendingReorder.oldIndex,
+                newIndex: pendingReorder.newIndex,
+                oldSequence: pendingReorder.oldIndex + 1,
+                newSequence: pendingReorder.newIndex + 1
+            };
+            
+            onApplyLocalChange(reorderOperation);
+            return;
+        }
+
+        // Fallback to direct API call for backward compatibility
         try {
             const token = await getToken();
             if (!token) return;
@@ -202,7 +233,7 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
 
             if (!response.ok) {
                 console.error('Failed to reorder elements');
-                setLocalElements(serverElements);
+                setLocalElements(elements);
             }
         } catch (error) {
             console.error('Error reordering elements:', error);
@@ -214,6 +245,24 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
         console.log('Element ID:', elementId);
         console.log('New time offset (ms):', newTimeOffsetMs);
         
+        // Find the element to get old value
+        const element = localElements.find(el => el.elementID === elementId);
+        const oldTimeOffsetMs = element?.timeOffsetMs || 0;
+        
+        // If we have edit queue functionality, use it
+        if (onApplyLocalChange) {
+            const timeOffsetOperation = {
+                type: 'UPDATE_TIME_OFFSET',
+                elementId: elementId,
+                oldTimeOffsetMs: oldTimeOffsetMs,
+                newTimeOffsetMs: newTimeOffsetMs
+            };
+            
+            onApplyLocalChange(timeOffsetOperation);
+            return;
+        }
+
+        // Fallback to direct API call for backward compatibility
         try {
             const token = await getToken();
             if (!token) {
@@ -265,13 +314,51 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
         console.log('--- updateElementTimeOffset completed ---');
     };
 
+    // Function to check scroll state
+    const checkScrollState = () => {
+        if (!scrollContainerRef.current || !onScrollStateChange) return;
+        
+        const container = scrollContainerRef.current;
+        const { scrollTop, scrollHeight, clientHeight } = container;
+        
+        const isAtTop = scrollTop <= 1; // Allow for 1px tolerance
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1; // Allow for 1px tolerance
+        const allElementsFitOnScreen = scrollHeight <= clientHeight;
+        
+        onScrollStateChange({
+            isAtTop,
+            isAtBottom,
+            allElementsFitOnScreen
+        });
+    };
+
+    // Check scroll state when elements change or component mounts
+    useEffect(() => {
+        checkScrollState();
+    }, [localElements, isLoading]);
+
+    // Add scroll event listener
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        container.addEventListener('scroll', checkScrollState);
+        
+        // Check initial state
+        setTimeout(checkScrollState, 100); // Small delay to ensure rendering is complete
+        
+        return () => {
+            container.removeEventListener('scroll', checkScrollState);
+        };
+    }, [localElements]);
+
     return (
         <VStack height="100%" spacing={0} align="stretch">
             {/* Header Row */}
             <ScriptElementsHeader />
 
             {/* Elements List */}
-            <Box flex={1} overflowY="auto" overflowX="hidden" className="hide-scrollbar">
+            <Box ref={scrollContainerRef} flex={1} overflowY="auto" overflowX="hidden" className="hide-scrollbar">
                 {isLoading && (
                     <Flex justify="center" align="center" height="200px">
                         <Text color="gray.500">Loading script elements...</Text>

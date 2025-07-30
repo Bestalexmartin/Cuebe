@@ -226,7 +226,7 @@ export const BaseUtilityPage: React.FC<BaseUtilityPageProps> = ({
       {/* Mobile Drawer for QuickAccess */}
       <Drawer isOpen={isMenuOpen} placement="right" onClose={onMenuClose}>
         <DrawerOverlay />
-        <DrawerContent bg="gray.100" _dark={{ bg: "gray.800" }}>
+        <DrawerContent bg="page.background">
           <DrawerCloseButton
             borderRadius="full"
             border="3px solid"

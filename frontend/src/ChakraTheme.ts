@@ -57,6 +57,26 @@ const semanticTokens = {
       _light: 'gray.100',
       _dark: 'gray.800',
     },
+    'window.background': {
+      _light: 'white',
+      _dark: 'gray.700',
+    },
+    'row.hover': {
+      _light: 'gray.100',
+      _dark: 'gray.600',
+    },
+    'button.disabled.bg': {
+      _light: 'gray.200',
+      _dark: 'gray.800',
+    },
+    'button.disabled.text': {
+      _light: 'gray.400',
+      _dark: 'gray.600',
+    },
+    'button.text': {
+      _light: 'gray.600',
+      _dark: 'gray.300',
+    },
     // Success/Info Toast (default blue)
     'toast.success.bg': {
       _light: '#6495ED',
