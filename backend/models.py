@@ -134,6 +134,9 @@ class User(Base):
     # Internal notes (for guest users)
     notes = Column(Text, nullable=True)
     
+    # User preferences and options
+    userOptions = Column(JSON, nullable=True)
+    
     # Status and timestamps
     isActive = Column(Boolean, default=True)
     dateCreated = Column(DateTime(timezone=True), server_default=func.now())

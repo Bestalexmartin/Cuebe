@@ -89,3 +89,72 @@ async def create_guest_user_with_relationship(
     db.refresh(new_guest_user)
     
     return new_guest_user
+
+
+@router.get("/options", response_model=dict)
+@rate_limit(RateLimitConfig.READ_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+async def get_user_options(
+    request: Request,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get user's preference options."""
+    # Return user options or defaults if null
+    default_options = {
+        "colorizeDepNames": True,
+        "autoSortCues": True,
+        "showClockTimes": False
+    }
+    
+    return user.userOptions or default_options
+
+
+@router.patch("/options", response_model=dict)
+@rate_limit(RateLimitConfig.CRUD_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+async def update_user_options(
+    request: Request,
+    options: dict,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update user's preference options."""
+    # Validate that only known options are provided
+    valid_options = {"colorizeDepNames", "autoSortCues", "showClockTimes"}
+    
+    # Filter to only include valid options and ensure they're boolean values
+    filtered_options = {}
+    for key, value in options.items():
+        if key in valid_options:
+            # Ensure boolean values
+            if isinstance(value, bool):
+                filtered_options[key] = value
+            else:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Option '{key}' must be a boolean value"
+                )
+    
+    if not filtered_options:
+        raise HTTPException(
+            status_code=400,
+            detail="No valid options provided"
+        )
+    
+    # Get current options or defaults
+    current_options = user.userOptions or {
+        "colorizeDepNames": True,
+        "autoSortCues": True,
+        "showClockTimes": False
+    }
+    
+    # Update with new values
+    current_options.update(filtered_options)
+    
+    # Save to database
+    user.userOptions = current_options
+    db.commit()
+    db.refresh(user)
+    
+    logger.info(f"Updated user options for user {user.userID}: {filtered_options}")
+    
+    return current_options
