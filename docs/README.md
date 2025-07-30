@@ -1,3 +1,5 @@
+<!-- docs/README.md -->
+
 # CallMaster Documentation
 
 Welcome to the CallMaster documentation! This comprehensive guide covers all aspects of the theater management application, from architecture to testing.

@@ -1,3 +1,5 @@
+// frontend/src/components/base/ValidationErrors.tsx
+
 import React from 'react';
 import { Box, Text } from '@chakra-ui/react';
 import { FieldError } from '../../types/validation';

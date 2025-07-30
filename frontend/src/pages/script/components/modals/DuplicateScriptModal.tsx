@@ -1,3 +1,5 @@
+// frontend/src/pages/script/components/modals/DuplicateScriptModal.tsx
+
 import React, { useEffect } from 'react';
 import {
     FormControl,

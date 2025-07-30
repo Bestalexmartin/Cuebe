@@ -1,5 +1,5 @@
 #!/bin/bash
-# Backend server startup script
+# backend/start-server.sh
 
 # Activate virtual environment
 source venv/bin/activate

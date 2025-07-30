@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test runner script
+# backend/run-tests.sh
 
 # Activate virtual environment
 source venv/bin/activate

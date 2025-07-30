@@ -1,3 +1,5 @@
+<!-- docs/architecture/system-architecture.md -->
+
 # System Architecture
 
 ## Overview

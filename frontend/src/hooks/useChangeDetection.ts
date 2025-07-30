@@ -1,3 +1,5 @@
+// frontend/src/hooks/useChangeDetection.ts
+
 import { useState, useEffect, useMemo } from 'react';
 
 /**
