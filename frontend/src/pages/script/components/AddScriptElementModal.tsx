@@ -27,6 +27,8 @@ import { useValidatedForm } from '../../../hooks/useValidatedForm';
 import { useResource } from '../../../hooks/useResource';
 import { ValidationRules, FormValidationConfig } from '../../../types/validation';
 import { ScriptElementCreate, ElementType, TriggerType, PriorityLevel, LocationArea } from '../types/script-elements';
+import { getTextColorForBackground } from '../../../utils/colorUtils';
+import { msToDurationString, durationStringToMs } from '../../../utils/timeUtils';
 
 // TypeScript interfaces
 interface Department {
@@ -131,47 +133,7 @@ const NOTE_PRESET_COLORS = [
     { name: 'Yellow', value: '#EAB308' },
 ];
 
-// Helper function to calculate color lightness and determine text color
-const getTextColorForBackground = (hexColor: string): string => {
-    if (!hexColor || hexColor === '') return 'black';
-    
-    // Remove # if present
-    const color = hexColor.replace('#', '');
-    
-    // Parse RGB values
-    const r = parseInt(color.substring(0, 2), 16);
-    const g = parseInt(color.substring(2, 4), 16);
-    const b = parseInt(color.substring(4, 6), 16);
-    
-    // Calculate relative luminance (perceived lightness)
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    
-    // Return white for dark backgrounds (< 50% lightness), black for light backgrounds
-    return luminance < 0.5 ? 'white' : 'black';
-};
-
-// Helper functions for MM:SS duration conversion
-const msToDurationString = (ms: number): string => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-};
-
-const durationStringToMs = (durationString: string): number => {
-    if (!durationString || durationString === '') return 0;
-    
-    // Handle partial input during typing
-    const cleanInput = durationString.replace(/[^\d:]/g, '');
-    if (cleanInput === '') return 0;
-    
-    // Split by colon and handle various input states
-    const parts = cleanInput.split(':');
-    const minutes = parseInt(parts[0]) || 0;
-    const seconds = parseInt(parts[1]) || 0;
-    
-    return (minutes * 60 + seconds) * 1000;
-};
+// Helper functions moved to shared utils
 
 export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
     isOpen,

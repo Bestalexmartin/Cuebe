@@ -12,6 +12,7 @@ import { ValidationRules, FormValidationConfig } from '../../types/validation';
 import { FormInput } from '../form/FormField';
 import { BaseModal } from '../base/BaseModal';
 import { useStandardFormValidation } from '../../hooks/useFormValidation';
+import { SCRIPT_STATUS_OPTIONS } from '../../pages/script/constants';
 
 // TypeScript interfaces
 interface ScriptFormData {
@@ -19,14 +20,6 @@ interface ScriptFormData {
     scriptStatus: string;
 }
 
-// Script status options
-const SCRIPT_STATUS_OPTIONS = [
-    { value: 'DRAFT', label: 'Draft' },
-    { value: 'COPY', label: 'Copy' },
-    { value: 'WORKING', label: 'Working' },
-    { value: 'FINAL', label: 'Final' },
-    { value: 'BACKUP', label: 'Backup' },
-];
 
 interface CreateScriptModalProps {
     isOpen: boolean;
