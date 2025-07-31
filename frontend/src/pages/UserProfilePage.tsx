@@ -1,4 +1,4 @@
-// frontend/src/UserProfilePage.tsx
+// frontend/src/pages/UserProfilePage.tsx
 
 import React from 'react';
 import { UserProfile } from "@clerk/clerk-react";

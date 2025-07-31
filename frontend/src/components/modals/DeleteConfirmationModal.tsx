@@ -1,4 +1,4 @@
-// frontend/src/components/DeleteConfirmationModal.tsx
+// frontend/src/components/modals/DeleteConfirmationModal.tsx
 
 import React from 'react';
 import {
