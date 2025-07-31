@@ -1,4 +1,4 @@
-// frontend/src/components/cards/VenueCard.tsx
+// frontend/src/features/venues/components/VenueCard.tsx
 
 import React from 'react';
 import {

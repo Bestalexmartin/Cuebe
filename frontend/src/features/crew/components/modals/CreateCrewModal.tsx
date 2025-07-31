@@ -1,4 +1,4 @@
-// frontend/src/components/modals/CreateCrewModal.tsx
+// frontend/src/features/crew/components/modals/CreateCrewModal.tsx
 
 import React from 'react';
 import {

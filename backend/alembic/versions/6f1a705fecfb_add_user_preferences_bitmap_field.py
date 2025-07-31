@@ -1,3 +1,5 @@
+# backend/alembic/versions/6f1a705fecfb_add_user_preferences_bitmap_field.py
+
 """add_user_preferences_bitmap_field
 
 Revision ID: 6f1a705fecfb

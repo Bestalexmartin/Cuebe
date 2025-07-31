@@ -1,4 +1,4 @@
-// frontend/src/pages/script/utils/toolbarConfig.ts
+// frontend/src/features/script/utils/toolbarConfig.ts
 
 import { ToolButton } from '../types/tool-button';
 

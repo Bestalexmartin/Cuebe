@@ -1,4 +1,4 @@
-// frontend/src/hooks/useScriptElementsWithEditQueue.ts
+// frontend/src/features/script/hooks/useScriptElementsWithEditQueue.ts
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';

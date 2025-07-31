@@ -1,4 +1,4 @@
-// frontend/src/components/cards/CrewCard.tsx
+// frontend/src/features/crew/components/CrewCard.tsx
 
 import React from 'react';
 import {

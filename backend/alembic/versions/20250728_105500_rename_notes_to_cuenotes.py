@@ -1,3 +1,5 @@
+# backend/alembic/versions/20250728_105500_rename_notes_to_cuenotes.py
+
 """Rename notes field to cueNotes in script_elements table
 
 Revision ID: rename_notes_to_cuenotes

@@ -1,4 +1,4 @@
-// frontend/src/components/modals/CreateVenueModal.tsx
+// frontend/src/features/venues/components/modals/CreateVenueModal.tsx
 
 import React from 'react';
 import {

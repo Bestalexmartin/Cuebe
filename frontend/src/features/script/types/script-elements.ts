@@ -1,4 +1,4 @@
-// frontend/src/pages/script/types/script-elements.ts
+// frontend/src/features/script/types/script-elements.ts
 
 // Script Element Types - Following the backend schema
 
