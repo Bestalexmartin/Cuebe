@@ -90,6 +90,9 @@ npm run dev
 - [ ] Includes loading and error states
 - [ ] Follows established naming conventions
 - [ ] Has appropriate skeleton variant
+- [ ] Uses shared utilities from `/utils/` when applicable
+- [ ] Imports shared constants instead of duplicating
+- [ ] No debug console.log statements (use console.error for actual errors)
 
 ## Testing Strategy
 
@@ -143,6 +146,50 @@ const MyComponent = ({ data, onUpdate }) => {
 2. **Implement skeleton loading**: Prevent layout shifts
 3. **Monitor bundle size**: Keep builds under 500KB when possible
 4. **Use React DevTools**: Profile components regularly
+
+## Code Quality & DRY Principles
+
+### Shared Utilities Pattern
+When you find yourself duplicating code, extract it to shared modules:
+
+```typescript
+// ✅ Good: Use shared utilities
+import { getTextColorForBackground } from '../../../utils/colorUtils';
+import { msToDurationString } from '../../../utils/timeUtils';
+import { SCRIPT_STATUS_OPTIONS } from '../../script/constants';
+
+// ❌ Avoid: Duplicating utility functions across components
+const getTextColorForBackground = (hexColor: string) => { /* duplicate code */ };
+```
+
+### Established Shared Modules
+- **Constants**: `frontend/src/pages/script/constants.ts`
+- **Color Utils**: `frontend/src/utils/colorUtils.ts`  
+- **Time Utils**: `frontend/src/utils/timeUtils.ts`
+- **Type Definitions**: `frontend/src/pages/script/types/tool-button.ts`
+
+### Debug Code Standards
+```typescript
+// ✅ Good: Essential error logging only
+try {
+  await submitForm();
+} catch (error) {
+  console.error('Form submission failed:', error);
+  showError('Unable to save changes');  
+}
+
+// ❌ Avoid: Debug console.logs in production
+console.log('=== FORM SUBMIT STARTED ===');
+console.log('Form data:', formData);
+console.log('Validation result:', isValid);
+```
+
+### Refactoring Checklist
+Before duplicating code, check:
+- [ ] Does a similar utility already exist in `/utils/`?
+- [ ] Can this be parameterized instead of duplicated?
+- [ ] Are constants already defined in a shared location?
+- [ ] Is this debugging code that should be removed?
 
 ## Architecture Patterns
 
@@ -321,7 +368,8 @@ test: add API endpoint tests for venues
 1. **Architecture**: `/docs/architecture/` - Component patterns and design
 2. **Testing**: `/docs/testing/` - Testing tools and strategies  
 3. **Performance**: `/docs/architecture/performance-optimizations.md`
-4. **Archives**: `/docs/archive/` - Historical improvements and context
+4. **Code Quality**: `/docs/development/code-quality-improvements-july-2025.md` - Recent DRY improvements and refactoring
+5. **Archives**: `/docs/archive/` - Historical improvements and context
 
 ### Debugging
 1. **Use Testing Tools**: Built-in testing suite covers most issues

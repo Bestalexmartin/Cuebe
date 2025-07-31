@@ -1,6 +1,6 @@
 // frontend/src/hooks/useFormManager.ts
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useEnhancedToast } from '../utils/toastUtils';
 
@@ -81,12 +81,12 @@ export const useFormManager = <T extends FormData>(initialState: T = {} as T): U
         }
     };
 
-    return {
+    return useMemo(() => ({
         formData,
         isSubmitting,
         updateField,
         resetForm,
         submitForm,
         setFormData,
-    };
+    }), [formData, isSubmitting, updateField, resetForm, submitForm, setFormData]);
 };

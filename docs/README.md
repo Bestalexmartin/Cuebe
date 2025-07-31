@@ -4,116 +4,169 @@
 
 Welcome to the CallMaster documentation! This comprehensive guide covers all aspects of the theater management application, from architecture to testing.
 
+## Quick Navigation
+
+### 🚀 **Getting Started**
+- **[Development Guide](./development/development-guide.md)** - Complete setup, workflow, and daily development practices
+- **[Component Architecture](./architecture/component-architecture.md)** - How to extend BaseCard/BaseModal systems
+- **[Testing Tools Guide](./testing/testing-tools-guide.md)** - Built-in testing suite and validation tools
+
+### ⚡ **Performance & Quality**
+- **[Performance Optimizations](./architecture/performance-optimizations.md)** - **NEW!** Comprehensive render loop optimization and React performance
+- **[Code Quality Guide](./development/code-quality-guide.md)** - DRY principles, performance optimization, and maintainable patterns
+- **[UI Interaction Guide](./development/ui-interaction-guide.md)** - Gesture recognition, context-aware controls, and accessibility
+
+### 🏗️ **Architecture & Design**
+- **[System Architecture](./architecture/system-architecture.md)** - Overall system design and technology stack
+- **[Script Elements Data Model](./architecture/script-elements-data-model.md)** - Complete data structure for script cues, notes, and groups
+- **[Edit Queue System](./architecture/edit-queue-system.md)** - Undo/redo functionality and operation tracking
+- **[Drag-and-Drop System](./architecture/drag-and-drop-system.md)** - Script element reordering with conflict resolution
+
 ## Documentation Structure
 
-### `/planning` - Project Vision & Roadmap
-- **[Development Roadmap](./planning/roadmap.md)** - Comprehensive roadmap for script editing, real-time collaboration, and advanced theater production features
+### `/development` - Developer Resources & Guides
+- **[Development Guide](./development/development-guide.md)** - **Start Here!** 🚀 Complete developer setup and workflow
+- **[Code Quality Guide](./development/code-quality-guide.md)** - **Essential** DRY principles, performance optimization, and architecture patterns
+- **[UI Interaction Guide](./development/ui-interaction-guide.md)** - **Essential** Gesture recognition, accessibility, and consistent UX patterns
 
-### `/development` - Developer Resources  
-- **[Development Guide](./development/development-guide.md)** - Start Here! 🚀 Quick start guide for developers with setup, workflow, and best practices
+### `/architecture` - System Design & Technical Specifications
+- **[Performance Optimizations](./architecture/performance-optimizations.md)** - **🔥 Updated!** React render loop optimization, memoization strategies, and performance monitoring
+- **[Component Architecture](./architecture/component-architecture.md)** - BaseCard/BaseModal patterns and composition principles
+- **[System Architecture](./architecture/system-architecture.md)** - Overall technology stack and design decisions
+- **[Script Elements Data Model](./architecture/script-elements-data-model.md)** - Complete data structure for theater script management
+- **[Script Elements Database Schema](./architecture/script-elements-database-schema.md)** - Database tables, relationships, and API endpoints
+- **[Edit Queue System](./architecture/edit-queue-system.md)** - Undo/redo functionality and operation tracking
+- **[Drag-and-Drop System](./architecture/drag-and-drop-system.md)** - Element reordering with intelligent conflict resolution
+- **[Script Element Interaction System](./architecture/script-element-interaction-system.md)** - Click-to-select and drag-to-reorder patterns
+- **[Note Color Customization](./architecture/note-color-customization.md)** - Color picker with smart contrast and presets
+- **[User Preferences Bitmap System](./architecture/user-preferences-bitmap-system.md)** - Efficient preference storage and management
+- **[Error Handling](./architecture/error-handling.md)** - Error boundaries, validation, and recovery strategies
+- **[Documentation Integration](./architecture/documentation-integration.md)** - How docs are integrated into the application
 
 ### `/standards` - Guidelines & Best Practices
-- **[Documentation Standards](./standards/documentation-standards.md)** - File naming conventions, content guidelines, and maintenance practices
+- **[Documentation Standards](./standards/documentation-standards.md)** - File naming, content guidelines, and maintenance practices
+- **[State Management Principles](./standards/state-management-principles.md)** - React state patterns and data flow principles
 
-### `/architecture` - System Design & Technical Details
-- **[Component Architecture](./architecture/component-architecture.md)** - BaseCard/BaseModal patterns and implementation guide
-- **[Script Elements Data Model](./architecture/script-elements-data-model.md)** - Complete data structure for script cues, notes, and groups
-- **[Script Elements Database Schema](./architecture/script-elements-database-schema.md)** - Database tables and API endpoints for script elements
-- **[Drag-and-Drop System](./architecture/drag-and-drop-system.md)** - Script element reordering with conflict resolution and modal interactions
-- **[Note Color Customization](./architecture/note-color-customization.md)** - Color picker system with smart text contrast and preset colors
-- **[Performance Optimizations](./architecture/performance-optimizations.md)** - React.memo, component optimization, and performance monitoring
-- **[Error Handling](./architecture/error-handling.md)** - Error boundaries, validation, and recovery strategies
-- **[Documentation Integration](./architecture/documentation-integration.md)** - How documentation is integrated into the application
+### `/testing` - Testing Infrastructure & Quality Assurance
+- **[Testing Tools Guide](./testing/testing-tools-guide.md)** - Comprehensive testing suite with 6 specialized tools
 
-### `/testing` - Testing Infrastructure & Tools
-- **[Testing Tools Guide](./testing/testing-tools-guide.md)** - Comprehensive testing suite documentation and usage
+### `/tutorial` - Learning Resources
+- **[Feature Tutorial](./tutorial/feature-tutorial.md)** - Step-by-step guides for key features
+
+### `/planning` - Project Vision & Roadmap
+- **[Development Roadmap](./planning/roadmap.md)** - Future features and technical roadmap
 
 ### `/archive` - Historical Records & Major Changes
 - **[Codebase Improvements Archive](./archive/codebase-improvements-archive.md)** - Complete record of major refactoring and optimizations
-- **[Design Insights Archive](./archive/design-insights-archive.md)** - Valuable design decisions and feature rationales
+- **[Design Insights Archive](./archive/design-insights-archive.md)** - Historical design decisions and rationales
 
-## Quick Start
+## Quick Start Paths
 
-### For Developers
-1. **Start Here**: [Development Guide](./development/development-guide.md) - Setup, workflow, and daily development practices
-2. **Architecture**: [Component Architecture](./architecture/component-architecture.md) - How to extend BaseCard/BaseModal
-3. **Testing**: [Testing Tools Guide](./testing/testing-tools-guide.md) - Use the built-in testing suite
-4. **Performance**: [Performance Optimizations](./architecture/performance-optimizations.md) - Best practices and monitoring
+### 🧑‍💻 **For New Developers**
+1. **[Development Guide](./development/development-guide.md)** - Complete setup, tooling, and workflow
+2. **[Component Architecture](./architecture/component-architecture.md)** - How to extend BaseCard/BaseModal systems
+3. **[Code Quality Guide](./development/code-quality-guide.md)** - Essential patterns and best practices
+4. **[Testing Tools Guide](./testing/testing-tools-guide.md)** - Built-in validation and testing suite
 
-### For Project Managers & Stakeholders
-1. **Overview**: [Codebase Improvements Archive](./archive/codebase-improvements-archive.md) - Complete record of major improvements
-2. **Capabilities**: [Testing Tools Guide](./testing/testing-tools-guide.md) - What testing infrastructure is available
-3. **Architecture**: [Component Architecture](./architecture/component-architecture.md) - How the system is designed
+### ⚡ **For Performance Optimization**
+1. **[Performance Optimizations](./architecture/performance-optimizations.md)** - **🔥 New!** Complete render loop optimization guide
+2. **[Code Quality Guide](./development/code-quality-guide.md)** - Memoization, DRY principles, and architecture patterns
+3. **[UI Interaction Guide](./development/ui-interaction-guide.md)** - Responsive interactions and gesture recognition
+
+### 🏗️ **For System Architecture**
+1. **[Component Architecture](./architecture/component-architecture.md)** - Base component patterns and composition
+2. **[System Architecture](./architecture/system-architecture.md)** - Overall design and technology decisions
+3. **[Script Elements Data Model](./architecture/script-elements-data-model.md)** - Core data structures and relationships
+
+### 📊 **For Project Managers & Stakeholders**
+1. **[Performance Optimizations](./architecture/performance-optimizations.md)** - Latest optimization achievements and impact
+2. **[Codebase Improvements Archive](./archive/codebase-improvements-archive.md)** - Complete record of major improvements
+3. **[Testing Tools Guide](./testing/testing-tools-guide.md)** - Quality assurance capabilities and infrastructure
 
 ## Architecture Overview
 
-CallMaster is built with:
+CallMaster is built with modern technologies focused on performance, maintainability, and developer experience:
+
 - **Frontend**: React 19.1.0 + TypeScript + Chakra UI
-- **Backend**: Python FastAPI + SQLAlchemy + PostgreSQL
+- **Backend**: Python FastAPI + SQLAlchemy + PostgreSQL  
 - **Authentication**: Clerk
-- **Testing**: Comprehensive test suites for all application layers
+- **Testing**: 6 comprehensive testing tools for all application layers
 
 ### Key Architectural Decisions
 
 #### Component Architecture
-- **Base Components**: `BaseCard` and `BaseModal` provide consistent foundations
-- **Composition Pattern**: Components extend base functionality through props
-- **Performance Optimization**: React.memo with custom comparison functions
+- **Base Components**: `BaseCard` and `BaseModal` provide consistent, composable foundations
+- **Composition Pattern**: Components extend functionality through props rather than inheritance
+- **Performance-First**: React.memo with custom comparison functions throughout
 
-#### Testing Strategy
-- **Multi-Layer Testing**: Environment, API, Authentication, Performance, Database
-- **Real-Time Feedback**: Live testing dashboard with immediate results
-- **Integration Ready**: Built for CI/CD pipeline integration
+#### Performance Strategy ⚡
+- **Render Loop Optimization**: Systematic elimination of unnecessary re-renders
+- **Hook Memoization**: All custom hooks memoized to prevent object reference changes
+- **Smart State Management**: Context-aware updates and stable callback patterns
+- **Code Deduplication**: 150+ lines of duplicate code eliminated across utility modules
 
-#### Performance Approach
-- **Code Elimination**: 278+ lines of duplicate code removed
-- **Smart Memoization**: 60-80% reduction in unnecessary re-renders
-- **Loading States**: Context-aware skeleton loading for better UX
+#### Testing & Quality Assurance
+- **Multi-Layer Testing**: Environment, API, Authentication, Performance, Database, Network
+- **Real-Time Feedback**: Live testing dashboard with immediate validation results
+- **CI/CD Integration**: Built for automated testing pipelines
 
-## Current Status
+## Current Status & Recent Achievements
 
-### Major Achievements
+### 🔥 **Latest Performance Improvements (July 2025)**
+- **Render Loop Optimization**: Eliminated infinite render loops causing 20+ re-renders per action
+- **50% Render Reduction**: View→Edit transitions now require only 6 renders (down from 12+)
+- **Boolean Coercion Fixes**: Resolved flickering issues in clock time display
+- **Hook Memoization**: 16+ hooks systematically optimized across the codebase
+- **Component Memoization**: ViewMode and EditMode with custom comparison functions
+
+### 🏗️ **Core Features**
 - **Script Elements API**: Complete CRUD operations for theater script management
-- **Drag-and-Drop System**: Intuitive script element reordering with intelligent conflict resolution
-- **Note Color Customization**: Visual organization system with smart text contrast and preset colors
-- **Enterprise-Grade Testing Suite**: 6 comprehensive testing tools
-- **Performance Optimized**: React.memo implementation across all components
-- **DRY Architecture**: Base component system eliminates code duplication
-- **Comprehensive Documentation**: Full technical documentation and guides
+- **Drag-and-Drop System**: Gesture-based element reordering with intelligent conflict resolution
+- **Edit Queue System**: Comprehensive undo/redo with operation tracking
+- **Note Color Customization**: Visual organization system with smart text contrast
+- **User Preferences**: Efficient bitmap-based preference storage system
 
-### Testing Coverage
-- ✅ Environment Configuration Testing
-- ✅ Authentication & Authorization Testing  
-- ✅ API Endpoint Testing
-- ✅ Performance Monitoring
-- ✅ Database Integrity Testing
-- ✅ Network & Connectivity Testing
+### 🧪 **Testing Infrastructure**
+- ✅ **Environment Configuration** Testing
+- ✅ **Authentication & Authorization** Testing  
+- ✅ **API Endpoint** Testing with comprehensive validation
+- ✅ **Performance Monitoring** with render tracking
+- ✅ **Database Integrity** Testing
+- ✅ **Network & Connectivity** Testing
 
-### Performance Metrics
-- **React.memo Coverage**: All major components optimized
-- **Code Reduction**: 278+ duplicate lines eliminated
-- **Component Efficiency**: 60-80% fewer unnecessary re-renders
-- **Loading Experience**: Context-aware skeleton states
+### 📈 **Performance Metrics**
+- **Render Efficiency**: 50% reduction in unnecessary re-renders during mode transitions
+- **Code Quality**: 150+ lines of duplicate code eliminated
+- **Hook Optimization**: 16+ custom hooks memoized for stable performance
+- **Component Coverage**: All major components optimized with React.memo
+- **Loading Experience**: Context-aware skeleton states for better perceived performance
 
 ## Development Guidelines
 
-### Component Development
-1. **Extend Base Components**: Use `BaseCard` or `BaseModal` when possible
-2. **Follow Composition Patterns**: Use props for content areas rather than inheritance
-3. **Implement Loading States**: Add `isLoading` prop and appropriate skeleton variants
-4. **Use Validation Hooks**: Leverage centralized validation patterns
+### 🚀 **Getting Started with Development**
+1. **Read the [Development Guide](./development/development-guide.md)** - Complete setup and workflow
+2. **Follow [Component Architecture](./architecture/component-architecture.md)** - Use BaseCard/BaseModal patterns
+3. **Apply [Code Quality Guide](./development/code-quality-guide.md)** - DRY principles and performance patterns
+4. **Reference [UI Interaction Guide](./development/ui-interaction-guide.md)** - Gesture recognition and accessibility
 
-### Testing Requirements
-1. **Run Test Suite**: Use testing tools before major releases
-2. **Add New Tests**: Create tests for new features and API endpoints
-3. **Monitor Performance**: Regular performance audits using built-in tools
-4. **Validate Changes**: Ensure all tests pass before deployment
+### ⚡ **Performance Requirements**
+1. **Memoize Custom Hooks**: Always use `useMemo` in hook return statements
+2. **Component Memoization**: Use `React.memo` with custom comparison functions
+3. **Stable Callbacks**: Use `useCallback` and ref patterns for callback stability
+4. **Monitor Renders**: Watch for 10+ renders per user action (performance issue indicator)
+5. **Review [Performance Optimizations](./architecture/performance-optimizations.md)** - Comprehensive optimization guide
 
-### Performance Best Practices
-1. **Use useCallback**: For event handlers in memoized components
-2. **Memoize Expensive Calculations**: Use useMemo for complex derived data
-3. **Avoid Inline Functions**: Use stable function references
-4. **Monitor Bundle Size**: Keep an eye on build output and optimization opportunities
+### 🧪 **Testing Requirements**
+1. **Run [Testing Tools](./testing/testing-tools-guide.md)** - Use 6 built-in validation tools before releases
+2. **Add Tests for New Features** - Include unit, integration, and performance tests
+3. **Monitor Performance** - Regular render tracking and optimization audits
+4. **Validate All Changes** - Ensure tests pass and no render regressions
+
+### 🏗️ **Architecture Standards**
+1. **Component Composition**: Extend BaseCard/BaseModal through props, not inheritance
+2. **Shared Utilities**: Create utility modules for cross-cutting concerns
+3. **Type Safety**: Use shared interfaces and strict TypeScript patterns
+4. **Error Boundaries**: Implement proper error handling and user feedback
 
 ## External Resources
 
@@ -132,23 +185,55 @@ CallMaster is built with:
 
 ## Contributing to Documentation
 
-When adding new documentation:
+### Adding New Documentation
+1. **Follow the [Documentation Standards](./standards/documentation-standards.md)** - Consistent formatting and organization
+2. **Place in Appropriate Folders** - Use the established `/development`, `/architecture`, `/testing` structure
+3. **Update This README** - Add new documents to the navigation structure above
+4. **Cross-Reference Related Docs** - Link to related documentation for better navigation
+5. **Include Practical Examples** - Provide code examples and real-world use cases
 
-1. **Follow the Structure**: Place docs in appropriate folders
-2. **Use Clear Titles**: Make documents easy to find and understand
-3. **Include Examples**: Provide code examples and use cases
-4. **Link Related Docs**: Cross-reference related documentation
-5. **Update This README**: Add new documents to the structure above
+### Documentation Categories
+- **`/development/`** - Guides for developers: setup, patterns, best practices
+- **`/architecture/`** - Technical specifications: system design, data models, optimizations
+- **`/standards/`** - Guidelines and principles for consistency
+- **`/testing/`** - Quality assurance and validation procedures
+- **`/planning/`** - Project roadmap and future development
+- **`/archive/`** - Historical records and major change documentation
 
-## Support & Questions
+## Support & Getting Help
 
-For questions about:
-- **Architecture**: Review architecture docs or examine base components
-- **Testing**: Use the testing tools or refer to testing documentation
-- **Performance**: Check performance optimization guide and monitoring tools
-- **Implementation**: Review the archive document for historical context
+### 🔍 **For Technical Questions**
+- **Performance Issues**: [Performance Optimizations](./architecture/performance-optimizations.md) - Comprehensive render optimization guide
+- **Code Quality**: [Code Quality Guide](./development/code-quality-guide.md) - DRY principles and maintainable patterns  
+- **UI/UX Implementation**: [UI Interaction Guide](./development/ui-interaction-guide.md) - Gesture recognition and accessibility
+- **System Architecture**: [Component Architecture](./architecture/component-architecture.md) - Base component patterns
+
+### 🧪 **For Testing & Validation**
+- **Testing Tools**: [Testing Tools Guide](./testing/testing-tools-guide.md) - 6 comprehensive validation tools
+- **Quality Assurance**: Run built-in testing suite before major changes
+- **Performance Monitoring**: Use render tracking tools to identify issues
+
+### 📚 **For Historical Context**
+- **Major Changes**: [Codebase Improvements Archive](./archive/codebase-improvements-archive.md) - Complete record of optimizations
+- **Design Decisions**: [Design Insights Archive](./archive/design-insights-archive.md) - Rationale behind architectural choices
+
+---
+
+## Recent Documentation Updates
+
+### 🔥 **July 2025 - Major Performance Documentation**
+- **NEW:** [Performance Optimizations](./architecture/performance-optimizations.md) - Comprehensive render loop optimization guide
+- **NEW:** [Code Quality Guide](./development/code-quality-guide.md) - Consolidated DRY principles and performance patterns  
+- **NEW:** [UI Interaction Guide](./development/ui-interaction-guide.md) - Gesture recognition and accessibility patterns
+- **UPDATED:** This README with improved navigation and organization
+
+### Key Documentation Features
+- 🚀 **Quick Navigation** - Role-based documentation paths for different user types
+- ⚡ **Performance Focus** - Extensive render optimization and memoization guides
+- 🏗️ **Architecture Clarity** - Comprehensive system design and component patterns
+- 🧪 **Quality Assurance** - Integrated testing tools and validation procedures
 
 ---
 
 *Last Updated: July 2025*  
-*Documentation Version: 1.0*
+*Documentation Version: 2.0 - Major Performance & Organization Update*

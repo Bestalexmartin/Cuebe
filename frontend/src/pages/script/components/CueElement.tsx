@@ -1,6 +1,6 @@
 // frontend/src/pages/script/components/CueElement.tsx
 
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useMemo } from 'react';
 import { Box, HStack, Text } from '@chakra-ui/react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -20,7 +20,7 @@ interface CueElementProps {
     onSelect?: () => void;
 }
 
-export const CueElement: React.FC<CueElementProps> = ({
+export const CueElement: React.FC<CueElementProps> = React.memo(({
     element,
     index,
     allElements,
@@ -150,10 +150,16 @@ export const CueElement: React.FC<CueElementProps> = ({
         return `${deptPrefix}-${departmentCueCount.toString().padStart(2, '0')}`;
     })();
 
-    const timeDisplay = (() => {
+    const timeDisplay = useMemo(() => {
         const timeValue = element.timeOffsetMs || 0;
-
-        if (showClockTimes && scriptStartTime) {
+        
+        // If clock times are requested but we don't have script start time yet, show placeholder
+        if (showClockTimes) {
+            if (!scriptStartTime) {
+                return '--:--:--'; // Placeholder to prevent offset time from showing
+            }
+            
+            // Calculate clock time directly
             const showStartTime = new Date(scriptStartTime);
             const clockTime = new Date(showStartTime.getTime() + timeValue);
 
@@ -165,6 +171,8 @@ export const CueElement: React.FC<CueElementProps> = ({
             const seconds = clockTime.getSeconds().toString().padStart(2, '0');
             return `${hours}:${minutes}:${seconds}`;
         }
+        
+        // Show offset time when clock times are not requested
         const totalSeconds = Math.round(timeValue / 1000);
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -175,9 +183,9 @@ export const CueElement: React.FC<CueElementProps> = ({
         } else {
             return `${minutes}:${seconds.toString().padStart(2, '0')}`;
         }
-    })();
+    }, [element.timeOffsetMs, showClockTimes, scriptStartTime]);
 
-    const durationDisplay = (() => {
+    const durationDisplay = useMemo(() => {
         if (element.duration) {
             const totalSeconds = element.duration;
             const days = Math.floor(totalSeconds / 86400);
@@ -226,7 +234,7 @@ export const CueElement: React.FC<CueElementProps> = ({
         }
 
         return '-';
-    })();
+    }, [element.duration, element.description, scriptStartTime, scriptEndTime]);
 
     const dragStyle = {
         transform: CSS.Transform.toString(transform),
@@ -360,4 +368,4 @@ export const CueElement: React.FC<CueElementProps> = ({
             </HStack>
         </Box>
     );
-};
+});

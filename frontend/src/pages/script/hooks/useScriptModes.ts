@@ -1,6 +1,6 @@
 // frontend/src/pages/script/hooks/useScriptModes.ts
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 export type ScriptMode = 'view' | 'play' | 'info' | 'edit' | 'share' | 'history';
 
@@ -33,10 +33,10 @@ export const useScriptModes = (initialMode: ScriptMode = 'view'): UseScriptModes
         // History mode moved to edit mode toolbar section
     ], []);
 
-    return {
+    return useMemo(() => ({
         activeMode,
         setActiveMode,
         isValidMode,
         getAvailableModes
-    };
+    }), [activeMode, setActiveMode, isValidMode, getAvailableModes]);
 };

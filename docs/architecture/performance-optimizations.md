@@ -81,10 +81,231 @@ To monitor the effectiveness of these optimizations:
 2. **Browser Performance Tab**: Monitor frame rates during interactions
 3. **Bundle Analysis**: Check for code splitting opportunities
 
-## Future Optimizations
+## Render Loop Optimization (July 2025)
+
+### Critical Performance Issue Resolution
+
+A comprehensive performance optimization was completed to resolve excessive re-renders in the ManageScriptPage component, particularly during view/edit mode transitions with "Show Clock Times" enabled.
+
+#### Problem Analysis
+
+**Initial Issue**: View↔Edit mode transitions were causing 20+ component re-renders per action, creating visual flickering and poor user experience.
+
+**Root Causes Identified**:
+1. **Boolean Coercion Bug**: `showClockTimes && script?.startTime` returned string values instead of booleans
+2. **Redundant API Calls**: Both ViewMode and EditMode were making separate `useScript` calls
+3. **Unstable Hook Returns**: Custom hooks returning new object references on every render
+4. **Infinite Render Loops**: Circular dependencies in hook dependency arrays
+5. **Spurious Callback Loops**: Child components triggering parent re-renders through unstable callbacks
+
+#### Systematic Solution Process
+
+**Phase 1: Boolean Logic Fix**
+```tsx
+// ❌ BUG: Returns string value when script?.startTime exists
+const shouldShowClockTimes = showClockTimes && script?.startTime;
+
+// ✅ FIXED: Returns proper boolean
+const shouldShowClockTimes = showClockTimes && !!script?.startTime;
+```
+
+**Phase 2: Hook Memoization**
+All custom hooks were systematically memoized to prevent object reference changes:
+
+- **Frontend hooks** (`frontend/src/hooks/`): 16+ hooks memoized
+- **Script-specific hooks** (`src/pages/script/hooks/`): 3 hooks memoized
+- **Key fixes**: `useValidatedForm`, `useChangeDetection`, `useEditQueue`
+
+```tsx
+// Example: useValidatedForm fix
+return useMemo(() => ({
+    formData,
+    setFormData,
+    updateField,
+    // ... rest of return object
+}), [
+    formData,
+    setFormData,
+    updateField,
+    // ... all dependencies
+]);
+```
+
+**Phase 3: Component Memoization**
+Major components optimized with React.memo and custom comparison functions:
+
+```tsx
+// ViewMode and EditMode with custom areEqual functions
+const areEqual = (prevProps: EditModeProps, nextProps: EditModeProps) => {
+    return (
+        prevProps.scriptId === nextProps.scriptId &&
+        prevProps.colorizeDepNames === nextProps.colorizeDepNames &&
+        prevProps.showClockTimes === nextProps.showClockTimes &&
+        prevProps.autoSortCues === nextProps.autoSortCues &&
+        prevProps.elements === nextProps.elements &&
+        prevProps.script === nextProps.script
+        // Deliberately ignoring callback props to prevent spurious re-renders
+    );
+};
+export const EditMode = React.memo(EditModeComponent, areEqual);
+```
+
+**Phase 4: Stable Callback Patterns**
+Eliminated circular dependencies using stable callback patterns:
+
+```tsx
+// useScriptElementsWithEditQueue stable callbacks
+const editQueueRef = useRef(editQueue);
+editQueueRef.current = editQueue;
+
+const applyLocalChange = useCallback((operation) => {
+    editQueueRef.current.addOperation(operation);
+}, []); // Empty dependency array for stability
+```
+
+**Phase 5: Internal Effect Optimization**
+Optimized internal useEffect hooks to prevent unnecessary state updates:
+
+```tsx
+// EditMode scroll state optimization
+const stateChanged = !lastState || 
+    lastState.isAtTop !== currentState.isAtTop ||
+    lastState.isAtBottom !== currentState.isAtBottom ||
+    lastState.allElementsFitOnScreen !== currentState.allElementsFitOnScreen;
+    
+if (stateChanged) {
+    lastScrollStateRef.current = currentState;
+    onScrollStateChange(currentState);
+} else {
+    // Skip callback to prevent spurious re-renders
+}
+```
+
+#### Performance Results
+
+**Before Optimization**:
+- Initial Load: Infinite render loops (20+ renders)
+- View→Edit: 12+ EditMode renders
+- Edit→View: 8+ ViewMode renders
+- Visual flickering during clock time transitions
+
+**After Optimization**:
+- Initial Load: 6 ViewMode renders (stable)
+- View→Edit: 6 EditMode renders (50% improvement)
+- Edit→View: 4 ViewMode renders (excellent performance)
+- No visual flickering, smooth transitions
+
+### Expected Interaction Chain
+
+Understanding the proper render flow helps identify when performance issues occur:
+
+**Normal View→Edit Transition**:
+1. ManageScriptPage state update (mode change)
+2. EditMode component mount (1 render)
+3. useScriptElementsWithEditQueue initialization (1-2 renders)
+4. Element data loading completion (1-2 renders)
+5. Scroll state initialization (1-2 renders)
+6. **Total: ~6 renders (acceptable)**
+
+**Normal Edit→View Transition**:
+1. ManageScriptPage state update (mode change)
+2. ViewMode component mount (1 render)
+3. Element data loading (if needed) (1-2 renders)
+4. Scroll state initialization (1 render)
+5. **Total: ~4 renders (excellent)**
+
+### Types of Re-render Issues
+
+#### Legitimate Re-renders
+- Component mounting/unmounting
+- Prop or state changes with actual value differences
+- Data loading state changes
+- User interaction responses
+
+#### Spurious Re-renders (Performance Problems)
+- **Hook Object Reference Changes**: Custom hooks returning new objects every render
+- **Boolean Coercion Bugs**: Values changing type between renders (string↔boolean)
+- **Circular Dependencies**: useCallback/useMemo depending on themselves
+- **Child Callback Loops**: Child components triggering parent re-renders through unstable callbacks
+- **Infinite Effect Loops**: useEffect with incorrect dependencies causing continuous firing
+
+### Best Practices for Render Performance
+
+#### Custom Hook Design
+```tsx
+// ✅ Memoize hook return values
+const useCustomHook = () => {
+    const [state, setState] = useState();
+    const stableCallback = useCallback(() => {}, []);
+    
+    return useMemo(() => ({
+        state,
+        setState,
+        stableCallback
+    }), [state, setState, stableCallback]);
+};
+```
+
+#### Component Memoization Strategy
+```tsx
+// ✅ Ignore callback props in comparison functions
+const areEqual = (prevProps, nextProps) => {
+    return (
+        prevProps.id === nextProps.id &&
+        prevProps.data === nextProps.data
+        // Ignore: onCallback, onAction, etc.
+    );
+};
+export const Component = React.memo(ComponentImpl, areEqual);
+```
+
+#### Stable Callback Patterns
+```tsx
+// ✅ Use refs for stable callbacks with changing dependencies
+const latestValueRef = useRef(value);
+latestValueRef.current = value;
+
+const stableCallback = useCallback(() => {
+    // Use latestValueRef.current instead of value
+    doSomething(latestValueRef.current);
+}, []); // Empty dependency array
+```
+
+#### Effect Optimization
+```tsx
+// ✅ Deep comparison to prevent unnecessary effects
+useEffect(() => {
+    const hasChanged = !previousState ||
+        previousState.prop1 !== currentState.prop1 ||
+        previousState.prop2 !== currentState.prop2;
+        
+    if (hasChanged) {
+        // Only execute when actually changed
+        doExpensiveOperation();
+    }
+}, [currentState]);
+```
+
+### Monitoring Render Performance
+
+#### Detection Methods
+1. **Console Logging**: Add render logs to identify excessive re-renders
+2. **React DevTools Profiler**: Record component render times and counts
+3. **Performance API**: Measure render timing in production
+4. **Visual Inspection**: Watch for flickering or layout shifts
+
+#### Warning Signs
+- Components rendering 10+ times for single user actions
+- Visual flickering during state transitions
+- UI lag or stuttering during interactions
+- High CPU usage during normal operations
+- Memory leaks from accumulating event listeners
+
+### Future Optimizations
 
 Potential areas for further improvement:
 1. **Code Splitting**: Split large components into separate chunks
 2. **Virtual Scrolling**: For very large lists of cards
 3. **Service Worker**: Cache static assets and API responses
 4. **Intersection Observer**: Lazy load off-screen content
+5. **React Concurrent Features**: Explore Suspense and time slicing for better UX

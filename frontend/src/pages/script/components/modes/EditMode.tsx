@@ -37,6 +37,7 @@ interface EditModeProps {
     }) => void;
     // Edit queue props
     elements?: any[];
+    script?: any; // Optional cached script to prevent refetching
     onApplyLocalChange?: (operation: any) => void;
 }
 
@@ -46,7 +47,7 @@ export interface EditModeRef {
     clearSelection: () => void;
 }
 
-export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
+const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     scriptId,
     colorizeDepNames = false,
     showClockTimes = false,
@@ -54,11 +55,17 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     onAutoSortChange,
     onScrollStateChange,
     elements: externalElements,
+    script: providedScript,
     onApplyLocalChange
 }, ref) => {
     // Use external elements if provided (from edit queue), otherwise fallback to direct hook
-    const { elements: serverElements, isLoading, error, refetchElements } = useScriptElements(scriptId);
-    const { script } = useScript(scriptId);
+    const shouldFetchElements = !externalElements;
+    const { elements: serverElements, isLoading, error, refetchElements } = useScriptElements(shouldFetchElements ? scriptId : undefined);
+    
+    // Use provided script if available, otherwise fetch it
+    const shouldFetchScript = !providedScript;
+    const { script: scriptFromHook } = useScript(shouldFetchScript ? scriptId : undefined);
+    const script = providedScript || scriptFromHook;
     const { getToken } = useAuth();
 
     const elements = externalElements || serverElements;
@@ -70,11 +77,19 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     const [pendingReorder, setPendingReorder] = useState<any>(null);
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const lastScrollStateRef = useRef<{isAtTop: boolean; isAtBottom: boolean; allElementsFitOnScreen: boolean} | null>(null);
     
 
     useEffect(() => {
-        setLocalElements(elements);
-    }, [elements]);
+        // Only update if the elements have actually changed (deep comparison)
+        const elementsChanged = !localElements || 
+            localElements.length !== elements?.length ||
+            localElements.some((el, index) => el.elementID !== elements?.[index]?.elementID);
+            
+        if (elementsChanged) {
+            setLocalElements(elements);
+        }
+    }, [elements, localElements]);
 
     // Expose refetch function and selection state to parent via ref
     useImperativeHandle(ref, () => ({
@@ -125,32 +140,7 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
             elementBelow = newIndex < localElements.length - 1 ? localElements[newIndex] : null; // The element currently at newIndex will be below
         }
 
-        localElements.forEach((el, idx) => {
-            let marker = '';
-            if (idx === oldIndex) marker = ' <- DRAGGED';
-            else if (elementAbove && el.elementID === elementAbove.elementID) marker = ' <- WILL BE ABOVE';
-            else if (elementBelow && el.elementID === elementBelow.elementID) marker = ' <- WILL BE BELOW';
-        });
-
-
-            id: draggedEl.elementID,
-            description: draggedEl.description,
-            timeOffsetMs: draggedEl.timeOffsetMs
-        });
-            id: elementAbove.elementID,
-            description: elementAbove.description,
-            timeOffsetMs: elementAbove.timeOffsetMs
-        } : 'null (moved to top)');
-            id: elementBelow.elementID,
-            description: elementBelow.description,
-            timeOffsetMs: elementBelow.timeOffsetMs
-        } : 'null (moved to bottom)');
-
         const reorderedElements = arrayMove(localElements, oldIndex, newIndex);
-        
-        reorderedElements.forEach((el, idx) => {
-            const marker = el.elementID === draggedEl.elementID ? ' <- DRAGGED (now here)' : '';
-        });
         
         const pendingReorderData = {
             oldIndex,
@@ -203,49 +193,20 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     };
 
     const handleMatchBefore = async () => {
-            id: draggedElement?.elementID,
-            description: draggedElement?.description,
-            timeOffsetMs: draggedElement?.timeOffsetMs
-        });
-            id: elementAbove.elementID,
-            description: elementAbove.description,
-            timeOffsetMs: elementAbove.timeOffsetMs
-        } : 'null');
-        
-        // Debug: Let's also check the current localElements state
-        localElements.forEach((el, idx) => {
-        });
-        
-        // Debug: Check if elementAbove reference is stale
-        if (elementAbove && draggedElement) {
-            const currentElementAbove = localElements.find(el => el.elementID === elementAbove.elementID);
-                id: elementAbove.elementID,
-                timeOffsetMs: elementAbove.timeOffsetMs,
-                description: elementAbove.description
-            });
-                id: currentElementAbove.elementID,
-                timeOffsetMs: currentElementAbove.timeOffsetMs,
-                description: currentElementAbove.description
-            } : 'NOT FOUND');
-        }
-        
         await applyReorder();
 
         if (elementAbove && draggedElement) {
             await updateElementTimeOffset(draggedElement.elementID, elementAbove.timeOffsetMs);
-        } else {
         }
         
         closeDragModal();
     };
 
     const handleMatchAfter = async () => {
-        
         await applyReorder();
 
         if (elementBelow && draggedElement) {
             await updateElementTimeOffset(draggedElement.elementID, elementBelow.timeOffsetMs);
-        } else {
         }
         
         closeDragModal();
@@ -260,13 +221,11 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     };
 
     const handleCancelDrag = () => {
-        
         // Revert local elements back to server state
         setLocalElements(elements);
         
         // Close modal and clear state
         closeDragModal();
-        
     };
 
     const applyReorderDirect = async (pendingReorderData: any, draggedElement: any) => {
@@ -420,7 +379,6 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
                             ? { ...el, timeOffsetMs: newTimeOffsetMs }
                             : el
                     );
-                        updatedElements.find(el => el.elementID === elementId));
                     return updatedElements;
                 });
             } else {
@@ -445,11 +403,19 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
         const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1; // Allow for 1px tolerance
         const allElementsFitOnScreen = scrollHeight <= clientHeight;
         
-        onScrollStateChange({
-            isAtTop,
-            isAtBottom,
-            allElementsFitOnScreen
-        });
+        const currentState = { isAtTop, isAtBottom, allElementsFitOnScreen };
+        const lastState = lastScrollStateRef.current;
+        
+        // Only call callback if scroll state actually changed
+        const stateChanged = !lastState || 
+            lastState.isAtTop !== currentState.isAtTop ||
+            lastState.isAtBottom !== currentState.isAtBottom ||
+            lastState.allElementsFitOnScreen !== currentState.allElementsFitOnScreen;
+            
+        if (stateChanged) {
+            lastScrollStateRef.current = currentState;
+            onScrollStateChange(currentState);
+        }
     };
 
     // Check scroll state when elements change or component mounts
@@ -514,27 +480,31 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
                         >
                             <Box>
                                 <VStack spacing={0} align="stretch">
-                                    {localElements.map((element, index) => (
-                                        <CueElement
-                                            key={element.elementID}
-                                            element={element}
-                                            index={index}
-                                            allElements={localElements}
-                                            colorizeDepNames={colorizeDepNames}
-                                            showClockTimes={showClockTimes}
-                                            scriptStartTime={script?.startTime}
-                                            scriptEndTime={script?.endTime}
-                                            isDragEnabled={true}
-                                            isSelected={selectedElementId === element.elementID}
-                                            onSelect={() => {
-                                                if (selectedElementId === element.elementID) {
-                                                    setSelectedElementId(null); // Deselect if already selected
-                                                } else {
-                                                    setSelectedElementId(element.elementID); // Select if not selected
-                                                }
-                                            }}
-                                        />
-                                    ))}
+                                    {localElements.map((element, index) => {
+                                        // Only show clock times if we have the required script start time
+                                        const shouldShowClockTimes = showClockTimes && !!script?.startTime;
+                                        return (
+                                            <CueElement
+                                                key={element.elementID}
+                                                element={element}
+                                                index={index}
+                                                allElements={localElements}
+                                                colorizeDepNames={colorizeDepNames}
+                                                showClockTimes={shouldShowClockTimes}
+                                                scriptStartTime={script?.startTime}
+                                                scriptEndTime={script?.endTime}
+                                                isDragEnabled={true}
+                                                isSelected={selectedElementId === element.elementID}
+                                                onSelect={() => {
+                                                    if (selectedElementId === element.elementID) {
+                                                        setSelectedElementId(null); // Deselect if already selected
+                                                    } else {
+                                                        setSelectedElementId(element.elementID); // Select if not selected
+                                                    }
+                                                }}
+                                            />
+                                        );
+                                    })}
                                 </VStack>
                             </Box>
                         </SortableContext>
@@ -557,3 +527,19 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
         </VStack>
     );
 });
+
+// Custom comparison function that ignores callback props
+const areEqual = (prevProps: EditModeProps, nextProps: EditModeProps) => {
+    // Compare all props except callbacks
+    return (
+        prevProps.scriptId === nextProps.scriptId &&
+        prevProps.colorizeDepNames === nextProps.colorizeDepNames &&
+        prevProps.showClockTimes === nextProps.showClockTimes &&
+        prevProps.autoSortCues === nextProps.autoSortCues &&
+        prevProps.elements === nextProps.elements &&
+        prevProps.script === nextProps.script
+        // Deliberately ignoring onAutoSortChange, onScrollStateChange, and onApplyLocalChange
+    );
+};
+
+export const EditMode = React.memo(EditModeComponent, areEqual);

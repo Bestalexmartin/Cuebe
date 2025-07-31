@@ -1,6 +1,6 @@
 // frontend/src/hooks/useEditQueue.ts
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import { EditOperation, EditQueueState } from '../types/editQueue';
 import { ScriptElement } from '../types/scriptElements';
 import { EditQueueFormatter } from '../utils/editQueueFormatter';
@@ -243,7 +243,7 @@ export const useEditQueue = (): UseEditQueueReturn => {
         return EditQueueFormatter.formatOperationsSummary(activeOperations);
     }, [queueState]);
     
-    return {
+    return useMemo(() => ({
         // State
         operations: queueState.queue.operations,
         hasUnsavedChanges: queueState.queue.hasUnsavedChanges,
@@ -264,5 +264,9 @@ export const useEditQueue = (): UseEditQueueReturn => {
         // Utilities
         getFormattedOperations,
         getSummary
-    };
+    }), [
+        queueState.queue.operations,
+        queueState.queue.hasUnsavedChanges,
+        queueState.currentIndex
+    ]);
 };

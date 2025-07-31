@@ -1,6 +1,6 @@
 // frontend/src/hooks/useShows.ts
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 
 // TypeScript interfaces
@@ -73,5 +73,5 @@ export const useShows = (): UseShowsReturn => {
     fetchShows();
   }, [fetchShows]);
 
-  return { shows, isLoading, error, refetchShows: fetchShows };
+  return useMemo(() => ({ shows, isLoading, error, refetchShows: fetchShows }), [shows, isLoading, error, fetchShows]);
 };

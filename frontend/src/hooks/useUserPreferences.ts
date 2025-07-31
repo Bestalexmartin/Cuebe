@@ -1,6 +1,6 @@
 // frontend/src/hooks/useUserPreferences.ts
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useEnhancedToast } from '../utils/toastUtils';
 
@@ -226,11 +226,11 @@ export const useUserPreferences = () => {
         }
     };
 
-    return {
+    return useMemo(() => ({
         preferences,
         isLoading,
         isSaving,
         updatePreference,
         updatePreferences
-    };
+    }), [preferences, isLoading, isSaving, updatePreference, updatePreferences]);
 };

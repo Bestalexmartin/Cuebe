@@ -1,6 +1,6 @@
 // frontend/src/hooks/useErrorHandler.ts
 
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useMemo } from 'react';
 import { globalErrorHandler, ErrorHandlerOptions, RetryConfig } from '../utils/errorHandler';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { EnhancedError } from '../types/errorTypes';
@@ -100,13 +100,13 @@ export const useErrorHandler = (options: UseErrorHandlerOptions = {}): UseErrorH
     globalErrorHandler.resetRetryCount(operationId);
   }, []);
 
-  return {
+  return useMemo(() => ({
     handleError,
     executeWithRetry,
     isOnline: isOnlineState,
     getRetryCount,
     resetRetryCount
-  };
+  }), [handleError, executeWithRetry, isOnlineState, getRetryCount, resetRetryCount]);
 };
 
 /**
@@ -154,11 +154,11 @@ export const useApiOperation = <T>(
     setIsLoading(false);
   }, []);
 
-  return {
+  return useMemo(() => ({
     execute,
     reset,
     isLoading,
     error,
     data
-  };
+  }), [execute, reset, isLoading, error, data]);
 };

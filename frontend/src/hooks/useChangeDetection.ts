@@ -51,10 +51,10 @@ export function useChangeDetection<T extends Record<string, any>>(
         setOriginalData(null);
     };
 
-    return {
+    return useMemo(() => ({
         hasChanges,
         originalData,
         updateOriginalData,
         resetOriginalData
-    };
+    }), [hasChanges, originalData, updateOriginalData, resetOriginalData]);
 }

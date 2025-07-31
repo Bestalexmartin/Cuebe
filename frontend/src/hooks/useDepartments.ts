@@ -1,6 +1,6 @@
 // frontend/src/hooks/useDepartments.ts
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 
 // TypeScript interfaces
@@ -60,10 +60,10 @@ export const useDepartments = (): UseDepartmentsReturn => {
         fetchDepartments();
     }, [fetchDepartments]);
 
-    return {
+    return useMemo(() => ({
         departments,
         isLoading,
         error,
         refetchDepartments
-    };
+    }), [departments, isLoading, error, refetchDepartments]);
 };

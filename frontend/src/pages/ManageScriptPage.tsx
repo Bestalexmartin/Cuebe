@@ -1,6 +1,6 @@
 // frontend/src/pages/ManageScriptPage.tsx
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
     Box,
     VStack,
@@ -8,16 +8,10 @@ import {
     Text,
     Spinner,
     Flex,
-    Button,
-    Divider,
     Heading,
-    useBreakpointValue,
-    Drawer,
-    DrawerBody,
-    DrawerHeader,
-    DrawerOverlay,
-    DrawerContent,
-    DrawerCloseButton
+    Divider,
+    Button,
+    useBreakpointValue
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
@@ -26,14 +20,7 @@ import { useShow } from "../hooks/useShow";
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AppIcon } from '../components/AppIcon';
 import { ActionsMenu, ActionItem } from '../components/ActionsMenu';
-import { DeleteConfirmationModal } from '../components/modals/DeleteConfirmationModal';
-import { FinalDeleteConfirmationModal } from '../components/modals/FinalDeleteConfirmationModal';
-import { DuplicateScriptModal } from './script/components/modals/DuplicateScriptModal';
-import { ProcessingModal } from './script/components/modals/ProcessingModal';
-import { OptionsModal } from './script/components/modals/OptionsModal';
-import { DeleteCueModal } from './script/components/modals/DeleteCueModal';
-import { DuplicateElementModal } from './script/components/modals/DuplicateElementModal';
-import { UnsavedChangesModal } from '../components/modals/UnsavedChangesModal';
+// Modal imports now handled by ScriptModals component
 import { useEnhancedToast } from '../utils/toastUtils';
 import { useValidatedForm } from '../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../types/validation';
@@ -43,6 +30,8 @@ import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences
 import { EditHistoryView } from '../components/EditHistoryView';
 import { useScriptElementsWithEditQueue } from '../hooks/useScriptElementsWithEditQueue';
 import { EditQueueFormatter } from '../utils/editQueueFormatter';
+import { useModalState } from '../hooks/useModalState';
+import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
 
 // Import script-specific components
 import { ScriptToolbar } from './script/components/ScriptToolbar';
@@ -51,9 +40,27 @@ import { ViewMode, ViewModeRef } from './script/components/modes/ViewMode';
 import { EditMode, EditModeRef } from './script/components/modes/EditMode';
 import { PlayMode } from './script/components/modes/PlayMode';
 import { ShareMode } from './script/components/modes/ShareMode';
-import { AddScriptElementModal } from './script/components/AddScriptElementModal';
+// AddScriptElementModal now handled by ScriptModals component
 import { useScriptModes } from './script/hooks/useScriptModes';
 import { ToolButton } from './script/types/tool-button';
+import { ScriptModals } from './script/components/ScriptModals';
+import { MobileScriptDrawer } from './script/components/MobileScriptDrawer';
+import { getToolbarButtons, ToolbarContext } from './script/utils/toolbarConfig';
+
+// Modal names for type safety and consistency
+const MODAL_NAMES = {
+    DELETE: 'delete',
+    FINAL_DELETE: 'final-delete',
+    DUPLICATE: 'duplicate',
+    PROCESSING: 'processing',
+    ADD_ELEMENT: 'add-element',
+    OPTIONS: 'options',
+    DELETE_CUE: 'delete-cue',
+    DUPLICATE_ELEMENT: 'duplicate-element',
+    UNSAVED_CHANGES: 'unsaved-changes',
+    CLEAR_HISTORY: 'clear-history',
+    FINAL_CLEAR_HISTORY: 'final-clear-history'
+} as const;
 
 interface ManageScriptPageProps {
     isMenuOpen: boolean;
@@ -110,38 +117,42 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const { getToken } = useAuth();
     const { showSuccess, showError } = useEnhancedToast();
 
-    // Delete state management
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [isFinalDeleteModalOpen, setIsFinalDeleteModalOpen] = useState(false);
+    // Modal state management using custom hook
+    const modalState = useModalState(Object.values(MODAL_NAMES));
+
+    // Dashboard navigation hook
+    const { navigateWithCurrentContext } = useDashboardNavigation();
+
+    // Processing states (separate from modal states)
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeletingCue, setIsDeletingCue] = useState(false);
+    const [isDuplicatingElement, setIsDuplicatingElement] = useState(false);
+    const [isSavingChanges, setIsSavingChanges] = useState(false);
 
-    // Duplicate state management
-    const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
-    const [isProcessingModalOpen, setIsProcessingModalOpen] = useState(false);
-
-    // Element action state management
-    const [isAddElementModalOpen, setIsAddElementModalOpen] = useState(false);
+    // Element selection and refs
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+    const [selectedElementName, setSelectedElementName] = useState<string>('');
+    const [selectedElementTimeOffset, setSelectedElementTimeOffset] = useState<number>(0);
     const viewModeRef = useRef<ViewModeRef>(null);
     const editModeRef = useRef<EditModeRef>(null);
 
-    // Options state management
-    const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
+    // Options modal data management
     const [previewPreferences, setPreviewPreferences] = useState<UserPreferences | null>(null);
-    const { 
-        preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues }, 
+    const {
+        preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues },
         updatePreference,
         updatePreferences
     } = useUserPreferences();
 
-    // Use preview preferences when modal is open, otherwise use saved preferences
-    const activePreferences = isOptionsModalOpen && previewPreferences 
-        ? previewPreferences 
-        : { darkMode, colorizeDepNames, showClockTimes, autoSortCues };
+    // Use preview preferences when options modal is open, otherwise use saved preferences  
+    const activePreferences = useMemo(() =>
+        modalState.isOpen(MODAL_NAMES.OPTIONS) && previewPreferences
+            ? previewPreferences
+            : { darkMode, colorizeDepNames, showClockTimes, autoSortCues }
+        , [modalState, previewPreferences, darkMode, colorizeDepNames, showClockTimes, autoSortCues]);
 
-    // Delete cue state management  
-    const [isDeleteCueModalOpen, setIsDeleteCueModalOpen] = useState(false);
-    const [isDeletingCue, setIsDeletingCue] = useState(false);
+    // Navigation state
+    const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
     // Scroll state for jump button ghosting
     const [scrollState, setScrollState] = useState({
@@ -149,46 +160,41 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         isAtBottom: false,
         allElementsFitOnScreen: true
     });
-    const [selectedElementName, setSelectedElementName] = useState<string>('');
-
-    // Duplicate element state management
-    const [isDuplicateElementModalOpen, setIsDuplicateElementModalOpen] = useState(false);
-    const [isUnsavedChangesModalOpen, setIsUnsavedChangesModalOpen] = useState(false);
-    const [isClearHistoryModalOpen, setIsClearHistoryModalOpen] = useState(false);
-    const [isFinalClearHistoryModalOpen, setIsFinalClearHistoryModalOpen] = useState(false);
-    const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
-    const [isSavingChanges, setIsSavingChanges] = useState(false);
-    const [isDuplicatingElement, setIsDuplicatingElement] = useState(false);
-    const [selectedElementTimeOffset, setSelectedElementTimeOffset] = useState<number>(0);
 
     // Responsive breakpoint for mobile layout
     const isMobile = useBreakpointValue({ base: true, lg: false });
 
     // Form management for INFO mode
-    const form = useValidatedForm<ScriptFormData>(INITIAL_FORM_STATE, {
+    const formConfig = {
         validationConfig: VALIDATION_CONFIG,
         validateOnChange: true,
         validateOnBlur: true,
         showFieldErrorsInToast: false
-    });
+    };
+
+    const form = useValidatedForm<ScriptFormData>(INITIAL_FORM_STATE, formConfig);
 
     // Fetch the script data
-    const { script, isLoading: isLoadingScript, error: scriptError } = useScript(scriptId);
+    const { script: scriptFromHook, isLoading: isLoadingScript, error: scriptError } = useScript(scriptId);
+
+    const script = scriptFromHook;
 
     // Fetch the show data using the script's showID
     const { show } = useShow(script?.showID);
 
     // Edit queue for tracking changes
     const editQueueHook = useScriptElementsWithEditQueue(scriptId);
-    const { 
-        elements: editQueueElements, 
-        pendingOperations, 
+    const {
+        elements: editQueueElements,
+        pendingOperations,
         hasUnsavedChanges,
         revertToPoint,
         applyLocalChange,
         discardChanges,
         saveChanges
     } = editQueueHook;
+
+    // Use applyLocalChange directly from the hook (already stable)
 
     // Active mode state using script-specific hook
     const { activeMode, setActiveMode } = useScriptModes('view');
@@ -237,11 +243,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     setSelectedElementId(editModeSelection || null);
                 }
             };
-            
+
             // Check immediately and then periodically
             checkSelection();
             const interval = setInterval(checkSelection, 100);
-            
+
             return () => clearInterval(interval);
         } else {
             // Clear selection when not in edit mode
@@ -267,7 +273,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const handleNavigateWithGuard = (targetPath: string) => {
         if (hasUnsavedChanges) {
             setPendingNavigation(targetPath);
-            setIsUnsavedChangesModalOpen(true);
+            modalState.openModal(MODAL_NAMES.UNSAVED_CHANGES);
         } else {
             navigate(targetPath);
         }
@@ -279,17 +285,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         try {
             const success = await saveChanges();
             if (success && pendingNavigation) {
-                setIsUnsavedChangesModalOpen(false);
+                modalState.closeModal(MODAL_NAMES.UNSAVED_CHANGES);
                 // Handle dashboard navigation with state
                 if (pendingNavigation === '/dashboard') {
-                    navigate(pendingNavigation, {
-                        state: {
-                            view: 'shows',
-                            selectedShowId: script?.showID,
-                            selectedScriptId: scriptId,
-                            returnFromManage: true
-                        }
-                    });
+                    navigateWithCurrentContext(script, scriptId);
                 } else {
                     navigate(pendingNavigation);
                 }
@@ -302,18 +301,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     const handleDiscardChanges = () => {
         discardChanges();
-        setIsUnsavedChangesModalOpen(false);
+        modalState.closeModal(MODAL_NAMES.UNSAVED_CHANGES);
         if (pendingNavigation) {
             // Handle dashboard navigation with state
             if (pendingNavigation === '/dashboard') {
-                navigate(pendingNavigation, {
-                    state: {
-                        view: 'shows',
-                        selectedShowId: script?.showID,
-                        selectedScriptId: scriptId,
-                        returnFromManage: true
-                    }
-                });
+                navigateWithCurrentContext(script, scriptId);
             } else {
                 navigate(pendingNavigation);
             }
@@ -322,170 +314,28 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     };
 
     const handleCancelNavigation = () => {
-        setIsUnsavedChangesModalOpen(false);
+        modalState.closeModal(MODAL_NAMES.UNSAVED_CHANGES);
         setPendingNavigation(null);
     };
 
     // Callback for child components to update scroll state
-    const handleScrollStateChange = (newScrollState: {
+    const handleScrollStateChange = useCallback((newScrollState: {
         isAtTop: boolean;
         isAtBottom: boolean;
         allElementsFitOnScreen: boolean;
     }) => {
         setScrollState(newScrollState);
+    }, []);
+
+    // Tool buttons configuration using extracted utility
+    const toolbarContext: ToolbarContext = {
+        activeMode,
+        scrollState,
+        hasSelection: !!selectedElementId,
+        hasUnsavedChanges
     };
 
-    // Tool buttons configuration - separate view states from tools
-    const getToolButtons = (): ToolButton[] => {
-        const buttons: ToolButton[] = [];
-        
-        // NAVIGATION BUTTONS - At the very top
-        buttons.push({
-            id: 'jump-top',
-            icon: 'jump-top',
-            label: 'HEAD',
-            description: 'Jump to Top',
-            isActive: false,
-            isDisabled: scrollState.allElementsFitOnScreen || scrollState.isAtTop
-        });
-        
-        buttons.push({
-            id: 'jump-bottom',
-            icon: 'jump-bottom',
-            label: 'TAIL',
-            description: 'Jump to Bottom',
-            isActive: false,
-            isDisabled: scrollState.allElementsFitOnScreen || scrollState.isAtBottom
-        });
-        
-        // VIEW STATES
-        buttons.push({
-            id: 'view',
-            icon: 'view',
-            label: 'VIEW',
-            description: 'View Mode',
-            isActive: activeMode === 'view',
-            isDisabled: false
-        });
-        
-        buttons.push({
-            id: 'edit',
-            icon: 'script-edit',
-            label: 'EDIT',
-            description: 'Edit Mode',
-            isActive: activeMode === 'edit',
-            isDisabled: false
-        });
-        
-        buttons.push({
-            id: 'info',
-            icon: 'info',
-            label: 'INFO',
-            description: 'Script Information',
-            isActive: activeMode === 'info',
-            isDisabled: false
-        });
-        
-        buttons.push({
-            id: 'history',
-            icon: 'history',
-            label: 'HISTORY',
-            description: 'View Edit History',
-            isActive: activeMode === 'history',
-            isDisabled: !hasUnsavedChanges
-        });
-        
-        buttons.push({
-            id: 'exit',
-            icon: 'exit',
-            label: 'EXIT',
-            description: 'Return to Dashboard',
-            isActive: false,
-            isDisabled: false
-        });
-        
-        // MODE-SPECIFIC TOOLS
-        if (activeMode === 'view') {
-            buttons.push({
-                id: 'play',
-                icon: 'play',
-                label: 'PLAY',
-                description: 'Performance Mode',
-                isActive: false,
-                isDisabled: false
-            });
-            
-            buttons.push({
-                id: 'share',
-                icon: 'share',
-                label: 'SHARE',
-                description: 'Share Script',
-                isActive: false,
-                isDisabled: false
-            });
-        } else if (activeMode === 'history') {
-            buttons.push({
-                id: 'clear-history',
-                icon: 'delete',
-                label: 'CLEAR',
-                description: 'Clear Edit History',
-                isActive: false,
-                isDisabled: !hasUnsavedChanges
-            });
-        } else if (activeMode === 'edit') {
-            const hasSelection = !!selectedElementId;
-            
-            buttons.push({
-                id: 'add-element',
-                icon: 'add',
-                label: 'ADD',
-                description: 'Add Script Element',
-                isActive: false,
-                isDisabled: false
-            });
-            
-            buttons.push({
-                id: 'edit-element',
-                icon: 'element-edit',
-                label: 'MODIFY',
-                description: 'Edit Selected Element',
-                isActive: false,
-                isDisabled: !hasSelection
-            });
-            
-            buttons.push({
-                id: 'duplicate-element',
-                icon: 'copy',
-                label: 'COPY',
-                description: 'Duplicate Selected Element',
-                isActive: false,
-                isDisabled: !hasSelection
-            });
-            
-            buttons.push({
-                id: 'group-elements',
-                icon: 'group',
-                label: 'STACK',
-                description: 'Group Selected Elements',
-                isActive: false,
-                isDisabled: true // Not implemented yet
-            });
-            
-            buttons.push({
-                id: 'delete-element',
-                icon: 'delete',
-                label: 'TRASH',
-                description: 'Delete Selected Element',
-                isActive: false,
-                isDisabled: !hasSelection
-            });
-        }
-        // INFO mode has no tools - just view states
-        
-        return buttons;
-    };
-
-    const toolButtons = getToolButtons();
+    const toolButtons = getToolbarButtons(toolbarContext);
 
     const handleModeChange = (modeId: string) => {
         // Handle EXIT button (replaces dashboard)
@@ -540,7 +390,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         if (activeMode === 'edit') {
             switch (modeId) {
                 case 'add-element':
-                    setIsAddElementModalOpen(true);
+                    modalState.openModal(MODAL_NAMES.ADD_ELEMENT);
                     return;
                 case 'edit-element':
                     handleElementEdit();
@@ -596,7 +446,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         const dashboardPath = '/dashboard';
         if (hasUnsavedChanges) {
             setPendingNavigation(dashboardPath);
-            setIsUnsavedChangesModalOpen(true);
+            modalState.openModal(MODAL_NAMES.UNSAVED_CHANGES);
         } else {
             navigate(dashboardPath, {
                 state: {
@@ -611,35 +461,35 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     // Clear history functionality
     const handleClearHistory = () => {
-        setIsClearHistoryModalOpen(true);
+        modalState.openModal(MODAL_NAMES.CLEAR_HISTORY);
     };
 
     const handleInitialClearHistoryConfirm = () => {
-        setIsClearHistoryModalOpen(false);
-        setIsFinalClearHistoryModalOpen(true);
+        modalState.closeModal(MODAL_NAMES.CLEAR_HISTORY);
+        modalState.openModal(MODAL_NAMES.FINAL_CLEAR_HISTORY);
     };
 
     const handleFinalClearHistoryConfirm = () => {
         // Clear the edit queue (restore to server state)
         discardChanges();
-        setIsFinalClearHistoryModalOpen(false);
+        modalState.closeModal(MODAL_NAMES.FINAL_CLEAR_HISTORY);
         setActiveMode('view'); // Return to view mode
         showSuccess('Edit History Cleared', 'All changes have been discarded and the script has been restored to its original state.');
     };
 
     const handleClearHistoryCancel = () => {
-        setIsClearHistoryModalOpen(false);
-        setIsFinalClearHistoryModalOpen(false);
+        modalState.closeModal(MODAL_NAMES.CLEAR_HISTORY);
+        modalState.closeModal(MODAL_NAMES.FINAL_CLEAR_HISTORY);
     };
 
     // Delete functionality
     const handleDeleteClick = () => {
-        setIsDeleteModalOpen(true);
+        modalState.openModal(MODAL_NAMES.DELETE);
     };
 
     const handleInitialDeleteConfirm = () => {
-        setIsDeleteModalOpen(false);
-        setIsFinalDeleteModalOpen(true);
+        modalState.closeModal(MODAL_NAMES.DELETE);
+        modalState.openModal(MODAL_NAMES.FINAL_DELETE);
     };
 
     const handleFinalDeleteConfirm = async () => {
@@ -680,27 +530,27 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             showError('Failed to delete script. Please try again.');
         } finally {
             setIsDeleting(false);
-            setIsFinalDeleteModalOpen(false);
+            modalState.closeModal(MODAL_NAMES.FINAL_DELETE);
         }
     };
 
     const handleDeleteCancel = () => {
-        setIsDeleteModalOpen(false);
-        setIsFinalDeleteModalOpen(false);
+        modalState.closeModal(MODAL_NAMES.DELETE);
+        modalState.closeModal(MODAL_NAMES.FINAL_DELETE);
     };
 
     const handleProcessingStart = () => {
-        setIsProcessingModalOpen(true);
+        modalState.openModal(MODAL_NAMES.PROCESSING);
     };
 
     const handleScriptDuplicated = (newScriptId: string) => {
-        setIsProcessingModalOpen(false);
+        modalState.closeModal(MODAL_NAMES.PROCESSING);
         // Navigate directly to the new script's manage page
         navigate(`/scripts/${newScriptId}/manage`);
     };
 
     const handleDuplicationError = () => {
-        setIsProcessingModalOpen(false);
+        modalState.closeModal(MODAL_NAMES.PROCESSING);
         // Error toast will be shown by the form submission handler
     };
 
@@ -710,20 +560,20 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         if (elementData._autoSort) {
             // Get current elements to find insertion position
             const currentElements = editQueueElements;
-            
+
             // Find the position where this element should be inserted based on timeOffsetMs
             let insertIndex = currentElements.length; // Default to end
-            
+
             for (let i = 0; i < currentElements.length; i++) {
                 if (currentElements[i].timeOffsetMs > elementData.timeOffsetMs) {
                     insertIndex = i;
                     break;
                 }
             }
-            
+
             // Remove the auto-sort flag before storing
             const { _autoSort, ...cleanElementData } = elementData;
-            
+
             // If inserting at the end, use CREATE_ELEMENT
             if (insertIndex === currentElements.length) {
                 applyLocalChange({
@@ -749,13 +599,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 elementData: cleanElementData
             } as any);
         }
-        
-        setIsAddElementModalOpen(false);
+
+        modalState.closeModal(MODAL_NAMES.ADD_ELEMENT);
         showSuccess('Script Element Created', 'New element added to script. Save to apply changes.');
     };
 
-    const handleAutoSortElements = async () => {
-        
+    const handleAutoSortElements = useCallback(async () => {
         if (!scriptId) {
             return;
         }
@@ -763,28 +612,28 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         try {
             // Get current elements from edit queue
             const currentElements = [...editQueueElements];
-            
+
             // Sort elements by timeOffsetMs (create a copy to avoid mutating original)
             const sortedElements = [...currentElements].sort((a, b) => a.timeOffsetMs - b.timeOffsetMs);
-            
+
             // Check if any reordering is needed
             const needsReordering = currentElements.some((element, index) => {
                 const sortedElement = sortedElements[index];
                 const matches = element.elementID === sortedElement.elementID;
                 return !matches;
             });
-            
+
             if (!needsReordering) {
                 showSuccess('Auto-Sort Complete', 'Elements are already in correct time order.');
                 return;
             }
-            
+
             // Create bulk reorder operation for all elements that changed position
-            const elementChanges = [];
+            const elementChanges: any[] = [];
             for (let newIndex = 0; newIndex < sortedElements.length; newIndex++) {
                 const element = sortedElements[newIndex];
                 const oldIndex = currentElements.findIndex(el => el.elementID === element.elementID);
-                
+
                 if (oldIndex !== newIndex) {
                     elementChanges.push({
                         elementId: element.elementID,
@@ -795,7 +644,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     });
                 }
             }
-            
+
             // Apply as compound operation: preference change + resulting sort
             applyLocalChange({
                 type: 'ENABLE_AUTO_SORT',
@@ -807,36 +656,31 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             showSuccess('Elements Auto-Sorted', `Reordered ${elementChanges.length} elements by time offset. Save to apply changes.`);
         } catch (error) {
             console.error('Error auto-sorting elements:', error);
-            showError('Auto-Sort Failed', error instanceof Error ? error.message : 'Failed to auto-sort elements');
+            showError(error instanceof Error ? error.message : 'Failed to auto-sort elements');
         }
-        
-        
-    };
+    }, [scriptId, editQueueElements, applyLocalChange, showSuccess, showError]);
 
-    const handleAutoSortToggle = async (value: boolean) => {
-        
-        
+    // Create stable refs for callback dependencies
+    const stableRefsRef = useRef({ updatePreference, scriptId, activePreferences, handleAutoSortElements });
+    stableRefsRef.current = { updatePreference, scriptId, activePreferences, handleAutoSortElements };
+
+    const handleAutoSortToggle = useCallback(async (value: boolean) => {
+        const { updatePreference, scriptId, activePreferences, handleAutoSortElements } = stableRefsRef.current;
         await updatePreference('autoSortCues', value);
-        
+
         // If auto-sort is being enabled, trigger immediate re-sort
         if (value && !activePreferences.autoSortCues && scriptId) {
             handleAutoSortElements();
-        } else if (!value) {
-            // Auto-sort disabled - no immediate action needed
-        } else if (value && activePreferences.autoSortCues) {
-            // Auto-sort was already enabled - no change needed
-        } else {
-            // No scriptId available for auto-sort
         }
-    };
+    }, []);
 
     // Handle immediate auto-sort when checkbox is clicked in modal
     const handleAutoSortCheckboxChange = async (newAutoSortValue: boolean) => {
-        
-        
+
+
         // Update the preference immediately
         await updatePreference('autoSortCues', newAutoSortValue);
-        
+
         // If auto-sort is being enabled, trigger immediate re-sort
         if (newAutoSortValue && !autoSortCues && scriptId) {
             handleAutoSortElements();
@@ -880,7 +724,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             const elementData = await response.json();
             setSelectedElementName(elementData.description || 'Unknown Element');
             setSelectedElementTimeOffset(elementData.timeOffsetMs || 0);
-            setIsDuplicateElementModalOpen(true);
+            modalState.openModal(MODAL_NAMES.DUPLICATE_ELEMENT);
 
         } catch (error) {
             console.error('Error fetching element details:', error);
@@ -918,14 +762,14 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             if (activePreferences.autoSortCues) {
                 // Find the position where this element should be inserted based on timeOffsetMs
                 let insertIndex = editQueueElements.length; // Default to end
-                
+
                 for (let i = 0; i < editQueueElements.length; i++) {
                     if (editQueueElements[i].timeOffsetMs > duplicateData.timeOffsetMs) {
                         insertIndex = i;
                         break;
                     }
                 }
-                
+
                 // If inserting at the end, use CREATE_ELEMENT
                 if (insertIndex === editQueueElements.length) {
                     applyLocalChange({
@@ -952,7 +796,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             }
 
             showSuccess('Script Element Duplicated', 'Script element has been duplicated. Save to apply changes.');
-            setIsDuplicateElementModalOpen(false);
+            modalState.closeModal(MODAL_NAMES.DUPLICATE_ELEMENT);
 
         } catch (error) {
             console.error('Error duplicating element:', error);
@@ -1010,7 +854,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         }
 
         setSelectedElementName(elementToDelete.description || 'Unknown Element');
-        setIsDeleteCueModalOpen(true);
+        modalState.openModal(MODAL_NAMES.DELETE_CUE);
     };
 
     const handleConfirmDeleteCue = async () => {
@@ -1034,10 +878,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             } as any);
 
             showSuccess('Script Element Deleted', 'Script element has been deleted. Save to apply changes.');
-            
+
             // Clear selection and close modal
             setSelectedElementId(null);
-            setIsDeleteCueModalOpen(false);
+            modalState.closeModal(MODAL_NAMES.DELETE_CUE);
 
         } catch (error) {
             console.error('Error deleting element:', error);
@@ -1052,14 +896,14 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         {
             id: 'options',
             label: 'Options',
-            onClick: () => setIsOptionsModalOpen(true),
+            onClick: () => modalState.openModal(MODAL_NAMES.OPTIONS),
             isDestructive: false,
             isDisabled: false
         },
         {
             id: 'duplicate-script',
             label: 'Duplicate Script',
-            onClick: () => setIsDuplicateModalOpen(true),
+            onClick: () => modalState.openModal(MODAL_NAMES.DUPLICATE),
             isDestructive: false,
             isDisabled: false
         },
@@ -1197,8 +1041,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                             >
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
-                                {activeMode === 'view' && <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} />}
-                                {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} onAutoSortChange={handleAutoSortToggle} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} onApplyLocalChange={editQueueHook.applyLocalChange} />}
+                                {activeMode === 'view' && (
+                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} script={script} />
+                                )}
+                                {activeMode === 'edit' && (
+                                    <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} onAutoSortChange={handleAutoSortToggle} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} script={script} onApplyLocalChange={applyLocalChange} />
+                                )}
                                 {activeMode === 'play' && <PlayMode />}
                                 {activeMode === 'share' && <ShareMode />}
                                 {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={editQueueElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} />}
@@ -1261,267 +1109,55 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 </Box>
             )}
 
-            {/* Duplicate Script Modal */}
-            <DuplicateScriptModal
-                isOpen={isDuplicateModalOpen}
-                onClose={() => setIsDuplicateModalOpen(false)}
-                showId={script?.showID || ''}
-                scriptId={script?.scriptID || ''}
-                originalScriptName={script?.scriptName || ''}
-                onScriptDuplicated={handleScriptDuplicated}
-                onProcessingStart={handleProcessingStart}
-                onError={handleDuplicationError}
-            />
-
-            {/* Processing Modal */}
-            <ProcessingModal
-                isOpen={isProcessingModalOpen}
-                title="Duplicating Script"
-                message="Creating a copy of your script. This may take a moment for large scripts..."
-            />
-
-            {/* Delete Confirmation Modals */}
-            <DeleteConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={handleDeleteCancel}
-                onConfirm={handleInitialDeleteConfirm}
-                entityType="Script"
-                entityName={script?.scriptName || ''}
-            />
-
-            <FinalDeleteConfirmationModal
-                isOpen={isFinalDeleteModalOpen}
-                onClose={handleDeleteCancel}
-                onConfirm={handleFinalDeleteConfirm}
-                isLoading={isDeleting}
-                entityType="Script"
-                entityName={script?.scriptName || ''}
-                warningMessage="Deleting this script will permanently remove all script elements and cannot be undone."
-            />
-
-            {/* Clear History Confirmation Modals */}
-            <DeleteConfirmationModal
-                isOpen={isClearHistoryModalOpen}
-                onClose={handleClearHistoryCancel}
-                onConfirm={handleInitialClearHistoryConfirm}
-                entityType="Edit History"
-                entityName={`${pendingOperations.length} unsaved changes`}
-            />
-
-            <FinalDeleteConfirmationModal
-                isOpen={isFinalClearHistoryModalOpen}
-                onClose={handleClearHistoryCancel}
-                onConfirm={handleFinalClearHistoryConfirm}
-                isLoading={false}
-                entityType="Edit History"
-                entityName="All unsaved changes"
-                warningMessage="This will permanently discard all your unsaved changes and restore the script to its original loaded state. This action cannot be undone."
-            />
-
-            {/* Add Script Element Modal */}
-            <AddScriptElementModal
-                isOpen={isAddElementModalOpen}
-                onClose={() => setIsAddElementModalOpen(false)}
+            {/* All Script Modals - Consolidated */}
+            <ScriptModals
+                modalState={modalState}
+                modalNames={MODAL_NAMES}
+                script={script}
                 scriptId={scriptId || ''}
-                onElementCreated={handleElementCreated}
+                selectedElementName={selectedElementName}
+                selectedElementTimeOffset={selectedElementTimeOffset}
+                pendingOperations={pendingOperations}
+                isDeleting={isDeleting}
+                isDeletingCue={isDeletingCue}
+                isDuplicatingElement={isDuplicatingElement}
+                isSavingChanges={isSavingChanges}
+                previewPreferences={previewPreferences}
+                darkMode={darkMode}
+                colorizeDepNames={colorizeDepNames}
+                showClockTimes={showClockTimes}
                 autoSortCues={activePreferences.autoSortCues}
-            />
-
-            {/* Options Modal */}
-            <OptionsModal
-                isOpen={isOptionsModalOpen}
-                onClose={() => {
-                    setIsOptionsModalOpen(false);
-                    setPreviewPreferences(null);
+                onDeleteCancel={handleDeleteCancel}
+                onInitialDeleteConfirm={handleInitialDeleteConfirm}
+                onFinalDeleteConfirm={handleFinalDeleteConfirm}
+                onClearHistoryCancel={handleClearHistoryCancel}
+                onInitialClearHistoryConfirm={handleInitialClearHistoryConfirm}
+                onFinalClearHistoryConfirm={handleFinalClearHistoryConfirm}
+                onDuplicateClose={() => modalState.closeModal(MODAL_NAMES.DUPLICATE)}
+                onDuplicateConfirm={(scriptName: string, showId: string) => {
+                    // Handle script duplication - placeholder for actual implementation
+                    console.log('Script duplication:', scriptName, showId);
+                    modalState.closeModal(MODAL_NAMES.DUPLICATE);
                 }}
-                initialOptions={{ darkMode, colorizeDepNames, autoSortCues, showClockTimes }}
-                onPreview={(preferences) => setPreviewPreferences(preferences)}
-                onSave={handleOptionsModalSave}
+                onElementCreated={handleElementCreated}
+                onOptionsPreview={(preferences) => setPreviewPreferences(preferences)}
+                onOptionsSave={handleOptionsModalSave}
                 onAutoSortChange={handleAutoSortCheckboxChange}
-            />
-
-            {/* Delete Cue Confirmation Modal */}
-            <DeleteCueModal
-                isOpen={isDeleteCueModalOpen}
-                onClose={() => setIsDeleteCueModalOpen(false)}
-                onConfirm={handleConfirmDeleteCue}
-                cueName={selectedElementName}
-                isDeleting={isDeletingCue}
-            />
-
-            {/* Duplicate Element Modal */}
-            <DuplicateElementModal
-                isOpen={isDuplicateElementModalOpen}
-                onClose={() => setIsDuplicateElementModalOpen(false)}
-                onConfirm={handleConfirmDuplicate}
-                originalElementName={selectedElementName}
-                originalTimeOffset={selectedElementTimeOffset}
-                isProcessing={isDuplicatingElement}
-            />
-
-            <UnsavedChangesModal
-                isOpen={isUnsavedChangesModalOpen}
-                onClose={handleCancelNavigation}
-                onSave={handleSaveAndContinue}
-                onDiscard={handleDiscardChanges}
-                changesCount={pendingOperations.length}
-                isSaving={isSavingChanges}
+                onConfirmDeleteCue={handleConfirmDeleteCue}
+                onConfirmDuplicate={handleConfirmDuplicate}
+                onCancelNavigation={handleCancelNavigation}
+                onSaveAndContinue={handleSaveAndContinue}
+                onDiscardChanges={handleDiscardChanges}
             />
 
             {/* Mobile Drawer Menu */}
-            <Drawer isOpen={isMenuOpen} placement="right" onClose={onMenuClose}>
-                <DrawerOverlay />
-                <DrawerContent key={activeMode} bg="page.background">
-                    <DrawerCloseButton
-                        borderRadius="full"
-                        border="3px solid"
-                        borderColor="blue.400"
-                        bg="inherit"
-                        _hover={{ borderColor: 'orange.400' }}
-                    />
-                    <DrawerHeader>Script Tools</DrawerHeader>
-                    <DrawerBody>
-                        <VStack spacing={4} align="stretch">
-                            {/* Navigation buttons */}
-                            {toolButtons
-                                .filter(tool => tool.id === 'jump-top' || tool.id === 'jump-bottom')
-                                .map((tool) => (
-                                <Button
-                                    key={tool.id}
-                                    leftIcon={
-                                        <AppIcon
-                                            name={tool.icon}
-                                            boxSize="20px"
-                                        />
-                                    }
-                                    bg={tool.isActive && !tool.isDisabled ? "blue.400" : tool.isDisabled ? "button.disabled.bg" : "card.background"}
-                                    color={tool.isActive && !tool.isDisabled ? "white" : tool.isDisabled ? "button.disabled.text" : "button.text"}
-                                    border="1px solid"
-                                    borderColor={tool.isActive && !tool.isDisabled ? "blue.400" : "container.border"}
-                                    isDisabled={tool.isDisabled}
-                                    onClick={() => {
-                                        if (!tool.isDisabled) {
-                                            handleModeChange(tool.id);
-                                            onMenuClose();
-                                        }
-                                    }}
-                                    justifyContent="flex-start"
-                                    width="100%"
-                                    _hover={tool.isDisabled ? {} : {
-                                        bg: "orange.400",
-                                        color: "white",
-                                        borderColor: "orange.400"
-                                    }}
-                                    _active={tool.isDisabled ? {} : {
-                                        transform: "scale(0.98)"
-                                    }}
-                                    transition="all 0.2s"
-                                    cursor={tool.isDisabled ? "not-allowed" : "pointer"}
-                                    opacity={tool.isDisabled ? 0.4 : 1}
-                                >
-                                    {tool.label}
-                                </Button>
-                            ))}
-                            
-                            {/* Separator after navigation */}
-                            {toolButtons.some(tool => tool.id === 'jump-top' || tool.id === 'jump-bottom') && (
-                                <Divider borderColor="container.border" />
-                            )}
-                            
-                            {/* View state buttons */}
-                            {toolButtons
-                                .filter(tool => ['view', 'edit', 'info', 'history', 'exit'].includes(tool.id))
-                                .map((tool) => (
-                                <Button
-                                    key={tool.id}
-                                    leftIcon={
-                                        <AppIcon
-                                            name={tool.icon}
-                                            boxSize="20px"
-                                        />
-                                    }
-                                    bg={tool.isActive && !tool.isDisabled ? "blue.400" : tool.isDisabled ? "button.disabled.bg" : "card.background"}
-                                    color={tool.isActive && !tool.isDisabled ? "white" : tool.isDisabled ? "button.disabled.text" : "button.text"}
-                                    border="1px solid"
-                                    borderColor={tool.isActive && !tool.isDisabled ? "blue.400" : "container.border"}
-                                    isDisabled={tool.isDisabled}
-                                    onClick={() => {
-                                        if (!tool.isDisabled) {
-                                            handleModeChange(tool.id);
-                                            onMenuClose();
-                                        }
-                                    }}
-                                    justifyContent="flex-start"
-                                    width="100%"
-                                    _hover={tool.isDisabled ? {} : {
-                                        bg: "orange.400",
-                                        color: "white",
-                                        borderColor: "orange.400"
-                                    }}
-                                    _active={tool.isDisabled ? {} : {
-                                        transform: "scale(0.98)"
-                                    }}
-                                    transition="all 0.2s"
-                                    cursor={tool.isDisabled ? "not-allowed" : "pointer"}
-                                    opacity={tool.isDisabled ? 0.4 : 1}
-                                >
-                                    {tool.label}
-                                </Button>
-                            ))}
-                            
-                            {/* Separator before tools */}
-                            {toolButtons.some(tool => 
-                                !['jump-top', 'jump-bottom', 'view', 'edit', 'info', 'history', 'exit'].includes(tool.id)
-                            ) && activeMode !== 'info' && (
-                                <Divider borderColor="container.border" />
-                            )}
-                            
-                            {/* Tool buttons */}
-                            {toolButtons
-                                .filter(tool => 
-                                    !['jump-top', 'jump-bottom', 'view', 'edit', 'info', 'history', 'exit'].includes(tool.id)
-                                )
-                                .map((tool) => (
-                                <Button
-                                    key={tool.id}
-                                    leftIcon={
-                                        <AppIcon
-                                            name={tool.icon}
-                                            boxSize="20px"
-                                        />
-                                    }
-                                    bg={tool.isActive && !tool.isDisabled ? "blue.400" : tool.isDisabled ? "button.disabled.bg" : "card.background"}
-                                    color={tool.isActive && !tool.isDisabled ? "white" : tool.isDisabled ? "button.disabled.text" : "button.text"}
-                                    border="1px solid"
-                                    borderColor={tool.isActive && !tool.isDisabled ? "blue.400" : "container.border"}
-                                    isDisabled={tool.isDisabled}
-                                    onClick={() => {
-                                        if (!tool.isDisabled) {
-                                            handleModeChange(tool.id);
-                                            onMenuClose();
-                                        }
-                                    }}
-                                    justifyContent="flex-start"
-                                    width="100%"
-                                    _hover={tool.isDisabled ? {} : {
-                                        bg: "orange.400",
-                                        color: "white",
-                                        borderColor: "orange.400"
-                                    }}
-                                    _active={tool.isDisabled ? {} : {
-                                        transform: "scale(0.98)"
-                                    }}
-                                    transition="all 0.2s"
-                                    cursor={tool.isDisabled ? "not-allowed" : "pointer"}
-                                    opacity={tool.isDisabled ? 0.4 : 1}
-                                >
-                                    {tool.label}
-                                </Button>
-                            ))}
-                        </VStack>
-                    </DrawerBody>
-                </DrawerContent>
-            </Drawer>
+            <MobileScriptDrawer
+                isOpen={isMenuOpen}
+                onClose={onMenuClose}
+                activeMode={activeMode}
+                toolButtons={toolButtons}
+                onModeChange={handleModeChange}
+            />
         </ErrorBoundary>
     );
 };

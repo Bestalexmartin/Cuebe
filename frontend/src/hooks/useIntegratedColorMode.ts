@@ -2,7 +2,7 @@
 
 import { useColorMode } from '@chakra-ui/react';
 import { useUserPreferences } from './useUserPreferences';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 /**
  * Integrated color mode hook that syncs Chakra UI color mode with user preferences bitmap
@@ -36,9 +36,9 @@ export const useIntegratedColorMode = () => {
         }
     };
     
-    return {
+    return useMemo(() => ({
         colorMode,
         toggleColorMode,
         isDark: preferences.darkMode,
-    };
+    }), [colorMode, toggleColorMode, preferences.darkMode]);
 };

@@ -289,7 +289,7 @@ export const useValidatedForm = <T extends FormData>(
     return Object.keys(errors).length === 0;
   }, [errors]);
 
-  return {
+  return useMemo(() => ({
     // Form data
     formData,
     setFormData,
@@ -313,5 +313,22 @@ export const useValidatedForm = <T extends FormData>(
     hasFieldError,
     isFieldTouched,
     touchField
-  };
+  }), [
+    formData,
+    setFormData,
+    updateField,
+    errors,
+    fieldErrors,
+    isValid,
+    validate,
+    validateField,
+    clearErrors,
+    isSubmitting,
+    submitForm,
+    resetForm,
+    getFieldError,
+    hasFieldError,
+    isFieldTouched,
+    touchField
+  ]);
 };

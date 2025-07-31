@@ -1,6 +1,6 @@
 // frontend/src/hooks/useResource.ts
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useEnhancedToast } from '../utils/toastUtils';
 
@@ -96,11 +96,11 @@ export const useResource = <T = any>(
         }
     }, [endpoint, fetchOnMount]);
 
-    return {
+    return useMemo(() => ({
         data,
         isLoading,
         error,
         refetch: fetchData,
         createResource,
-    };
+    }), [data, isLoading, error, fetchData, createResource]);
 };
