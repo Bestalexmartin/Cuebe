@@ -1,6 +1,6 @@
 // frontend/src/hooks/useScriptElementsWithEditQueue.ts
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { ScriptElement } from '../types/scriptElements';
 import { EditOperation } from '../types/editQueue';
@@ -56,17 +56,24 @@ export const useScriptElementsWithEditQueue = (
     
     const editQueue = useEditQueue();
     
+    // Use a ref to store the latest editQueue to create stable callbacks
+    const editQueueRef = useRef(editQueue);
+    editQueueRef.current = editQueue;
+    
+    // Extract only the properties we need to avoid depending on the entire object
+    const { operations, hasUnsavedChanges, canUndo, canRedo } = editQueue;
+    
     // Apply edit operations to server elements to get current view
     const elements = useMemo(() => {
         let currentElements = [...serverElements];
         
         // Apply each operation in sequence to build current state
-        editQueue.operations.forEach(operation => {
+        operations.forEach(operation => {
             currentElements = applyOperationToElements(currentElements, operation);
         });
         
         return currentElements;
-    }, [serverElements, editQueue.operations]);
+    }, [serverElements, operations]);
     
     const fetchElements = useCallback(async () => {
         if (!scriptId) {
@@ -117,11 +124,11 @@ export const useScriptElementsWithEditQueue = (
     }, [scriptId, getToken, JSON.stringify(options)]);
     
     const applyLocalChange = useCallback((operation: Omit<EditOperation, 'id' | 'timestamp' | 'description'>) => {
-        editQueue.addOperation(operation);
-    }, [editQueue]);
+        editQueueRef.current.addOperation(operation);
+    }, []);
     
     const saveChanges = useCallback(async (): Promise<boolean> => {
-        if (!scriptId || editQueue.operations.length === 0) {
+        if (!scriptId || editQueueRef.current.operations.length === 0) {
             return true;
         }
         
@@ -139,7 +146,7 @@ export const useScriptElementsWithEditQueue = (
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    operations: editQueue.operations
+                    operations: editQueueRef.current.operations
                 })
             });
             
@@ -148,7 +155,7 @@ export const useScriptElementsWithEditQueue = (
             }
             
             // Clear the edit queue and refresh from server
-            editQueue.clearQueue();
+            editQueueRef.current.clearQueue();
             await fetchElements();
             
             return true;
@@ -157,31 +164,25 @@ export const useScriptElementsWithEditQueue = (
             setError(err instanceof Error ? err.message : 'Failed to save changes');
             return false;
         }
-    }, [scriptId, editQueue, getToken, fetchElements]);
+    }, [scriptId, getToken, fetchElements]);
     
     const discardChanges = useCallback(() => {
-        editQueue.clearQueue();
-    }, [editQueue]);
+        editQueueRef.current.clearQueue();
+    }, []);
     
-    const undo = useCallback(() => {
-        const undoneOperation = editQueue.undo();
-        if (undoneOperation) {
-            console.log('Undone operation:', undoneOperation.description);
-        }
-    }, [editQueue]);
+    const undoOperation = useCallback(() => {
+        editQueueRef.current.undo();
+    }, []);
     
-    const redo = useCallback(() => {
-        const redoneOperation = editQueue.redo();
-        if (redoneOperation) {
-            console.log('Redone operation:', redoneOperation.description);
-        }
-    }, [editQueue]);
+    const redoOperation = useCallback(() => {
+        editQueueRef.current.redo();
+    }, []);
     
     useEffect(() => {
         fetchElements();
     }, [fetchElements]);
     
-    return {
+    return useMemo(() => ({
         // Current view state
         elements,
         serverElements,
@@ -191,8 +192,8 @@ export const useScriptElementsWithEditQueue = (
         error,
         
         // Edit queue integration
-        hasUnsavedChanges: editQueue.hasUnsavedChanges,
-        pendingOperations: editQueue.operations,
+        hasUnsavedChanges,
+        pendingOperations: operations,
         
         // Operations
         refetchElements: fetchElements,
@@ -203,14 +204,29 @@ export const useScriptElementsWithEditQueue = (
         discardChanges,
         
         // Undo/Redo
-        undo,
-        redo,
-        canUndo: editQueue.canUndo,
-        canRedo: editQueue.canRedo,
+        undo: undoOperation,
+        redo: redoOperation,
+        canUndo,
+        canRedo,
         
         // Revert
-        revertToPoint: editQueue.revertToPoint
-    };
+        revertToPoint: editQueueRef.current.revertToPoint
+    }), [
+        elements,
+        serverElements,
+        isLoading,
+        error,
+        hasUnsavedChanges,
+        operations,
+        fetchElements,
+        applyLocalChange,
+        saveChanges,
+        discardChanges,
+        undoOperation,
+        redoOperation,
+        canUndo,
+        canRedo
+    ]);
 };
 
 /**

@@ -717,3 +717,282 @@ return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, 
 ```
 
 This architecture ensures maintainable, performant script management with customizable display options and consistent user experience across all modes.
+
+## ManageScriptPage Refactoring (July 2025)
+
+### Overview
+The ManageScriptPage underwent a comprehensive refactoring to address code duplication, improve maintainability, and reduce component complexity. This refactoring eliminated ~350 lines of code while introducing reusable patterns for modal management, navigation, and component organization.
+
+### Refactoring Objectives
+The refactoring addressed several critical issues identified in the original 1,533-line component:
+- **Modal State Management Duplication**: 11+ individual `useState` calls for modal states
+- **Navigation Logic Duplication**: Repeated dashboard navigation patterns throughout the component
+- **Component Size**: Massive component with mixed concerns (modals, toolbar, navigation, modes)
+- **Complex Toolbar Configuration**: 150+ line `getToolButtons` function with nested conditionals
+- **Mobile Drawer Complexity**: 152 lines of embedded drawer logic
+
+### Architecture Improvements
+
+#### 1. Modal State Management Hook
+Created `useModalState` hook to centralize management of multiple modal states:
+
+```typescript
+// Before: Individual useState for each modal
+const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+const [isProcessingModalOpen, setIsProcessingModalOpen] = useState(false);
+// ... 8+ more modal states
+
+// After: Centralized modal state management
+const modalState = useModalState(Object.values(MODAL_NAMES));
+
+// Usage patterns
+modalState.openModal(MODAL_NAMES.DUPLICATE);
+modalState.closeModal(MODAL_NAMES.DELETE);
+modalState.isOpen(MODAL_NAMES.PROCESSING);
+```
+
+**Hook Features**:
+- Centralized state management for multiple modals
+- Type-safe modal name constants
+- Batch operations (close all modals)
+- Data association for complex modals
+- Performance optimized with useCallback and useMemo
+
+#### 2. Dashboard Navigation Hook
+Created `useDashboardNavigation` hook for consistent navigation patterns:
+
+```typescript
+// Before: Repeated navigation logic
+const navigate = useNavigate();
+const navigateToDashboard = (options) => {
+  navigate('/dashboard', {
+    state: {
+      view: 'shows',
+      selectedShowId: script?.showID,
+      selectedScriptId: scriptId,
+      returnFromManage: true
+    }
+  });
+};
+
+// After: Standardized navigation hook
+const { navigateWithCurrentContext } = useDashboardNavigation();
+
+// Usage
+navigateWithCurrentContext(script, scriptId);
+```
+
+**Hook Benefits**:
+- Eliminates duplicated navigation logic
+- Consistent state management across navigation calls
+- Reusable across multiple components
+- Type-safe navigation options
+
+#### 3. Component Extraction Pattern
+
+##### ScriptModals Component
+Consolidated all 11+ modal components into a single `ScriptModals` component:
+
+```typescript
+// Before: 11+ individual modal imports and JSX
+<DuplicateScriptModal isOpen={isDuplicateModalOpen} />
+<ProcessingModal isOpen={isProcessingModalOpen} />
+<DeleteConfirmationModal isOpen={isDeleteModalOpen} />
+// ... 8+ more modals (200+ lines)
+
+// After: Single consolidated component
+<ScriptModals
+  modalState={modalState}
+  modalNames={MODAL_NAMES}
+  script={script}
+  scriptId={scriptId}
+  // ... other props
+/>
+```
+
+**Component Features**:
+- Centralized modal rendering logic
+- Props-based configuration for all modals
+- Reduced main component by ~200 lines
+- Improved maintainability and testing
+
+##### MobileScriptDrawer Component
+Extracted mobile drawer logic into dedicated component:
+
+```typescript
+// Before: 152 lines of embedded drawer JSX
+<Drawer isOpen={isMenuOpen} placement="right" onClose={onMenuClose}>
+  <DrawerOverlay />
+  <DrawerContent>
+    {/* 150+ lines of complex button rendering logic */}
+  </DrawerContent>
+</Drawer>
+
+// After: Clean component extraction
+<MobileScriptDrawer
+  isOpen={isMenuOpen}
+  onClose={onMenuClose}
+  activeMode={activeMode}
+  toolButtons={toolButtons}
+  onModeChange={handleModeChange}
+/>
+```
+
+**Component Features**:
+- Organized button groups (navigation, view states, tools)
+- Logical separators and conditional rendering
+- Reusable button rendering patterns
+- Reduced main component by 152 lines
+
+#### 4. Toolbar Configuration Utilities
+Split complex toolbar configuration into organized utility functions:
+
+```typescript
+// Before: Single 150+ line function
+const getToolButtons = (activeMode, scrollState, hasSelection, hasUnsavedChanges) => {
+  const buttons = [];
+  // ... 150+ lines of complex conditional logic
+  return buttons;
+};
+
+// After: Organized utility functions
+export const getToolbarButtons = (context: ToolbarContext): ToolButton[] => {
+  const buttons = [];
+  buttons.push(...getNavigationButtons(context.scrollState));
+  buttons.push(...getViewStateButtons(context.activeMode));
+  buttons.push(...getActionButtons(context.activeMode, context.hasUnsavedChanges));
+  if (context.activeMode === 'edit') {
+    buttons.push(...getElementManagementButtons(context.hasSelection));
+  }
+  return buttons;
+};
+```
+
+**Utility Structure**:
+- `getNavigationButtons()`: Jump to top/bottom functionality
+- `getViewStateButtons()`: View, edit, info, history mode buttons
+- `getActionButtons()`: Mode-specific actions (play, share, clear)
+- `getElementManagementButtons()`: Edit mode element operations
+- `groupToolbarButtons()`: Helper for button organization
+
+### Implementation Results
+
+#### Code Reduction Summary
+- **ManageScriptPage.tsx**: 1,533 → 1,181 lines (352 lines reduced, ~23% reduction)
+- **New Components Created**: 4 reusable components/hooks
+- **Total New Code**: ~500 lines across new files
+- **Net Impact**: Improved maintainability with modular, reusable architecture
+
+#### Component Distribution
+- **useModalState.ts**: 147 lines - Reusable modal state management
+- **useDashboardNavigation.ts**: 95 lines - Consistent navigation patterns  
+- **ScriptModals.tsx**: 207 lines - Consolidated modal components
+- **MobileScriptDrawer.tsx**: 115 lines - Mobile interface component
+- **toolbarConfig.ts**: 217 lines - Organized toolbar utilities
+
+#### Performance Benefits
+- **Reduced Bundle Size**: Eliminated duplicate code patterns
+- **Improved Tree Shaking**: Modular exports enable better dead code elimination
+- **Enhanced Memoization**: Smaller components enable more effective React.memo usage
+- **Faster Development**: Reusable hooks reduce implementation time for similar patterns
+
+### Development Patterns Established
+
+#### Modal Management Pattern
+```typescript
+// Standard modal setup pattern
+const MODAL_NAMES = {
+  DUPLICATE: 'duplicate',
+  DELETE: 'delete',
+  PROCESSING: 'processing'
+};
+
+const modalState = useModalState(Object.values(MODAL_NAMES));
+
+// Modal usage in JSX
+<ScriptModals
+  modalState={modalState}
+  modalNames={MODAL_NAMES}
+  // ... handler props
+/>
+```
+
+#### Navigation Pattern
+```typescript
+// Standard navigation setup
+const { navigateWithCurrentContext, navigateToDashboard } = useDashboardNavigation();
+
+// Context-aware navigation
+const handleExit = () => {
+  navigateWithCurrentContext(script, scriptId);
+};
+```
+
+#### Component Extraction Pattern
+When extracting components from large pages:
+1. **Identify Logical Boundaries**: Group related functionality (modals, navigation, drawers)
+2. **Define Clear Interfaces**: Create TypeScript interfaces for all props
+3. **Minimize Prop Drilling**: Use context or state management where appropriate
+4. **Maintain Functionality**: Ensure all interactions work identically
+5. **Add Documentation**: Document component purpose and usage patterns
+
+### Testing Considerations
+
+#### Unit Testing Approach
+```typescript
+// Test modal state management
+describe('useModalState', () => {
+  it('should manage multiple modal states', () => {
+    const { result } = renderHook(() => useModalState(['modal1', 'modal2']));
+    
+    act(() => {
+      result.current.openModal('modal1');
+    });
+    
+    expect(result.current.isOpen('modal1')).toBe(true);
+    expect(result.current.isOpen('modal2')).toBe(false);
+  });
+});
+
+// Test component integration
+describe('ScriptModals', () => {
+  it('should render modals based on state', () => {
+    const mockModalState = {
+      isOpen: jest.fn().mockReturnValue(true),
+      closeModal: jest.fn()
+    };
+    
+    render(<ScriptModals modalState={mockModalState} modalNames={MODAL_NAMES} />);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+});
+```
+
+#### Integration Testing
+- **Navigation Flow Testing**: Verify dashboard navigation maintains correct state
+- **Modal Interaction Testing**: Ensure modal open/close cycles work correctly
+- **Toolbar Configuration Testing**: Validate buttons appear correctly for each mode
+- **Mobile Drawer Testing**: Confirm drawer interactions match toolbar functionality
+
+### Scalability Benefits
+
+#### Reusability
+The refactored components can be reused across the application:
+- **useModalState**: Any component needing multiple modals
+- **useDashboardNavigation**: Any component navigating to dashboard
+- **ScriptModals**: Pattern for consolidating related modals
+- **Toolbar utilities**: Extensible for other toolbar implementations
+
+#### Maintainability
+- **Single Responsibility**: Each component/hook has a clear, focused purpose
+- **Type Safety**: All interfaces are strongly typed with TypeScript
+- **Documentation**: Components include comprehensive JSDoc comments
+- **Testing**: Smaller components are easier to test individually
+
+#### Performance
+- **Code Splitting**: Extracted components can be lazy-loaded if needed
+- **Memory Efficiency**: Reduced closure complexity in main component
+- **Render Optimization**: Smaller components enable more granular re-rendering
+
+This refactoring establishes patterns that can be applied to other large components in the codebase, providing a blueprint for improving maintainability while preserving functionality.

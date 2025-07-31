@@ -1,6 +1,6 @@
 // frontend/src/hooks/useCrews.ts
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@clerk/clerk-react";
 
 // TypeScript interfaces
@@ -69,10 +69,10 @@ export const useCrews = (): UseCrewsReturn => {
     fetchCrews();
   }, [fetchCrews]);
 
-  return {
+  return useMemo(() => ({
     crews,
     isLoading,
     error,
     refetchCrews,
-  };
+  }), [crews, isLoading, error, refetchCrews]);
 };

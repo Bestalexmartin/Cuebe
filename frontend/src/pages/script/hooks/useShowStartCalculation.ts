@@ -1,6 +1,6 @@
 // frontend/src/pages/script/hooks/useShowStartCalculation.ts
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 
 interface UseShowStartCalculationReturn {
@@ -51,9 +51,9 @@ export const useShowStartCalculation = (
         }
     }, [scriptId, getToken]);
 
-    return {
+    return useMemo(() => ({
         isCalculating,
         error,
         calculateShowStartDuration
-    };
+    }), [isCalculating, error, calculateShowStartDuration]);
 };

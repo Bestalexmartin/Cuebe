@@ -1,6 +1,6 @@
 // frontend/src/hooks/useVenues.ts
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 
 // TypeScript interfaces
@@ -62,5 +62,5 @@ export const useVenues = (): UseVenuesReturn => {
     fetchVenues();
   }, [fetchVenues]);
 
-  return { venues, isLoading, error, refetchVenues: fetchVenues };
+  return useMemo(() => ({ venues, isLoading, error, refetchVenues: fetchVenues }), [venues, isLoading, error, fetchVenues]);
 };

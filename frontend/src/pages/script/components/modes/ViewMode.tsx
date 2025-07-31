@@ -1,6 +1,6 @@
 // frontend/src/pages/script/components/modes/ViewMode.tsx
 
-import React, { forwardRef, useImperativeHandle, useRef, useEffect } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef, useEffect, useState } from 'react';
 import { VStack, Text, Box, Flex } from '@chakra-ui/react';
 import { useScriptElements } from '../../hooks/useScriptElements';
 import { useScript } from '../../../../hooks/useScript';
@@ -13,6 +13,7 @@ interface ViewModeProps {
     colorizeDepNames?: boolean;
     showClockTimes?: boolean;
     elements?: ScriptElement[]; // Optional prop to override default fetching
+    script?: any; // Optional cached script to prevent refetching
     onScrollStateChange?: (state: {
         isAtTop: boolean;
         isAtBottom: boolean;
@@ -24,11 +25,12 @@ export interface ViewModeRef {
     refetchElements: () => Promise<void>;
 }
 
-export const ViewMode = forwardRef<ViewModeRef, ViewModeProps>(({ 
+const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({ 
     scriptId, 
     colorizeDepNames = false, 
     showClockTimes = false,
     elements: providedElements,
+    script: providedScript,
     onScrollStateChange
 }, ref) => {
     // Only fetch elements if none are provided
@@ -36,7 +38,9 @@ export const ViewMode = forwardRef<ViewModeRef, ViewModeProps>(({
     const { elements: fetchedElements, isLoading, error, refetchElements } = useScriptElements(
         shouldFetchElements ? scriptId : undefined
     );
-    const { script } = useScript(scriptId);
+    // Use provided script if available, otherwise fetch it
+    const { script: scriptFromHook } = useScript(providedScript ? undefined : scriptId);
+    const script = providedScript || scriptFromHook;
     
     // Use provided elements if available, otherwise use fetched elements
     const elements = providedElements || fetchedElements;
@@ -157,21 +161,40 @@ export const ViewMode = forwardRef<ViewModeRef, ViewModeProps>(({
                             }
                         }}
                     >
-                        {elements.map((element, index) => (
-                            <CueElement
-                                key={element.elementID}
-                                element={element}
-                                index={index}
-                                allElements={elements}
-                                colorizeDepNames={colorizeDepNames}
-                                showClockTimes={showClockTimes}
-                                scriptStartTime={script?.startTime}
-                                scriptEndTime={script?.endTime}
-                            />
-                        ))}
+                        {elements.map((element, index) => {
+                            // Only show clock times if we have the required script start time
+                            const shouldShowClockTimes = showClockTimes && !!script?.startTime;
+                            return (
+                                <CueElement
+                                    key={element.elementID}
+                                    element={element}
+                                    index={index}
+                                    allElements={elements}
+                                    colorizeDepNames={colorizeDepNames}
+                                    showClockTimes={shouldShowClockTimes}
+                                    scriptStartTime={script?.startTime}
+                                    scriptEndTime={script?.endTime}
+                                />
+                            );
+                        })}
                     </VStack>
                 )}
             </Box>
         </VStack>
     );
 });
+
+// Custom comparison function that ignores callback props
+const areEqual = (prevProps: ViewModeProps, nextProps: ViewModeProps) => {
+    // Compare all props except callbacks
+    return (
+        prevProps.scriptId === nextProps.scriptId &&
+        prevProps.colorizeDepNames === nextProps.colorizeDepNames &&
+        prevProps.showClockTimes === nextProps.showClockTimes &&
+        prevProps.elements === nextProps.elements &&
+        prevProps.script === nextProps.script
+        // Deliberately ignoring onScrollStateChange
+    );
+};
+
+export const ViewMode = React.memo(ViewModeComponent, areEqual);

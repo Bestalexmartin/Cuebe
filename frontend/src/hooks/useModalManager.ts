@@ -1,7 +1,7 @@
 // frontend/src/hooks/useModalManager.ts
 
 import { useDisclosure } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 // Modal type constants
 export const MODAL_TYPES = {
@@ -44,11 +44,11 @@ export const useModalManager = (): UseModalManagerReturn => {
         onClose();
     };
 
-    return {
+    return useMemo(() => ({
         activeModal,
         modalData,
         isOpen,
         openModal,
         closeModal,
-    };
+    }), [activeModal, modalData, isOpen, openModal, closeModal]);
 };

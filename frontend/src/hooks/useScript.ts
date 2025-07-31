@@ -1,6 +1,6 @@
 // frontend/src/hooks/useScript.ts
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 
 // TypeScript interfaces
@@ -61,5 +61,5 @@ export const useScript = (scriptId: string | undefined): UseScriptReturn => {
         fetchScript();
     }, [fetchScript]);
 
-    return { script, isLoading, error };
+    return useMemo(() => ({ script, isLoading, error }), [script, isLoading, error]);
 };

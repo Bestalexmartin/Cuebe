@@ -1,6 +1,6 @@
 // frontend/src/pages/script/hooks/useScriptElements.ts
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { ScriptElement } from '../types/script-elements';
 
@@ -80,10 +80,10 @@ export const useScriptElements = (
         fetchElements();
     }, [scriptId, JSON.stringify(options)]);
 
-    return {
+    return useMemo(() => ({
         elements,
         isLoading,
         error,
         refetchElements: fetchElements
-    };
+    }), [elements, isLoading, error, fetchElements]);
 };
