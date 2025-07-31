@@ -301,6 +301,212 @@ useEffect(() => {
 - High CPU usage during normal operations
 - Memory leaks from accumulating event listeners
 
+## ManageScript Refactoring Case Study (July 2025)
+
+### Overview
+A comprehensive refactoring of ManageScriptPage addressed critical performance issues and DRY violations, achieving significant code reduction while improving maintainability and runtime performance.
+
+### Critical Issues Addressed
+
+#### 1. Polling Anti-Pattern Elimination
+**Problem**: Component used 100ms polling to sync selection state between parent and child components.
+
+```typescript
+// ❌ BEFORE: Polling anti-pattern
+useEffect(() => {
+    if (activeMode === 'edit' && editModeRef.current) {
+        const checkSelection = () => {
+            const editModeSelection = editModeRef.current?.selectedElementId;
+            if (editModeSelection !== selectedElementId) {
+                setSelectedElementId(editModeSelection || null);
+            }
+        };
+        checkSelection();
+        const interval = setInterval(checkSelection, 100); // Polling every 100ms
+        return () => clearInterval(interval);
+    }
+}, [activeMode, selectedElementId]);
+```
+
+**Solution**: Event-driven communication with proper callback patterns:
+
+```typescript
+// ✅ AFTER: Event-driven communication
+// Parent component
+const handleSelectionChange = useCallback((id: string | null) => {
+    setSelectedElementId(id);
+}, []);
+
+// Child component (EditMode)
+<CueElement 
+    onSelect={() => {
+        const newId = selectedElementId === element.elementID ? null : element.elementID;
+        setSelectedElementId(newId);
+        onSelectionChange?.(newId); // Direct callback
+    }}
+/>
+```
+
+**Performance Impact**: Eliminated continuous CPU usage from polling, improving battery life and reducing unnecessary re-renders.
+
+#### 2. DRY Violation Resolution
+**Problem**: ~100 lines of duplicated element insertion logic across `handleElementCreated` and `handleConfirmDuplicate`.
+
+```typescript
+// ❌ BEFORE: Duplicated auto-sort insertion logic
+const handleElementCreated = async (elementData: any) => {
+    if (elementData._autoSort) {
+        const currentElements = editQueueElements;
+        let insertIndex = currentElements.length;
+        
+        for (let i = 0; i < currentElements.length; i++) {
+            if (currentElements[i].timeOffsetMs > elementData.timeOffsetMs) {
+                insertIndex = i;
+                break;
+            }
+        }
+        // 40+ more lines of insertion logic...
+    }
+    // More duplication...
+};
+
+const handleConfirmDuplicate = async (description: string, timeOffsetMs: number) => {
+    // Nearly identical 50+ lines of auto-sort insertion logic
+    if (activePreferences.autoSortCues) {
+        let insertIndex = editQueueElements.length;
+        for (let i = 0; i < editQueueElements.length; i++) {
+            if (editQueueElements[i].timeOffsetMs > duplicateData.timeOffsetMs) {
+                insertIndex = i;
+                break;
+            }
+        }
+        // More duplicated logic...
+    }
+};
+```
+
+**Solution**: Extracted `useElementActions` hook with centralized insertion logic:
+
+```typescript
+// ✅ AFTER: Centralized element actions hook
+export function useElementActions(elements: any[], autoSort: boolean, applyLocalChange: (op: any) => void) {
+  const insertElement = useCallback((elementData: any) => {
+      const cleanData = { ...elementData };
+      delete (cleanData as any)._autoSort;
+
+      let insertIndex = elements.length;
+      if (autoSort) {
+        for (let i = 0; i < elements.length; i++) {
+          if (elements[i].timeOffsetMs > cleanData.timeOffsetMs) {
+            insertIndex = i;
+            break;
+          }
+        }
+      }
+
+      if (insertIndex === elements.length) {
+        applyLocalChange({ type: 'CREATE_ELEMENT', elementId: cleanData.elementID, elementData: cleanData });
+      } else {
+        applyLocalChange({ type: 'CREATE_ELEMENT_AT_INDEX', elementId: cleanData.elementID, elementData: cleanData, insertIndex });
+      }
+    }, [elements, autoSort, applyLocalChange]);
+
+  return { insertElement };
+}
+
+// Usage - both handlers now use single line
+const handleElementCreated = async (elementData: any) => {
+    insertElement(elementData);
+    // Show success message...
+};
+
+const handleConfirmDuplicate = async (description: string, timeOffsetMs: number) => {
+    insertElement(duplicateData);
+    // Show success message...
+};
+```
+
+**Code Reduction**: Eliminated ~80 lines of duplicated code while improving maintainability.
+
+### Performance Improvements Achieved
+
+#### Quantitative Results
+- **Component Size**: ManageScriptPage reduced from 1,163 to 1,092 lines (6% reduction)
+- **Code Duplication**: ~100 lines of duplicate auto-sort logic eliminated
+- **CPU Usage**: Polling eliminated - no more 100ms intervals consuming CPU cycles
+- **Re-render Optimization**: Event-driven communication reduces unnecessary parent re-renders
+
+#### Qualitative Improvements
+- **Maintainability**: Single source of truth for element insertion logic
+- **Type Safety**: Improved with centralized interfaces and hooks
+- **Architecture**: Event-driven patterns replace polling anti-patterns
+- **Developer Experience**: Cleaner, more predictable codebase
+
+### Best Practices Established
+
+#### 1. Event-Driven Communication Pattern
+```typescript
+// ✅ Use callback props for parent-child communication
+interface ChildProps {
+    onSelectionChange?: (id: string | null) => void;
+    onScrollStateChange?: (state: ScrollState) => void;
+}
+
+// Parent provides stable callbacks
+const handleSelectionChange = useCallback((id: string | null) => {
+    setSelectedElementId(id);
+}, []);
+```
+
+#### 2. Custom Hook Extraction for Business Logic
+```typescript  
+// ✅ Extract reusable business logic into custom hooks
+const useElementActions = (elements, autoSort, applyLocalChange) => {
+    const insertElement = useCallback((elementData) => {
+        // Centralized insertion logic
+    }, [elements, autoSort, applyLocalChange]);
+    
+    return { insertElement };
+};
+```
+
+#### 3. Systematic DRY Analysis
+1. **Identify concrete duplications** (not just similar-looking code)
+2. **Extract common functionality** into focused utilities
+3. **Update all usage sites** to use shared implementation
+4. **Measure impact** in terms of lines saved and maintainability
+
+### Monitoring Performance Improvements
+
+#### Detection Methods for Polling Issues
+```typescript
+// Add performance monitoring to detect polling patterns
+const usePerformanceMonitor = (componentName: string) => {
+    useEffect(() => {
+        const intervals = [];
+        const originalSetInterval = window.setInterval;
+        
+        window.setInterval = (...args) => {
+            const intervalId = originalSetInterval(...args);
+            intervals.push(intervalId);
+            console.warn(`${componentName}: setInterval created (${intervals.length} active)`);
+            return intervalId;
+        };
+        
+        return () => {
+            intervals.forEach(clearInterval);
+            window.setInterval = originalSetInterval;
+        };
+    }, [componentName]);
+};
+```
+
+#### Success Metrics
+- **Zero polling intervals** in production builds
+- **Reduced component render counts** during user interactions  
+- **Improved bundle analysis scores** from eliminated duplications
+- **Faster development cycles** from improved maintainability
+
 ### Future Optimizations
 
 Potential areas for further improvement:

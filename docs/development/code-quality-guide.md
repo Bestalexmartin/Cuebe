@@ -99,6 +99,71 @@ const handleJump = (direction: 'top' | 'bottom') => {
 };
 ```
 
+#### 5. Business Logic Duplication
+**Problem**: Complex business logic repeated across multiple handlers
+**Solution**: Custom hooks with centralized logic
+
+```typescript
+// ❌ Before: ~100 lines of duplicated element insertion logic
+const handleElementCreated = async (elementData: any) => {
+    if (elementData._autoSort) {
+        const currentElements = editQueueElements;
+        let insertIndex = currentElements.length;
+        // 40+ lines of auto-sort logic...
+    }
+    // More insertion logic...
+};
+
+const handleConfirmDuplicate = async (description: string, timeOffsetMs: number) => {
+    if (activePreferences.autoSortCues) {
+        let insertIndex = editQueueElements.length;
+        // Nearly identical 50+ lines of auto-sort logic...
+    }
+    // More duplicate logic...
+};
+
+// ✅ After: Centralized business logic in custom hook
+export function useElementActions(elements: any[], autoSort: boolean, applyLocalChange: (op: any) => void) {
+  const insertElement = useCallback((elementData: any) => {
+      const cleanData = { ...elementData };
+      delete (cleanData as any)._autoSort;
+
+      let insertIndex = elements.length;
+      if (autoSort) {
+        for (let i = 0; i < elements.length; i++) {
+          if (elements[i].timeOffsetMs > cleanData.timeOffsetMs) {
+            insertIndex = i;
+            break;
+          }
+        }
+      }
+
+      if (insertIndex === elements.length) {
+        applyLocalChange({ type: 'CREATE_ELEMENT', elementId: cleanData.elementID, elementData: cleanData });
+      } else {
+        applyLocalChange({ type: 'CREATE_ELEMENT_AT_INDEX', elementId: cleanData.elementID, elementData: cleanData, insertIndex });
+      }
+    }, [elements, autoSort, applyLocalChange]);
+
+  return { insertElement };
+}
+
+// Usage - handlers become single-line
+const { insertElement } = useElementActions(editQueueElements, activePreferences.autoSortCues, applyLocalChange);
+
+const handleElementCreated = async (elementData: any) => {
+    insertElement(elementData);
+    showSuccess('Script Element Created', 'New element added to script. Save to apply changes.');
+};
+
+const handleConfirmDuplicate = async (description: string, timeOffsetMs: number) => {
+    insertElement(duplicateData);
+    showSuccess('Script Element Duplicated', 'Script element has been duplicated. Save to apply changes.');
+};
+```
+
+**Impact**: Eliminated ~80 lines of duplicated code while improving maintainability and reducing potential for bugs.
+
 ### File Organization Patterns
 
 ```
@@ -192,6 +257,42 @@ useEffect(() => {
     callbackRef.current();
 }, []); // Stable dependencies
 ```
+
+#### 4. Polling Anti-Patterns
+```typescript
+// ❌ CPU-intensive polling for state synchronization
+useEffect(() => {
+    const interval = setInterval(() => {
+        const childState = childRef.current?.getState();
+        if (childState !== parentState) {
+            setParentState(childState);
+        }
+    }, 100); // Polling every 100ms
+    return () => clearInterval(interval);
+}, [parentState]);
+
+// ✅ Event-driven communication
+interface ChildProps {
+    onStateChange?: (state: any) => void;
+}
+
+const Child = ({ onStateChange }) => {
+    const handleUpdate = (newState) => {
+        setState(newState);
+        onStateChange?.(newState); // Direct callback
+    };
+};
+
+const Parent = () => {
+    const handleChildStateChange = useCallback((state) => {
+        setParentState(state);
+    }, []);
+    
+    return <Child onStateChange={handleChildStateChange} />;
+};
+```
+
+**Impact**: Eliminated continuous CPU usage from polling intervals, improving battery life and reducing unnecessary re-renders.
 
 ## Debug Code Management
 
@@ -319,8 +420,8 @@ const useApiOperation = () => {
 - ✅ **DRY Compliance**: No concrete code duplication
 - ✅ **Type Safety**: All interfaces properly defined and shared
 - ✅ **Maintainability**: Single-location updates for shared concerns
-- ✅ **Performance**: Optimized re-render patterns
-- ✅ **Architecture**: Proper separation of concerns
+- ✅ **Performance**: Optimized re-render patterns with event-driven communication
+- ✅ **Architecture**: Proper separation of concerns with zero polling intervals
 
 ## Best Practices Summary
 

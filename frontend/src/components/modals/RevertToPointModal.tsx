@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { FinalDeleteConfirmationModal } from './FinalDeleteConfirmationModal';
-import { EditOperation } from '../../types/editQueue';
-import { EditQueueFormatter } from '../../utils/editQueueFormatter';
+import { EditOperation } from '../../features/script/types/editQueue';
+import { EditQueueFormatter } from '../../features/script/utils/editQueueFormatter';
 
 interface RevertToPointModalProps {
     isOpen: boolean;

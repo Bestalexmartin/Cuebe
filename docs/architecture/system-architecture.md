@@ -120,6 +120,88 @@ This design allows:
 - **Security boundaries** through path validation
 - **Flexible deployment** (mount different docs in production)
 
+### Frontend File System Organization
+
+The frontend codebase follows a comprehensive feature-based organization pattern with shared components and utilities:
+
+```
+frontend/src/
+├── components/           # Shared UI components (accessible to all features)
+│   ├── base/            # BaseCard, BaseModal foundation
+│   ├── form/            # Shared form components
+│   ├── layout/          # Header, QuickAccessPanel
+│   ├── modals/          # Application-wide modals
+│   └── test-tools/      # Testing infrastructure
+├── features/            # Feature-specific modules
+│   ├── crew/
+│   │   ├── components/  # CrewCard, CrewView
+│   │   │   └── modals/  # CreateCrewModal
+│   │   ├── hooks/       # useCrew, useCrews
+│   │   └── pages/       # EditCrewPage
+│   ├── departments/
+│   │   ├── components/  # DepartmentCard, DepartmentsView
+│   │   │   └── modals/  # CreateDepartmentModal
+│   │   ├── hooks/       # useDepartment, useDepartments
+│   │   └── pages/       # EditDepartmentPage
+│   ├── shows/
+│   │   ├── components/  # ShowCard, ShowsView
+│   │   │   └── modals/  # CreateShowModal, CreateScriptModal
+│   │   ├── hooks/       # useShow, useShows
+│   │   └── pages/       # EditShowPage
+│   ├── venues/
+│   │   ├── components/  # VenueCard, VenuesView
+│   │   │   └── modals/  # CreateVenueModal
+│   │   ├── hooks/       # useVenue, useVenues
+│   │   └── pages/       # EditVenuePage
+│   └── script/          # Complete script management system
+│       ├── components/  # Script-specific components
+│       │   ├── modes/   # EditMode, ViewMode, PlayMode, etc.
+│       │   └── modals/  # Script-specific modals
+│       ├── hooks/       # useScript, useScriptElements, useEditQueue, etc.
+│       ├── types/       # ScriptElement, EditOperation interfaces
+│       └── utils/       # Script-specific utilities
+├── hooks/               # Application-wide custom hooks
+├── pages/               # Route-level components and auth
+│   └── auth/           # SignInPage, SignUpPage
+├── types/               # Global TypeScript interfaces
+├── utils/               # Shared utility functions
+└── styles/              # Global styles and themes
+```
+
+#### Feature Module Philosophy
+
+**Complete Feature Isolation**: Each feature module (`/src/features/[feature]/`) contains:
+- **Components**: Feature-specific UI components and views
+- **Hooks**: Feature-specific custom hooks and data fetching
+- **Pages**: Edit/manage pages for the feature
+- **Modals**: Feature-specific modals and dialogs
+- **Types**: TypeScript interfaces specific to the feature (when needed)
+- **Utils**: Feature-specific utilities and helpers (when needed)
+
+**Import Strategy**:
+```typescript
+// Cross-feature imports (external access)
+import { useScript } from '../features/script/hooks/useScript';
+import { CrewView } from '../features/crew/components/CrewView';
+
+// Shared resource imports (always accessible)
+import { BaseCard } from '../components/base/BaseCard';
+import { useValidatedForm } from '../hooks/useValidatedForm';
+
+// Within-feature imports (internal to feature)
+// From /src/features/crew/components/CrewView.tsx:
+import { useCrews } from '../hooks/useCrews';
+import { CrewCard } from './CrewCard';
+```
+
+**Benefits of Feature-Based Architecture**:
+- **Clear Boundaries**: Feature logic is self-contained and isolated
+- **Easy Navigation**: All related files are co-located by feature
+- **Scalability**: New features follow established patterns
+- **Maintainability**: Changes are contained within feature boundaries
+- **Team Collaboration**: Multiple developers can work on different features simultaneously
+- **Shared Resources**: Common components, hooks, and utilities remain accessible to all features
+
 ## Environment Configuration
 
 ### Development Environment
