@@ -1,3 +1,4 @@
+// frontend/src/pages/script/constants.ts
 export const SCRIPT_STATUS_OPTIONS = [
     { value: 'DRAFT', label: 'Draft' },
     { value: 'COPY', label: 'Copy' },

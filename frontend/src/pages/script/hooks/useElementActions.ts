@@ -1,3 +1,4 @@
+// frontend/src/pages/script/hooks/useElementActions.ts
 import { useCallback } from 'react';
 
 export function useElementActions(
