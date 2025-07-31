@@ -1,4 +1,4 @@
-// frontend/src/QuickAccessPanel.tsx
+// frontend/src/components/layout/QuickAccessPanel.tsx
 
 import React from "react";
 import { Flex, Box, VStack, Heading, Button, Text, HStack } from "@chakra-ui/react";

@@ -1,4 +1,4 @@
-// frontend/src/SignInPage.tsx
+// frontend/src/pages/auth/SignInPage.tsx
 
 import React from 'react';
 import { SignIn } from "@clerk/clerk-react";

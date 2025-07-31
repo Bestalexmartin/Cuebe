@@ -1,4 +1,4 @@
-// frontend/src/components/ErrorBoundaryTest.tsx
+// frontend/src/components/test-tools/ErrorBoundaryTest.tsx
 
 import React, { useState, useCallback } from 'react';
 import {

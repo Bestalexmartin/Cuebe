@@ -1,3 +1,4 @@
+// frontend/src/utils/colorUtils.ts
 export const getTextColorForBackground = (hexColor: string): string => {
     if (!hexColor || hexColor === '') return 'black';
     const color = hexColor.replace('#', '');
