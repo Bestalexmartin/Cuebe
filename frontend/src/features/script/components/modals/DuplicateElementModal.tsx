@@ -1,4 +1,4 @@
-// frontend/src/pages/script/components/modals/DuplicateElementModal.tsx
+// frontend/src/features/script/components/modals/DuplicateElementModal.tsx
 
 import React, { useEffect } from 'react';
 import {

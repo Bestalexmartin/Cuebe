@@ -1,4 +1,4 @@
-// frontend/src/pages/script/components/modes/ViewMode.tsx
+// frontend/src/features/script/components/modes/ViewMode.tsx
 
 import React, { forwardRef, useImperativeHandle, useRef, useEffect, useState } from 'react';
 import { VStack, Text, Box, Flex } from '@chakra-ui/react';

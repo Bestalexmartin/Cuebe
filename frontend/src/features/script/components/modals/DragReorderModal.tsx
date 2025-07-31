@@ -1,4 +1,4 @@
-// frontend/src/pages/script/components/modals/DragReorderModal.tsx
+// frontend/src/features/script/components/modals/DragReorderModal.tsx
 
 import React from 'react';
 import {

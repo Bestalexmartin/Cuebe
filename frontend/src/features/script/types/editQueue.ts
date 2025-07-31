@@ -1,4 +1,4 @@
-// frontend/src/types/editQueue.ts
+// frontend/src/features/script/types/editQueue.ts
 
 export interface BaseEditOperation {
     id: string;

@@ -1,4 +1,4 @@
-// frontend/src/pages/script/components/modes/InfoMode.tsx
+// frontend/src/features/script/components/modes/InfoMode.tsx
 
 import React from 'react';
 import { VStack, HStack, FormControl, FormLabel, Input, Select, Textarea } from '@chakra-ui/react';

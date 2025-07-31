@@ -1,4 +1,4 @@
-// frontend/src/components/modals/CreateScriptModal.tsx
+// frontend/src/features/shows/components/modals/CreateScriptModal.tsx
 
 import React from 'react';
 import {

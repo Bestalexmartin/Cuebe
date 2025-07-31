@@ -1,3 +1,5 @@
+# backend/alembic/versions/b287f1013c8e_rename_user_preferences_columns.py
+
 """rename_user_preferences_columns
 
 Revision ID: b287f1013c8e

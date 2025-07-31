@@ -1,4 +1,4 @@
-// frontend/src/components/cards/ShowCard.tsx
+// frontend/src/features/shows/components/ShowCard.tsx
 
 import React, { useMemo } from "react";
 import {

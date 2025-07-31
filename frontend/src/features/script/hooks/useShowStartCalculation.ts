@@ -1,4 +1,4 @@
-// frontend/src/pages/script/hooks/useShowStartCalculation.ts
+// frontend/src/features/script/hooks/useShowStartCalculation.ts
 
 import { useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
