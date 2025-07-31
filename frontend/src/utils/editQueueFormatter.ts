@@ -31,6 +31,10 @@ export class EditQueueFormatter {
                 const elementType = operation.elementData.elementType?.toLowerCase() || 'element';
                 return `Created new ${elementType}: "${operation.elementData.description || 'Untitled'}"`;
             
+            case 'CREATE_ELEMENT_AT_INDEX':
+                const elementTypeAtIndex = operation.elementData.elementType?.toLowerCase() || 'element';
+                return `Created new ${elementTypeAtIndex}: "${operation.elementData.description || 'Untitled'}"`;
+            
             case 'DELETE_ELEMENT':
                 const deletedType = operation.elementData.elementType?.toLowerCase() || 'element';
                 return `Deleted ${deletedType}: "${operation.elementData.description || 'Untitled'}"`;
@@ -38,6 +42,10 @@ export class EditQueueFormatter {
             case 'BULK_REORDER':
                 const count = operation.elementChanges.length;
                 return `Reordered ${count} element${count > 1 ? 's' : ''}`;
+                
+            case 'ENABLE_AUTO_SORT':
+                const moveCount = operation.elementMoves.length;
+                return `Enabled auto-sort (reordered ${moveCount} element${moveCount > 1 ? 's' : ''})`;
             
             default:
                 return `Unknown operation on "${elementName}"`;
@@ -213,6 +221,7 @@ export class EditQueueFormatter {
             'UPDATE_FIELD': 'updates',
             'UPDATE_TIME_OFFSET': 'time changes',
             'CREATE_ELEMENT': 'additions',
+            'CREATE_ELEMENT_AT_INDEX': 'additions',
             'DELETE_ELEMENT': 'deletions',
             'BULK_REORDER': 'bulk moves'
         };

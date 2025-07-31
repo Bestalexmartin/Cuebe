@@ -36,7 +36,7 @@ export interface ScriptElementBase {
   
   // Sequencing and timing
   sequence: number;                    // Order in script (auto-incrementing)
-  timeOffset: number;                  // Milliseconds from script start
+  timeOffsetMs: number;                // Milliseconds from script start
   triggerType: TriggerType;
   followsCueID?: string;               // If triggerType is 'follow'
   
@@ -166,7 +166,7 @@ export interface ScriptElementFormData {
   description: string;
   cueNotes?: string;
   departmentID?: string;
-  timeOffset: number;
+  timeOffsetMs: number;
   triggerType: TriggerType;
   followsCueID?: string;
   duration?: number;

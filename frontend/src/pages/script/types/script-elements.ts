@@ -10,8 +10,7 @@ export interface ScriptElement {
     elementOrder: number; // Legacy field
     
     // Timing fields
-    timeOffsetMs: number; // New timing in milliseconds
-    timeOffset: number; // Legacy field in seconds
+    timeOffsetMs: number; // Timing in milliseconds
     duration?: number;
     fadeIn?: number;
     fadeOut?: number;

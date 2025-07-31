@@ -48,6 +48,9 @@ export interface BaseModalProps extends Omit<ModalContentProps, 'children'> {
   
   // Error boundary context
   errorBoundaryContext?: string;
+  
+  // UI Options
+  showCloseButton?: boolean;
 }
 
 const BaseModalComponent: React.FC<BaseModalProps> = ({
@@ -63,6 +66,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
   validationErrors = [],
   showValidationErrors = true,
   errorBoundaryContext,
+  showCloseButton = true,
   ...modalContentProps
 }) => {
   const getButtonVariant = (variant: BaseModalAction['variant'] = 'secondary') => {
@@ -142,6 +146,22 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
     );
   };
 
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    
+    if (onSubmit) {
+      // Blur any focused element to trigger validation and save changes
+      if (document.activeElement && document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      
+      // Small delay to allow onBlur handlers to complete
+      setTimeout(() => {
+        onSubmit(event);
+      }, 10);
+    }
+  };
+
   const content = (
     <Modal 
       isOpen={isOpen} 
@@ -151,14 +171,14 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
       <ModalOverlay />
       <ModalContent
         as={onSubmit ? "form" : "div"}
-        onSubmit={onSubmit}
+        onSubmit={handleSubmit}
         bg="page.background"
         border="2px solid"
         borderColor="gray.600"
         {...modalContentProps}
       >
         <ModalHeader>{title}</ModalHeader>
-        <ModalCloseButton />
+        {showCloseButton && <ModalCloseButton />}
         
         <ModalBody pb={6}>
           {children}

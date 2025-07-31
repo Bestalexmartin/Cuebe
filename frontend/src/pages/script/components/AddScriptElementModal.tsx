@@ -270,6 +270,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
             }}
             validationErrors={form.fieldErrors}
             showValidationErrors={form.fieldErrors.length > 0}
+            showCloseButton={false}
         >
             <VStack spacing={4} align="stretch">
                 {/* Element Type Selection - Cue or Note */}

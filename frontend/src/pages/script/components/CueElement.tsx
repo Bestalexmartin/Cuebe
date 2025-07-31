@@ -48,7 +48,7 @@ export const CueElement: React.FC<CueElementProps> = ({
     const dragTimeoutRef = useRef<number | null>(null);
     const isDragStartedRef = useRef(false);
     const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
-    
+
     const {
         attributes,
         listeners,
@@ -163,7 +163,7 @@ export const CueElement: React.FC<CueElementProps> = ({
     })();
 
     const timeDisplay = (() => {
-        const timeValue = (element as any).timeOffsetMs || 0;
+        const timeValue = element.timeOffsetMs || 0;
 
         if (showClockTimes && scriptStartTime) {
             const showStartTime = new Date(scriptStartTime);
@@ -276,7 +276,7 @@ export const CueElement: React.FC<CueElementProps> = ({
                 />
 
                 {/* Time Offset */}
-                <Box w="120px" pl={3} pr={4} borderRight={"1px solid"} borderColor={"gray.400"}>
+                <Box w="120px" pl={5} pr={4} borderRight={"1px solid"} borderColor={"gray.400"}>
                     <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight}>
                         {timeDisplay}
                     </Text>
@@ -353,7 +353,8 @@ export const CueElement: React.FC<CueElementProps> = ({
                 {/* Cue Notes */}
                 <Box
                     flex={1}
-                    px={3}
+                    pl={43}
+                    pr={3}
                     borderRight={"1px solid"}
                     borderColor={"gray.400"}
                 >
