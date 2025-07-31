@@ -1,3 +1,5 @@
+# backend/alembic/versions/20250728_120000_remove_group_element_type.py
+
 """Remove GROUP from ElementType enum
 
 Revision ID: 20250728_120000

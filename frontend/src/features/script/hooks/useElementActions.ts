@@ -1,6 +1,6 @@
-// frontend/src/pages/script/hooks/useElementActions.ts
-import { useCallback, useMemo } from "react";
+// frontend/src/features/script/hooks/useElementActions.ts
 
+import { useCallback, useMemo } from "react";
 export function useElementActions(
   elements: any[],
   autoSort: boolean,

@@ -1,4 +1,4 @@
-// frontend/src/pages/script/components/ScriptElementsHeader.tsx
+// frontend/src/features/script/components/ScriptElementsHeader.tsx
 
 import React from 'react';
 import { Box, HStack, Text } from '@chakra-ui/react';

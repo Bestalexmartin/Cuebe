@@ -1,4 +1,4 @@
-// frontend/src/pages/script/components/AddScriptElementModal.tsx
+// frontend/src/features/script/components/AddScriptElementModal.tsx
 
 import React, { useState, useEffect } from 'react';
 import {

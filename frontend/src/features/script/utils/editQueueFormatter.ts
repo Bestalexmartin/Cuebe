@@ -1,4 +1,4 @@
-// frontend/src/utils/editQueueFormatter.ts
+// frontend/src/features/script/utils/editQueueFormatter.ts
 
 import { EditOperation } from '../types/editQueue';
 import { ScriptElement } from '../types/scriptElements';

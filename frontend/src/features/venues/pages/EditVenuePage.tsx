@@ -1,4 +1,4 @@
-// frontend/src/pages/edit/EditVenuePage.tsx
+// frontend/src/features/venues/pages/EditVenuePage.tsx
 
 import React, { useEffect, useState } from 'react';
 import {

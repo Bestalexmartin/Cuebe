@@ -1,3 +1,5 @@
+# backend/alembic/versions/d0e03c67e91c_add_useroptions_column_to_users_table.py
+
 """Add userOptions column to users table
 
 Revision ID: d0e03c67e91c

@@ -1,3 +1,5 @@
+# backend/alembic/versions/6f2839d0e48c_add_department_initials_field.py
+
 """add department initials field
 
 Revision ID: 6f2839d0e48c

@@ -1,4 +1,4 @@
-// frontend/src/pages/script/components/MobileScriptDrawer.tsx
+// frontend/src/features/script/components/MobileScriptDrawer.tsx
 
 import React from 'react';
 import {

@@ -1,4 +1,4 @@
-// frontend/src/pages/script/hooks/useScriptModes.ts
+// frontend/src/features/script/hooks/useScriptModes.ts
 
 import { useState, useCallback, useMemo } from 'react';
 

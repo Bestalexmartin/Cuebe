@@ -1,4 +1,4 @@
-// frontend/src/pages/script/hooks/useScriptElements.ts
+// frontend/src/features/script/hooks/useScriptElements.ts
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
