@@ -3,6 +3,7 @@
 import React from 'react';
 import { VStack, HStack, FormControl, FormLabel, Input, Select, Textarea } from '@chakra-ui/react';
 import { useValidatedForm } from '../../../../hooks/useValidatedForm';
+import { SCRIPT_STATUS_OPTIONS } from '../../constants';
 
 interface ScriptFormData {
     scriptName: string;
@@ -16,14 +17,6 @@ interface InfoModeProps {
     form: ReturnType<typeof useValidatedForm<ScriptFormData>>;
 }
 
-// Script status options - matching the workflow states
-const SCRIPT_STATUS_OPTIONS = [
-    { value: 'DRAFT', label: 'Draft' },
-    { value: 'COPY', label: 'Copy' },
-    { value: 'WORKING', label: 'Working' },
-    { value: 'FINAL', label: 'Final' },
-    { value: 'BACKUP', label: 'Backup' },
-];
 
 export const InfoMode: React.FC<InfoModeProps> = ({ form }) => {
     return (
