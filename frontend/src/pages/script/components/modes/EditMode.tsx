@@ -35,6 +35,7 @@ interface EditModeProps {
         isAtBottom: boolean;
         allElementsFitOnScreen: boolean;
     }) => void;
+    onSelectionChange?: (id: string | null) => void;
     // Edit queue props
     elements?: any[];
     script?: any; // Optional cached script to prevent refetching
@@ -92,11 +93,18 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     }, [elements, localElements]);
 
     // Expose refetch function and selection state to parent via ref
-    useImperativeHandle(ref, () => ({
-        refetchElements,
-        selectedElementId,
-        clearSelection: () => setSelectedElementId(null)
-    }), [refetchElements, selectedElementId]);
+    useImperativeHandle(
+        ref,
+        () => ({
+            refetchElements,
+            selectedElementId,
+            clearSelection: () => {
+                setSelectedElementId(null);
+                onSelectionChange?.(null);
+            },
+        }),
+        [refetchElements, selectedElementId, onSelectionChange]
+    );
 
     // Drag sensors
     const sensors = useSensors(
@@ -496,11 +504,12 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                                                 isDragEnabled={true}
                                                 isSelected={selectedElementId === element.elementID}
                                                 onSelect={() => {
-                                                    if (selectedElementId === element.elementID) {
-                                                        setSelectedElementId(null); // Deselect if already selected
-                                                    } else {
-                                                        setSelectedElementId(element.elementID); // Select if not selected
-                                                    }
+                                                    const newId =
+                                                        selectedElementId === element.elementID
+                                                            ? null
+                                                            : element.elementID;
+                                                    setSelectedElementId(newId);
+                                                    onSelectionChange?.(newId);
                                                 }}
                                             />
                                         );
