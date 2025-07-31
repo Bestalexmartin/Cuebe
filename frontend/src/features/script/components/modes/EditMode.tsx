@@ -1,4 +1,4 @@
-// frontend/src/pages/script/components/modes/EditMode.tsx
+// frontend/src/features/script/components/modes/EditMode.tsx
 
 import React, { forwardRef, useImperativeHandle, useState, useEffect, useRef } from 'react';
 import { VStack, Text, Box, Flex } from '@chakra-ui/react';

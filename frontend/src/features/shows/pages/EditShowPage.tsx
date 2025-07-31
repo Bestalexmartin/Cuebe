@@ -1,4 +1,4 @@
-// frontend/src/pages/edit/EditShowPage.tsx
+// frontend/src/features/shows/pages/EditShowPage.tsx
 
 import React, { useEffect, useState } from 'react';
 import {

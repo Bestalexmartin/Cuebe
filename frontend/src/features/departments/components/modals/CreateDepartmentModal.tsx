@@ -1,4 +1,4 @@
-// frontend/src/components/modals/CreateDepartmentModal.tsx
+// frontend/src/features/departments/components/modals/CreateDepartmentModal.tsx
 
 import React from 'react';
 import {

@@ -1,4 +1,4 @@
-// frontend/src/pages/script/components/CueElement.tsx
+// frontend/src/features/script/components/CueElement.tsx
 
 import React, { useRef, useCallback, useMemo } from 'react';
 import { Box, HStack, Text } from '@chakra-ui/react';

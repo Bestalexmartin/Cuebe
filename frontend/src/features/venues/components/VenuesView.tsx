@@ -1,4 +1,4 @@
-// frontend/src/components/views/VenuesView.tsx
+// frontend/src/features/venues/components/VenuesView.tsx
 
 import React, { useState, useMemo } from 'react';
 import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";

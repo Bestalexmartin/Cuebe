@@ -1,4 +1,4 @@
-// frontend/src/components/cards/DepartmentCard.tsx
+// frontend/src/features/departments/components/DepartmentCard.tsx
 
 import React from 'react';
 import {

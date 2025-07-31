@@ -1,4 +1,4 @@
-// frontend/src/components/modals/CreateShowModal.tsx
+// frontend/src/features/shows/components/modals/CreateShowModal.tsx
 
 import React, { useState, useEffect } from 'react';
 import {

@@ -1,4 +1,4 @@
-// frontend/src/hooks/useEditQueue.ts
+// frontend/src/features/script/hooks/useEditQueue.ts
 
 import { useState, useCallback, useRef, useMemo } from 'react';
 import { EditOperation, EditQueueState } from '../types/editQueue';

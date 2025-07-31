@@ -1,3 +1,5 @@
+# backend/alembic/versions/20250728_130000_add_duration_fields.py
+
 """Add showDuration and endTime fields
 
 Revision ID: 20250728_130000

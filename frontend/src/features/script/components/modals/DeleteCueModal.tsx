@@ -1,4 +1,4 @@
-// frontend/src/pages/script/components/modals/DeleteCueModal.tsx
+// frontend/src/features/script/components/modals/DeleteCueModal.tsx
 
 import React from 'react';
 import {

@@ -1,4 +1,4 @@
-// frontend/src/pages/script/components/ScriptToolbar.tsx
+// frontend/src/features/script/components/ScriptToolbar.tsx
 
 import React from 'react';
 import { VStack, Button, Divider, Text } from '@chakra-ui/react';

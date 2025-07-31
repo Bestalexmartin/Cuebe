@@ -1,3 +1,5 @@
+# backend/alembic/versions/20250728_140000_rename_script_duration_to_end_time.py
+
 """Rename scriptDuration to endTime
 
 Revision ID: 20250728_140000

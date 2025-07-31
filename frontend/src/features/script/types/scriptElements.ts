@@ -1,4 +1,4 @@
-// frontend/src/types/scriptElements.ts
+// frontend/src/features/script/types/scriptElements.ts
 
 // Base types and enums
 export type ScriptElementType = 'cue' | 'note';

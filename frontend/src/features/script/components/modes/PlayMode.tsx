@@ -1,4 +1,4 @@
-// frontend/src/pages/script/components/modes/PlayMode.tsx
+// frontend/src/features/script/components/modes/PlayMode.tsx
 
 import React from 'react';
 import { Flex, Text } from '@chakra-ui/react';

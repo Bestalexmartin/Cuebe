@@ -1,4 +1,4 @@
-// frontend/src/hooks/useVenue.ts
+// frontend/src/features/venues/hooks/useVenue.ts
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
