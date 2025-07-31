@@ -1,4 +1,4 @@
-// frontend/src/TutorialPage.tsx
+// frontend/src/pages/TutorialPage.tsx
 
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';

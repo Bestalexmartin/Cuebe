@@ -1,4 +1,4 @@
-// frontend/src/DashboardPage.tsx
+// frontend/src/pages/DashboardPage.tsx
 
 import React, { useState, useEffect } from 'react';
 import {

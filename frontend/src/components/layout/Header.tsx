@@ -1,4 +1,4 @@
-// frontend/src/Header.tsx
+// frontend/src/components/layout/Header.tsx
 
 import React from "react";
 import { SignedIn, UserButton } from "@clerk/clerk-react";
