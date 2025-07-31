@@ -15,8 +15,8 @@ import {
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
-import { useScript } from "../hooks/useScript";
-import { useShow } from "../hooks/useShow";
+import { useScript } from "../features/script/hooks/useScript";
+import { useShow } from "../features/shows/hooks/useShow";
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AppIcon } from '../components/AppIcon';
 import { ActionsMenu, ActionItem } from '../components/ActionsMenu';
@@ -28,25 +28,25 @@ import { convertUTCToLocal, convertLocalToUTC } from '../utils/dateTimeUtils';
 import { useChangeDetection } from '../hooks/useChangeDetection';
 import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
 import { EditHistoryView } from '../components/EditHistoryView';
-import { useScriptElementsWithEditQueue } from '../hooks/useScriptElementsWithEditQueue';
-import { EditQueueFormatter } from '../utils/editQueueFormatter';
+import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
+import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
 import { useModalState } from '../hooks/useModalState';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
 
 // Import script-specific components
-import { ScriptToolbar } from './script/components/ScriptToolbar';
-import { InfoMode } from './script/components/modes/InfoMode';
-import { ViewMode, ViewModeRef } from './script/components/modes/ViewMode';
-import { EditMode, EditModeRef } from './script/components/modes/EditMode';
-import { PlayMode } from './script/components/modes/PlayMode';
-import { ShareMode } from './script/components/modes/ShareMode';
+import { ScriptToolbar } from '../features/script/components/ScriptToolbar';
+import { InfoMode } from '../features/script/components/modes/InfoMode';
+import { ViewMode, ViewModeRef } from '../features/script/components/modes/ViewMode';
+import { EditMode, EditModeRef } from '../features/script/components/modes/EditMode';
+import { PlayMode } from '../features/script/components/modes/PlayMode';
+import { ShareMode } from '../features/script/components/modes/ShareMode';
 // AddScriptElementModal now handled by ScriptModals component
-import { useScriptModes } from './script/hooks/useScriptModes';
-import { useElementActions } from './script/hooks/useElementActions';
-import { ToolButton } from './script/types/tool-button';
-import { ScriptModals } from './script/components/ScriptModals';
-import { MobileScriptDrawer } from './script/components/MobileScriptDrawer';
-import { getToolbarButtons, ToolbarContext } from './script/utils/toolbarConfig';
+import { useScriptModes } from '../features/script/hooks/useScriptModes';
+import { useElementActions } from '../features/script/hooks/useElementActions';
+import { ToolButton } from '../features/script/types/tool-button';
+import { ScriptModals } from '../features/script/components/ScriptModals';
+import { MobileScriptDrawer } from '../features/script/components/MobileScriptDrawer';
+import { getToolbarButtons, ToolbarContext } from '../features/script/utils/toolbarConfig';
 
 // Modal names for type safety and consistency
 const MODAL_NAMES = {
@@ -201,10 +201,28 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         applyLocalChange
     );
 
+    // Debug logging for stability
+    // useEffect(() => {
+    //     console.log('🔍 ManageScriptPage: editQueueElements changed:', editQueueElements.length);
+    // }, [editQueueElements]);
+    
+    // useEffect(() => {
+    //     console.log('🔍 ManageScriptPage: activePreferences.autoSortCues changed:', activePreferences.autoSortCues);
+    // }, [activePreferences.autoSortCues]);
+    
+    // useEffect(() => {
+    //     console.log('🔍 ManageScriptPage: applyLocalChange changed, identity:', applyLocalChange.toString().slice(0, 50));
+    // }, [applyLocalChange]);
+
     // Use applyLocalChange directly from the hook (already stable)
 
     // Active mode state using script-specific hook
     const { activeMode, setActiveMode } = useScriptModes('view');
+    
+    // Log mode transitions
+    // useEffect(() => {
+    //     console.log(`🔄 ManageScriptPage: Mode changed to "${activeMode}"`);
+    // }, [activeMode]);
 
     // Change detection for save button
     const initialData = script && show ? {

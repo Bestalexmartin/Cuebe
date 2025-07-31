@@ -11,9 +11,9 @@ import {
     IconButton
 } from '@chakra-ui/react';
 import { AppIcon } from './AppIcon';
-import { EditOperation } from '../types/editQueue';
-import { ScriptElement } from '../types/scriptElements';
-import { EditQueueFormatter } from '../utils/editQueueFormatter';
+import { EditOperation } from '../features/script/types/editQueue';
+import { ScriptElement } from '../features/script/types/scriptElements';
+import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { RevertToPointModal } from './modals/RevertToPointModal';
 

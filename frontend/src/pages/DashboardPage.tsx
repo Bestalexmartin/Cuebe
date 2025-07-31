@@ -6,22 +6,22 @@ import {
   Drawer, DrawerBody, DrawerHeader, DrawerOverlay, DrawerContent, DrawerCloseButton
 } from "@chakra-ui/react";
 import { useLocation } from 'react-router-dom';
-import { ShowsView } from '../components/views/ShowsView';
-import { VenuesView } from '../components/views/VenuesView';
-import { DepartmentsView } from '../components/views/DepartmentsView';
-import { CrewView } from '../components/views/CrewView';
+import { ShowsView } from '../features/shows/components/ShowsView';
+import { VenuesView } from '../features/venues/components/VenuesView';
+import { DepartmentsView } from '../features/departments/components/DepartmentsView';
+import { CrewView } from '../features/crew/components/CrewView';
 import { QuickAccessPanel } from '../components/layout/QuickAccessPanel';
-import { useShows } from "../hooks/useShows";
+import { useShows } from "../features/shows/hooks/useShows";
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useModalManager, MODAL_TYPES } from '../hooks/useModalManager';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
 // Import all modals
-import { CreateShowModal } from "../components/modals/CreateShowModal";
-import { CreateScriptModal } from "../components/modals/CreateScriptModal";
-import { CreateVenueModal } from "../components/modals/CreateVenueModal";
-import { CreateDepartmentModal } from "../components/modals/CreateDepartmentModal";
-import { CreateCrewModal } from "../components/modals/CreateCrewModal";
+import { CreateShowModal } from "../features/shows/components/modals/CreateShowModal";
+import { CreateScriptModal } from "../features/shows/components/modals/CreateScriptModal";
+import { CreateVenueModal } from "../features/venues/components/modals/CreateVenueModal";
+import { CreateDepartmentModal } from "../features/departments/components/modals/CreateDepartmentModal";
+import { CreateCrewModal } from "../features/crew/components/modals/CreateCrewModal";
 
 // TypeScript interfaces
 interface DashboardPageProps {
