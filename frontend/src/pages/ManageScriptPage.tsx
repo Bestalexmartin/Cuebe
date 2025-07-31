@@ -53,6 +53,7 @@ import { PlayMode } from './script/components/modes/PlayMode';
 import { ShareMode } from './script/components/modes/ShareMode';
 import { AddScriptElementModal } from './script/components/AddScriptElementModal';
 import { useScriptModes } from './script/hooks/useScriptModes';
+import { ToolButton } from './script/types/tool-button';
 
 interface ManageScriptPageProps {
     isMenuOpen: boolean;
@@ -102,14 +103,6 @@ const VALIDATION_CONFIG: FormValidationConfig = {
     }
 };
 
-interface ToolButton {
-    id: string;
-    icon: 'view' | 'play' | 'info' | 'script-edit' | 'share' | 'dashboard' | 'add' | 'copy' | 'group' | 'delete' | 'element-edit' | 'jump-top' | 'jump-bottom' | 'history' | 'exit';
-    label: string;
-    description: string;
-    isActive: boolean;
-    isDisabled?: boolean;
-}
 
 export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, onMenuClose }) => {
     const { scriptId } = useParams<{ scriptId: string }>();
@@ -514,11 +507,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
         // Handle navigation buttons
         if (modeId === 'jump-top') {
-            handleJumpToTop();
+            handleJump('top');
             return;
         }
         if (modeId === 'jump-bottom') {
-            handleJumpToBottom();
+            handleJump('bottom');
             return;
         }
 
@@ -762,42 +755,26 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     };
 
     const handleAutoSortElements = async () => {
-        console.log('=== HANDLE AUTO-SORT ELEMENTS STARTED ===');
-        console.log('Script ID:', scriptId);
         
         if (!scriptId) {
-            console.log('No script ID, aborting auto-sort');
             return;
         }
 
         try {
             // Get current elements from edit queue
             const currentElements = [...editQueueElements];
-            console.log('Current elements count:', currentElements.length);
-            console.log('Current elements order:');
-            currentElements.forEach((el, idx) => {
-                console.log(`  [${idx}] ${el.elementID.slice(-6)} - "${el.description}" - ${el.timeOffsetMs}ms`);
-            });
             
             // Sort elements by timeOffsetMs (create a copy to avoid mutating original)
             const sortedElements = [...currentElements].sort((a, b) => a.timeOffsetMs - b.timeOffsetMs);
-            console.log('Sorted elements order:');
-            sortedElements.forEach((el, idx) => {
-                console.log(`  [${idx}] ${el.elementID.slice(-6)} - "${el.description}" - ${el.timeOffsetMs}ms`);
-            });
             
             // Check if any reordering is needed
-            console.log('Comparing current vs sorted order:');
             const needsReordering = currentElements.some((element, index) => {
                 const sortedElement = sortedElements[index];
                 const matches = element.elementID === sortedElement.elementID;
-                console.log(`  [${index}] Current: ${element.elementID.slice(-6)} (${element.timeOffsetMs}ms) vs Sorted: ${sortedElement.elementID.slice(-6)} (${sortedElement.timeOffsetMs}ms) - Match: ${matches}`);
                 return !matches;
             });
-            console.log('Needs reordering:', needsReordering);
             
             if (!needsReordering) {
-                console.log('Elements already sorted, showing success message');
                 showSuccess('Auto-Sort Complete', 'Elements are already in correct time order.');
                 return;
             }
@@ -818,10 +795,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     });
                 }
             }
-            console.log('Element changes to apply:', elementChanges);
             
             // Apply as compound operation: preference change + resulting sort
-            console.log('Applying ENABLE_AUTO_SORT compound operation');
             applyLocalChange({
                 type: 'ENABLE_AUTO_SORT',
                 elementId: 'auto-sort-preference',
@@ -829,67 +804,51 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 newPreferenceValue: true,
                 elementMoves: elementChanges
             } as any);
-
-            console.log('Auto-sort completed successfully');
             showSuccess('Elements Auto-Sorted', `Reordered ${elementChanges.length} elements by time offset. Save to apply changes.`);
         } catch (error) {
             console.error('Error auto-sorting elements:', error);
             showError('Auto-Sort Failed', error instanceof Error ? error.message : 'Failed to auto-sort elements');
         }
         
-        console.log('=== HANDLE AUTO-SORT ELEMENTS COMPLETED ===');
+        
     };
 
     const handleAutoSortToggle = async (value: boolean) => {
-        console.log('=== EDIT MODE AUTO-SORT CHANGE ===');
-        console.log('Current autoSortCues:', activePreferences.autoSortCues);
-        console.log('New value:', value);
-        console.log('Should trigger auto-sort:', value && !activePreferences.autoSortCues);
+        
         
         await updatePreference('autoSortCues', value);
         
         // If auto-sort is being enabled, trigger immediate re-sort
         if (value && !activePreferences.autoSortCues && scriptId) {
-            console.log('TRIGGERING AUTO-SORT from EditMode toggle (auto-sort was just enabled)');
             handleAutoSortElements();
         } else if (!value) {
-            console.log('Auto-sort disabled - no immediate action needed');
+            // Auto-sort disabled - no immediate action needed
         } else if (value && activePreferences.autoSortCues) {
-            console.log('Auto-sort was already enabled - no change needed');
+            // Auto-sort was already enabled - no change needed
         } else {
-            console.log('No scriptId available for auto-sort');
+            // No scriptId available for auto-sort
         }
     };
 
     // Handle immediate auto-sort when checkbox is clicked in modal
     const handleAutoSortCheckboxChange = async (newAutoSortValue: boolean) => {
-        console.log('=== AUTO-SORT CHECKBOX CLICKED ===');
-        console.log('Current autoSortCues:', autoSortCues);
-        console.log('New autoSortCues:', newAutoSortValue);
+        
         
         // Update the preference immediately
         await updatePreference('autoSortCues', newAutoSortValue);
         
         // If auto-sort is being enabled, trigger immediate re-sort
         if (newAutoSortValue && !autoSortCues && scriptId) {
-            console.log('TRIGGERING AUTO-SORT immediately (checkbox was just enabled)');
             handleAutoSortElements();
         } else {
-            console.log('NOT triggering auto-sort immediately');
-            if (!newAutoSortValue) console.log('  Reason: Auto-sort was turned OFF');
-            else if (autoSortCues) console.log('  Reason: Auto-sort was already ON');
-            else if (!scriptId) console.log('  Reason: No script ID');
+            // Not triggering auto-sort immediately
         }
     };
 
     const handleOptionsModalSave = async (newPreferences: any) => {
-        console.log('=== OPTIONS MODAL SAVE ===');
-        console.log('New preferences:', newPreferences);
-        
         // Just save the preferences - auto-sort was already handled by checkbox change
         const success = await updatePreferences(newPreferences);
-        console.log('Update preferences success:', success);
-        
+
         setPreviewPreferences(null);
     };
 
@@ -1011,62 +970,14 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         showError('Element editing feature is under development');
     };
 
-    const handleJumpToTop = () => {
-        console.log('Jump to top clicked, active mode:', activeMode);
-        
-        // For edit and view modes, find the inner scrollable container (the one inside the mode component)
-        // For other modes, use the main container
+    const handleJump = (direction: 'top' | 'bottom') => {
         let scrollContainer: HTMLElement | null = null;
-        
-        if (activeMode === 'edit' || activeMode === 'view') {
-            // Look for the hide-scrollbar container that contains the script elements
-            const hideScrollbarContainers = document.querySelectorAll('.hide-scrollbar');
-            console.log(`Found ${hideScrollbarContainers.length} hide-scrollbar containers`);
-            
-            // Find the one that's scrollable and has the most content (likely the elements list)
-            let maxScrollHeight = 0;
-            for (const container of hideScrollbarContainers) {
-                if (container instanceof HTMLElement && container.scrollHeight > container.clientHeight) {
-                    console.log(`Container with scrollHeight: ${container.scrollHeight}, clientHeight: ${container.clientHeight}`);
-                    if (container.scrollHeight > maxScrollHeight) {
-                        maxScrollHeight = container.scrollHeight;
-                        scrollContainer = container;
-                    }
-                }
-            }
-        } else {
-            // For info, play, share modes, use the main edit-form-container
-            const mainContainer = document.querySelector('.edit-form-container');
-            if (mainContainer instanceof HTMLElement) {
-                scrollContainer = mainContainer;
-            }
-        }
-        
-        if (scrollContainer) {
-            console.log('Scrolling to top, container:', scrollContainer);
-            scrollContainer.scrollTop = 0;
-        } else {
-            console.log('No scrollable container found');
-        }
-    };
 
-    const handleJumpToBottom = () => {
-        console.log('Jump to bottom clicked, active mode:', activeMode);
-        
-        // For edit and view modes, find the inner scrollable container (the one inside the mode component)
-        // For other modes, use the main container
-        let scrollContainer: HTMLElement | null = null;
-        
         if (activeMode === 'edit' || activeMode === 'view') {
-            // Look for the hide-scrollbar container that contains the script elements
             const hideScrollbarContainers = document.querySelectorAll('.hide-scrollbar');
-            console.log(`Found ${hideScrollbarContainers.length} hide-scrollbar containers`);
-            
-            // Find the one that's scrollable and has the most content (likely the elements list)
             let maxScrollHeight = 0;
             for (const container of hideScrollbarContainers) {
                 if (container instanceof HTMLElement && container.scrollHeight > container.clientHeight) {
-                    console.log(`Container with scrollHeight: ${container.scrollHeight}, clientHeight: ${container.clientHeight}`);
                     if (container.scrollHeight > maxScrollHeight) {
                         maxScrollHeight = container.scrollHeight;
                         scrollContainer = container;
@@ -1074,18 +985,14 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 }
             }
         } else {
-            // For info, play, share modes, use the main edit-form-container
             const mainContainer = document.querySelector('.edit-form-container');
             if (mainContainer instanceof HTMLElement) {
                 scrollContainer = mainContainer;
             }
         }
-        
+
         if (scrollContainer) {
-            console.log('Scrolling to bottom, container:', scrollContainer, 'scrollHeight:', scrollContainer.scrollHeight);
-            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-        } else {
-            console.log('No scrollable container found');
+            scrollContainer.scrollTop = direction === 'top' ? 0 : scrollContainer.scrollHeight;
         }
     };
 

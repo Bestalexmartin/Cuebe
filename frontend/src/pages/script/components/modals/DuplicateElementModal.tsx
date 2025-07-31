@@ -12,6 +12,7 @@ import { BaseModal } from '../../../../components/base/BaseModal';
 import { FormInput } from '../../../../components/form/FormField';
 import { useValidatedForm } from '../../../../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../../../../types/validation';
+import { msToMMSS, mmssToMs } from '../../../../utils/timeUtils';
 
 interface DuplicateElementFormData {
     description: string;
@@ -50,18 +51,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
     }
 };
 
-// Helper functions for time conversion
-const msToMMSS = (ms: number): string => {
-    const totalSeconds = Math.round(ms / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-};
-
-const mmssToMs = (mmss: string): number => {
-    const [minutes, seconds] = mmss.split(':').map(Number);
-    return (minutes * 60 + seconds) * 1000;
-};
+// Helper functions moved to shared utils
 
 export const DuplicateElementModal: React.FC<DuplicateElementModalProps> = ({
     isOpen,

@@ -93,24 +93,18 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
 
     // Handle drag end
     const handleDragEnd = async (event: DragEndEvent) => {
-        console.log('=== DRAG END STARTED ===');
         const { active, over } = event;
 
-        console.log('Active element ID:', active.id);
-        console.log('Over element ID:', over?.id);
 
         if (!over || active.id === over.id) {
-            console.log('No valid drop target or dropped on self, aborting');
             return;
         }
 
         const oldIndex = localElements.findIndex(el => el.elementID === active.id);
         const newIndex = localElements.findIndex(el => el.elementID === over.id);
 
-        console.log('Old index:', oldIndex, 'New index:', newIndex);
 
         if (oldIndex === -1 || newIndex === -1) {
-            console.log('Could not find element indices, aborting');
             return;
         }
 
@@ -131,33 +125,22 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
             elementBelow = newIndex < localElements.length - 1 ? localElements[newIndex] : null; // The element currently at newIndex will be below
         }
 
-        console.log('=== DEBUG: Pre-reorder localElements state ===');
         localElements.forEach((el, idx) => {
             let marker = '';
             if (idx === oldIndex) marker = ' <- DRAGGED';
             else if (elementAbove && el.elementID === elementAbove.elementID) marker = ' <- WILL BE ABOVE';
             else if (elementBelow && el.elementID === elementBelow.elementID) marker = ' <- WILL BE BELOW';
-            console.log(`  [${idx}] ${el.elementID.slice(-6)} - "${el.description}" - ${el.timeOffsetMs}ms${marker}`);
         });
 
-        console.log('Index calculations:');
-        console.log('  oldIndex:', oldIndex, '(dragged element)');
-        console.log('  newIndex:', newIndex, '(drop target)');
-        console.log('  Direction:', oldIndex < newIndex ? 'DOWN' : 'UP');
-        console.log('  elementAbove:', elementAbove ? `${elementAbove.elementID.slice(-6)} (${elementAbove.timeOffsetMs}ms)` : 'null');
-        console.log('  elementBelow:', elementBelow ? `${elementBelow.elementID.slice(-6)} (${elementBelow.timeOffsetMs}ms)` : 'null');
 
-        console.log('Dragged element:', {
             id: draggedEl.elementID,
             description: draggedEl.description,
             timeOffsetMs: draggedEl.timeOffsetMs
         });
-        console.log('Element above:', elementAbove ? {
             id: elementAbove.elementID,
             description: elementAbove.description,
             timeOffsetMs: elementAbove.timeOffsetMs
         } : 'null (moved to top)');
-        console.log('Element below:', elementBelow ? {
             id: elementBelow.elementID,
             description: elementBelow.description,
             timeOffsetMs: elementBelow.timeOffsetMs
@@ -165,10 +148,8 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
 
         const reorderedElements = arrayMove(localElements, oldIndex, newIndex);
         
-        console.log('=== DEBUG: Post-reorder elements state ===');
         reorderedElements.forEach((el, idx) => {
             const marker = el.elementID === draggedEl.elementID ? ' <- DRAGGED (now here)' : '';
-            console.log(`  [${idx}] ${el.elementID.slice(-6)} - "${el.description}" - ${el.timeOffsetMs}ms${marker}`);
         });
         
         const pendingReorderData = {
@@ -185,44 +166,31 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
         const aboveTimeOffset = elementAbove?.timeOffsetMs;
         const belowTimeOffset = elementBelow?.timeOffsetMs;
         
-        console.log('Time offset comparison:');
-        console.log('  Dragged:', draggedTimeOffset + 'ms');
-        console.log('  Above:', aboveTimeOffset !== undefined ? aboveTimeOffset + 'ms' : 'n/a');
-        console.log('  Below:', belowTimeOffset !== undefined ? belowTimeOffset + 'ms' : 'n/a');
         
         const allHaveSameTimeOffset = (
             (elementAbove === null || aboveTimeOffset === draggedTimeOffset) &&
             (elementBelow === null || belowTimeOffset === draggedTimeOffset)
         );
 
-        console.log('All have same time offset:', allHaveSameTimeOffset);
-        console.log('Logic breakdown:');
-        console.log('  Above check:', elementAbove === null ? 'null (pass)' : `${aboveTimeOffset} === ${draggedTimeOffset} = ${aboveTimeOffset === draggedTimeOffset}`);
-        console.log('  Below check:', elementBelow === null ? 'null (pass)' : `${belowTimeOffset} === ${draggedTimeOffset} = ${belowTimeOffset === draggedTimeOffset}`);
 
         // Check if auto-sort is currently enabled
-        console.log('Auto-sort currently enabled:', autoSortCues);
         
         if (allHaveSameTimeOffset || !autoSortCues) {
             const reason = allHaveSameTimeOffset ? 'All elements have same time offset' : 'Auto-sort is disabled';
-            console.log(`AUTO-APPLYING: ${reason}, applying reorder without modal`);
             // Set the dragged element so applyReorder can access it
             setDraggedElement(draggedEl);
             await applyReorderDirect(pendingReorderData, draggedEl);
             // Clear all state like the modal handlers do
             setDraggedElement(null);
             setPendingReorder(null);
-            console.log('=== DRAG END COMPLETED (AUTO-APPLIED) ===');
             return;
         }
 
-        console.log('SHOWING MODAL: Time offsets differ and auto-sort is enabled, showing reorder modal');
         // Set modal data for cases where time offsets differ
         setDraggedElement(draggedEl);
         setElementAbove(elementAbove);
         setElementBelow(elementBelow);
         setDragModalOpen(true);
-        console.log('=== DRAG END COMPLETED (MODAL SHOWN) ===');
     };
 
     // Handle modal choices
@@ -235,34 +203,26 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     };
 
     const handleMatchBefore = async () => {
-        console.log('=== MATCH BEFORE STARTED ===');
-        console.log('Dragged element:', {
             id: draggedElement?.elementID,
             description: draggedElement?.description,
             timeOffsetMs: draggedElement?.timeOffsetMs
         });
-        console.log('Element above:', elementAbove ? {
             id: elementAbove.elementID,
             description: elementAbove.description,
             timeOffsetMs: elementAbove.timeOffsetMs
         } : 'null');
         
         // Debug: Let's also check the current localElements state
-        console.log('=== DEBUG: Current localElements state ===');
         localElements.forEach((el, idx) => {
-            console.log(`  [${idx}] ${el.elementID.slice(-6)} - "${el.description}" - ${el.timeOffsetMs}ms`);
         });
         
         // Debug: Check if elementAbove reference is stale
         if (elementAbove && draggedElement) {
             const currentElementAbove = localElements.find(el => el.elementID === elementAbove.elementID);
-            console.log('=== DEBUG: Element above reference check ===');
-            console.log('  elementAbove (from state):', {
                 id: elementAbove.elementID,
                 timeOffsetMs: elementAbove.timeOffsetMs,
                 description: elementAbove.description
             });
-            console.log('  currentElementAbove (from localElements):', currentElementAbove ? {
                 id: currentElementAbove.elementID,
                 timeOffsetMs: currentElementAbove.timeOffsetMs,
                 description: currentElementAbove.description
@@ -272,32 +232,22 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
         await applyReorder();
 
         if (elementAbove && draggedElement) {
-            console.log(`Updating element ${draggedElement.elementID} time offset from ${draggedElement.timeOffsetMs}ms to ${elementAbove.timeOffsetMs}ms`);
-            console.log('Target time offset (elementAbove.timeOffsetMs):', elementAbove.timeOffsetMs);
             await updateElementTimeOffset(draggedElement.elementID, elementAbove.timeOffsetMs);
         } else {
-            console.log('Missing data for match before:', { elementAbove, draggedElement });
         }
         
-        console.log('=== MATCH BEFORE COMPLETED ===');
         closeDragModal();
     };
 
     const handleMatchAfter = async () => {
-        console.log('=== MATCH AFTER STARTED ===');
-        console.log('Dragged element:', draggedElement);
-        console.log('Element below:', elementBelow);
         
         await applyReorder();
 
         if (elementBelow && draggedElement) {
-            console.log(`Updating element ${draggedElement.elementID} time offset from ${draggedElement.timeOffsetMs}ms to ${elementBelow.timeOffsetMs}ms`);
             await updateElementTimeOffset(draggedElement.elementID, elementBelow.timeOffsetMs);
         } else {
-            console.log('Missing data for match after:', { elementBelow, draggedElement });
         }
         
-        console.log('=== MATCH AFTER COMPLETED ===');
         closeDragModal();
     };
 
@@ -310,8 +260,6 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     };
 
     const handleCancelDrag = () => {
-        console.log('=== CANCEL DRAG STARTED ===');
-        console.log('Reverting elements back to server state');
         
         // Revert local elements back to server state
         setLocalElements(elements);
@@ -319,12 +267,9 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
         // Close modal and clear state
         closeDragModal();
         
-        console.log('=== CANCEL DRAG COMPLETED ===');
     };
 
     const applyReorderDirect = async (pendingReorderData: any, draggedElement: any) => {
-        console.log('--- applyReorderDirect started ---');
-        console.log('Pending reorder data:', pendingReorderData);
 
         // If we have edit queue functionality, use it
         if (onApplyLocalChange) {
@@ -338,9 +283,7 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
                 newSequence: pendingReorderData.newIndex + 1
             };
             
-            console.log('Applying reorder operation to edit queue:', reorderOperation);
             onApplyLocalChange(reorderOperation);
-            console.log('--- applyReorderDirect completed (edit queue) ---');
             return;
         }
 
@@ -374,17 +317,13 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
             console.error('Error reordering elements:', error);
         }
         
-        console.log('--- applyReorderDirect completed (API) ---');
     };
 
     const applyReorder = async () => {
-        console.log('--- applyReorder started ---');
         if (!pendingReorder) {
-            console.log('No pending reorder, aborting');
             return;
         }
 
-        console.log('Pending reorder:', pendingReorder);
 
         // If we have edit queue functionality, use it
         if (onApplyLocalChange) {
@@ -398,9 +337,7 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
                 newSequence: pendingReorder.newIndex + 1
             };
             
-            console.log('Applying reorder operation to edit queue:', reorderOperation);
             onApplyLocalChange(reorderOperation);
-            console.log('--- applyReorder completed (edit queue) ---');
             return;
         }
 
@@ -436,9 +373,6 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
     };
 
     const updateElementTimeOffset = async (elementId: string, newTimeOffsetMs: number) => {
-        console.log('--- updateElementTimeOffset started ---');
-        console.log('Element ID:', elementId);
-        console.log('New time offset (ms):', newTimeOffsetMs);
         
         // Find the element to get old value
         const element = localElements.find(el => el.elementID === elementId);
@@ -461,7 +395,6 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
         try {
             const token = await getToken();
             if (!token) {
-                console.log('ERROR: No authentication token available');
                 return;
             }
 
@@ -469,8 +402,6 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
                 timeOffsetMs: newTimeOffsetMs
             };
             
-            console.log('Update data being sent:', updateData);
-            console.log('API endpoint:', `/api/elements/${elementId}`);
 
             const response = await fetch(`/api/elements/${elementId}`, {
                 method: 'PATCH',
@@ -481,18 +412,14 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
                 body: JSON.stringify(updateData)
             });
 
-            console.log('Response status:', response.status);
-            console.log('Response ok:', response.ok);
 
             if (response.ok) {
-                console.log('API call successful, updating local elements...');
                 setLocalElements(prevElements => {
                     const updatedElements = prevElements.map(el =>
                         el.elementID === elementId
                             ? { ...el, timeOffsetMs: newTimeOffsetMs }
                             : el
                     );
-                    console.log('Local elements updated. Element found and updated:', 
                         updatedElements.find(el => el.elementID === elementId));
                     return updatedElements;
                 });
@@ -503,10 +430,8 @@ export const EditMode = forwardRef<EditModeRef, EditModeProps>(({
             }
         } catch (error) {
             console.error('Error updating element time offset:', error);
-            console.log('Full error object:', error);
         }
         
-        console.log('--- updateElementTimeOffset completed ---');
     };
 
     // Function to check scroll state
