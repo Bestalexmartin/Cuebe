@@ -72,14 +72,14 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
             // Don't allow reverting to the most recent change (it would do nothing)
             return;
         }
-        
+
         setRevertTargetIndex(index);
         setIsRevertModalOpen(true);
     };
 
     const handleRevertConfirm = async () => {
         if (revertTargetIndex === null || !onRevertToPoint) return;
-        
+
         setIsReverting(true);
         try {
             await onRevertToPoint(revertTargetIndex);
@@ -179,7 +179,7 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
                         const timestamp = EditQueueFormatter.formatTimestamp(operation.timestamp);
 
                         const isClickable = onRevertToPoint && index < operations.length - 1;
-                        
+
                         return (
                             <Box
                                 key={operation.id}
@@ -187,7 +187,7 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
                                 px={1}
                                 borderBottom="1px solid"
                                 borderColor="ui.border"
-                                _hover={{ 
+                                _hover={{
                                     bg: "row.hover",
                                     cursor: isClickable ? "pointer" : "default"
                                 }}
@@ -211,7 +211,7 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
                                         </Text>
                                     </Box>
 
-                                    <Box width="140px" flexShrink={0} mr={10}>
+                                    <Box width="200px" flexShrink={0} mr={10}>
                                         <Badge
                                             size="sm"
                                             colorScheme={getOperationColor(operation.type)}
@@ -249,6 +249,7 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
                 targetOperation={revertTargetIndex !== null ? operations[revertTargetIndex] : null}
                 operationsToLose={revertTargetIndex !== null ? operations.slice(revertTargetIndex + 1) : []}
                 isReverting={isReverting}
+                targetEditNumber={revertTargetIndex !== null ? revertTargetIndex + 1 : undefined}
             />
         </Box>
     );
@@ -269,6 +270,7 @@ function getOperationColor(operationType: string): string {
         // Creation/Addition
         case 'CREATE_ELEMENT':
         case 'DUPLICATE_ELEMENT':
+        case 'CREATE_ELEMENT_AT_INDEX':
             return 'green';
 
         // Deletion/Removal

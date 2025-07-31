@@ -24,6 +24,9 @@ interface DeleteConfirmationModalProps {
     entityType: string;
     entityName: string;
     additionalInfo?: string[];
+    actionWord?: string; // Defaults to "Delete"
+    customQuestion?: string; // Custom question text, overrides default
+    customWarning?: string; // Custom warning text, overrides default
 }
 
 export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
@@ -33,7 +36,10 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
     isLoading = false,
     entityType,
     entityName,
-    additionalInfo = []
+    additionalInfo = [],
+    actionWord = "Delete",
+    customQuestion,
+    customWarning
 }) => {
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="md">
@@ -46,7 +52,7 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
                 <ModalHeader>
                     <HStack spacing="3">
                         <AppIcon name="warning" boxSize="20px" color="red.500" />
-                        <Text>Delete {entityType}</Text>
+                        <Text>{actionWord} {entityType}</Text>
                     </HStack>
                 </ModalHeader>
 
@@ -54,12 +60,16 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
                     <VStack spacing="4" align="stretch">
                         <VStack align="center" spacing="4" width="100%">
                             <Text fontSize="md" textAlign="center">
-                                Are you sure you want to delete "{entityName}"?
+                                {customQuestion || `Are you sure you want to delete "${entityName}"?`}
                             </Text>
                             <Text fontSize="md" color="red.500" fontWeight="bold" textAlign="center" lineHeight="1.4">
-                                This {entityType.toLowerCase()} will be permanently removed.
-                                <br />
-                                This action cannot be undone.
+                                {customWarning || (
+                                    <>
+                                        This {entityType.toLowerCase()} will be permanently removed.
+                                        <br />
+                                        This action cannot be undone.
+                                    </>
+                                )}
                             </Text>
                         </VStack>
 
@@ -100,7 +110,7 @@ export const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = (
                             _hover={{ bg: 'orange.400' }}
                             _focus={{ boxShadow: 'none' }}
                         >
-                            Delete {entityType}
+                            {actionWord} {entityType}
                         </Button>
                     </HStack>
                 </ModalFooter>

@@ -27,6 +27,12 @@ export interface CreateElementOperation extends BaseEditOperation {
     elementData: any;
 }
 
+export interface CreateElementAtIndexOperation extends BaseEditOperation {
+    type: 'CREATE_ELEMENT_AT_INDEX';
+    elementData: any;
+    insertIndex: number;
+}
+
 export interface DeleteElementOperation extends BaseEditOperation {
     type: 'DELETE_ELEMENT';
     elementData: any; // Store full element for undo
@@ -49,13 +55,28 @@ export interface BulkReorderOperation extends BaseEditOperation {
     }>;
 }
 
+export interface EnableAutoSortOperation extends BaseEditOperation {
+    type: 'ENABLE_AUTO_SORT';
+    oldPreferenceValue: boolean;
+    newPreferenceValue: boolean;
+    elementMoves: Array<{
+        elementId: string;
+        oldIndex: number;
+        newIndex: number;
+        oldSequence: number;
+        newSequence: number;
+    }>;
+}
+
 export type EditOperation = 
     | ReorderOperation 
     | UpdateFieldOperation 
     | CreateElementOperation 
+    | CreateElementAtIndexOperation
     | DeleteElementOperation 
     | UpdateTimeOffsetOperation
-    | BulkReorderOperation;
+    | BulkReorderOperation
+    | EnableAutoSortOperation;
 
 export interface EditQueue {
     operations: EditOperation[];

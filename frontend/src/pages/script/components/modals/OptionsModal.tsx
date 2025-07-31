@@ -17,6 +17,7 @@ interface OptionsModalProps {
     initialOptions: UserPreferences;
     onSave: (preferences: UserPreferences) => Promise<void>;
     onPreview?: (preferences: UserPreferences) => void;
+    onAutoSortChange?: (value: boolean) => Promise<void>;
 }
 
 export const OptionsModal: React.FC<OptionsModalProps> = ({
@@ -24,7 +25,8 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
     onClose,
     initialOptions,
     onSave,
-    onPreview
+    onPreview,
+    onAutoSortChange
 }) => {
     const [localPreferences, setLocalPreferences] = useState<UserPreferences>(initialOptions);
 
@@ -47,10 +49,15 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
         onPreview?.(newPreferences);
     };
 
-    const handleAutoSortChange = (checked: boolean) => {
+    const handleAutoSortChange = async (checked: boolean) => {
         const newPreferences = { ...localPreferences, autoSortCues: checked };
         setLocalPreferences(newPreferences);
         onPreview?.(newPreferences);
+        
+        // Trigger immediate auto-sort if callback is provided
+        if (onAutoSortChange) {
+            await onAutoSortChange(checked);
+        }
     };
 
     const handleClose = async () => {

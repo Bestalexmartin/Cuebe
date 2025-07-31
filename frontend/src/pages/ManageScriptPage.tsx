@@ -19,7 +19,7 @@ import {
     DrawerContent,
     DrawerCloseButton
 } from "@chakra-ui/react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useScript } from "../hooks/useScript";
 import { useShow } from "../hooks/useShow";
@@ -104,7 +104,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
 
 interface ToolButton {
     id: string;
-    icon: 'view' | 'play' | 'info' | 'script-edit' | 'share' | 'dashboard' | 'add' | 'copy' | 'group' | 'delete' | 'element-edit' | 'jump-top' | 'jump-bottom' | 'history';
+    icon: 'view' | 'play' | 'info' | 'script-edit' | 'share' | 'dashboard' | 'add' | 'copy' | 'group' | 'delete' | 'element-edit' | 'jump-top' | 'jump-bottom' | 'history' | 'exit';
     label: string;
     description: string;
     isActive: boolean;
@@ -193,11 +193,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         hasUnsavedChanges,
         revertToPoint,
         applyLocalChange,
-        discardChanges
+        discardChanges,
+        saveChanges
     } = editQueueHook;
 
     // Active mode state using script-specific hook
-    const { activeMode, setActiveMode, getAvailableModes } = useScriptModes('view');
+    const { activeMode, setActiveMode } = useScriptModes('view');
 
     // Change detection for save button
     const initialData = script && show ? {
@@ -736,7 +737,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     type: 'CREATE_ELEMENT',
                     elementId: cleanElementData.elementID,
                     elementData: cleanElementData
-                });
+                } as any);
             } else {
                 // Insert at specific position using CREATE_ELEMENT_AT_INDEX
                 applyLocalChange({
@@ -744,7 +745,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     elementId: cleanElementData.elementID,
                     elementData: cleanElementData,
                     insertIndex: insertIndex
-                });
+                } as any);
             }
         } else {
             // No auto-sort, just add to the end
@@ -753,7 +754,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 type: 'CREATE_ELEMENT',
                 elementId: cleanElementData.elementID,
                 elementData: cleanElementData
-            });
+            } as any);
         }
         
         setIsAddElementModalOpen(false);
@@ -761,40 +762,135 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     };
 
     const handleAutoSortElements = async () => {
-        if (!scriptId) return;
+        console.log('=== HANDLE AUTO-SORT ELEMENTS STARTED ===');
+        console.log('Script ID:', scriptId);
+        
+        if (!scriptId) {
+            console.log('No script ID, aborting auto-sort');
+            return;
+        }
 
         try {
-            const token = await getToken();
-            if (!token) {
-                showError('Authentication required');
+            // Get current elements from edit queue
+            const currentElements = [...editQueueElements];
+            console.log('Current elements count:', currentElements.length);
+            console.log('Current elements order:');
+            currentElements.forEach((el, idx) => {
+                console.log(`  [${idx}] ${el.elementID.slice(-6)} - "${el.description}" - ${el.timeOffsetMs}ms`);
+            });
+            
+            // Sort elements by timeOffsetMs (create a copy to avoid mutating original)
+            const sortedElements = [...currentElements].sort((a, b) => a.timeOffsetMs - b.timeOffsetMs);
+            console.log('Sorted elements order:');
+            sortedElements.forEach((el, idx) => {
+                console.log(`  [${idx}] ${el.elementID.slice(-6)} - "${el.description}" - ${el.timeOffsetMs}ms`);
+            });
+            
+            // Check if any reordering is needed
+            console.log('Comparing current vs sorted order:');
+            const needsReordering = currentElements.some((element, index) => {
+                const sortedElement = sortedElements[index];
+                const matches = element.elementID === sortedElement.elementID;
+                console.log(`  [${index}] Current: ${element.elementID.slice(-6)} (${element.timeOffsetMs}ms) vs Sorted: ${sortedElement.elementID.slice(-6)} (${sortedElement.timeOffsetMs}ms) - Match: ${matches}`);
+                return !matches;
+            });
+            console.log('Needs reordering:', needsReordering);
+            
+            if (!needsReordering) {
+                console.log('Elements already sorted, showing success message');
+                showSuccess('Auto-Sort Complete', 'Elements are already in correct time order.');
                 return;
             }
-
-            const response = await fetch(`/api/scripts/${scriptId}/auto-sort-elements`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Auto-sort endpoint error:', response.status, errorText);
-                throw new Error(`Failed to auto-sort elements: ${response.status} - ${errorText}`);
+            
+            // Create bulk reorder operation for all elements that changed position
+            const elementChanges = [];
+            for (let newIndex = 0; newIndex < sortedElements.length; newIndex++) {
+                const element = sortedElements[newIndex];
+                const oldIndex = currentElements.findIndex(el => el.elementID === element.elementID);
+                
+                if (oldIndex !== newIndex) {
+                    elementChanges.push({
+                        elementId: element.elementID,
+                        oldIndex: oldIndex,
+                        newIndex: newIndex,
+                        oldSequence: oldIndex + 1,
+                        newSequence: newIndex + 1
+                    });
+                }
             }
+            console.log('Element changes to apply:', elementChanges);
+            
+            // Apply as compound operation: preference change + resulting sort
+            console.log('Applying ENABLE_AUTO_SORT compound operation');
+            applyLocalChange({
+                type: 'ENABLE_AUTO_SORT',
+                elementId: 'auto-sort-preference',
+                oldPreferenceValue: false,
+                newPreferenceValue: true,
+                elementMoves: elementChanges
+            } as any);
 
-            // Refetch elements to show the updated order
-            if (activeMode === 'view' && viewModeRef.current) {
-                await viewModeRef.current.refetchElements();
-            } else if (activeMode === 'edit' && editModeRef.current) {
-                await editModeRef.current.refetchElements();
-            }
-
+            console.log('Auto-sort completed successfully');
+            showSuccess('Elements Auto-Sorted', `Reordered ${elementChanges.length} elements by time offset. Save to apply changes.`);
         } catch (error) {
             console.error('Error auto-sorting elements:', error);
-            showError('Failed to auto-sort elements. Please try again.');
+            showError('Auto-Sort Failed', error instanceof Error ? error.message : 'Failed to auto-sort elements');
         }
+        
+        console.log('=== HANDLE AUTO-SORT ELEMENTS COMPLETED ===');
+    };
+
+    const handleAutoSortToggle = async (value: boolean) => {
+        console.log('=== EDIT MODE AUTO-SORT CHANGE ===');
+        console.log('Current autoSortCues:', activePreferences.autoSortCues);
+        console.log('New value:', value);
+        console.log('Should trigger auto-sort:', value && !activePreferences.autoSortCues);
+        
+        await updatePreference('autoSortCues', value);
+        
+        // If auto-sort is being enabled, trigger immediate re-sort
+        if (value && !activePreferences.autoSortCues && scriptId) {
+            console.log('TRIGGERING AUTO-SORT from EditMode toggle (auto-sort was just enabled)');
+            handleAutoSortElements();
+        } else if (!value) {
+            console.log('Auto-sort disabled - no immediate action needed');
+        } else if (value && activePreferences.autoSortCues) {
+            console.log('Auto-sort was already enabled - no change needed');
+        } else {
+            console.log('No scriptId available for auto-sort');
+        }
+    };
+
+    // Handle immediate auto-sort when checkbox is clicked in modal
+    const handleAutoSortCheckboxChange = async (newAutoSortValue: boolean) => {
+        console.log('=== AUTO-SORT CHECKBOX CLICKED ===');
+        console.log('Current autoSortCues:', autoSortCues);
+        console.log('New autoSortCues:', newAutoSortValue);
+        
+        // Update the preference immediately
+        await updatePreference('autoSortCues', newAutoSortValue);
+        
+        // If auto-sort is being enabled, trigger immediate re-sort
+        if (newAutoSortValue && !autoSortCues && scriptId) {
+            console.log('TRIGGERING AUTO-SORT immediately (checkbox was just enabled)');
+            handleAutoSortElements();
+        } else {
+            console.log('NOT triggering auto-sort immediately');
+            if (!newAutoSortValue) console.log('  Reason: Auto-sort was turned OFF');
+            else if (autoSortCues) console.log('  Reason: Auto-sort was already ON');
+            else if (!scriptId) console.log('  Reason: No script ID');
+        }
+    };
+
+    const handleOptionsModalSave = async (newPreferences: any) => {
+        console.log('=== OPTIONS MODAL SAVE ===');
+        console.log('New preferences:', newPreferences);
+        
+        // Just save the preferences - auto-sort was already handled by checkbox change
+        const success = await updatePreferences(newPreferences);
+        console.log('Update preferences success:', success);
+        
+        setPreviewPreferences(null);
     };
 
     const handleElementDuplicate = async () => {
@@ -877,7 +973,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                         type: 'CREATE_ELEMENT',
                         elementId: duplicateData.elementID,
                         elementData: duplicateData
-                    });
+                    } as any);
                 } else {
                     // Insert at specific position using CREATE_ELEMENT_AT_INDEX
                     applyLocalChange({
@@ -885,7 +981,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                         elementId: duplicateData.elementID,
                         elementData: duplicateData,
                         insertIndex: insertIndex
-                    });
+                    } as any);
                 }
             } else {
                 // No auto-sort, just add to the end
@@ -893,7 +989,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     type: 'CREATE_ELEMENT',
                     elementId: duplicateData.elementID,
                     elementData: duplicateData
-                });
+                } as any);
             }
 
             showSuccess('Script Element Duplicated', 'Script element has been duplicated. Save to apply changes.');
@@ -1028,7 +1124,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 type: 'DELETE_ELEMENT',
                 elementId: selectedElementId,
                 elementData: elementToDelete
-            });
+            } as any);
 
             showSuccess('Script Element Deleted', 'Script element has been deleted. Save to apply changes.');
             
@@ -1195,7 +1291,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
                                 {activeMode === 'view' && <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} />}
-                                {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} onAutoSortChange={async (value) => await updatePreference('autoSortCues', value)} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} onApplyLocalChange={editQueueHook.applyLocalChange} />}
+                                {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} onAutoSortChange={handleAutoSortToggle} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} onApplyLocalChange={editQueueHook.applyLocalChange} />}
                                 {activeMode === 'play' && <PlayMode />}
                                 {activeMode === 'share' && <ShareMode />}
                                 {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={editQueueElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} />}
@@ -1333,14 +1429,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 }}
                 initialOptions={{ darkMode, colorizeDepNames, autoSortCues, showClockTimes }}
                 onPreview={(preferences) => setPreviewPreferences(preferences)}
-                onSave={async (newPreferences) => {
-                    const success = await updatePreferences(newPreferences);
-                    setPreviewPreferences(null);
-                    // If auto-sort is being enabled, trigger immediate re-sort
-                    if (success && newPreferences.autoSortCues && !autoSortCues && scriptId) {
-                        handleAutoSortElements();
-                    }
-                }}
+                onSave={handleOptionsModalSave}
+                onAutoSortChange={handleAutoSortCheckboxChange}
             />
 
             {/* Delete Cue Confirmation Modal */}

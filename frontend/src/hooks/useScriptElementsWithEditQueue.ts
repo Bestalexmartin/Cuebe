@@ -285,6 +285,24 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                 sequence: index + 1
             }));
             
+        case 'ENABLE_AUTO_SORT':
+            // Handle auto-sort enabling (applies element moves, preference handled separately)
+            let autoSortResult = [...elements];
+            const autoSortOp = operation as any;
+            
+            autoSortOp.elementMoves.forEach((change: any) => {
+                const elementIndex = autoSortResult.findIndex(el => el.elementID === change.elementId);
+                if (elementIndex !== -1) {
+                    const [element] = autoSortResult.splice(elementIndex, 1);
+                    autoSortResult.splice(change.newIndex, 0, element);
+                }
+            });
+            
+            return autoSortResult.map((el, index) => ({
+                ...el,
+                sequence: index + 1
+            }));
+            
         default:
             return elements;
     }

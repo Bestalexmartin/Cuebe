@@ -23,7 +23,9 @@ interface FinalDeleteConfirmationModalProps {
     isLoading?: boolean;
     entityType: string;
     entityName: string;
-    warningMessage: string;
+    warningMessage: string | React.ReactNode;
+    actionWord?: string; // Defaults to "Delete"
+    customMainText?: string; // Custom main text, overrides default
 }
 
 export const FinalDeleteConfirmationModal: React.FC<FinalDeleteConfirmationModalProps> = ({
@@ -33,7 +35,9 @@ export const FinalDeleteConfirmationModal: React.FC<FinalDeleteConfirmationModal
     isLoading = false,
     entityType,
     entityName,
-    warningMessage
+    warningMessage,
+    actionWord = "Delete",
+    customMainText
 }) => {
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="md">
@@ -47,14 +51,14 @@ export const FinalDeleteConfirmationModal: React.FC<FinalDeleteConfirmationModal
                 <ModalHeader>
                     <HStack spacing="3">
                         <AppIcon name="warning" boxSize="24px" color="red.300" />
-                        <Text>FINAL WARNING - Delete {entityType}</Text>
+                        <Text>FINAL WARNING - {actionWord} {entityType}</Text>
                     </HStack>
                 </ModalHeader>
 
                 <ModalBody>
                     <VStack spacing="4" align="center" width="100%">
                         <Text fontSize="lg" textAlign="center" fontWeight="bold">
-                            "{entityName}" will be permanently deleted.
+                            {customMainText || `"${entityName}" will be permanently deleted.`}
                         </Text>
                         <Text fontSize="md" textAlign="center" color="red.200" lineHeight="1.6">
                             {warningMessage}
