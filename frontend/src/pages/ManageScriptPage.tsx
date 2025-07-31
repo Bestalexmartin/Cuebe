@@ -42,6 +42,7 @@ import { PlayMode } from './script/components/modes/PlayMode';
 import { ShareMode } from './script/components/modes/ShareMode';
 // AddScriptElementModal now handled by ScriptModals component
 import { useScriptModes } from './script/hooks/useScriptModes';
+import { useElementActions } from './script/hooks/useElementActions';
 import { ToolButton } from './script/types/tool-button';
 import { ScriptModals } from './script/components/ScriptModals';
 import { MobileScriptDrawer } from './script/components/MobileScriptDrawer';
@@ -194,6 +195,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         saveChanges
     } = editQueueHook;
 
+    const { insertElement } = useElementActions(
+        editQueueElements,
+        activePreferences.autoSortCues,
+        applyLocalChange
+    );
+
     // Use applyLocalChange directly from the hook (already stable)
 
     // Active mode state using script-specific hook
@@ -234,26 +241,15 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         }
     }, [script, form.setFormData]);
 
-    // Sync selected element ID with EditMode for toolbar updates
-    React.useEffect(() => {
-        if (activeMode === 'edit' && editModeRef.current) {
-            const checkSelection = () => {
-                const editModeSelection = editModeRef.current?.selectedElementId;
-                if (editModeSelection !== selectedElementId) {
-                    setSelectedElementId(editModeSelection || null);
-                }
-            };
+    const handleSelectionChange = useCallback((id: string | null) => {
+        setSelectedElementId(id);
+    }, []);
 
-            // Check immediately and then periodically
-            checkSelection();
-            const interval = setInterval(checkSelection, 100);
-
-            return () => clearInterval(interval);
-        } else {
-            // Clear selection when not in edit mode
+    useEffect(() => {
+        if (activeMode !== 'edit') {
             setSelectedElementId(null);
         }
-    }, [activeMode, selectedElementId]);
+    }, [activeMode]);
 
     // Handle browser beforeunload event (tab close, refresh, etc.)
     useEffect(() => {
@@ -534,71 +530,30 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         }
     };
 
-    const handleDeleteCancel = () => {
+    const handleDeleteCancel = useCallback(() => {
         modalState.closeModal(MODAL_NAMES.DELETE);
         modalState.closeModal(MODAL_NAMES.FINAL_DELETE);
-    };
+    }, [modalState]);
 
-    const handleProcessingStart = () => {
+    const handleProcessingStart = useCallback(() => {
         modalState.openModal(MODAL_NAMES.PROCESSING);
-    };
+    }, [modalState]);
 
-    const handleScriptDuplicated = (newScriptId: string) => {
-        modalState.closeModal(MODAL_NAMES.PROCESSING);
-        // Navigate directly to the new script's manage page
-        navigate(`/scripts/${newScriptId}/manage`);
-    };
+    const handleScriptDuplicated = useCallback(
+        (newScriptId: string) => {
+            modalState.closeModal(MODAL_NAMES.PROCESSING);
+            navigate(`/scripts/${newScriptId}/manage`);
+        },
+        [modalState, navigate]
+    );
 
-    const handleDuplicationError = () => {
+    const handleDuplicationError = useCallback(() => {
         modalState.closeModal(MODAL_NAMES.PROCESSING);
-        // Error toast will be shown by the form submission handler
-    };
+    }, [modalState]);
 
     // Element action handlers
     const handleElementCreated = async (elementData: any) => {
-        // Handle auto-sort by finding correct position if enabled
-        if (elementData._autoSort) {
-            // Get current elements to find insertion position
-            const currentElements = editQueueElements;
-
-            // Find the position where this element should be inserted based on timeOffsetMs
-            let insertIndex = currentElements.length; // Default to end
-
-            for (let i = 0; i < currentElements.length; i++) {
-                if (currentElements[i].timeOffsetMs > elementData.timeOffsetMs) {
-                    insertIndex = i;
-                    break;
-                }
-            }
-
-            // Remove the auto-sort flag before storing
-            const { _autoSort, ...cleanElementData } = elementData;
-
-            // If inserting at the end, use CREATE_ELEMENT
-            if (insertIndex === currentElements.length) {
-                applyLocalChange({
-                    type: 'CREATE_ELEMENT',
-                    elementId: cleanElementData.elementID,
-                    elementData: cleanElementData
-                } as any);
-            } else {
-                // Insert at specific position using CREATE_ELEMENT_AT_INDEX
-                applyLocalChange({
-                    type: 'CREATE_ELEMENT_AT_INDEX',
-                    elementId: cleanElementData.elementID,
-                    elementData: cleanElementData,
-                    insertIndex: insertIndex
-                } as any);
-            }
-        } else {
-            // No auto-sort, just add to the end
-            const { _autoSort, ...cleanElementData } = elementData;
-            applyLocalChange({
-                type: 'CREATE_ELEMENT',
-                elementId: cleanElementData.elementID,
-                elementData: cleanElementData
-            } as any);
-        }
+        insertElement(elementData);
 
         modalState.closeModal(MODAL_NAMES.ADD_ELEMENT);
         showSuccess('Script Element Created', 'New element added to script. Save to apply changes.');
@@ -660,19 +615,16 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         }
     }, [scriptId, editQueueElements, applyLocalChange, showSuccess, showError]);
 
-    // Create stable refs for callback dependencies
-    const stableRefsRef = useRef({ updatePreference, scriptId, activePreferences, handleAutoSortElements });
-    stableRefsRef.current = { updatePreference, scriptId, activePreferences, handleAutoSortElements };
+    const handleAutoSortToggle = useCallback(
+        async (value: boolean) => {
+            await updatePreference('autoSortCues', value);
 
-    const handleAutoSortToggle = useCallback(async (value: boolean) => {
-        const { updatePreference, scriptId, activePreferences, handleAutoSortElements } = stableRefsRef.current;
-        await updatePreference('autoSortCues', value);
-
-        // If auto-sort is being enabled, trigger immediate re-sort
-        if (value && !activePreferences.autoSortCues && scriptId) {
-            handleAutoSortElements();
-        }
-    }, []);
+            if (value && !activePreferences.autoSortCues && scriptId) {
+                handleAutoSortElements();
+            }
+        },
+        [updatePreference, scriptId, activePreferences.autoSortCues, handleAutoSortElements]
+    );
 
     // Handle immediate auto-sort when checkbox is clicked in modal
     const handleAutoSortCheckboxChange = async (newAutoSortValue: boolean) => {
@@ -758,42 +710,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 is_deleted: undefined
             };
 
-            // Handle auto-sort for duplicated element
-            if (activePreferences.autoSortCues) {
-                // Find the position where this element should be inserted based on timeOffsetMs
-                let insertIndex = editQueueElements.length; // Default to end
-
-                for (let i = 0; i < editQueueElements.length; i++) {
-                    if (editQueueElements[i].timeOffsetMs > duplicateData.timeOffsetMs) {
-                        insertIndex = i;
-                        break;
-                    }
-                }
-
-                // If inserting at the end, use CREATE_ELEMENT
-                if (insertIndex === editQueueElements.length) {
-                    applyLocalChange({
-                        type: 'CREATE_ELEMENT',
-                        elementId: duplicateData.elementID,
-                        elementData: duplicateData
-                    } as any);
-                } else {
-                    // Insert at specific position using CREATE_ELEMENT_AT_INDEX
-                    applyLocalChange({
-                        type: 'CREATE_ELEMENT_AT_INDEX',
-                        elementId: duplicateData.elementID,
-                        elementData: duplicateData,
-                        insertIndex: insertIndex
-                    } as any);
-                }
-            } else {
-                // No auto-sort, just add to the end
-                applyLocalChange({
-                    type: 'CREATE_ELEMENT',
-                    elementId: duplicateData.elementID,
-                    elementData: duplicateData
-                } as any);
-            }
+            insertElement(duplicateData);
 
             showSuccess('Script Element Duplicated', 'Script element has been duplicated. Save to apply changes.');
             modalState.closeModal(MODAL_NAMES.DUPLICATE_ELEMENT);
@@ -1045,7 +962,19 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                     <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} script={script} />
                                 )}
                                 {activeMode === 'edit' && (
-                                    <EditMode ref={editModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} onAutoSortChange={handleAutoSortToggle} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} script={script} onApplyLocalChange={applyLocalChange} />
+                                    <EditMode
+                                        ref={editModeRef}
+                                        scriptId={scriptId || ''}
+                                        colorizeDepNames={activePreferences.colorizeDepNames}
+                                        showClockTimes={activePreferences.showClockTimes}
+                                        autoSortCues={activePreferences.autoSortCues}
+                                        onAutoSortChange={handleAutoSortToggle}
+                                        onScrollStateChange={handleScrollStateChange}
+                                        onSelectionChange={handleSelectionChange}
+                                        elements={editQueueElements}
+                                        script={script}
+                                        onApplyLocalChange={applyLocalChange}
+                                    />
                                 )}
                                 {activeMode === 'play' && <PlayMode />}
                                 {activeMode === 'share' && <ShareMode />}
