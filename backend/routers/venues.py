@@ -34,7 +34,7 @@ def rate_limit(limit_config):
 
 
 @router.get("/me/venues", response_model=list[schemas.Venue])
-async def read_venues(
+def read_venues(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -44,7 +44,7 @@ async def read_venues(
 
 
 @router.post("/me/venues", response_model=schemas.Venue, status_code=status.HTTP_201_CREATED)
-async def create_venue(
+def create_venue(
     venue: schemas.VenueCreate,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -60,7 +60,7 @@ async def create_venue(
 
 
 @router.get("/venues/{venue_id}", response_model=schemas.Venue)
-async def get_venue(
+def get_venue(
     venue_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -76,7 +76,7 @@ async def get_venue(
 
 
 @router.patch("/venues/{venue_id}", response_model=schemas.Venue)
-async def update_venue(
+def update_venue(
     venue_id: UUID,
     venue_update: schemas.VenueCreate,
     user: models.User = Depends(get_current_user),
@@ -103,7 +103,7 @@ async def update_venue(
 
 
 @router.delete("/venues/{venue_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_venue(
+def delete_venue(
     venue_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["script-elements"])
 
-async def _auto_populate_show_start_duration(db: Session, script: models.Script, elements: List[models.ScriptElement]):
+def _auto_populate_show_start_duration(db: Session, script: models.Script, elements: List[models.ScriptElement]):
     """Auto-populate SHOW START duration based on script start and end times."""
     
     if not script.startTime or not script.endTime:
@@ -69,7 +69,7 @@ def rate_limit(limit_config):
 # =============================================================================
 
 @router.get("/scripts/{script_id}/elements", response_model=List[schemas.ScriptElementEnhanced])
-async def get_script_elements(
+def get_script_elements(
     script_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -121,13 +121,13 @@ async def get_script_elements(
     elements = query.offset(skip).limit(limit).all()
     
     # Auto-populate SHOW START cue duration if missing
-    await _auto_populate_show_start_duration(db, script, elements)
+    _auto_populate_show_start_duration(db, script, elements)
     
     return elements
 
 
 @router.get("/elements/{element_id}", response_model=schemas.ScriptElement)
-async def get_script_element(
+def get_script_element(
     element_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -154,7 +154,7 @@ async def get_script_element(
 
 
 @router.post("/scripts/{script_id}/elements", response_model=schemas.ScriptElement)
-async def create_script_element(
+def create_script_element(
     script_id: UUID,
     element: schemas.ScriptElementCreate,
     user: models.User = Depends(get_current_user),
@@ -273,7 +273,7 @@ async def create_script_element(
 
 
 @router.patch("/elements/{element_id}", response_model=schemas.ScriptElement)
-async def update_script_element(
+def update_script_element(
     element_id: UUID,
     element_update: schemas.ScriptElementUpdate,
     user: models.User = Depends(get_current_user),
@@ -343,7 +343,7 @@ async def update_script_element(
 
 
 @router.delete("/elements/{element_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_script_element(
+def delete_script_element(
     element_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -386,7 +386,7 @@ async def delete_script_element(
 
 
 @router.post("/elements/{element_id}/restore", response_model=schemas.ScriptElement)
-async def restore_script_element(
+def restore_script_element(
     element_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -427,7 +427,7 @@ async def restore_script_element(
 
 
 @router.post("/scripts/{script_id}/calculate-show-start-duration")
-async def calculate_show_start_duration(
+def calculate_show_start_duration(
     script_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -454,7 +454,7 @@ async def calculate_show_start_duration(
         ).all()
         
         # Auto-populate SHOW START duration if missing
-        await _auto_populate_show_start_duration(db, script, elements)
+        _auto_populate_show_start_duration(db, script, elements)
         
         return {"message": "SHOW START duration calculated successfully"}
         
@@ -465,7 +465,7 @@ async def calculate_show_start_duration(
 
 
 @router.post("/scripts/{script_id}/auto-sort-elements")
-async def auto_sort_script_elements(
+def auto_sort_script_elements(
     script_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -518,7 +518,7 @@ async def auto_sort_script_elements(
 # =============================================================================
 
 @router.patch("/scripts/{script_id}/elements/reorder")
-async def reorder_script_elements(
+def reorder_script_elements(
     script_id: UUID,
     reorder_data: schemas.ScriptElementReorderRequest,
     user: models.User = Depends(get_current_user),
@@ -567,7 +567,7 @@ async def reorder_script_elements(
 
 
 @router.patch("/scripts/{script_id}/elements/bulk-update")
-async def bulk_update_script_elements(
+def bulk_update_script_elements(
     script_id: UUID,
     bulk_update: schemas.ScriptElementBulkUpdate,
     user: models.User = Depends(get_current_user),
@@ -633,7 +633,7 @@ async def bulk_update_script_elements(
 
 
 @router.patch("/scripts/{script_id}/elements/batch-update")
-async def batch_update_from_edit_queue(
+def batch_update_from_edit_queue(
     script_id: UUID,
     batch_request: schemas.EditQueueBatchRequest,
     user: models.User = Depends(get_current_user),
@@ -660,7 +660,7 @@ async def batch_update_from_edit_queue(
         # Process each operation in sequence
         for operation_data in batch_request.operations:
             try:
-                result = await _process_edit_operation(db, script_id, operation_data, user)
+                result = _process_edit_operation(db, script_id, operation_data, user)
                 operation_results.append({
                     "operation_id": operation_data.get("id"),
                     "status": "success",
@@ -683,7 +683,7 @@ async def batch_update_from_edit_queue(
         elements = db.query(models.ScriptElement).filter(
             models.ScriptElement.scriptID == script_id
         ).all()
-        await _auto_populate_show_start_duration(db, script, elements)
+        _auto_populate_show_start_duration(db, script, elements)
         
         logger.info(f"Processed {processed_operations} operations for script {script_id}")
         
@@ -700,35 +700,35 @@ async def batch_update_from_edit_queue(
         raise HTTPException(status_code=500, detail=f"Failed to process batch operations: {str(e)}")
 
 
-async def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process a single edit queue operation."""
     
     operation_type = operation_data.get("type")
     element_id = operation_data.get("elementId")
     
     if operation_type == "REORDER":
-        return await _process_reorder_operation(db, script_id, operation_data, user)
+        return _process_reorder_operation(db, script_id, operation_data, user)
     
     elif operation_type == "UPDATE_FIELD":
-        return await _process_update_field_operation(db, element_id, operation_data, user)
+        return _process_update_field_operation(db, element_id, operation_data, user)
     
     elif operation_type == "UPDATE_TIME_OFFSET":
-        return await _process_update_time_offset_operation(db, element_id, operation_data, user)
+        return _process_update_time_offset_operation(db, element_id, operation_data, user)
     
     elif operation_type == "CREATE_ELEMENT":
-        return await _process_create_element_operation(db, script_id, operation_data, user)
+        return _process_create_element_operation(db, script_id, operation_data, user)
     
     elif operation_type == "DELETE_ELEMENT":
-        return await _process_delete_element_operation(db, element_id, user)
+        return _process_delete_element_operation(db, element_id, user)
     
     elif operation_type == "BULK_REORDER":
-        return await _process_bulk_reorder_operation(db, script_id, operation_data, user)
+        return _process_bulk_reorder_operation(db, script_id, operation_data, user)
     
     else:
         raise ValueError(f"Unknown operation type: {operation_type}")
 
 
-async def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process a single element reorder operation."""
     
     element_id = operation_data.get("elementId")
@@ -752,7 +752,7 @@ async def _process_reorder_operation(db: Session, script_id: UUID, operation_dat
     return {"element_id": element_id, "new_sequence": new_sequence}
 
 
-async def _process_update_field_operation(db: Session, element_id: str, operation_data: dict, user: models.User):
+def _process_update_field_operation(db: Session, element_id: str, operation_data: dict, user: models.User):
     """Process a field update operation."""
     
     field = operation_data.get("field")
@@ -786,7 +786,7 @@ async def _process_update_field_operation(db: Session, element_id: str, operatio
     return {"element_id": element_id, "field": field, "new_value": new_value}
 
 
-async def _process_update_time_offset_operation(db: Session, element_id: str, operation_data: dict, user: models.User):
+def _process_update_time_offset_operation(db: Session, element_id: str, operation_data: dict, user: models.User):
     """Process a time offset update operation."""
     
     new_time_offset = operation_data.get("newTimeOffsetMs")
@@ -806,7 +806,7 @@ async def _process_update_time_offset_operation(db: Session, element_id: str, op
     return {"element_id": element_id, "new_time_offset": new_time_offset}
 
 
-async def _process_create_element_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+def _process_create_element_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process an element creation operation."""
     
     element_data = operation_data.get("elementData", {})
@@ -834,7 +834,7 @@ async def _process_create_element_operation(db: Session, script_id: UUID, operat
     return {"element_id": str(new_element.elementID), "created": True}
 
 
-async def _process_delete_element_operation(db: Session, element_id: str, user: models.User):
+def _process_delete_element_operation(db: Session, element_id: str, user: models.User):
     """Process an element deletion operation."""
     
     element = db.query(models.ScriptElement).filter(
@@ -853,7 +853,7 @@ async def _process_delete_element_operation(db: Session, element_id: str, user: 
     return {"element_id": element_id, "deleted": True}
 
 
-async def _process_bulk_reorder_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+def _process_bulk_reorder_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process a bulk reorder operation."""
     
     element_changes = operation_data.get("elementChanges", [])

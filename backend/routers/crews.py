@@ -36,7 +36,7 @@ def rate_limit(limit_config):
 
 @rate_limit(RateLimitConfig.READ_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 @router.get("/me/crews", response_model=list[schemas.CrewMemberWithRelationship])
-async def read_crew_members(
+def read_crew_members(
     request: Request,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -94,7 +94,7 @@ async def read_crew_members(
 
 
 @router.get("/crew/{crew_id}", response_model=schemas.CrewMemberWithRelationship)
-async def get_crew_member(
+def get_crew_member(
     crew_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -150,7 +150,7 @@ async def get_crew_member(
 
 
 @router.patch("/crew/{crew_id}", response_model=schemas.User)
-async def update_crew_member(
+def update_crew_member(
     crew_id: UUID,
     crew_update: schemas.GuestUserCreate,  # Reuse the same fields
     user: models.User = Depends(get_current_user),
@@ -248,7 +248,7 @@ async def update_crew_member(
 
 
 @router.post("/crew-relationships/", status_code=status.HTTP_201_CREATED)
-async def create_crew_relationship(
+def create_crew_relationship(
     relationship_data: schemas.CrewRelationshipCreate,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -283,7 +283,7 @@ async def create_crew_relationship(
 
 
 @router.delete("/crew-relationships/{crew_user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_crew_relationship(
+def delete_crew_relationship(
     crew_user_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)

@@ -38,7 +38,7 @@ def rate_limit(limit_config):
 
 @router.get("/dev/diagnostics")
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
-async def test_diagnostics(
+def test_diagnostics(
     request: Request,
     current_user: models.User = Depends(get_current_user)
 ):
@@ -94,7 +94,7 @@ async def test_diagnostics(
 
 @router.post("/dev/run-tests")
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
-async def run_tests(
+def run_tests(
     request: Request,
     test_suite: str = "all",
     current_user: models.User = Depends(get_current_user)
@@ -158,5 +158,5 @@ async def run_tests(
 
 @router.get("/health")
 @rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
-async def read_root(request: Request):
+def read_root(request: Request):
     return {"status": "ok"}

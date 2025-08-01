@@ -19,7 +19,7 @@ router = APIRouter()
 bearer_scheme = HTTPBearer()
 
 
-async def get_current_user_claims(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> Dict:
+def get_current_user_claims(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> Dict:
     pem_key_str = os.getenv("CLERK_PEM_PUBLIC_KEY")
     if not pem_key_str:
         raise HTTPException(status_code=500, detail="Missing PEM Public Key")
@@ -49,7 +49,7 @@ async def get_current_user_claims(credentials: HTTPAuthorizationCredentials = De
         )
 
 
-async def get_current_user(
+def get_current_user(
     claims: Dict = Depends(get_current_user_claims),
     db: Session = Depends(get_db)
 ) -> models.User:

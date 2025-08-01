@@ -39,7 +39,7 @@ def rate_limit(limit_config):
 
 @rate_limit(RateLimitConfig.CRUD_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 @router.post("/shows/", response_model=schemas.Show)
-async def create_show(
+def create_show(
     request: Request,
     show: schemas.ShowCreate, 
     db: Session = Depends(get_db), 
@@ -72,7 +72,7 @@ async def create_show(
 
 @rate_limit(RateLimitConfig.READ_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 @router.get("/me/shows", response_model=list[schemas.Show])
-async def read_shows_for_current_user(
+def read_shows_for_current_user(
     request: Request,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db), 
@@ -89,7 +89,7 @@ async def read_shows_for_current_user(
 
 
 @router.get("/shows/{show_id}", response_model=schemas.Show)
-async def read_show(
+def read_show(
     show_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -115,7 +115,7 @@ async def read_show(
 
 
 @router.patch("/shows/{show_id}", response_model=schemas.Show)
-async def update_show(
+def update_show(
     show_id: UUID,
     show_update: schemas.ShowCreate,
     user: models.User = Depends(get_current_user),
@@ -146,7 +146,7 @@ async def update_show(
 
 
 @router.delete("/shows/{show_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_show(
+def delete_show(
     show_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -195,7 +195,7 @@ async def delete_show(
 
 @rate_limit(RateLimitConfig.CRUD_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 @router.post("/shows/{show_id}/scripts/", response_model=schemas.Script)
-async def create_script_for_show(
+def create_script_for_show(
     request: Request,
     show_id: UUID,
     script: schemas.ScriptCreate,
@@ -253,7 +253,7 @@ async def create_script_for_show(
 
 @rate_limit(RateLimitConfig.CRUD_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 @router.post("/scripts/{script_id}/duplicate", response_model=schemas.Script)
-async def duplicate_script(
+def duplicate_script(
     request: Request,
     script_id: UUID,
     script: schemas.ScriptCreate,
@@ -429,7 +429,7 @@ async def duplicate_script(
 
 
 @router.get("/scripts/{script_id}", response_model=schemas.Script)
-async def get_script(
+def get_script(
     script_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -458,7 +458,7 @@ async def get_script(
 
 
 @router.patch("/scripts/{script_id}", response_model=schemas.Script)
-async def update_script(
+def update_script(
     script_id: UUID,
     script_update: schemas.ScriptUpdate,
     user: models.User = Depends(get_current_user),
@@ -507,7 +507,7 @@ async def update_script(
 
 
 @router.delete("/scripts/{script_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_script(
+def delete_script(
     script_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)

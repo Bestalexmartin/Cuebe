@@ -34,7 +34,7 @@ def rate_limit(limit_config):
 
 
 @router.get("/me/departments", response_model=list[schemas.Department])
-async def read_departments(
+def read_departments(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -44,7 +44,7 @@ async def read_departments(
 
 
 @router.post("/me/departments", response_model=schemas.Department, status_code=status.HTTP_201_CREATED)
-async def create_department(
+def create_department(
     department: schemas.DepartmentCreate,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -64,7 +64,7 @@ async def create_department(
 
 
 @router.get("/departments/{department_id}", response_model=schemas.Department)
-async def read_department(
+def read_department(
     department_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -80,7 +80,7 @@ async def read_department(
 
 
 @router.patch("/departments/{department_id}", response_model=schemas.Department)
-async def update_department(
+def update_department(
     department_id: UUID,
     department_update: schemas.DepartmentCreate,
     user: models.User = Depends(get_current_user),
@@ -110,7 +110,7 @@ async def update_department(
 
 
 @router.delete("/departments/{department_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_department(
+def delete_department(
     department_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)

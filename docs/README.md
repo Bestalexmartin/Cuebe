@@ -33,7 +33,8 @@ Welcome to the CallMaster documentation! This comprehensive guide covers all asp
 
 ### `/architecture` - System Design & Technical Specifications
 
-- **[Performance Optimizations](./architecture/performance-optimizations.md)** - **🔥 Updated!** React render loop optimization, memoization strategies, and performance monitoring
+- **[Performance Optimizations](./architecture/performance-optimizations.md)** - **🔥 Updated!** React render loop optimization, memoization strategies, and performance monitoring  
+- **[Async/Sync Architecture](./architecture/async-sync-architecture.md)** - **🔥 New!** Backend architecture decisions, database operations, and async/sync trade-offs
 - **[Component Architecture](./architecture/component-architecture.md)** - BaseCard/BaseModal patterns and composition principles
 - **[System Architecture](./architecture/system-architecture.md)** - Overall technology stack and design decisions
 - **[Script Elements Data Model](./architecture/script-elements-data-model.md)** - Complete data structure for theater script management
@@ -105,6 +106,12 @@ CallMaster is built with modern technologies focused on performance, maintainabi
 - **Testing**: 6 comprehensive testing tools for all application layers
 
 ### Key Architectural Decisions
+
+#### Backend Architecture
+
+- **Synchronous Database Operations**: FastAPI endpoints use sync SQLAlchemy operations for data integrity
+- **ACID Transactions**: Complex multi-table operations maintain consistency through proper transaction management
+- **Connection Pooling**: Optimized database connections for theater production workloads
 
 #### Component Architecture
 
