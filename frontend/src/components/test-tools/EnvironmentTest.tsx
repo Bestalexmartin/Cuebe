@@ -178,7 +178,7 @@ const CombinedSystemResultsDisplay: React.FC<{ results: CombinedSystemResults; o
       {results.filesystemResults && (
         <VStack spacing={3} align="stretch" mb={4}>
           {results.filesystemResults.map((result, index) => (
-            <Box key={index} p={3} bg="white" borderRadius="md" border="1px solid" borderColor="gray.300" _dark={{ bg: "gray.900", borderColor: "gray.700" }}>
+            <Box key={index} p={3} bg="card.background" borderRadius="md" border="1px solid" borderColor="gray.300" _dark={{ borderColor: "gray.700" }}>
               <VStack align="stretch" spacing={2}>
                 <HStack justify="space-between" align="start">
                   <VStack align="start" spacing={1} flex={1}>
@@ -236,7 +236,7 @@ const CombinedSystemResultsDisplay: React.FC<{ results: CombinedSystemResults; o
       {results.externalServicesResults && (
         <VStack spacing={3} align="stretch" mb={4}>
           {results.externalServicesResults.map((result, index) => (
-            <Box key={index} p={3} bg="white" borderRadius="md" border="1px solid" borderColor="gray.300" _dark={{ bg: "gray.900", borderColor: "gray.700" }}>
+            <Box key={index} p={3} bg="card.background" borderRadius="md" border="1px solid" borderColor="gray.300" _dark={{ borderColor: "gray.700" }}>
               <VStack align="stretch" spacing={2}>
                 <HStack justify="space-between" align="start">
                   <VStack align="start" spacing={1} flex={1}>
@@ -276,7 +276,7 @@ const CombinedSystemResultsDisplay: React.FC<{ results: CombinedSystemResults; o
       {results.memoryAuditResults && (
         <VStack spacing={3} align="stretch" mb={4}>
           {results.memoryAuditResults.map((result, index) => (
-            <Box key={index} p={3} bg="white" borderRadius="md" border="1px solid" borderColor="gray.300" _dark={{ bg: "gray.900", borderColor: "gray.700" }}>
+            <Box key={index} p={3} bg="card.background" borderRadius="md" border="1px solid" borderColor="gray.300" _dark={{ borderColor: "gray.700" }}>
               <VStack align="stretch" spacing={2}>
                 <HStack justify="space-between" align="start">
                   <VStack align="start" spacing={1} flex={1}>
@@ -684,11 +684,11 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
         <Badge colorScheme="purple" fontSize="sm" px={2} py={1}>ENVIRONMENT</Badge>
       </HStack>
 
-      <Text color="gray.600">
+      <Text color="cardText" mt={-2}>
         Test system-level functionality including external service connectivity, filesystem permissions, and development environment setup. Environment reset clears browser storage and resets test states.
       </Text>
 
-      <HStack spacing={3} flexWrap="wrap">
+      <HStack spacing={3} flexWrap="wrap" mt={-2}>
         <Button
           bg="blue.400"
           color="white"

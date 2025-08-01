@@ -131,12 +131,12 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
 
   const quickInfo = (
     <>
-      <HStack justify="space-between" fontSize="sm" color="detail.text">
+      <HStack justify="space-between" fontSize="sm" color="cardText">
         <Text>
           {venueName} • {formatDateFriendly(show.showDate)}
         </Text>
       </HStack>
-      <HStack justify="space-between" fontSize="sm" color="detail.text" mt={1}>
+      <HStack justify="space-between" fontSize="sm" color="cardText" mt={1}>
         <Text>
           Start Time: {show.showDate ? formatTimeLocal(show.showDate) : 'Not set'}
         </Text>
@@ -144,7 +144,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
           Created: {formatDateTimeLocal(show.dateCreated)}
         </Text>
       </HStack>
-      <HStack justify="space-between" fontSize="sm" color="detail.text" mt={1}>
+      <HStack justify="space-between" fontSize="sm" color="cardText" mt={1}>
         <Text>
           End Time: {show.showDuration ? formatTimeLocal(show.showDuration) : 'Not set'}
         </Text>
@@ -194,14 +194,14 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                 }
                 _hover={{ borderColor: "orange.400" }}
                 onMouseEnter={() => onShowHover(null)}
-                onMouseLeave={() => onShowHover(null)}
+                onMouseLeave={() => onShowHover(show.showID)}
               >
                 <VStack align="stretch" spacing="1">
                   <Text fontWeight="semibold" size="sm">{script.scriptName}</Text>
                   <HStack
                     justify="space-between"
                     fontSize="xs"
-                    color="detail.text"
+                    color="cardText"
                     mt={2}
                   >
                     <Badge variant="solid" colorScheme="blue">
@@ -211,7 +211,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                   <HStack
                     justify="space-between"
                     fontSize="sm"
-                    color="detail.text"
+                    color="cardText"
                   >
                     <Text>
                       Start Time:{" "}
@@ -225,7 +225,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                   <HStack
                     justify="space-between"
                     fontSize="sm"
-                    color="detail.text"
+                    color="cardText"
                   >
                     <Text>
                       End Time:{" "}
@@ -240,7 +240,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                     <HStack
                       justify="flex-end"
                       fontSize="xs"
-                      color="detail.text"
+                      color="cardText"
                     >
                       <Text>
                         Last Used:{" "}
@@ -256,7 +256,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
           <Text
             fontSize="sm"
             fontStyle="italic"
-            color="detail.text"
+            color="cardText"
             pl={2}
           >
             No scripts for this show.

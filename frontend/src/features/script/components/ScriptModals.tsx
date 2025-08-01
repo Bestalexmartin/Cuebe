@@ -50,6 +50,8 @@ interface ScriptModalsProps {
     onOptionsPreview: (preferences: UserPreferences) => void;
     onOptionsSave: (preferences: UserPreferences) => void;
     onAutoSortChange: (enabled: boolean) => void;
+    onColorizeChange: (enabled: boolean) => void;
+    onClockTimesChange: (enabled: boolean) => void;
     onConfirmDeleteCue: () => void;
     onConfirmDuplicate: (description: string, timeOffsetMs: number) => void;
     onUnsavedChangesCancel: () => void;
@@ -92,6 +94,8 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     onOptionsPreview,
     onOptionsSave,
     onAutoSortChange,
+    onColorizeChange,
+    onClockTimesChange,
     onConfirmDeleteCue,
     onConfirmDuplicate,
     onUnsavedChangesCancel,
@@ -167,10 +171,17 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                     // Clear preview preferences when closing
                     onOptionsPreview(null as any);
                 }}
-                initialOptions={{ darkMode, colorizeDepNames, autoSortCues, showClockTimes }}
+                initialOptions={{
+                    darkMode,
+                    colorizeDepNames,
+                    autoSortCues,
+                    showClockTimes
+                }}
                 onPreview={onOptionsPreview}
                 onSave={onOptionsSave}
                 onAutoSortChange={onAutoSortChange}
+                onColorizeChange={onColorizeChange}
+                onClockTimesChange={onClockTimesChange}
             />
 
             {/* Delete Cue Confirmation Modal */}

@@ -123,12 +123,12 @@ export const ToastTest: React.FC = () => {
         <Badge colorScheme="orange" fontSize="sm" px={2} py={1}>NOTIFICATIONS</Badge>
       </HStack>
 
-      <Text color="gray.600" fontSize="md">
+      <Text color="cardText" fontSize="md" mt={-2}>
         Test toast notifications and error handling with different types and categories.
       </Text>
 
       {/* Toast Type Tests */}
-      <Box>
+      <Box mt={-2}>
         <Box>
           <HStack spacing={2} flexWrap="wrap">
             <Button
@@ -182,7 +182,7 @@ export const ToastTest: React.FC = () => {
 
       {/* Error Category Tests */}
       <Box>
-        <Text mb={6} fontSize="md" color="gray.600">
+        <Text mb={6} fontSize="md" color="cardText">
           Test different error types with appropriate color-coded styling
         </Text>
         <HStack spacing={3} flexWrap="wrap">

@@ -87,7 +87,7 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
     ];
 
     const quickInfo = (
-        <VStack align="stretch" spacing="1" color="detail.text" fontSize="sm">
+        <VStack align="stretch" spacing="1" color="cardText" fontSize="sm">
             <HStack justify="space-between">
                 {venue.venueType && (
                     <Badge variant="outline" colorScheme="green">
@@ -128,7 +128,7 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
             {(venue.contactName || venue.contactEmail || venue.contactPhone) && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Contact Information</Text>
-                    <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text">
+                    <VStack align="stretch" spacing="1" fontSize="sm" color="cardText">
                         {venue.contactName && <Text>Contact: {venue.contactName}</Text>}
                         {venue.contactEmail && <Text>Email: {venue.contactEmail}</Text>}
                         {venue.contactPhone && <Text>Phone: {venue.contactPhone}</Text>}
@@ -140,7 +140,7 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
             {(venue.stageWidth || venue.stageDepth || venue.flyHeight) && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Technical Specifications</Text>
-                    <HStack spacing="4" fontSize="sm" color="detail.text">
+                    <HStack spacing="4" fontSize="sm" color="cardText">
                         {venue.stageWidth && <Text>Width: {venue.stageWidth} ft</Text>}
                         {venue.stageDepth && <Text>Depth: {venue.stageDepth} ft</Text>}
                         {venue.flyHeight && <Text>Fly Height: {venue.flyHeight} ft</Text>}
@@ -166,7 +166,7 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
             {(venue.rentalRate || venue.minimumRental) && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Rental Information</Text>
-                    <HStack spacing="4" fontSize="sm" color="detail.text">
+                    <HStack spacing="4" fontSize="sm" color="cardText">
                         {venue.rentalRate && <Text>Daily Rate: ${venue.rentalRate}</Text>}
                         {venue.minimumRental && <Text>Minimum: ${venue.minimumRental}</Text>}
                     </HStack>
@@ -177,7 +177,7 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
             {venue.venueNotes && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Notes</Text>
-                    <Text fontSize="sm" color="detail.text">
+                    <Text fontSize="sm" color="cardText">
                         {venue.venueNotes}
                     </Text>
                 </Box>

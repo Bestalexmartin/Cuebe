@@ -98,6 +98,18 @@ export const PerformanceTest: React.FC = () => {
   const { showSuccess, showError, showInfo } = useEnhancedToast();
   const { getToken } = useAuth();
 
+  let cachedAuthToken: string | null = null;
+
+  const getAuthTokenOnce = async (forceRefresh = false): Promise<string> => {
+    if (!forceRefresh && cachedAuthToken) return cachedAuthToken;
+
+    const token = await getToken();
+    if (!token) throw new Error('Authentication token not available');
+
+    cachedAuthToken = token;
+    return token;
+  };
+
   const isAnyRunning = isRunningDatabase || isRunningAPI || isRunningSystem || isRunningNetwork;
 
   // Unified results display component
@@ -185,7 +197,7 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Connecting to backend API...');
       setProgress(10);
 
-      const authToken = await getToken();
+      const authToken = await getAuthTokenOnce();
       if (!authToken) {
         throw new Error('Authentication token not available');
       }
@@ -240,7 +252,7 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Testing API endpoints...');
       setProgress(10);
 
-      const authToken = await getToken();
+      const authToken = await getAuthTokenOnce();
       if (!authToken) {
         throw new Error('Authentication token not available');
       }
@@ -294,10 +306,7 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Gathering system metrics...');
       setProgress(10);
 
-      const authToken = await getToken();
-      if (!authToken) {
-        throw new Error('Authentication token not available');
-      }
+      const authToken = await getAuthTokenOnce();
 
       const response = await fetch('/api/system-tests/system-performance', {
         method: 'GET',
@@ -337,15 +346,12 @@ export const PerformanceTest: React.FC = () => {
     setProgress(0);
 
     try {
+      const authToken = await getAuthTokenOnce();
+
       // Step 1: Check speedtest-cli availability and install if needed
       showInfo('Preparing Network Test', 'Checking speed test dependencies...');
       setCurrentTest('Checking for speedtest-cli on host system...');
       setProgress(5);
-
-      const authToken = await getToken();
-      if (!authToken) {
-        throw new Error('Authentication token not available');
-      }
 
       const prepResponse = await fetch('/api/system-tests/prepare-speedtest', {
         method: 'POST',
@@ -367,7 +373,6 @@ export const PerformanceTest: React.FC = () => {
         setCurrentTest('Installing speedtest-cli on host system (this may take 30-60 seconds)...');
         setProgress(25);
 
-        // Wait a bit longer for installation
         await new Promise(resolve => setTimeout(resolve, 2000));
         setProgress(35);
       } else {
@@ -384,11 +389,6 @@ export const PerformanceTest: React.FC = () => {
       // Step 3: Run speed test
       setCurrentTest('Running download speed test (this may take 20-30 seconds)...');
       setProgress(50);
-
-      const authToken = await getToken();
-      if (!authToken) {
-        throw new Error('Authentication token not available');
-      }
 
       const response = await fetch('/api/system-tests/network-speed', {
         method: 'GET',
@@ -419,7 +419,6 @@ export const PerformanceTest: React.FC = () => {
 
       setResults(data);
 
-      // Enhanced success message based on speed test method
       const isHostLevel = data.results.speedTestError && data.results.speedTestError.includes('host-direct');
       const successTitle = isHostLevel ? 'High-Accuracy Network Test Complete' : 'Network Test Complete';
       const successMessage = isHostLevel
@@ -442,7 +441,7 @@ export const PerformanceTest: React.FC = () => {
   const renderDatabaseResults = (results: DatabaseConnectionResult[]) => (
     <VStack spacing={3} align="stretch">
       {results.map((result, index) => (
-        <Box key={index} p={4} border="1px solid" borderColor="gray.300" borderRadius="md" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
+        <Box key={index} p={4} border="1px solid" borderColor="gray.300" borderRadius="md" bg="white" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
           <HStack justify="space-between" mb={2}>
             <Text fontWeight="semibold">{result.database}</Text>
             <Badge colorScheme={result.status === 'connected' ? 'green' : 'red'}>
@@ -466,7 +465,7 @@ export const PerformanceTest: React.FC = () => {
   const renderAPIResults = (results: APITestResult[]) => (
     <VStack spacing={3} align="stretch">
       {results.map((result, index) => (
-        <Box key={index} p={4} border="1px solid" borderColor="gray.300" borderRadius="md" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
+        <Box key={index} p={4} border="1px solid" borderColor="gray.300" borderRadius="md" bg="white" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
           <HStack justify="space-between" mb={2}>
             <Text fontWeight="semibold">{result.endpoint}</Text>
             <HStack>
@@ -495,7 +494,7 @@ export const PerformanceTest: React.FC = () => {
   );
 
   const renderSystemResults = (results: SystemPerformanceResult) => (
-    <Box p={4} border="1px solid" borderColor="gray.300" borderRadius="md" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
+    <Box p={4} border="1px solid" borderColor="gray.300" borderRadius="md" bg="white" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
       <HStack spacing={6} align="stretch">
         <Stat>
           <StatLabel>CPU Usage</StatLabel>
@@ -518,7 +517,7 @@ export const PerformanceTest: React.FC = () => {
 
   const renderNetworkResults = (results: NetworkResult) => (
     <VStack spacing={4} align="stretch">
-      <Box p={4} border="1px solid" borderColor="gray.300" borderRadius="md" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
+      <Box p={4} border="1px solid" borderColor="gray.300" borderRadius="md" bg="white" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
         <HStack spacing={6} wrap="wrap" align="flex-start">
           <Stat>
             <StatLabel>Average Ping</StatLabel>
@@ -555,7 +554,7 @@ export const PerformanceTest: React.FC = () => {
         </Alert>
       )}
 
-      <Box p={4} border="1px solid" borderColor="gray.300" borderRadius="md" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
+      <Box p={4} border="1px solid" borderColor="gray.300" borderRadius="md" bg="white" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
         <VStack spacing={2} align="stretch">
           <Text fontWeight="semibold">Ping Test Results:</Text>
           {results.pingResults.map((ping, index) => (
@@ -580,11 +579,11 @@ export const PerformanceTest: React.FC = () => {
         <Badge colorScheme="purple" fontSize="sm" px={2} py={1}>PERFORMANCE</Badge>
       </HStack>
 
-      <Text color="gray.600" fontSize="md">
+      <Text color="cardText" fontSize="md" mt={-2}>
         These tests make actual API calls to check system connectivity and performance.
       </Text>
 
-      <Box>
+      <Box mt={-2}>
         <HStack spacing={2} flexWrap="wrap">
           <Button
             size="sm"

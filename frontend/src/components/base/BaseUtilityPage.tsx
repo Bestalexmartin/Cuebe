@@ -81,6 +81,7 @@ const QuickAccessItemComponent: React.FC<QuickAccessItemProps> = ({
       borderRadius="md"
       p="4"
       shadow="sm"
+      bg="card.background"
       cursor={isDisabled ? "not-allowed" : "pointer"}
       borderColor={isActive ? 'blue.400' : 'gray.600'}
       _hover={!isDisabled ? { borderColor: 'orange.400' } : {}}
@@ -109,7 +110,7 @@ const QuickAccessItemComponent: React.FC<QuickAccessItemProps> = ({
           </Heading>
         </HStack>
       )}
-      <Text fontSize="sm" color="gray.600" mb="-1">
+      <Text fontSize="sm" color="cardText" mb="-1">
         {description}
       </Text>
     </Box>
@@ -149,7 +150,7 @@ export const BaseUtilityPage: React.FC<BaseUtilityPageProps> = ({
           <Heading as="h2" size="md">
             {pageTitle}
           </Heading>
-          <Box ml="auto">
+          <Box ml="auto" display={{ base: 'none', lg: 'block' }}>
             <UtilitiesMenu />
           </Box>
         </HStack>
@@ -237,6 +238,10 @@ export const BaseUtilityPage: React.FC<BaseUtilityPageProps> = ({
           <DrawerHeader>Quick•Access</DrawerHeader>
           <DrawerBody>
             <VStack spacing={4} align="stretch">
+              {/* Utilities Menu in mobile drawer */}
+              <Box display="flex" justifyContent="flex-end">
+                <UtilitiesMenu />
+              </Box>
               {quickAccessItems.map((item) => (
                 <QuickAccessItemComponent
                   key={item.id}

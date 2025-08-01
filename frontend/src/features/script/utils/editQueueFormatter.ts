@@ -45,7 +45,10 @@ export class EditQueueFormatter {
                 
             case 'ENABLE_AUTO_SORT':
                 const moveCount = operation.elementMoves.length;
-                return `Enabled auto-sort (reordered ${moveCount} element${moveCount > 1 ? 's' : ''})`;
+                return `Batch reorder (${moveCount} element${moveCount > 1 ? 's' : ''})`;
+            
+            case 'DISABLE_AUTO_SORT':
+                return `Disabled batch reorder`;
             
             default:
                 return `Unknown operation on "${elementName}"`;

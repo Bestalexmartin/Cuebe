@@ -58,7 +58,7 @@ export const ScriptElementsHeader: React.FC = () => {
                 </Box>
 
                 {/* Cue Notes Header */}
-                <Box flex={1} pl={43} pr={3} borderRight="1px solid" borderColor="gray.400">
+                <Box flex={1} pl={6} pr={3} borderRight="1px solid" borderColor="gray.400">
                     <Text fontSize="sm" color="white" fontWeight="bold" textAlign="left" isTruncated>
                         NOTES
                     </Text>

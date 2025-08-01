@@ -326,6 +326,7 @@ export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenu
           borderWidth="2px"
           borderColor="gray.600"
           borderRadius="md"
+          bg="card.background"
           height="fit-content"
         >
           {component}
