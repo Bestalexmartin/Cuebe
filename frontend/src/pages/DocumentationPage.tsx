@@ -30,6 +30,7 @@ import remarkGfm from 'remark-gfm';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BaseUtilityPage } from '../components/base/BaseUtilityPage';
 import { AppIcon } from '../components/AppIcon';
+import { useAuthToken } from '../hooks/useAuthToken';
 
 interface DocFile {
   name: string;
@@ -201,6 +202,8 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
   const textColor = useColorModeValue('gray.900', 'white');
   const secondaryTextColor = useColorModeValue('gray.600', 'whiteAlpha.800');
   const iconColor = useColorModeValue('gray.600', 'white');
+
+  const { token: authToken } = useAuthToken();
 
   const markdownComponents = {
     h1: ({ children }: any) => (
@@ -388,7 +391,11 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
     setSelectedDoc(docId);
 
     try {
-      const response = await fetch(`/api/docs/${doc.path}`);
+      const headers: Record<string, string> = {};
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+      const response = await fetch(`/api/docs/${doc.path}`, { headers });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }

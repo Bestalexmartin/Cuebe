@@ -22,7 +22,7 @@ import {
   IconButton,
   useClipboard
 } from '@chakra-ui/react';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuthToken } from '../../hooks/useAuthToken';
 import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
@@ -446,23 +446,7 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
   const [isRunningExternalServices, setIsRunningExternalServices] = useState(false);
   const [isRunningMemoryAudit, setIsRunningMemoryAudit] = useState(false);
   const { showSuccess, showError, showInfo } = useEnhancedToast();
-  const { getToken } = useAuth();
-
-  const [authToken, setAuthToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchToken = async () => {
-      try {
-        const token = await getToken();
-        setAuthToken(token);
-      } catch (err) {
-        console.error('Failed to fetch auth token:', err);
-        setAuthToken(null);
-      }
-    };
-
-    fetchToken();
-  }, [getToken]);
+  const { token: authToken } = useAuthToken();
 
   // Convert environment results to combined format when they change
   useEffect(() => {
