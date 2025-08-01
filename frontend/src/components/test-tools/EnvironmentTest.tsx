@@ -22,6 +22,7 @@ import {
   IconButton,
   useClipboard
 } from '@chakra-ui/react';
+import { useAuth } from '@clerk/clerk-react';
 import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
@@ -445,6 +446,23 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
   const [isRunningExternalServices, setIsRunningExternalServices] = useState(false);
   const [isRunningMemoryAudit, setIsRunningMemoryAudit] = useState(false);
   const { showSuccess, showError, showInfo } = useEnhancedToast();
+  const { getToken } = useAuth();
+
+  const [authToken, setAuthToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const token = await getToken();
+        setAuthToken(token);
+      } catch (err) {
+        console.error('Failed to fetch auth token:', err);
+        setAuthToken(null);
+      }
+    };
+
+    fetchToken();
+  }, [getToken]);
 
   // Convert environment results to combined format when they change
   useEffect(() => {
@@ -466,10 +484,14 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
     try {
       showInfo('Testing Filesystem', 'Checking file and directory permissions...');
 
+      if (!authToken) {
+        throw new Error('Authentication token not available');
+      }
+
       const response = await fetch('/api/system-tests/filesystem-permissions', {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
         }
       });
 
@@ -526,10 +548,14 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
     try {
       showInfo('Testing External Services', 'Checking connectivity to external services...');
 
+      if (!authToken) {
+        throw new Error('Authentication token not available');
+      }
+
       const response = await fetch('/api/system-tests/external-services', {
         method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
         }
       });
 

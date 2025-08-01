@@ -15,6 +15,7 @@ import {
   Spinner,
   IconButton
 } from '@chakra-ui/react';
+import { useAuth } from '@clerk/clerk-react';
 import { AppIcon } from '../AppIcon';
 
 interface TestResult {
@@ -52,6 +53,7 @@ export const ApiTest: React.FC<ApiTestProps> = ({
   const [prepStatus, setPrepStatus] = React.useState<string>('');
   const [isTestingRateLimit, setIsTestingRateLimit] = React.useState(false);
   const [rateLimitResults, setRateLimitResults] = React.useState<string>('');
+  const { getToken } = useAuth();
 
   const handleTestSuite = async (testSuite: string) => {
     // Clear rate limiting results when other tests run
@@ -62,9 +64,17 @@ export const ApiTest: React.FC<ApiTestProps> = ({
     setPrepStatus('Checking pytest availability...');
 
     try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token not available');
+      }
+      
       const prepResponse = await fetch('/api/system-tests/prepare-pytest', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (!prepResponse.ok) {

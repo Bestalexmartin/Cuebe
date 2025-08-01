@@ -8,7 +8,6 @@ import { ProcessingModal } from './modals/ProcessingModal';
 import { OptionsModal } from './modals/OptionsModal';
 import { DeleteCueModal } from './modals/DeleteCueModal';
 import { DuplicateElementModal } from './modals/DuplicateElementModal';
-import { UnsavedChangesModal } from '../../../components/modals/UnsavedChangesModal';
 import { AddScriptElementModal } from './AddScriptElementModal';
 import { ModalStateReturn } from '../../../hooks/useModalState';
 import { UserPreferences } from '../../../hooks/useUserPreferences';
@@ -53,9 +52,9 @@ interface ScriptModalsProps {
     onAutoSortChange: (enabled: boolean) => void;
     onConfirmDeleteCue: () => void;
     onConfirmDuplicate: (description: string, timeOffsetMs: number) => void;
-    onCancelNavigation: () => void;
-    onSaveAndContinue: () => void;
-    onDiscardChanges: () => void;
+    onUnsavedChangesCancel: () => void;
+    onInitialUnsavedConfirm: () => void;
+    onSaveScriptChanges: () => void;
 }
 
 /**
@@ -95,9 +94,9 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     onAutoSortChange,
     onConfirmDeleteCue,
     onConfirmDuplicate,
-    onCancelNavigation,
-    onSaveAndContinue,
-    onDiscardChanges
+    onUnsavedChangesCancel,
+    onInitialUnsavedConfirm,
+    onSaveScriptChanges
 }) => {
     return (
         <>
@@ -193,14 +192,28 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 isProcessing={isDuplicatingElement}
             />
 
-            {/* Unsaved Changes Modal */}
-            <UnsavedChangesModal
+            {/* Unsaved Changes Confirmation Modals (Two-tier pattern) */}
+            <DeleteConfirmationModal
                 isOpen={modalState.isOpen(modalNames.UNSAVED_CHANGES)}
-                onClose={onCancelNavigation}
-                onSave={onSaveAndContinue}
-                onDiscard={onDiscardChanges}
-                changesCount={pendingOperations.length}
-                isSaving={isSavingChanges}
+                onClose={onUnsavedChangesCancel}
+                onConfirm={onInitialUnsavedConfirm}
+                entityType="Changes"
+                entityName=""
+                actionWord="Abandon"
+                customQuestion={`Are you sure you want to abandon the ${pendingOperations.length} change${pendingOperations.length !== 1 ? 's' : ''} made since your last save?`}
+                customWarning={`${pendingOperations.length} unsaved change${pendingOperations.length !== 1 ? 's' : ''} will be permanently removed.\nThis action cannot be undone.`}
+            />
+
+            <FinalDeleteConfirmationModal
+                isOpen={modalState.isOpen(modalNames.FINAL_UNSAVED_CHANGES)}
+                onClose={onUnsavedChangesCancel}
+                onConfirm={onSaveScriptChanges}
+                isLoading={isSavingChanges}
+                entityType="Changes"
+                entityName=""
+                actionWord="Abandon"
+                customMainText={`${pendingOperations.length} change${pendingOperations.length !== 1 ? 's' : ''} will be permanently deleted.`}
+                warningMessage="Leaving without saving will permanently discard all your unsaved changes and cannot be undone."
             />
         </>
     );
