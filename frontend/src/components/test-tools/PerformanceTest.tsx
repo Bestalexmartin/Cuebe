@@ -19,7 +19,7 @@ import {
   Badge,
   IconButton
 } from '@chakra-ui/react';
-import { useAuthToken } from '../../hooks/useAuthToken';
+import { useAuth } from '@clerk/clerk-react';
 import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
@@ -96,7 +96,7 @@ export const PerformanceTest: React.FC = () => {
   const [currentTest, setCurrentTest] = useState<string>('');
   const [progress, setProgress] = useState<number>(0);
   const { showSuccess, showError, showInfo } = useEnhancedToast();
-  const { token: authToken } = useAuthToken();
+  const { getToken } = useAuth();
 
   const isAnyRunning = isRunningDatabase || isRunningAPI || isRunningSystem || isRunningNetwork;
 
@@ -185,6 +185,7 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Connecting to backend API...');
       setProgress(10);
 
+      const authToken = await getToken();
       if (!authToken) {
         throw new Error('Authentication token not available');
       }
@@ -239,6 +240,7 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Testing API endpoints...');
       setProgress(10);
 
+      const authToken = await getToken();
       if (!authToken) {
         throw new Error('Authentication token not available');
       }
@@ -292,6 +294,7 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Gathering system metrics...');
       setProgress(10);
 
+      const authToken = await getToken();
       if (!authToken) {
         throw new Error('Authentication token not available');
       }
@@ -339,6 +342,7 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Checking for speedtest-cli on host system...');
       setProgress(5);
 
+      const authToken = await getToken();
       if (!authToken) {
         throw new Error('Authentication token not available');
       }
@@ -381,6 +385,7 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Running download speed test (this may take 20-30 seconds)...');
       setProgress(50);
 
+      const authToken = await getToken();
       if (!authToken) {
         throw new Error('Authentication token not available');
       }
