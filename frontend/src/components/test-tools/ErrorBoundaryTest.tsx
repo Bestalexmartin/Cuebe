@@ -67,11 +67,11 @@ export const ErrorBoundaryTest: React.FC = () => {
         <Badge colorScheme="red" fontSize="sm" px={2} py={1}>ERROR BOUNDARY</Badge>
       </HStack>
 
-      <Text color="gray.600" fontSize="md">
+      <Text color="cardText" fontSize="md" mt={-2}>
         Test different component crash scenarios to verify your Error Boundary catches them properly.
       </Text>
 
-      <VStack spacing={4} align="stretch">
+      <VStack spacing={4} align="stretch" mt={-2}>
 
         {/* Test Buttons */}
         <HStack spacing={2} flexWrap="wrap">

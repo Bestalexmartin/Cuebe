@@ -1,5 +1,3 @@
-<!-- docs/architecture/system-architecture.md -->
-
 # System Architecture
 
 ## Overview
@@ -35,6 +33,7 @@ CallMaster is built on a containerized microservices architecture using Docker C
 ## Container Architecture
 
 ### 1. Frontend Service (`frontend`)
+
 - **Base Image**: `node:20-alpine`
 - **Port**: 5173 (mapped to host)
 - **Volume Mount**: `./frontend:/app`
@@ -42,21 +41,24 @@ CallMaster is built on a containerized microservices architecture using Docker C
 - **Dependencies**: Backend service
 
 **Key Features:**
+
 - Live reload during development
 - Vite-based build system
 - Chakra UI component library
 - TypeScript for type safety
 
 ### 2. Backend Service (`backend`)
+
 - **Base Image**: `python:3.11`
 - **Port**: 8000 (mapped to host)
-- **Volume Mounts**: 
+- **Volume Mounts**:
   - `./backend:/app` (application code)
   - `./docs:/docs` (documentation files)
 - **Purpose**: FastAPI REST API server
 - **Dependencies**: Database service (with health check)
 
 **Key Features:**
+
 - FastAPI with automatic OpenAPI documentation
 - SQLAlchemy ORM with Alembic migrations
 - Clerk authentication integration
@@ -64,6 +66,7 @@ CallMaster is built on a containerized microservices architecture using Docker C
 - Testing infrastructure
 
 ### 3. Database Service (`db`)
+
 - **Base Image**: `postgres:15-alpine`
 - **Port**: 5432 (mapped to host)
 - **Volume**: `postgres_data:/var/lib/postgresql/data/`
@@ -71,18 +74,21 @@ CallMaster is built on a containerized microservices architecture using Docker C
 - **Health Check**: Built-in PostgreSQL health monitoring
 
 **Key Features:**
+
 - Persistent data storage
 - ACID compliance
 - Connection pooling
 - Automated backups (when configured)
 
 ### 4. Redis Service (Optional)
+
 - **Purpose**: Rate limiting and caching
 - **Port**: 6379 (not exposed to host by default)
 - **Integration**: Graceful degradation when unavailable
 - **Dependencies**: None (standalone service)
 
 **Key Features:**
+
 - API rate limiting via slowapi
 - Graceful fallback when Redis is unavailable
 - Different rate limits for different endpoint types:
@@ -93,9 +99,11 @@ CallMaster is built on a containerized microservices architecture using Docker C
 ## File System Strategy
 
 ### Volume Mounting Philosophy
+
 The architecture uses bind mounts for development and named volumes for data persistence:
 
 1. **Development Bind Mounts**: Enable live code editing
+
    - `./frontend:/app` - React source code hot reload
    - `./backend:/app` - Python source code auto-restart
    - `./docs:/docs` - Documentation file serving
@@ -105,6 +113,7 @@ The architecture uses bind mounts for development and named volumes for data per
    - Survives container recreation and updates
 
 ### Documentation Integration
+
 The `/docs` mount enables the backend to serve markdown documentation:
 
 ```python
@@ -116,6 +125,7 @@ async def get_documentation(file_path: str):
 ```
 
 This design allows:
+
 - **Live documentation updates** without container rebuilds
 - **Security boundaries** through path validation
 - **Flexible deployment** (mount different docs in production)
@@ -171,6 +181,7 @@ frontend/src/
 #### Feature Module Philosophy
 
 **Complete Feature Isolation**: Each feature module (`/src/features/[feature]/`) contains:
+
 - **Components**: Feature-specific UI components and views
 - **Hooks**: Feature-specific custom hooks and data fetching
 - **Pages**: Edit/manage pages for the feature
@@ -179,22 +190,24 @@ frontend/src/
 - **Utils**: Feature-specific utilities and helpers (when needed)
 
 **Import Strategy**:
+
 ```typescript
 // Cross-feature imports (external access)
-import { useScript } from '../features/script/hooks/useScript';
-import { CrewView } from '../features/crew/components/CrewView';
+import { useScript } from "../features/script/hooks/useScript";
+import { CrewView } from "../features/crew/components/CrewView";
 
 // Shared resource imports (always accessible)
-import { BaseCard } from '../components/base/BaseCard';
-import { useValidatedForm } from '../hooks/useValidatedForm';
+import { BaseCard } from "../components/base/BaseCard";
+import { useValidatedForm } from "../hooks/useValidatedForm";
 
 // Within-feature imports (internal to feature)
 // From /src/features/crew/components/CrewView.tsx:
-import { useCrews } from '../hooks/useCrews';
-import { CrewCard } from './CrewCard';
+import { useCrews } from "../hooks/useCrews";
+import { CrewCard } from "./CrewCard";
 ```
 
 **Benefits of Feature-Based Architecture**:
+
 - **Clear Boundaries**: Feature logic is self-contained and isolated
 - **Easy Navigation**: All related files are co-located by feature
 - **Scalability**: New features follow established patterns
@@ -205,19 +218,21 @@ import { CrewCard } from './CrewCard';
 ## Environment Configuration
 
 ### Development Environment
+
 ```yaml
 # docker-compose.yml
 services:
   backend:
     build: ./backend
     volumes:
-      - ./backend:/app      # Live code editing
-      - ./docs:/docs        # Documentation serving
+      - ./backend:/app # Live code editing
+      - ./docs:/docs # Documentation serving
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
 ```
 
 ### Environment Variables (`.env`)
+
 ```bash
 # Database Configuration
 POSTGRES_USER=callmaster_user
@@ -235,36 +250,42 @@ REDIS_URL=redis://localhost:6379  # For rate limiting
 ## Testing Infrastructure
 
 ### Why These Dependencies?
+
 The backend container includes specialized testing tools:
 
 #### Core Testing Framework
+
 ```dockerfile
 # Installed in backend container
 RUN pip install pytest pytest-asyncio faker speedtest-cli
 ```
 
-**pytest + pytest-asyncio**: 
+**pytest + pytest-asyncio**:
+
 - Unit and integration testing
 - Async endpoint testing
 - Database transaction testing
 
-**faker**: 
+**faker**:
+
 - Generate realistic test data
 - User profiles, addresses, phone numbers
 - Consistent test scenarios
 
-**speedtest-cli**: 
+**speedtest-cli**:
+
 - Network performance testing
 - API response time validation
 - Infrastructure health monitoring
 
 ### Testing Architecture
+
 ```
 ┌─────────────────┐
 │   Test Suite    │
 ├─────────────────┤
 │ • Environment   │ ─► Validate configuration
-│ • Database      │ ─► Test connections/queries  
+│ • Database      │ ─► Test connections/queries
 │ • API Endpoints │ ─► Validate all routes
 │ • Authentication│ ─► Clerk integration tests
 │ • Performance   │ ─► Network/response testing
@@ -275,11 +296,13 @@ RUN pip install pytest pytest-asyncio faker speedtest-cli
 ## Security Architecture
 
 ### Container Isolation
+
 - **Network Segmentation**: Services communicate through Docker networks
 - **File System Boundaries**: Containers can only access mounted volumes
 - **Process Isolation**: Each service runs in isolated environment
 
 ### API Security
+
 ```python
 # Rate limiting (when Redis available)
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -292,7 +315,9 @@ limiter = Limiter(
 ```
 
 ### Path Security
+
 Documentation serving includes security validation:
+
 ```python
 # Prevent directory traversal attacks
 if not str(requested_file.resolve()).startswith(str(docs_dir.resolve())):
@@ -302,15 +327,17 @@ if not str(requested_file.resolve()).startswith(str(docs_dir.resolve())):
 ## Database Architecture
 
 ### Connection Strategy
+
 ```python
 # SQLAlchemy connection with environment-based configuration
 DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
+    "DATABASE_URL",
     "postgresql://user:password@localhost:5432/callmaster"
 )
 ```
 
 ### Migration Management
+
 ```bash
 # Alembic migrations in container
 alembic upgrade head    # Apply latest migrations
@@ -318,6 +345,7 @@ alembic revision --autogenerate -m "description"  # Create new migration
 ```
 
 ### Data Persistence
+
 - **Named Volumes**: `postgres_data` survives container recreation
 - **Backup Strategy**: Can mount backup directory for automated dumps
 - **Development Data**: Isolated from production through environment variables
@@ -325,31 +353,34 @@ alembic revision --autogenerate -m "description"  # Create new migration
 ## Development vs Production
 
 ### Development Features
+
 - **Live Reload**: Code changes trigger automatic restarts
 - **Debug Mode**: Detailed error messages and logging
 - **Volume Mounts**: Direct file system access
 - **Development Ports**: Services exposed on localhost
 
 ### Production Adaptations
+
 ```yaml
 # Production docker-compose.override.yml
 services:
   frontend:
     build:
-      target: production    # Multi-stage build
-    volumes: []             # Remove development mounts
-  
+      target: production # Multi-stage build
+    volumes: [] # Remove development mounts
+
   backend:
     environment:
       - DEBUG=false
       - LOG_LEVEL=WARNING
     volumes:
-      - ./docs:/docs        # Keep documentation mount
+      - ./docs:/docs # Keep documentation mount
 ```
 
 ## Monitoring and Health Checks
 
 ### Database Health Check
+
 ```yaml
 healthcheck:
   test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
@@ -359,14 +390,16 @@ healthcheck:
 ```
 
 ### Service Dependencies
+
 ```yaml
 backend:
   depends_on:
     db:
-      condition: service_healthy  # Wait for database
+      condition: service_healthy # Wait for database
 ```
 
 ### Application Health Endpoints
+
 ```python
 @app.get("/api/health")
 async def health_check():
@@ -381,16 +414,18 @@ async def health_check():
 ## Scaling Considerations
 
 ### Horizontal Scaling
+
 ```yaml
 # Multiple backend instances
 backend:
   deploy:
     replicas: 3
   environment:
-    - REDIS_URL=redis://redis:6379  # Shared session storage
+    - REDIS_URL=redis://redis:6379 # Shared session storage
 ```
 
 ### Load Balancing
+
 ```yaml
 # Nginx reverse proxy
 nginx:
@@ -402,6 +437,7 @@ nginx:
 ```
 
 ### Database Scaling
+
 - **Read Replicas**: Separate read/write database instances
 - **Connection Pooling**: PgBouncer for connection management
 - **Caching**: Redis for session and application caching
@@ -409,6 +445,7 @@ nginx:
 ## Deployment Strategies
 
 ### Development Deployment
+
 ```bash
 # Start all services
 docker-compose up -d
@@ -421,11 +458,12 @@ docker-compose exec backend alembic upgrade head
 ```
 
 ### Production Deployment
+
 ```bash
 # Build production images
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml build
 
-# Deploy with production overrides  
+# Deploy with production overrides
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # Health check
@@ -437,6 +475,7 @@ curl http://localhost/api/health
 ### Common Issues
 
 **Container Won't Start**
+
 ```bash
 # Check container logs
 docker-compose logs backend
@@ -446,6 +485,7 @@ docker-compose config
 ```
 
 **Database Connection Issues**
+
 ```bash
 # Test connection
 docker-compose exec backend python -c "from database import engine; print(engine.execute('SELECT 1'))"
@@ -455,6 +495,7 @@ docker-compose logs db
 ```
 
 **Volume Mount Issues**
+
 ```bash
 # Verify mounts
 docker-compose exec backend ls -la /docs
@@ -462,6 +503,7 @@ docker-compose exec backend ls -la /app
 ```
 
 **Port Conflicts**
+
 ```bash
 # Check port usage
 lsof -i :8000
@@ -472,6 +514,7 @@ lsof -i :5432
 ## Future Architecture Enhancements
 
 ### Planned Improvements
+
 1. **Redis Integration**: Session storage and caching
 2. **Nginx Reverse Proxy**: Load balancing and SSL termination
 3. **Monitoring Stack**: Prometheus + Grafana
@@ -479,6 +522,7 @@ lsof -i :5432
 5. **CI/CD Pipeline**: Automated testing and deployment
 
 ### Security Enhancements
+
 1. **SSL/TLS**: HTTPS everywhere
 2. **Container Scanning**: Vulnerability assessments
 3. **Secret Management**: Vault or similar
@@ -486,4 +530,4 @@ lsof -i :5432
 
 ---
 
-*This architecture provides a solid foundation for development and production deployment while maintaining flexibility for future enhancements.*
+_This architecture provides a solid foundation for development and production deployment while maintaining flexibility for future enhancements._
