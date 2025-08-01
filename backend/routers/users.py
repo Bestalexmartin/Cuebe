@@ -40,7 +40,7 @@ def rate_limit(limit_config):
 
 @rate_limit(RateLimitConfig.READ_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 @router.get("/check-email")
-async def check_user_by_email(
+def check_user_by_email(
     request: Request,
     email: str,
     user: models.User = Depends(get_current_user),
@@ -53,7 +53,7 @@ async def check_user_by_email(
 
 @router.post("/create-guest-with-relationship", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
 @rate_limit(RateLimitConfig.AUTH_ENDPOINTS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
-async def create_guest_user_with_relationship(
+def create_guest_user_with_relationship(
     request: Request,
     guest_data: schemas.GuestUserCreate,
     user: models.User = Depends(get_current_user),
@@ -100,7 +100,7 @@ async def create_guest_user_with_relationship(
 
 @router.get("/options", response_model=dict)
 @rate_limit(RateLimitConfig.READ_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
-async def get_user_options(
+def get_user_options(
     request: Request,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -118,7 +118,7 @@ async def get_user_options(
 
 @router.patch("/options", response_model=dict)
 @rate_limit(RateLimitConfig.CRUD_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
-async def update_user_options(
+def update_user_options(
     request: Request,
     options: dict,
     user: models.User = Depends(get_current_user),
@@ -170,7 +170,7 @@ async def update_user_options(
 
 @router.get("/preferences", response_model=dict)
 @rate_limit(RateLimitConfig.READ_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
-async def get_user_preferences(
+def get_user_preferences(
     request: Request,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -186,7 +186,7 @@ async def get_user_preferences(
 
 @router.patch("/preferences", response_model=dict)
 @rate_limit(RateLimitConfig.CRUD_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
-async def update_user_preferences(
+def update_user_preferences(
     request: Request,
     preference_updates: dict,
     user: models.User = Depends(get_current_user),

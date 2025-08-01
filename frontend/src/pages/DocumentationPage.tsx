@@ -36,7 +36,7 @@ interface DocFile {
   name: string;
   path: string;
   description: string;
-  category: 'Planning' | 'Quick Start' | 'System Architecture' | 'Component Architecture' | 'Data Management' | 'User Interface' | 'Testing' | 'Archive';
+  category: 'Planning' | 'Quick Start' | 'System Architecture' | 'Component Architecture' | 'Data Management' | 'User Interface' | 'Testing' | 'Tutorial' | 'Archive';
   icon: 'planning' | 'roadmap' | 'compass' | 'docs' | 'component' | 'performance' | 'warning' | 'test' | 'archive';
 }
 
@@ -56,9 +56,16 @@ const DOCUMENTATION_FILES: DocFile[] = [
     icon: 'compass'
   },
   {
-    name: 'UI Interaction Improvements - July 2025',
-    path: 'development/ui-interaction-improvements-july-2025.md',
-    description: 'Comprehensive changelog of click-to-select, drag-to-reorder, and navigation improvements',
+    name: 'Code Quality Guide',
+    path: 'development/code-quality-guide.md',
+    description: 'Code quality maintenance, DRY principles, and performance optimization guide',
+    category: 'Quick Start',
+    icon: 'performance'
+  },
+  {
+    name: 'UI Interaction Guide',
+    path: 'development/ui-interaction-guide.md',
+    description: 'Best practices for interactive UI development and gesture recognition',
     category: 'User Interface',
     icon: 'component'
   },
@@ -68,6 +75,13 @@ const DOCUMENTATION_FILES: DocFile[] = [
     description: 'File naming conventions, content guidelines, and maintenance practices',
     category: 'Planning',
     icon: 'docs'
+  },
+  {
+    name: 'State Management Principles',
+    path: 'standards/state-management-principles.md',
+    description: 'User-centered state management principles and philosophy',
+    category: 'Planning',
+    icon: 'planning'
   },
   {
     name: 'Documentation Overview',
@@ -96,6 +110,13 @@ const DOCUMENTATION_FILES: DocFile[] = [
     description: 'React.memo implementation and performance monitoring',
     category: 'System Architecture',
     icon: 'performance'
+  },
+  {
+    name: 'Async/Sync Architecture',
+    path: 'architecture/async-sync-architecture.md',
+    description: 'Backend architecture decisions, database operations, and async/sync trade-offs',
+    category: 'System Architecture',
+    icon: 'component'
   },
   {
     name: 'Error Handling',
@@ -168,9 +189,37 @@ const DOCUMENTATION_FILES: DocFile[] = [
     icon: 'test'
   },
   {
+    name: 'Feature Tutorial',
+    path: 'tutorial/feature-tutorial.md',
+    description: 'Comprehensive user guide for theater production management features',
+    category: 'Tutorial',
+    icon: 'compass'
+  },
+  {
     name: 'Codebase Improvements Archive',
     path: 'archive/codebase-improvements-archive.md',
     description: 'Complete record of major refactoring and optimizations',
+    category: 'Archive',
+    icon: 'archive'
+  },
+  {
+    name: 'Code Quality Improvements - July 2025',
+    path: 'archive/code-quality-improvements-july-2025.md',
+    description: 'Archive of July 2025 code quality improvements and refactoring efforts',
+    category: 'Archive',
+    icon: 'archive'
+  },
+  {
+    name: 'Design Insights Archive',
+    path: 'archive/design-insights-archive.md',
+    description: 'Valuable design decisions, feature rationales, and architectural insights',
+    category: 'Archive',
+    icon: 'archive'
+  },
+  {
+    name: 'UI Interaction Improvements - July 2025',
+    path: 'archive/ui-interaction-improvements-july-2025.md',
+    description: 'Archive of July 2025 UI interaction improvements and implementation details',
     category: 'Archive',
     icon: 'archive'
   }
@@ -366,6 +415,14 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
       icon: 'test' as const,
       isDisabled: false,
       onClick: () => loadCategory('Testing')
+    },
+    {
+      id: 'tutorial',
+      title: 'Tutorial',
+      description: 'User guides and feature tutorials',
+      icon: 'compass' as const,
+      isDisabled: false,
+      onClick: () => loadCategory('Tutorial')
     },
     {
       id: 'archive',
