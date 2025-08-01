@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.responses import HTMLResponse
@@ -19,7 +19,9 @@ except ImportError:
     RATE_LIMITING_ENABLED = False
 
 # Import routers
-from routers import users, crews, venues, departments, shows, webhooks, system_tests, script_elements
+from routers import users, crews, venues, departments, shows, webhooks, development, system_tests, script_elements
+from routers.auth import get_current_user
+import models
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -60,14 +62,15 @@ app.add_middleware(
 # =============================================================================
 
 # Include all routers
-app.include_router(webhooks.router)  # Includes health check at /api/health
-app.include_router(users.router)     # User management at /api/users/*
-app.include_router(crews.router)     # Crew management at /api/me/crews, /api/crew/*
-app.include_router(venues.router)    # Venue management at /api/me/venues, /api/venues/*
+app.include_router(webhooks.router)     # Webhook endpoints at /api/webhooks/*
+app.include_router(development.router)  # Development endpoints at /api/dev/*, /api/health
+app.include_router(users.router)        # User management at /api/users/*
+app.include_router(crews.router)        # Crew management at /api/me/crews, /api/crew/*
+app.include_router(venues.router)       # Venue management at /api/me/venues, /api/venues/*
 app.include_router(departments.router)  # Department management at /api/me/departments, /api/departments/*
-app.include_router(shows.router)     # Show and script management at /api/shows/*, /api/scripts/*
+app.include_router(shows.router)        # Show and script management at /api/shows/*, /api/scripts/*
 app.include_router(script_elements.router)  # Script elements CRUD at /api/scripts/*/elements, /api/elements/*
-app.include_router(system_tests.router)  # System testing endpoints at /api/system-tests/*
+app.include_router(system_tests.router) # System testing endpoints at /api/system-tests/*
 
 # =============================================================================
 # CLEAN LIGHT MODE DOCUMENTATION ENDPOINTS  
@@ -157,7 +160,10 @@ async def custom_redoc_html():
 # =============================================================================
 
 @app.get("/api/docs/{file_path:path}")
-async def get_documentation(file_path: str):
+async def get_documentation(
+    file_path: str,
+    current_user: models.User = Depends(get_current_user)
+):
     """Serve markdown documentation files from the docs directory."""
     try:
         # Path resolution for Docker vs local development

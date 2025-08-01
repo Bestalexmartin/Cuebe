@@ -16,6 +16,7 @@ import {
   IconButton,
   useClipboard
 } from '@chakra-ui/react';
+import { useAuth } from '@clerk/clerk-react';
 import { AppIcon } from '../components/AppIcon';
 import { ToastTest } from '../components/test-tools/ToastTest';
 import { FormValidationTest } from '../components/test-tools/FormValidationTest';
@@ -49,6 +50,7 @@ interface TestToolsPageProps {
 
 export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenuClose }) => {
   const { showSuccess, showError, showInfo } = useEnhancedToast();
+  const { getToken } = useAuth();
 
   // Initialize with session storage or default to 'environment'
   const [selectedTest, setSelectedTest] = useState<string>(() => {
@@ -147,12 +149,16 @@ export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenu
     try {
       showInfo('Running Tests', `Starting ${testSuite} test suite...`);
 
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token not available');
+      }
+      
       const response = await fetch(`/api/dev/run-tests?test_suite=${testSuite}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Note: You'll need to implement proper auth token retrieval here
-          // For now, let's see if the endpoint works without auth for testing
+          'Authorization': `Bearer ${token}`
         }
       });
 

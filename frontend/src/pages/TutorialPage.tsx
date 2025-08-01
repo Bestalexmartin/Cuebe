@@ -11,10 +11,6 @@ import {
   AlertTitle,
   AlertDescription,
   Text,
-  Badge,
-  Card,
-  CardBody,
-  Button,
   Divider,
   Heading,
   Code,
@@ -30,6 +26,7 @@ import {
   Td,
   useColorModeValue
 } from '@chakra-ui/react';
+import { useAuth } from '@clerk/clerk-react';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BaseUtilityPage } from '../components/base/BaseUtilityPage';
 import { AppIcon } from '../components/AppIcon';
@@ -43,6 +40,7 @@ export const TutorialPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuCl
   const [selectedTutorial, setSelectedTutorial] = useState<string | null>(null);
   const [content, setContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const { getToken } = useAuth();
 
   // Chakra UI styled components for markdown (same as DocumentationPage)
   const codeBlockBg = useColorModeValue('gray.100', 'gray.700');
@@ -152,7 +150,16 @@ export const TutorialPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuCl
     setSelectedTutorial('features');
     setIsLoading(true);
     try {
-      const response = await fetch('/api/docs/tutorial/feature-tutorial.md');
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token not available');
+      }
+
+      const response = await fetch('/api/docs/tutorial/feature-tutorial.md', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -199,7 +206,7 @@ export const TutorialPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuCl
             {content}
           </ReactMarkdown>
         </Box>
-        )}
+      )}
     </VStack>
   );
 

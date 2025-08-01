@@ -1,8 +1,8 @@
 # backend/routers/system_tests/speed_tests.py
 
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, Depends
 
-from . import router, rate_limit, RateLimitConfig, logger
+from . import router, rate_limit, RateLimitConfig, logger, get_current_user, models
 import subprocess
 import json as json_lib
 import os
@@ -12,7 +12,10 @@ import socket
 
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RateLimitConfig else None)
 @router.get("/debug-speed")
-def debug_speed_test(request: Request):
+def debug_speed_test(
+    request: Request,
+    current_user: models.User = Depends(get_current_user)
+):
     """Debug endpoint to test speed test components individually"""
     results = {"connectivity_tests": [], "download_tests": []}
 
@@ -79,7 +82,10 @@ def debug_speed_test(request: Request):
 
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RateLimitConfig else None)
 @router.get("/network-speed")
-def test_network_speed(request: Request):
+def test_network_speed(
+    request: Request,
+    current_user: models.User = Depends(get_current_user)
+):
     """Test network connectivity and download speed"""
     try:
         hosts_to_ping = [
@@ -334,7 +340,10 @@ def test_network_speed(request: Request):
 
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RateLimitConfig else None)
 @router.post("/prepare-speedtest")
-def prepare_speedtest(request: Request):
+def prepare_speedtest(
+    request: Request,
+    current_user: models.User = Depends(get_current_user)
+):
     """Check for speedtest-cli availability and install if necessary"""
     import shutil
 

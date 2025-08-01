@@ -1,15 +1,18 @@
 # backend/routers/system_tests/external_service_checks.py
 
-from fastapi import Request
+from fastapi import Request, Depends
 
-from . import router, rate_limit, RateLimitConfig, logger
+from . import router, rate_limit, RateLimitConfig, logger, get_current_user, models
 import time
 import os
 
 
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RateLimitConfig else None)
 @router.get("/external-services")
-def test_external_services(request: Request):
+def test_external_services(
+    request: Request,
+    current_user: models.User = Depends(get_current_user)
+):
     """Test connectivity to external services required by CallMaster"""
     import requests
 

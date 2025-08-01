@@ -1,8 +1,8 @@
 # backend/routers/system_tests/filesystem_checks.py
 
-from fastapi import Request
+from fastapi import Request, Depends
 
-from . import router, rate_limit, RateLimitConfig, logger
+from . import router, rate_limit, RateLimitConfig, logger, get_current_user, models
 import time
 from pathlib import Path
 import os
@@ -10,7 +10,10 @@ import os
 
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RateLimitConfig else None)
 @router.get("/filesystem-permissions")
-def test_filesystem_permissions(request: Request):
+def test_filesystem_permissions(
+    request: Request,
+    current_user: models.User = Depends(get_current_user)
+):
     """Test filesystem permissions for paths critical to CallMaster operation"""
     results = []
     paths_to_test = [

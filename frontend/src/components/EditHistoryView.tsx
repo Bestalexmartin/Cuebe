@@ -22,13 +22,15 @@ interface EditHistoryViewProps {
     allElements: ScriptElement[];
     summary: string;
     onRevertToPoint?: (targetIndex: number) => void;
+    onRevertSuccess?: () => void;
 }
 
 export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
     operations,
     allElements,
     summary,
-    onRevertToPoint
+    onRevertToPoint,
+    onRevertSuccess
 }) => {
     const [isCopying, setIsCopying] = useState(false);
     const [isRevertModalOpen, setIsRevertModalOpen] = useState(false);
@@ -86,6 +88,8 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
             showSuccess("Changes Reverted", `Script reverted to change #${revertTargetIndex + 1}`);
             setIsRevertModalOpen(false);
             setRevertTargetIndex(null);
+            // Switch back to edit mode after successful revert
+            onRevertSuccess?.();
         } catch (error) {
             console.error('Error reverting changes:', error);
             showError("Revert Failed", { description: "Failed to revert changes. Please try again." });

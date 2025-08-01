@@ -1,6 +1,6 @@
 // frontend/src/components/test-tools/PerformanceTest.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   VStack,
@@ -17,9 +17,9 @@ import {
   StatNumber,
   StatHelpText,
   Badge,
-  Divider,
   IconButton
 } from '@chakra-ui/react';
+import { useAuth } from '@clerk/clerk-react';
 import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
@@ -96,6 +96,23 @@ export const PerformanceTest: React.FC = () => {
   const [currentTest, setCurrentTest] = useState<string>('');
   const [progress, setProgress] = useState<number>(0);
   const { showSuccess, showError, showInfo } = useEnhancedToast();
+  const { getToken } = useAuth();
+
+  const [authToken, setAuthToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchToken = async () => {
+      try {
+        const token = await getToken();
+        setAuthToken(token);
+      } catch (err) {
+        console.error('Failed to fetch auth token:', err);
+        setAuthToken(null);
+      }
+    };
+
+    fetchToken();
+  }, [getToken]);
 
   const isAnyRunning = isRunningDatabase || isRunningAPI || isRunningSystem || isRunningNetwork;
 
@@ -184,10 +201,15 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Connecting to backend API...');
       setProgress(10);
 
+      if (!authToken) {
+        throw new Error('Authentication token not available');
+      }
+
       const response = await fetch('/api/system-tests/database-connectivity', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
         }
       });
 
@@ -233,10 +255,15 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Testing API endpoints...');
       setProgress(10);
 
+      if (!authToken) {
+        throw new Error('Authentication token not available');
+      }
+
       const response = await fetch('/api/system-tests/api-endpoints', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
         }
       });
 
@@ -281,10 +308,15 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Gathering system metrics...');
       setProgress(10);
 
+      if (!authToken) {
+        throw new Error('Authentication token not available');
+      }
+
       const response = await fetch('/api/system-tests/system-performance', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
         }
       });
 
@@ -323,10 +355,15 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Checking for speedtest-cli on host system...');
       setProgress(5);
 
+      if (!authToken) {
+        throw new Error('Authentication token not available');
+      }
+
       const prepResponse = await fetch('/api/system-tests/prepare-speedtest', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
         }
       });
 
@@ -360,10 +397,15 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Running download speed test (this may take 20-30 seconds)...');
       setProgress(50);
 
+      if (!authToken) {
+        throw new Error('Authentication token not available');
+      }
+
       const response = await fetch('/api/system-tests/network-speed', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
         }
       });
 

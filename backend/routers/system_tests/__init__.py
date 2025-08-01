@@ -12,6 +12,8 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from database import get_db
+from routers.auth import get_current_user
+import models
 
 # Optional rate limiting import
 try:

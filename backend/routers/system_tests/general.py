@@ -15,6 +15,8 @@ from . import (
     redis,
     RedisConnectionError,
     logger,
+    get_current_user,
+    models,
 )
 
 import time
@@ -22,7 +24,10 @@ import time
 
 @rate_limit(RateLimitConfig.WEBHOOKS if RateLimitConfig else None)
 @router.get("/health")
-def system_tests_health(request: Request):
+def system_tests_health(
+    request: Request,
+    current_user: models.User = Depends(get_current_user)
+):
     """Health check for system tests API"""
     network_test = "unknown"
     try:
@@ -46,7 +51,11 @@ def system_tests_health(request: Request):
 
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RateLimitConfig else None)
 @router.get("/database-connectivity")
-def test_database_connectivity(request: Request, db: Session = Depends(get_db)):
+def test_database_connectivity(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
     """Test connectivity to various database services"""
     results = []
 
@@ -112,7 +121,10 @@ def test_database_connectivity(request: Request, db: Session = Depends(get_db)):
 
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RateLimitConfig else None)
 @router.get("/api-endpoints")
-def test_api_endpoints(request: Request):
+def test_api_endpoints(
+    request: Request,
+    current_user: models.User = Depends(get_current_user)
+):
     """Test connectivity to API endpoints"""
     results = []
 
@@ -165,7 +177,10 @@ def test_api_endpoints(request: Request):
 
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RateLimitConfig else None)
 @router.get("/system-performance")
-def test_system_performance(request: Request):
+def test_system_performance(
+    request: Request,
+    current_user: models.User = Depends(get_current_user)
+):
     """Get real system performance metrics"""
     if not HAS_PSUTIL or psutil is None:
         return {
@@ -214,7 +229,10 @@ def test_system_performance(request: Request):
 
 @rate_limit(RateLimitConfig.SYSTEM_TESTS if RateLimitConfig else None)
 @router.post("/prepare-pytest")
-def prepare_pytest(request: Request):
+def prepare_pytest(
+    request: Request,
+    current_user: models.User = Depends(get_current_user)
+):
     """Check for pytest availability and install if necessary for API testing"""
     import shutil
 

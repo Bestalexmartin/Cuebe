@@ -13,7 +13,7 @@ import {
     Button,
     useBreakpointValue
 } from "@chakra-ui/react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useScript } from "../features/script/hooks/useScript";
 import { useShow } from "../features/shows/hooks/useShow";
@@ -59,6 +59,7 @@ const MODAL_NAMES = {
     DELETE_CUE: 'delete-cue',
     DUPLICATE_ELEMENT: 'duplicate-element',
     UNSAVED_CHANGES: 'unsaved-changes',
+    FINAL_UNSAVED_CHANGES: 'final-unsaved-changes',
     CLEAR_HISTORY: 'clear-history',
     FINAL_CLEAR_HISTORY: 'final-clear-history'
 } as const;
@@ -128,7 +129,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeletingCue, setIsDeletingCue] = useState(false);
     const [isDuplicatingElement, setIsDuplicatingElement] = useState(false);
-    const [isSavingChanges, setIsSavingChanges] = useState(false);
+    // const [isSavingChanges, setIsSavingChanges] = useState(false); // TODO: Re-enable when save logic is implemented
 
     // Element selection and refs
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
@@ -283,6 +284,27 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [hasUnsavedChanges]);
 
+    // Push initial history state to enable popstate detection
+    useEffect(() => {
+        window.history.pushState({ manageScript: true }, '', window.location.pathname);
+    }, []);
+
+    // Handle browser back/forward button using popstate
+    useEffect(() => {
+        const handlePopState = (event: PopStateEvent) => {
+            if (hasUnsavedChanges) {
+                event.preventDefault();
+                // Push current state back to history to "block" the navigation
+                window.history.pushState({ manageScript: true }, '', window.location.pathname);
+                setPendingNavigation('/dashboard'); // Default to dashboard on back
+                modalState.openModal(MODAL_NAMES.UNSAVED_CHANGES);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [hasUnsavedChanges, modalState]);
+
     // Custom navigation handler that checks for unsaved changes
     const handleNavigateWithGuard = (targetPath: string) => {
         if (hasUnsavedChanges) {
@@ -293,29 +315,23 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         }
     };
 
-    // Modal handlers
-    const handleSaveAndContinue = async () => {
-        setIsSavingChanges(true);
-        try {
-            const success = await saveChanges();
-            if (success && pendingNavigation) {
-                modalState.closeModal(MODAL_NAMES.UNSAVED_CHANGES);
-                // Handle dashboard navigation with state
-                if (pendingNavigation === '/dashboard') {
-                    navigateWithCurrentContext(script, scriptId);
-                } else {
-                    navigate(pendingNavigation);
-                }
-                setPendingNavigation(null);
-            }
-        } finally {
-            setIsSavingChanges(false);
-        }
+    // Unsaved Changes Modal handlers (two-tier pattern)
+    const handleUnsavedChangesCancel = () => {
+        modalState.closeModal(MODAL_NAMES.UNSAVED_CHANGES);
+        modalState.closeModal(MODAL_NAMES.FINAL_UNSAVED_CHANGES);
+        setPendingNavigation(null);
     };
 
-    const handleDiscardChanges = () => {
-        discardChanges();
+    const handleInitialUnsavedConfirm = () => {
         modalState.closeModal(MODAL_NAMES.UNSAVED_CHANGES);
+        modalState.openModal(MODAL_NAMES.FINAL_UNSAVED_CHANGES);
+    };
+
+    const handleSaveScriptChanges = async () => {
+        // TODO: Implement save logic here
+        // For now, we'll discard changes
+        discardChanges();
+        modalState.closeModal(MODAL_NAMES.FINAL_UNSAVED_CHANGES);
         if (pendingNavigation) {
             // Handle dashboard navigation with state
             if (pendingNavigation === '/dashboard') {
@@ -325,11 +341,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             }
             setPendingNavigation(null);
         }
-    };
-
-    const handleCancelNavigation = () => {
-        modalState.closeModal(MODAL_NAMES.UNSAVED_CHANGES);
-        setPendingNavigation(null);
     };
 
     // Callback for child components to update scroll state
@@ -996,7 +1007,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                 )}
                                 {activeMode === 'play' && <PlayMode />}
                                 {activeMode === 'share' && <ShareMode />}
-                                {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={editQueueElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} />}
+                                {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={editQueueElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} onRevertSuccess={() => setActiveMode('edit')} />}
                             </Box>
                         )}
                     </Box>
@@ -1068,7 +1079,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 isDeleting={isDeleting}
                 isDeletingCue={isDeletingCue}
                 isDuplicatingElement={isDuplicatingElement}
-                isSavingChanges={isSavingChanges}
+                isSavingChanges={false} // TODO: Re-enable when save logic is implemented
                 previewPreferences={previewPreferences}
                 darkMode={darkMode}
                 colorizeDepNames={colorizeDepNames}
@@ -1092,9 +1103,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onAutoSortChange={handleAutoSortCheckboxChange}
                 onConfirmDeleteCue={handleConfirmDeleteCue}
                 onConfirmDuplicate={handleConfirmDuplicate}
-                onCancelNavigation={handleCancelNavigation}
-                onSaveAndContinue={handleSaveAndContinue}
-                onDiscardChanges={handleDiscardChanges}
+                onUnsavedChangesCancel={handleUnsavedChangesCancel}
+                onInitialUnsavedConfirm={handleInitialUnsavedConfirm}
+                onSaveScriptChanges={handleSaveScriptChanges}
             />
 
             {/* Mobile Drawer Menu */}
