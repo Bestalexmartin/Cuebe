@@ -178,12 +178,12 @@ export const ApiTest: React.FC<ApiTestProps> = ({
         <Badge colorScheme="cyan" fontSize="sm" px={2} py={1}>API TESTING</Badge>
       </HStack>
 
-      <Text color="gray.600">
+      <Text color="cardText" mt={-2}>
         Run backend API tests directly from the UI. These test authentication, data integrity,
         and business logic to ensure your backend is working correctly.
       </Text>
 
-      <Box>
+      <Box mt={-2}>
         <VStack spacing={3} align="stretch">
           <HStack spacing={3} flexWrap="wrap">
             <Button

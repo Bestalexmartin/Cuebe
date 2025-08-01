@@ -349,7 +349,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                 {/* Cue Notes */}
                 <Box
                     flex={1}
-                    pl={43}
+                    pl={6}
                     pr={3}
                     borderRight={"1px solid"}
                     borderColor={"gray.400"}

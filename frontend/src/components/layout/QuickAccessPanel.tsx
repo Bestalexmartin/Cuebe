@@ -47,6 +47,7 @@ const NavigationItem: React.FC<NavigationItemProps> = ({ icon, title, descriptio
       borderRadius="md"
       p="4"
       shadow="sm"
+      bg="card.background"
       cursor="pointer"
       borderColor={isActive ? 'blue.400' : 'gray.600'}
       _hover={{ borderColor: 'orange.400' }}
@@ -60,7 +61,7 @@ const NavigationItem: React.FC<NavigationItemProps> = ({ icon, title, descriptio
         <AppIcon name={icon} />
         <Heading size="xs" textTransform="uppercase">{title}</Heading>
       </HStack>
-      <Text pt="2" fontSize="sm">{description}</Text>
+      <Text pt="2" fontSize="sm" color="cardText">{description}</Text>
     </Box>
   );
 };

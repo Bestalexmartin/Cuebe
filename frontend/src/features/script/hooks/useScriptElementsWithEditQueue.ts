@@ -322,6 +322,10 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                 sequence: index + 1
             }));
             
+        case 'DISABLE_AUTO_SORT':
+            // Handle auto-sort disabling (no element changes, just preference tracking)
+            return elements;
+            
         default:
             return elements;
     }

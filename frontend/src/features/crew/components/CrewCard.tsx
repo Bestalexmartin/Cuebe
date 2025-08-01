@@ -119,7 +119,7 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
     ];
 
     const quickInfo = (
-        <VStack align="stretch" spacing="1" fontSize="sm" color="detail.text">
+        <VStack align="stretch" spacing="1" fontSize="sm" color="cardText">
             <HStack spacing="2" align="center">
                 <Badge variant="outline" colorScheme="blue" size="sm">
                     {formatRole(crewMember.userRole)}
@@ -208,7 +208,7 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
     const expandedContent = getNotesToShow() ? (
         <Box>
             <Text fontWeight="semibold" mb={2}>Notes</Text>
-            <Text fontSize="sm" color="detail.text">
+            <Text fontSize="sm" color="cardText">
                 {getNotesToShow()}
             </Text>
         </Box>

@@ -78,12 +78,18 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const [elementAbove, setElementAbove] = useState<any>(null);
     const [elementBelow, setElementBelow] = useState<any>(null);
     const [pendingReorder, setPendingReorder] = useState<any>(null);
+    const [originalElementsBeforeDrag, setOriginalElementsBeforeDrag] = useState<any[]>([]);
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const lastScrollStateRef = useRef<{isAtTop: boolean; isAtBottom: boolean; allElementsFitOnScreen: boolean} | null>(null);
     
 
     useEffect(() => {
+        // Don't update localElements during drag operations - preserve the user's dropped position
+        if (dragModalOpen || pendingReorder) {
+            return;
+        }
+        
         // Only update if the elements have actually changed (deep comparison)
         const elementsChanged = !localElements || 
             localElements.length !== elements?.length ||
@@ -93,7 +99,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             // console.log(`📊 EditMode: Elements updated - from ${localElements?.length || 0} to ${elements?.length || 0} elements`);
             setLocalElements(elements);
         }
-    }, [elements, localElements]);
+    }, [elements, localElements, dragModalOpen, pendingReorder]);
 
     // Expose refetch function and selection state to parent via ref
     useImperativeHandle(
@@ -151,6 +157,9 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             elementBelow = newIndex < localElements.length - 1 ? localElements[newIndex] : null; // The element currently at newIndex will be below
         }
 
+        // Store original elements before making any changes
+        setOriginalElementsBeforeDrag([...localElements]);
+        
         const reorderedElements = arrayMove(localElements, oldIndex, newIndex);
         
         const pendingReorderData = {
@@ -160,6 +169,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         };
         setPendingReorder(pendingReorderData);
 
+        // Immediately show the element in its new position
         setLocalElements(reorderedElements);
 
         // Check if all three elements (above, dragged, below) have the same time offset
@@ -184,6 +194,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             // Clear all state like the modal handlers do
             setDraggedElement(null);
             setPendingReorder(null);
+            setOriginalElementsBeforeDrag([]);
             return;
         }
 
@@ -229,11 +240,12 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         setElementAbove(null);
         setElementBelow(null);
         setPendingReorder(null);
+        setOriginalElementsBeforeDrag([]);
     };
 
     const handleCancelDrag = () => {
-        // Revert local elements back to server state
-        setLocalElements(elements);
+        // Revert local elements back to original position before drag
+        setLocalElements(originalElementsBeforeDrag);
         
         // Close modal and clear state
         closeDragModal();
@@ -347,6 +359,14 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         // Find the element to get old value
         const element = localElements.find(el => el.elementID === elementId);
         const oldTimeOffsetMs = element?.timeOffsetMs || 0;
+        
+        // Update local elements immediately for UI feedback
+        const updatedElements = localElements.map(el => 
+            el.elementID === elementId 
+                ? { ...el, timeOffsetMs: newTimeOffsetMs }
+                : el
+        );
+        setLocalElements(updatedElements);
         
         // If we have edit queue functionality, use it
         if (onApplyLocalChange) {

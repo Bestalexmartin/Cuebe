@@ -45,10 +45,10 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
               <Text fontWeight="semibold">Authentication</Text>
               <Badge colorScheme="blue">POST, GET</Badge>
             </HStack>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" color="cardText">
               User registration, authentication, and guest user management
             </Text>
-            <Text fontSize="xs" color="gray.500" mt={1}>
+            <Text fontSize="xs" color="cardText" mt={1}>
               /api/users/*, /api/webhooks/clerk
             </Text>
           </Box>
@@ -58,10 +58,10 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
               <Text fontWeight="semibold">Crew Management</Text>
               <Badge colorScheme="green">GET, POST, PATCH, DELETE</Badge>
             </HStack>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" color="cardText">
               Manage crew members and their relationships with managers
             </Text>
-            <Text fontSize="xs" color="gray.500" mt={1}>
+            <Text fontSize="xs" color="cardText" mt={1}>
               /api/me/crews, /api/crew/*, /api/crew-relationships/*
             </Text>
           </Box>
@@ -71,10 +71,10 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
               <Text fontWeight="semibold">Venues</Text>
               <Badge colorScheme="purple">GET, POST, PATCH, DELETE</Badge>
             </HStack>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" color="cardText">
               Theater venue information and management
             </Text>
-            <Text fontSize="xs" color="gray.500" mt={1}>
+            <Text fontSize="xs" color="cardText" mt={1}>
               /api/me/venues, /api/venues/*
             </Text>
           </Box>
@@ -84,10 +84,10 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
               <Text fontWeight="semibold">Departments</Text>
               <Badge colorScheme="orange">GET, POST, PATCH, DELETE</Badge>
             </HStack>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" color="cardText">
               Technical departments (Sound, Lighting, etc.)
             </Text>
-            <Text fontSize="xs" color="gray.500" mt={1}>
+            <Text fontSize="xs" color="cardText" mt={1}>
               /api/me/departments, /api/departments/*
             </Text>
           </Box>
@@ -97,10 +97,10 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
               <Text fontWeight="semibold">Shows & Scripts</Text>
               <Badge colorScheme="red">GET, POST, PATCH, DELETE</Badge>
             </HStack>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" color="cardText">
               Theater productions and their call scripts
             </Text>
-            <Text fontSize="xs" color="gray.500" mt={1}>
+            <Text fontSize="xs" color="cardText" mt={1}>
               /api/shows/*, /api/scripts/*, /api/me/shows
             </Text>
           </Box>
@@ -110,10 +110,10 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
               <Text fontWeight="semibold">Script Elements</Text>
               <Badge colorScheme="teal">GET, POST, PATCH, DELETE</Badge>
             </HStack>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" color="cardText">
               Individual cues, notes, and groups within theater scripts - lighting cues, sound effects, stage directions, and safety-critical elements
             </Text>
-            <Text fontSize="xs" color="gray.500" mt={1}>
+            <Text fontSize="xs" color="cardText" mt={1}>
               /api/scripts/*/elements, /api/elements/*, bulk operations
             </Text>
           </Box>
@@ -123,10 +123,10 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
               <Text fontWeight="semibold">Development & Health</Text>
               <Badge colorScheme="gray">GET, POST</Badge>
             </HStack>
-            <Text fontSize="sm" color="gray.600">
+            <Text fontSize="sm" color="cardText">
               Health checks, diagnostics, and testing endpoints
             </Text>
-            <Text fontSize="xs" color="gray.500" mt={1}>
+            <Text fontSize="xs" color="cardText" mt={1}>
               /api/health, /api/dev/*
             </Text>
           </Box>

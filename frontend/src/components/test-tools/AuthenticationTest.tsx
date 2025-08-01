@@ -556,11 +556,11 @@ export const AuthenticationTest: React.FC = () => {
         <Badge colorScheme="purple" fontSize="sm" px={2} py={1}>AUTHENTICATION</Badge>
       </HStack>
 
-      <Text color="gray.600">
+      <Text color="cardText" mt={-2}>
         Test authentication and authorization systems. Validates JWT tokens, user sessions, protected endpoint access, permission scopes, and Clerk webhook security.
       </Text>
 
-      <HStack spacing={3}>
+      <HStack spacing={3} mt={-2}>
         <Button
           bg="blue.400"
           color="white"

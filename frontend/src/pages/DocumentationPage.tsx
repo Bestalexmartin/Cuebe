@@ -194,7 +194,7 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
   const tableBorderColor = useColorModeValue('gray.200', 'gray.600');
   const headingColor = useColorModeValue('blue.600', 'blue.300');
   const subHeadingColor = useColorModeValue('blue.500', 'blue.400');
-  
+
   // Color mode values for documentation cards
   const cardBg = useColorModeValue('white', 'gray.800');
   const itemBg = useColorModeValue('gray.50', 'gray.700');
@@ -437,8 +437,8 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
           <CardBody>
             <VStack align="stretch" spacing={3}>
               <HStack spacing={2}>
-                <Badge 
-                  colorScheme="blue" 
+                <Badge
+                  colorScheme="blue"
                   size="sm"
                   cursor="pointer"
                   _hover={{ bg: "blue.600", color: "white" }}
@@ -453,11 +453,11 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
               </HStack>
               <VStack spacing={2} align="stretch">
                 {docs.map((doc) => (
-                  <HStack 
-                    key={doc.name} 
-                    spacing={3} 
-                    p={2} 
-                    rounded="md" 
+                  <HStack
+                    key={doc.name}
+                    spacing={3}
+                    p={2}
+                    rounded="md"
                     bg={itemBg}
                     cursor="pointer"
                     _hover={{ bg: itemHoverBg, transform: "scale(1.02)" }}
@@ -471,7 +471,7 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
                       <Text fontWeight="medium" fontSize="sm" color={textColor}>
                         {doc.name}
                       </Text>
-                      <Text fontSize="xs" color={secondaryTextColor} noOfLines={1}>
+                      <Text fontSize="xs" color="cardText" noOfLines={1}>
                         {doc.description}
                       </Text>
                     </VStack>
@@ -527,7 +527,7 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
                       <Text fontWeight="medium" fontSize="sm" color={textColor}>
                         {doc.name}
                       </Text>
-                      <Text fontSize="xs" color={secondaryTextColor}>
+                      <Text fontSize="xs" color="cardText">
                         {doc.description}
                       </Text>
                     </VStack>

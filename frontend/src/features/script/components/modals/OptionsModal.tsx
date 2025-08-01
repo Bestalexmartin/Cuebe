@@ -18,6 +18,8 @@ interface OptionsModalProps {
     onSave: (preferences: UserPreferences) => Promise<void>;
     onPreview?: (preferences: UserPreferences) => void;
     onAutoSortChange?: (value: boolean) => Promise<void>;
+    onColorizeChange?: (value: boolean) => Promise<void>;
+    onClockTimesChange?: (value: boolean) => Promise<void>;
 }
 
 export const OptionsModal: React.FC<OptionsModalProps> = ({
@@ -26,27 +28,40 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
     initialOptions,
     onSave,
     onPreview,
-    onAutoSortChange
+    onAutoSortChange,
+    onColorizeChange,
+    onClockTimesChange
 }) => {
     const [localPreferences, setLocalPreferences] = useState<UserPreferences>(initialOptions);
 
-    // Update local state only when modal first opens
+    // Update local state when modal opens - always refresh with current values
     useEffect(() => {
         if (isOpen) {
-            setLocalPreferences(initialOptions);
+            // Force update with fresh initialOptions every time modal opens
+            setLocalPreferences({...initialOptions});
         }
-    }, [isOpen]);
+    }, [isOpen]); // Only depend on isOpen to force refresh every time modal opens
 
-    const handleColorizeChange = (checked: boolean) => {
+    const handleColorizeChange = async (checked: boolean) => {
         const newPreferences = { ...localPreferences, colorizeDepNames: checked };
         setLocalPreferences(newPreferences);
         onPreview?.(newPreferences);
+        
+        // Trigger immediate update if callback is provided
+        if (onColorizeChange) {
+            await onColorizeChange(checked);
+        }
     };
 
-    const handleClockTimesChange = (checked: boolean) => {
+    const handleClockTimesChange = async (checked: boolean) => {
         const newPreferences = { ...localPreferences, showClockTimes: checked };
         setLocalPreferences(newPreferences);
         onPreview?.(newPreferences);
+        
+        // Trigger immediate update if callback is provided
+        if (onClockTimesChange) {
+            await onClockTimesChange(checked);
+        }
     };
 
     const handleAutoSortChange = async (checked: boolean) => {

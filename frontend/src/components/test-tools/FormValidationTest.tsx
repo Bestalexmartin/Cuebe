@@ -79,11 +79,12 @@ export const FormValidationTest: React.FC = () => {
         <Badge colorScheme="blue" fontSize="sm" px={2} py={1}>FORM VALIDATION</Badge>
       </HStack>
 
-      <Text color="gray.600" fontSize="md">
+      <Text color="cardText" fontSize="md" mt={-2}>
         Test field-level validation errors. Try submitting with invalid data to see validation in action.
       </Text>
 
       <Box
+        mt={-2}
         p={6}
         bg="gray.50"
         _dark={{ bg: "gray.800", borderColor: "gray.500" }}

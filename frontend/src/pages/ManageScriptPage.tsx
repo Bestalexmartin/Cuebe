@@ -147,11 +147,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     } = useUserPreferences();
 
     // Use preview preferences when options modal is open, otherwise use saved preferences  
-    const activePreferences = useMemo(() =>
-        modalState.isOpen(MODAL_NAMES.OPTIONS) && previewPreferences
-            ? previewPreferences
-            : { darkMode, colorizeDepNames, showClockTimes, autoSortCues }
-        , [modalState, previewPreferences, darkMode, colorizeDepNames, showClockTimes, autoSortCues]);
+    // Note: activePreferences is calculated after currentAutoSortState is defined
 
     // Navigation state
     const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
@@ -195,6 +191,28 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         discardChanges,
         saveChanges
     } = editQueueHook;
+
+    // Calculate the current auto-sort state from edit queue operations
+    const currentAutoSortState = useMemo(() => {
+        // Start with the base preference value
+        let currentState = autoSortCues;
+        
+        // Check for any ENABLE_AUTO_SORT or DISABLE_AUTO_SORT operations in the pending operations
+        for (const operation of pendingOperations) {
+            if (operation.type === 'ENABLE_AUTO_SORT' || operation.type === 'DISABLE_AUTO_SORT') {
+                currentState = (operation as any).newPreferenceValue;
+            }
+        }
+        
+        return currentState;
+    }, [autoSortCues, pendingOperations]);
+
+    // Use preview preferences when options modal is open, otherwise use saved preferences  
+    const activePreferences = useMemo(() =>
+        modalState.isOpen(MODAL_NAMES.OPTIONS) && previewPreferences
+            ? previewPreferences
+            : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState }
+        , [modalState, previewPreferences, darkMode, colorizeDepNames, showClockTimes, currentAutoSortState]);
 
     const { insertElement } = useElementActions(
         editQueueElements,
@@ -646,13 +664,24 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     const handleAutoSortToggle = useCallback(
         async (value: boolean) => {
-            await updatePreference('autoSortCues', value);
-
             if (value && !activePreferences.autoSortCues && scriptId) {
+                // Enabling auto-sort - this will create the ENABLE_AUTO_SORT operation
                 handleAutoSortElements();
+            } else if (!value && activePreferences.autoSortCues) {
+                // Disabling auto-sort - create a disable operation for edit history
+                const disableOperation = {
+                    type: 'DISABLE_AUTO_SORT',
+                    elementId: 'auto-sort-preference',
+                    oldPreferenceValue: true,
+                    newPreferenceValue: false
+                };
+                applyLocalChange(disableOperation);
             }
+            
+            // Update the preference after creating the operation
+            await updatePreference('autoSortCues', value);
         },
-        [updatePreference, scriptId, activePreferences.autoSortCues, handleAutoSortElements]
+        [updatePreference, scriptId, activePreferences.autoSortCues, handleAutoSortElements, applyLocalChange]
     );
 
     // Handle immediate auto-sort when checkbox is clicked in modal
@@ -1081,9 +1110,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 isDuplicatingElement={isDuplicatingElement}
                 isSavingChanges={false} // TODO: Re-enable when save logic is implemented
                 previewPreferences={previewPreferences}
-                darkMode={darkMode}
-                colorizeDepNames={colorizeDepNames}
-                showClockTimes={showClockTimes}
+                darkMode={activePreferences.darkMode}
+                colorizeDepNames={activePreferences.colorizeDepNames}
+                showClockTimes={activePreferences.showClockTimes}
                 autoSortCues={activePreferences.autoSortCues}
                 onDeleteCancel={handleDeleteCancel}
                 onInitialDeleteConfirm={handleInitialDeleteConfirm}
@@ -1101,6 +1130,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onOptionsPreview={(preferences) => setPreviewPreferences(preferences)}
                 onOptionsSave={handleOptionsModalSave}
                 onAutoSortChange={handleAutoSortCheckboxChange}
+                onColorizeChange={async (value: boolean) => await updatePreference('colorizeDepNames', value)}
+                onClockTimesChange={async (value: boolean) => await updatePreference('showClockTimes', value)}
                 onConfirmDeleteCue={handleConfirmDeleteCue}
                 onConfirmDuplicate={handleConfirmDuplicate}
                 onUnsavedChangesCancel={handleUnsavedChangesCancel}
