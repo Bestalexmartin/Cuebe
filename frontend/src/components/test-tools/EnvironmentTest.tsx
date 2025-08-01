@@ -22,7 +22,7 @@ import {
   IconButton,
   useClipboard
 } from '@chakra-ui/react';
-import { useAuthToken } from '../../hooks/useAuthToken';
+import { useAuth } from '@clerk/clerk-react';
 import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
@@ -446,7 +446,7 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
   const [isRunningExternalServices, setIsRunningExternalServices] = useState(false);
   const [isRunningMemoryAudit, setIsRunningMemoryAudit] = useState(false);
   const { showSuccess, showError, showInfo } = useEnhancedToast();
-  const { token: authToken } = useAuthToken();
+  const { getToken } = useAuth();
 
   // Convert environment results to combined format when they change
   useEffect(() => {
@@ -468,6 +468,7 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
     try {
       showInfo('Testing Filesystem', 'Checking file and directory permissions...');
 
+      const authToken = await getToken();
       if (!authToken) {
         throw new Error('Authentication token not available');
       }
@@ -532,6 +533,7 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
     try {
       showInfo('Testing External Services', 'Checking connectivity to external services...');
 
+      const authToken = await getToken();
       if (!authToken) {
         throw new Error('Authentication token not available');
       }

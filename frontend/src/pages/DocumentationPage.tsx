@@ -30,7 +30,7 @@ import remarkGfm from 'remark-gfm';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BaseUtilityPage } from '../components/base/BaseUtilityPage';
 import { AppIcon } from '../components/AppIcon';
-import { useAuthToken } from '../hooks/useAuthToken';
+import { useAuth } from '@clerk/clerk-react';
 
 interface DocFile {
   name: string;
@@ -203,7 +203,7 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
   const secondaryTextColor = useColorModeValue('gray.600', 'whiteAlpha.800');
   const iconColor = useColorModeValue('gray.600', 'white');
 
-  const { token: authToken } = useAuthToken();
+  const { getToken } = useAuth();
 
   const markdownComponents = {
     h1: ({ children }: any) => (
@@ -392,6 +392,7 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
 
     try {
       const headers: Record<string, string> = {};
+      const authToken = await getToken();
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
