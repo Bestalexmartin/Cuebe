@@ -241,7 +241,6 @@ def create_script_for_show(
         elementOrder=1,
         isActive=True,
         groupLevel=0,
-        isSafetyCritical=False,
         createdBy=user.userID
         # departmentID intentionally left out (None/NULL)
     )
@@ -323,9 +322,7 @@ def duplicate_script(
             isActive=original_element.isActive,
             groupLevel=original_element.groupLevel,
             isCollapsed=original_element.isCollapsed,
-            isSafetyCritical=original_element.isSafetyCritical,
             cueNotes=original_element.cueNotes,
-            safetyNotes=original_element.safetyNotes,
             version=1,  # Reset version to 1 for new duplicate
             createdBy=user.userID
         )

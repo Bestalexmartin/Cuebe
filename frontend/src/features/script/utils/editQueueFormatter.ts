@@ -50,6 +50,9 @@ export class EditQueueFormatter {
             case 'UPDATE_SCRIPT_INFO':
                 return this.formatScriptInfoUpdate(operation);
             
+            case 'UPDATE_ELEMENT':
+                return this.formatElementUpdate(operation, elementName);
+            
             default:
                 return `Unknown operation on "${elementName}"`;
         }
@@ -95,6 +98,72 @@ export class EditQueueFormatter {
         
         const fieldNames = changedFields.map(field => fieldDisplayNames[field] || field).join(', ');
         return `Updated script ${fieldNames}`;
+    }
+    
+    /**
+     * Format element updates with appropriate descriptions
+     */
+    private static formatElementUpdate(operation: any, elementName: string): string {
+        const changes = operation.changes || {};
+        const changedFields = Object.keys(changes);
+        
+        if (changedFields.length === 0) {
+            return `Updated "${elementName}"`;
+        }
+        
+        if (changedFields.length === 1) {
+            const field = changedFields[0];
+            const change = changes[field];
+            const fieldDisplayNames: Record<string, string> = {
+                'description': 'description',
+                'cueID': 'cue ID',
+                'cueNotes': 'notes',
+                'priority': 'priority',
+                'departmentID': 'department',
+                'customColor': 'color',
+                'duration': 'duration',
+                'timeOffsetMs': 'time offset',
+                'executionStatus': 'execution status',
+                'locationDetails': 'location',
+                'fadeIn': 'fade in',
+                'fadeOut': 'fade out',
+                'parentElementID': 'parent element',
+                'groupLevel': 'group level',
+                'isCollapsed': 'collapsed',
+                'triggerType': 'trigger type',
+                'followsCueID': 'follows cue'
+            };
+            
+            const fieldName = fieldDisplayNames[field] || this.formatFieldName(field);
+            const oldValue = this.formatValue(field, change.oldValue);
+            const newValue = this.formatValue(field, change.newValue);
+            
+            return `Updated "${elementName}" ${fieldName} from "${oldValue}" to "${newValue}"`;
+        }
+        
+        // Multiple fields changed
+        const fieldDisplayNames: Record<string, string> = {
+            'description': 'description',
+            'cueID': 'ID',
+            'cueNotes': 'notes',
+            'priority': 'priority',
+            'departmentID': 'department',
+            'customColor': 'color',
+            'duration': 'duration',
+            'timeOffsetMs': 'time',
+            'executionStatus': 'status',
+            'locationDetails': 'location',
+            'fadeIn': 'fade in',
+            'fadeOut': 'fade out',
+            'parentElementID': 'parent',
+            'groupLevel': 'group level',
+            'isCollapsed': 'collapsed state',
+            'triggerType': 'trigger',
+            'followsCueID': 'follows cue'
+        };
+        
+        const fieldNames = changedFields.map(field => fieldDisplayNames[field] || this.formatFieldName(field)).join(', ');
+        return `Updated "${elementName}" ${fieldNames}`;
     }
     
     /**
@@ -302,6 +371,7 @@ export class EditQueueFormatter {
         const typeDescriptions = {
             'REORDER': 'moves',
             'UPDATE_FIELD': 'updates',
+            'UPDATE_ELEMENT': 'updates',
             'UPDATE_TIME_OFFSET': 'time changes',
             'CREATE_ELEMENT': 'additions',
             'DELETE_ELEMENT': 'deletions',

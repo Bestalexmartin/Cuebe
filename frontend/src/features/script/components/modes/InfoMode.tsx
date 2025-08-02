@@ -1,7 +1,7 @@
 // frontend/src/features/script/components/modes/InfoMode.tsx
 
 import React from 'react';
-import { VStack, HStack, FormControl, FormLabel, Input, Select, Textarea } from '@chakra-ui/react';
+import { VStack, HStack, FormControl, FormLabel, Input, Select, Textarea, FormErrorMessage } from '@chakra-ui/react';
 import { useValidatedForm } from '../../../../hooks/useValidatedForm';
 import { SCRIPT_STATUS_OPTIONS } from '../../constants';
 
@@ -21,7 +21,7 @@ interface InfoModeProps {
 export const InfoMode: React.FC<InfoModeProps> = ({ form }) => {
     return (
         <VStack spacing={4} align="stretch" width="100%">
-            <FormControl isRequired>
+            <FormControl isRequired isInvalid={!!form.getFieldError('scriptName')}>
                 <FormLabel>Script Name</FormLabel>
                 <Input
                     value={form.formData.scriptName}
@@ -29,9 +29,12 @@ export const InfoMode: React.FC<InfoModeProps> = ({ form }) => {
                     onBlur={() => form.validateField('scriptName')}
                     placeholder="Enter script name"
                 />
+                <FormErrorMessage>
+                    {form.getFieldError('scriptName')?.message}
+                </FormErrorMessage>
             </FormControl>
 
-            <FormControl isRequired>
+            <FormControl>
                 <FormLabel>Script Status</FormLabel>
                 <Select
                     value={form.formData.scriptStatus}
@@ -67,7 +70,7 @@ export const InfoMode: React.FC<InfoModeProps> = ({ form }) => {
                 </FormControl>
             </HStack>
 
-            <FormControl>
+            <FormControl isInvalid={!!form.getFieldError('scriptNotes')}>
                 <FormLabel>Notes</FormLabel>
                 <Textarea
                     value={form.formData.scriptNotes}
@@ -77,6 +80,9 @@ export const InfoMode: React.FC<InfoModeProps> = ({ form }) => {
                     minHeight="120px"
                     resize="vertical"
                 />
+                <FormErrorMessage>
+                    {form.getFieldError('scriptNotes')?.message}
+                </FormErrorMessage>
             </FormControl>
         </VStack>
     );

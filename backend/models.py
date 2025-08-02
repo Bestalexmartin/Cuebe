@@ -39,6 +39,7 @@ class ExecutionStatus(enum.Enum):
 
 class PriorityLevel(enum.Enum):
     """Priority levels for script elements"""
+    SAFETY = "SAFETY"
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     NORMAL = "NORMAL"
@@ -408,9 +409,7 @@ class ScriptElement(Base):
     groupLevel = Column(Integer, nullable=False, server_default='0')
     isCollapsed = Column(Boolean, nullable=False, server_default='false')
     
-    # Safety and metadata
-    isSafetyCritical = Column(Boolean, nullable=False, server_default='false')
-    safetyNotes = Column(Text, nullable=True)
+    # Metadata
     version = Column(Integer, nullable=False, server_default='1')
     
     # Status

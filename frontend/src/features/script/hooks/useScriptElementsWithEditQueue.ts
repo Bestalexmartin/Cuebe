@@ -65,7 +65,6 @@ export const useScriptElementsWithEditQueue = (
     
     // Apply edit operations to server elements to get current view
     const elements = useMemo(() => {
-        // console.log(`🔧 useScriptElementsWithEditQueue: Computing elements - serverElements: ${serverElements.length}, operations: ${operations.length}`);
         let currentElements = [...serverElements];
         
         // Apply each operation in sequence to build current state
@@ -74,7 +73,7 @@ export const useScriptElementsWithEditQueue = (
         });
         
         return currentElements;
-    }, [serverElements.length, serverElements.map(el => el.elementID).join(','), operations.length, operations.map(op => op.id).join(',')]);
+    }, [serverElements, operations]);
     
     const fetchElements = useCallback(async () => {
         if (!scriptId) {
@@ -127,8 +126,8 @@ export const useScriptElementsWithEditQueue = (
     }, [scriptId, getToken, JSON.stringify(options)]);
     
     const applyLocalChange = useCallback((operation: Omit<EditOperation, 'id' | 'timestamp' | 'description'>) => {
-        editQueueRef.current.addOperation(operation);
-    }, []);
+        editQueue.addOperation(operation);
+    }, [editQueue.addOperation]);
     
     const saveChanges = useCallback(async (): Promise<boolean> => {
         if (!scriptId || editQueueRef.current.operations.length === 0) {
@@ -339,6 +338,20 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
         case 'UPDATE_SCRIPT_INFO':
             // Script info operations don't affect elements, just track for undo/redo
             return elements;
+            
+        case 'UPDATE_ELEMENT':
+            const updateElementOp = operation as any;
+            return elements.map(el => {
+                if (el.elementID === operation.elementId) {
+                    const updatedElement = { ...el };
+                    // Apply all field changes from the operation
+                    Object.entries(updateElementOp.changes).forEach(([field, change]: [string, any]) => {
+                        (updatedElement as any)[field] = change.newValue;
+                    });
+                    return updatedElement;
+                }
+                return el;
+            });
             
         default:
             return elements;

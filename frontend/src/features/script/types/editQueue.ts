@@ -77,6 +77,14 @@ export interface UpdateScriptInfoOperation extends BaseEditOperation {
     }>;
 }
 
+export interface UpdateElementOperation extends BaseEditOperation {
+    type: 'UPDATE_ELEMENT';
+    changes: Record<string, {
+        oldValue: any;
+        newValue: any;
+    }>;
+}
+
 export type EditOperation = 
     | ReorderOperation 
     | UpdateFieldOperation 
@@ -86,7 +94,8 @@ export type EditOperation =
     | BulkReorderOperation
     | EnableAutoSortOperation
     | DisableAutoSortOperation
-    | UpdateScriptInfoOperation;
+    | UpdateScriptInfoOperation
+    | UpdateElementOperation;
 
 export interface EditQueue {
     operations: EditOperation[];
