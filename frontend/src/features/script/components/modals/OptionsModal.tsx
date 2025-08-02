@@ -104,7 +104,10 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                             mb="0"
                             fontSize="md"
                             fontWeight="semibold"
-                            onClick={() => handleColorizeChange(!localPreferences.colorizeDepNames)}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleColorizeChange(!localPreferences.colorizeDepNames);
+                            }}
                             cursor="pointer"
                         >
                             Colorize Department Names
@@ -122,7 +125,10 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                             mb="0"
                             fontSize="md"
                             fontWeight="semibold"
-                            onClick={() => handleAutoSortChange(!localPreferences.autoSortCues)}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleAutoSortChange(!localPreferences.autoSortCues);
+                            }}
                             cursor="pointer"
                         >
                             Auto-Sort Cues
@@ -140,7 +146,10 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                             mb="0"
                             fontSize="md"
                             fontWeight="semibold"
-                            onClick={() => handleClockTimesChange(!localPreferences.showClockTimes)}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                handleClockTimesChange(!localPreferences.showClockTimes);
+                            }}
                             cursor="pointer"
                         >
                             Show Clock Times

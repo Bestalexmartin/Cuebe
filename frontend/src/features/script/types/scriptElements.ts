@@ -1,25 +1,25 @@
 // frontend/src/features/script/types/scriptElements.ts
 
 // Base types and enums
-export type ScriptElementType = 'cue' | 'note';
+export type ScriptElementType = 'CUE' | 'NOTE';
 
 export type TriggerType = 
-  | 'manual'        // Operator triggered
-  | 'time'          // At specific time offset
-  | 'auto'          // Auto-follows previous cue
-  | 'follow'        // Follows specific cue ID
-  | 'go'            // On "GO" command
-  | 'standby';      // On "STANDBY" command
+  | 'MANUAL'        // Operator triggered
+  | 'TIME'          // At specific time offset
+  | 'AUTO'          // Auto-follows previous cue
+  | 'FOLLOW'        // Follows specific cue ID
+  | 'GO'            // On "GO" command
+  | 'STANDBY';      // On "STANDBY" command
 
 export type ExecutionStatus = 
-  | 'pending'       // Not yet executed
-  | 'ready'         // Ready to execute
-  | 'executing'     // Currently executing
-  | 'completed'     // Successfully executed
-  | 'skipped'       // Skipped during performance
-  | 'failed';       // Execution failed
+  | 'PENDING'       // Not yet executed
+  | 'READY'         // Ready to execute
+  | 'EXECUTING'     // Currently executing
+  | 'COMPLETED'     // Successfully executed
+  | 'SKIPPED'       // Skipped during performance
+  | 'FAILED';       // Execution failed
 
-export type PriorityLevel = 'critical' | 'high' | 'normal' | 'low' | 'optional';
+export type PriorityLevel = 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW' | 'OPTIONAL';
 
 export type LocationArea = 
   | 'stage_left' | 'stage_right' | 'center_stage' | 'upstage' | 'downstage'
@@ -100,7 +100,7 @@ export interface ConditionalRule {
 
 // Specific element types extending the base
 export interface CueElement extends ScriptElementBase {
-  type: 'cue';
+  type: 'CUE';
   cueID: string;                       // Required for cues
   departmentID: string;                // Required for cues
   departmentName?: string;             // Department name from relationship
@@ -109,7 +109,7 @@ export interface CueElement extends ScriptElementBase {
 }
 
 export interface NoteElement extends ScriptElementBase {
-  type: 'note';
+  type: 'NOTE';
   departmentID?: string;               // Optional for notes
   departmentName?: string;             // Department name from relationship
   departmentColor?: string;            // Department color from relationship

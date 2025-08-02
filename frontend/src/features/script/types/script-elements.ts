@@ -58,13 +58,13 @@ export interface ScriptElement {
     conditional_rules?: ScriptElementConditionalRule[];
 }
 
-export type ElementType = 'cue' | 'note';
+export type ElementType = 'CUE' | 'NOTE';
 
-export type TriggerType = 'manual' | 'time' | 'auto' | 'follow' | 'go' | 'standby';
+export type TriggerType = 'MANUAL' | 'TIME' | 'AUTO' | 'FOLLOW' | 'GO' | 'STANDBY';
 
-export type ExecutionStatus = 'pending' | 'ready' | 'executing' | 'completed' | 'skipped' | 'failed';
+export type ExecutionStatus = 'PENDING' | 'READY' | 'EXECUTING' | 'COMPLETED' | 'SKIPPED' | 'FAILED';
 
-export type PriorityLevel = 'critical' | 'high' | 'normal' | 'low' | 'optional';
+export type PriorityLevel = 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW' | 'OPTIONAL';
 
 export type LocationArea = 
     | 'stage_left' | 'stage_right' | 'center_stage' | 'upstage' | 'downstage'

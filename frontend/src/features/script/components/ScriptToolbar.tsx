@@ -1,7 +1,7 @@
 // frontend/src/features/script/components/ScriptToolbar.tsx
 
 import React from 'react';
-import { VStack, Button, Divider, Text } from '@chakra-ui/react';
+import { HStack, VStack, Button, Text, Divider, Box } from '@chakra-ui/react';
 import { AppIcon } from '../../../components/AppIcon';
 import { ToolButton } from '../types/tool-button';
 
@@ -16,16 +16,42 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
     onModeChange,
     activeMode
 }) => {
-    // Split buttons into navigation and other categories
-    const navigationButtons = toolButtons.filter(tool => 
-        tool.id === 'jump-top' || tool.id === 'jump-bottom'
-    );
-    const viewStateButtons = toolButtons.filter(tool => 
+    // Define left column buttons based on mode
+    const getLeftColumnButtons = () => {
+        const navigationButtons = toolButtons.filter(tool => 
+            tool.id === 'jump-top' || tool.id === 'jump-bottom'
+        );
+
+        if (activeMode === 'view') {
+            // View mode: Head, Tail, Play, Share
+            const modeButtons = toolButtons.filter(tool => 
+                ['play', 'share'].includes(tool.id)
+            );
+            return [...navigationButtons, ...modeButtons];
+        } else if (activeMode === 'edit') {
+            // Edit mode: Head, Tail, Add, Modify, Copy, Stack, Trash
+            const modeButtons = toolButtons.filter(tool => 
+                ['add-element', 'edit-element', 'duplicate-element', 'group-elements', 'delete-element'].includes(tool.id)
+            );
+            return [...navigationButtons, ...modeButtons];
+        } else if (activeMode === 'info') {
+            // Info mode: Head, Tail
+            return navigationButtons;
+        } else if (activeMode === 'history') {
+            // History mode: Head, Tail, Clear
+            const clearButton = toolButtons.filter(tool => tool.id === 'clear-history');
+            return [...navigationButtons, ...clearButton];
+        }
+        
+        return navigationButtons;
+    };
+
+    // Right column always contains: View, Edit, Info, History, Exit
+    const rightColumnButtons = toolButtons.filter(tool => 
         ['view', 'edit', 'info', 'history', 'exit'].includes(tool.id)
     );
-    const toolButtons_filtered = toolButtons.filter(tool => 
-        !['jump-top', 'jump-bottom', 'view', 'edit', 'info', 'history', 'exit'].includes(tool.id)
-    );
+
+    const leftColumnButtons = getLeftColumnButtons();
 
     const renderButton = (tool: ToolButton) => (
         <Button
@@ -73,35 +99,29 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
     );
 
     return (
-        <VStack spacing={2}>
-            {/* Navigation buttons */}
-            {navigationButtons.map(renderButton)}
+        <HStack spacing={0} align="flex-start" width="100%">
+            {/* Left Column */}
+            <VStack spacing={1} flex={1}>
+                {leftColumnButtons.map(renderButton)}
+            </VStack>
             
-            {/* Separator after navigation */}
-            {navigationButtons.length > 0 && (
-                <Divider 
-                    orientation="horizontal"
-                    borderColor="container.border"
-                    width="40px"
-                    my={2}
-                />
-            )}
+            {/* Center spacing */}
+            <Box width="16px" />
             
-            {/* View state buttons */}
-            {viewStateButtons.map(renderButton)}
+            {/* Vertical Separator */}
+            <Box 
+                width="1px" 
+                alignSelf="stretch"
+                bg="container.border"
+            />
             
-            {/* Separator before tools (only if tools exist) */}
-            {toolButtons_filtered.length > 0 && activeMode !== 'info' && (
-                <Divider 
-                    orientation="horizontal"
-                    borderColor="container.border"
-                    width="40px"
-                    my={2}
-                />
-            )}
+            {/* Center spacing */}
+            <Box width="16px" />
             
-            {/* Tool buttons */}
-            {toolButtons_filtered.map(renderButton)}
-        </VStack>
+            {/* Right Column */}
+            <VStack spacing={1} flex={1}>
+                {rightColumnButtons.map(renderButton)}
+            </VStack>
+        </HStack>
     );
 };

@@ -25,12 +25,7 @@ export interface UpdateFieldOperation extends BaseEditOperation {
 export interface CreateElementOperation extends BaseEditOperation {
     type: 'CREATE_ELEMENT';
     elementData: any;
-}
-
-export interface CreateElementAtIndexOperation extends BaseEditOperation {
-    type: 'CREATE_ELEMENT_AT_INDEX';
-    elementData: any;
-    insertIndex: number;
+    insertIndex?: number; // Optional - if provided, insert at this index
 }
 
 export interface DeleteElementOperation extends BaseEditOperation {
@@ -68,15 +63,30 @@ export interface EnableAutoSortOperation extends BaseEditOperation {
     }>;
 }
 
+export interface DisableAutoSortOperation extends BaseEditOperation {
+    type: 'DISABLE_AUTO_SORT';
+    oldPreferenceValue: boolean;
+    newPreferenceValue: boolean;
+}
+
+export interface UpdateScriptInfoOperation extends BaseEditOperation {
+    type: 'UPDATE_SCRIPT_INFO';
+    changes: Record<string, {
+        oldValue: any;
+        newValue: any;
+    }>;
+}
+
 export type EditOperation = 
     | ReorderOperation 
     | UpdateFieldOperation 
     | CreateElementOperation 
-    | CreateElementAtIndexOperation
     | DeleteElementOperation 
     | UpdateTimeOffsetOperation
     | BulkReorderOperation
-    | EnableAutoSortOperation;
+    | EnableAutoSortOperation
+    | DisableAutoSortOperation
+    | UpdateScriptInfoOperation;
 
 export interface EditQueue {
     operations: EditOperation[];

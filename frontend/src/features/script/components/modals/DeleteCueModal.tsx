@@ -51,10 +51,8 @@ export const DeleteCueModal: React.FC<DeleteCueModalProps> = ({
                             <Text fontSize="md" textAlign="center">
                                 Are you sure you want to delete "{cueName}"?
                             </Text>
-                            <Text fontSize="md" color="red.500" fontWeight="bold" textAlign="center" lineHeight="1.4">
-                                This script element will be permanently removed.
-                                <br />
-                                This action cannot be undone.
+                            <Text fontSize="md" color="orange.500" fontWeight="bold" textAlign="center" lineHeight="1.4">
+                                This script element will be removed from your script but may be restored from the edit history before saving.
                             </Text>
                         </VStack>
                     </VStack>

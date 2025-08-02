@@ -153,483 +153,32 @@ def get_script_element(
     return element
 
 
-@router.post("/scripts/{script_id}/elements", response_model=schemas.ScriptElement)
-def create_script_element(
-    script_id: UUID,
-    element: schemas.ScriptElementCreate,
-    user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    auto_sort: bool = Query(False, description="Whether to insert element in time-sorted position")
-):
-    """Create a new script element."""
-    
-    # Verify the script exists and user has access
-    script = db.query(models.Script).options(
-        joinedload(models.Script.show)
-    ).filter(models.Script.scriptID == script_id).first()
-    
-    if not script:
-        raise HTTPException(status_code=404, detail="Script not found")
-    
-    # Security check: ensure user owns the show
-    if script.show.ownerID != user.userID:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this script")
-    
-    # If department is specified, verify it exists and user owns it
-    if element.departmentID:
-        department = db.query(models.Department).filter(
-            models.Department.departmentID == element.departmentID,
-            models.Department.ownerID == user.userID
-        ).first()
-        if not department:
-            raise HTTPException(status_code=404, detail="Department not found or not accessible")
-    
-    # Calculate sequence number - conditionally sort by time offset if auto_sort is enabled
-    if element.sequence is None:
-        if auto_sort:
-            # AUTO-SORT ON: Insert element in correct time-based position
-            # Get all existing elements ordered by time offset, then by current sequence
-            existing_elements = db.query(models.ScriptElement).filter(
-                models.ScriptElement.scriptID == script_id,
-                models.ScriptElement.isActive == True
-            ).order_by(
-                models.ScriptElement.timeOffsetMs.asc(),
-                models.ScriptElement.sequence.asc()
-            ).all()
-            
-            # Find the correct position to insert this element based on timeOffsetMs
-            insert_position = 1
-            for existing_element in existing_elements:
-                if existing_element.timeOffsetMs <= (element.timeOffsetMs or 0):
-                    insert_position = existing_element.sequence + 1
-                else:
-                    break
-            
-            # Update sequence numbers of elements that should come after this one
-            elements_to_update = db.query(models.ScriptElement).filter(
-                models.ScriptElement.scriptID == script_id,
-                models.ScriptElement.sequence >= insert_position,
-                models.ScriptElement.isActive == True
-            ).all()
-            
-            for elem in elements_to_update:
-                elem.sequence += 1
-                elem.elementOrder = elem.sequence  # Update legacy field too
-            
-            # Set the sequence for the new element
-            element.sequence = insert_position
-        else:
-            # AUTO-SORT OFF: Simply add to end of sequence
-            max_sequence = db.query(models.ScriptElement.sequence).filter(
-                models.ScriptElement.scriptID == script_id
-            ).order_by(models.ScriptElement.sequence.desc()).first()
-            element.sequence = (max_sequence[0] + 1) if max_sequence and max_sequence[0] else 1
-    
-    # Create the element
-    try:
-        new_element = models.ScriptElement(
-            scriptID=script_id,
-            elementType=models.ElementType(element.elementType),
-            sequence=element.sequence,
-            timeOffsetMs=element.timeOffsetMs or 0,
-            triggerType=models.TriggerType(element.triggerType) if element.triggerType else models.TriggerType.MANUAL,
-            cueID=element.cueID,
-            description=element.description or "",
-            cueNotes=element.cueNotes,
-            departmentID=element.departmentID,
-            location=models.LocationArea(element.location) if element.location else None,
-            locationDetails=element.locationDetails,
-            duration=element.duration,
-            fadeIn=element.fadeIn,
-            fadeOut=element.fadeOut,
-            priority=models.PriorityLevel(element.priority) if element.priority else models.PriorityLevel.NORMAL,
-            executionStatus=models.ExecutionStatus.PENDING,
-            parentElementID=element.parentElementID,
-            groupLevel=element.groupLevel or 0,
-            isSafetyCritical=element.isSafetyCritical or False,
-            safetyNotes=element.safetyNotes,
-            departmentColor=element.departmentColor,
-            customColor=element.customColor,
-            createdBy=user.userID,
-            updatedBy=user.userID,
-            # Set legacy fields for compatibility
-            elementOrder=element.sequence or 1,
-            elementDescription=element.description or ""
-        )
-        
-        db.add(new_element)
-        db.commit()
-        db.refresh(new_element)
-        
-        logger.info(f"Created script element {new_element.elementID} for script {script_id}")
-        return new_element
-        
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid enum value: {str(e)}")
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to create script element: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create element: {str(e)}")
+# REMOVED: Single element creation endpoint - use batch-update for all operations
 
 
-@router.patch("/elements/{element_id}", response_model=schemas.ScriptElement)
-def update_script_element(
-    element_id: UUID,
-    element_update: schemas.ScriptElementUpdate,
-    user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Update a script element."""
-    
-    # Get the element with script and show
-    element = db.query(models.ScriptElement).options(
-        joinedload(models.ScriptElement.script).joinedload(models.Script.show)
-    ).filter(models.ScriptElement.elementID == element_id).first()
-    
-    if not element:
-        raise HTTPException(status_code=404, detail="Script element not found")
-    
-    # Security check: ensure user owns the show
-    if element.script.show.ownerID != user.userID:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this element")
-    
-    # Get update data, excluding unset fields
-    update_data = element_update.model_dump(exclude_unset=True)
-    
-    try:
-        # Handle enum conversions and special fields
-        for field, value in update_data.items():
-            if field == "elementType" and value is not None:
-                setattr(element, field, models.ElementType(value))
-            elif field == "triggerType" and value is not None:
-                setattr(element, field, models.TriggerType(value))
-            elif field == "priority" and value is not None:
-                setattr(element, field, models.PriorityLevel(value))
-            elif field == "executionStatus" and value is not None:
-                setattr(element, field, models.ExecutionStatus(value))
-            elif field == "location" and value is not None:
-                setattr(element, field, models.LocationArea(value))
-            elif field == "timeOffsetMs" and value is not None:
-                setattr(element, field, value)
-            elif field == "description" and value is not None:
-                # Update both new and legacy description fields
-                setattr(element, field, value)
-                setattr(element, "elementDescription", value)
-            elif field == "sequence" and value is not None:
-                # Update both sequence and legacy elementOrder
-                setattr(element, field, value)
-                setattr(element, "elementOrder", value)
-            elif hasattr(element, field):
-                setattr(element, field, value)
-        
-        # Always update the updatedBy and version
-        setattr(element, "updatedBy", user.userID)
-        setattr(element, "version", element.version + 1)
-        setattr(element, "dateUpdated", datetime.now(timezone.utc))
-        
-        db.commit()
-        db.refresh(element)
-        
-        logger.info(f"Updated script element {element_id}")
-        return element
-        
-    except ValueError as e:
-        db.rollback()
-        raise HTTPException(status_code=400, detail=f"Invalid enum value: {str(e)}")
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to update script element {element_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to update element: {str(e)}")
+# REMOVED: Single element update endpoint - use batch-update for all operations
 
 
-@router.delete("/elements/{element_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_script_element(
-    element_id: UUID,
-    user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-    soft_delete: bool = Query(True, description="Soft delete (set isActive=False) or hard delete")
-):
-    """Delete a script element (soft delete by default)."""
-    
-    # Get the element with script and show
-    element = db.query(models.ScriptElement).options(
-        joinedload(models.ScriptElement.script).joinedload(models.Script.show)
-    ).filter(models.ScriptElement.elementID == element_id).first()
-    
-    if not element:
-        raise HTTPException(status_code=404, detail="Script element not found")
-    
-    # Security check: ensure user owns the show
-    if element.script.show.ownerID != user.userID:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this element")
-    
-    try:
-        if soft_delete:
-            # Soft delete: just mark as inactive
-            element.isActive = False
-            element.updatedBy = user.userID
-            element.version = element.version + 1
-            element.dateUpdated = datetime.now(timezone.utc)
-            logger.info(f"Soft deleted script element {element_id}")
-        else:
-            # Hard delete: remove from database
-            db.delete(element)
-            logger.info(f"Hard deleted script element {element_id}")
-        
-        db.commit()
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-        
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to delete script element {element_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to delete element: {str(e)}")
+# REMOVED: Single element delete endpoint - use batch-update for all operations
 
 
-@router.post("/elements/{element_id}/restore", response_model=schemas.ScriptElement)
-def restore_script_element(
-    element_id: UUID,
-    user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Restore a soft-deleted script element."""
-    
-    # Get the element with script and show (including inactive ones)
-    element = db.query(models.ScriptElement).options(
-        joinedload(models.ScriptElement.script).joinedload(models.Script.show)
-    ).filter(models.ScriptElement.elementID == element_id).first()
-    
-    if not element:
-        raise HTTPException(status_code=404, detail="Script element not found")
-    
-    # Security check: ensure user owns the show
-    if element.script.show.ownerID != user.userID:
-        raise HTTPException(status_code=403, detail="Not authorized to restore this element")
-    
-    if element.isActive:
-        raise HTTPException(status_code=400, detail="Element is already active")
-    
-    try:
-        element.isActive = True
-        element.updatedBy = user.userID
-        element.version = element.version + 1
-        element.dateUpdated = datetime.now(timezone.utc)
-        
-        db.commit()
-        db.refresh(element)
-        
-        logger.info(f"Restored script element {element_id}")
-        return element
-        
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to restore script element {element_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to restore element: {str(e)}")
+# REMOVED: Single element restore endpoint - use batch-update for all operations
 
 
-@router.post("/scripts/{script_id}/calculate-show-start-duration")
-def calculate_show_start_duration(
-    script_id: UUID,
-    user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Calculate and update SHOW START duration for view/edit modes."""
-    
-    # Verify the script exists and user has access
-    script = db.query(models.Script).options(
-        joinedload(models.Script.show)
-    ).filter(models.Script.scriptID == script_id).first()
-    
-    if not script:
-        raise HTTPException(status_code=404, detail="Script not found")
-    
-    # Security check: ensure user owns the show
-    if script.show.ownerID != user.userID:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this script")
-    
-    try:
-        # Get all elements for this script
-        elements = db.query(models.ScriptElement).filter(
-            models.ScriptElement.scriptID == script_id,
-            models.ScriptElement.isActive == True
-        ).all()
-        
-        # Auto-populate SHOW START duration if missing
-        _auto_populate_show_start_duration(db, script, elements)
-        
-        return {"message": "SHOW START duration calculated successfully"}
-        
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to calculate SHOW START duration for script {script_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to calculate duration: {str(e)}")
+# REMOVED: Calculate show start duration endpoint - handled automatically in batch-update
 
 
-@router.post("/scripts/{script_id}/auto-sort-elements")
-def auto_sort_script_elements(
-    script_id: UUID,
-    user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Auto-sort all script elements by time offset."""
-    
-    # Verify the script exists and user has access
-    script = db.query(models.Script).options(
-        joinedload(models.Script.show)
-    ).filter(models.Script.scriptID == script_id).first()
-    
-    if not script:
-        raise HTTPException(status_code=404, detail="Script not found")
-    
-    # Security check: ensure user owns the show
-    if script.show.ownerID != user.userID:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this script")
-    
-    try:
-        # Get all active elements for this script ordered by time offset
-        elements = db.query(models.ScriptElement).filter(
-            models.ScriptElement.scriptID == script_id,
-            models.ScriptElement.isActive == True
-        ).order_by(
-            models.ScriptElement.timeOffsetMs.asc(),
-            models.ScriptElement.sequence.asc()
-        ).all()
-        
-        # Update sequence numbers based on time offset order
-        for index, element in enumerate(elements, 1):
-            element.sequence = index
-            element.elementOrder = index  # Update legacy field too
-            element.updatedBy = user.userID
-            element.version = element.version + 1
-            element.dateUpdated = datetime.now(timezone.utc)
-        
-        db.commit()
-        logger.info(f"Auto-sorted {len(elements)} elements in script {script_id}")
-        
-        return {"message": f"Successfully auto-sorted {len(elements)} elements by time offset"}
-        
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to auto-sort elements in script {script_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to auto-sort elements: {str(e)}")
+# REMOVED: Auto-sort elements endpoint - handled via batch-update with ENABLE_AUTO_SORT operations
 
 
 # =============================================================================
 # BULK OPERATIONS
 # =============================================================================
 
-@router.patch("/scripts/{script_id}/elements/reorder")
-def reorder_script_elements(
-    script_id: UUID,
-    reorder_data: schemas.ScriptElementReorderRequest,
-    user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Reorder script elements by updating their sequence numbers."""
-    
-    # Verify the script exists and user has access
-    script = db.query(models.Script).options(
-        joinedload(models.Script.show)
-    ).filter(models.Script.scriptID == script_id).first()
-    
-    if not script:
-        raise HTTPException(status_code=404, detail="Script not found")
-    
-    # Security check: ensure user owns the show
-    if script.show.ownerID != user.userID:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this script")
-    
-    try:
-        # Update sequence numbers for each element
-        for item in reorder_data.elements:
-            element = db.query(models.ScriptElement).filter(
-                and_(
-                    models.ScriptElement.elementID == item.elementID,
-                    models.ScriptElement.scriptID == script_id
-                )
-            ).first()
-            
-            if element:
-                element.sequence = item.sequence
-                element.elementOrder = item.sequence  # Update legacy field too
-                element.updatedBy = user.userID
-                element.version = element.version + 1
-                element.dateUpdated = datetime.now(timezone.utc)
-        
-        db.commit()
-        logger.info(f"Reordered {len(reorder_data.elements)} elements in script {script_id}")
-        
-        return {"message": f"Successfully reordered {len(reorder_data.elements)} elements"}
-        
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to reorder elements in script {script_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to reorder elements: {str(e)}")
+# REMOVED: Reorder elements endpoint - use batch-update with REORDER/BULK_REORDER operations
 
 
-@router.patch("/scripts/{script_id}/elements/bulk-update")
-def bulk_update_script_elements(
-    script_id: UUID,
-    bulk_update: schemas.ScriptElementBulkUpdate,
-    user: models.User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Bulk update multiple script elements."""
-    
-    # Verify the script exists and user has access
-    script = db.query(models.Script).options(
-        joinedload(models.Script.show)
-    ).filter(models.Script.scriptID == script_id).first()
-    
-    if not script:
-        raise HTTPException(status_code=404, detail="Script not found")
-    
-    # Security check: ensure user owns the show
-    if script.show.ownerID != user.userID:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this script")
-    
-    try:
-        updated_count = 0
-        
-        # Get all elements to update
-        elements = db.query(models.ScriptElement).filter(
-            and_(
-                models.ScriptElement.scriptID == script_id,
-                models.ScriptElement.elementID.in_(bulk_update.element_ids)
-            )
-        ).all()
-        
-        # Apply updates to each element
-        for element in elements:
-            if bulk_update.department_id is not None:
-                element.departmentID = bulk_update.department_id
-            if bulk_update.priority is not None:
-                element.priority = models.PriorityLevel(bulk_update.priority)
-            if bulk_update.execution_status is not None:
-                element.executionStatus = models.ExecutionStatus(bulk_update.execution_status)
-            if bulk_update.location is not None:
-                element.location = models.LocationArea(bulk_update.location) if bulk_update.location else None
-            if bulk_update.is_safety_critical is not None:
-                element.isSafetyCritical = bulk_update.is_safety_critical
-            if bulk_update.custom_color is not None:
-                element.customColor = bulk_update.custom_color
-            
-            element.updatedBy = user.userID
-            element.version = element.version + 1
-            element.dateUpdated = datetime.now(timezone.utc)
-            updated_count += 1
-        
-        db.commit()
-        logger.info(f"Bulk updated {updated_count} elements in script {script_id}")
-        
-        return {"message": f"Successfully updated {updated_count} elements"}
-        
-    except ValueError as e:
-        db.rollback()
-        raise HTTPException(status_code=400, detail=f"Invalid enum value: {str(e)}")
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to bulk update elements in script {script_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to bulk update elements: {str(e)}")
+# REMOVED: Bulk update endpoint - use batch-update for all operations
 
 
 @router.patch("/scripts/{script_id}/elements/batch-update")
@@ -640,6 +189,8 @@ def batch_update_from_edit_queue(
     db: Session = Depends(get_db)
 ):
     """Process a batch of edit queue operations."""
+    
+    logger.info(f"Processing batch update for script {script_id} with {len(batch_request.operations)} operations")
     
     # Verify the script exists and user has access
     script = db.query(models.Script).options(
@@ -668,7 +219,7 @@ def batch_update_from_edit_queue(
                 })
                 processed_operations += 1
             except Exception as op_error:
-                logger.error(f"Failed to process operation {operation_data.get('id')}: {op_error}")
+                logger.error(f"Failed to process operation {operation_data.get('id')} of type {operation_data.get('type')}: {str(op_error)}", exc_info=True)
                 operation_results.append({
                     "operation_id": operation_data.get("id"),
                     "status": "error",
@@ -679,7 +230,8 @@ def batch_update_from_edit_queue(
         # Commit all successful operations
         db.commit()
         
-        # Update SHOW START duration if needed
+        # Refresh script object and update SHOW START duration if needed
+        db.refresh(script)
         elements = db.query(models.ScriptElement).filter(
             models.ScriptElement.scriptID == script_id
         ).all()
@@ -724,6 +276,15 @@ def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, 
     elif operation_type == "BULK_REORDER":
         return _process_bulk_reorder_operation(db, script_id, operation_data, user)
     
+    elif operation_type == "ENABLE_AUTO_SORT":
+        return _process_bulk_reorder_operation(db, script_id, operation_data, user)  # Uses same logic
+    
+    elif operation_type == "DISABLE_AUTO_SORT":
+        return _process_disable_auto_sort_operation(operation_data)
+    
+    elif operation_type == "UPDATE_SCRIPT_INFO":
+        return _process_update_script_info_operation(db, script_id, operation_data, user)
+    
     else:
         raise ValueError(f"Unknown operation type: {operation_type}")
 
@@ -767,11 +328,15 @@ def _process_update_field_operation(db: Session, element_id: str, operation_data
     
     # Update the specified field
     if hasattr(element, field):
-        # Handle special cases for enum fields
+        # Handle special cases for enum fields (convert to uppercase)
         if field == "priority" and new_value:
             setattr(element, field, models.PriorityLevel(new_value))
         elif field == "executionStatus" and new_value:
             setattr(element, field, models.ExecutionStatus(new_value))
+        elif field == "triggerType" and new_value:
+            setattr(element, field, models.TriggerType(new_value))
+        elif field == "elementType" and new_value:
+            setattr(element, field, models.ElementType(new_value))
         elif field == "location" and new_value:
             setattr(element, field, models.LocationArea(new_value))
         else:
@@ -811,17 +376,41 @@ def _process_create_element_operation(db: Session, script_id: UUID, operation_da
     
     element_data = operation_data.get("elementData", {})
     
+    # Get the next elementOrder value
+    max_order = db.query(models.ScriptElement.elementOrder).filter(
+        models.ScriptElement.scriptID == script_id
+    ).order_by(models.ScriptElement.elementOrder.desc()).first()
+    
+    next_order = (max_order[0] + 1) if max_order and max_order[0] is not None else 1
+    
+    # Prepare enum fields with defaults (frontend sends uppercase values)
+    trigger_type = models.TriggerType.MANUAL  # Default
+    if element_data.get("triggerType"):
+        trigger_type = models.TriggerType(element_data["triggerType"])
+    
+    execution_status = models.ExecutionStatus.PENDING  # Default
+    if element_data.get("executionStatus"):
+        execution_status = models.ExecutionStatus(element_data["executionStatus"])
+    
+    priority = models.PriorityLevel.NORMAL  # Default
+    if element_data.get("priority"):
+        priority = models.PriorityLevel(element_data["priority"])
+    
     # Create new script element
     new_element = models.ScriptElement(
         scriptID=script_id,
         elementType=element_data.get("elementType", "CUE"),
+        elementOrder=next_order,
         sequence=element_data.get("sequence", 1),
         timeOffsetMs=element_data.get("timeOffsetMs", 0),
         description=element_data.get("description", ""),
-        cueNotes=element_data.get("cueNotes"),
+        cueNotes=element_data.get("cueNotes", ""),
         departmentID=UUID(element_data["departmentID"]) if element_data.get("departmentID") else None,
-        priority=models.PriorityLevel(element_data["priority"]) if element_data.get("priority") else models.PriorityLevel.LOW,
         customColor=element_data.get("customColor"),
+        # Handle enum fields properly with explicit values
+        triggerType=trigger_type,
+        executionStatus=execution_status,
+        priority=priority,
         createdBy=user.userID,
         updatedBy=user.userID,
         dateCreated=datetime.now(timezone.utc),
@@ -878,3 +467,58 @@ def _process_bulk_reorder_operation(db: Session, script_id: UUID, operation_data
             updated_count += 1
     
     return {"updated_count": updated_count, "total_changes": len(element_changes)}
+
+
+def _process_disable_auto_sort_operation(operation_data: dict):
+    """Process a disable auto-sort operation (preference only, no element changes)."""
+    return {"preference_updated": True, "auto_sort_disabled": True}
+
+
+def _process_update_script_info_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+    """Process a script info update operation."""
+    
+    changes = operation_data.get("changes", {})
+    
+    # Get the script
+    script = db.query(models.Script).filter(
+        models.Script.scriptID == script_id
+    ).first()
+    
+    if not script:
+        raise ValueError(f"Script {script_id} not found")
+    
+    updated_fields = []
+    
+    # Apply each field change
+    for field, change_data in changes.items():
+        new_value = change_data.get("newValue")
+        
+        if field == "scriptName":
+            script.scriptName = new_value
+            updated_fields.append("scriptName")
+        elif field == "scriptStatus":
+            script.scriptStatus = new_value
+            updated_fields.append("scriptStatus")
+        elif field == "startTime":
+            # Convert from string to datetime if needed
+            if isinstance(new_value, str):
+                script.startTime = datetime.fromisoformat(new_value.replace('Z', '+00:00'))
+            else:
+                script.startTime = new_value
+            updated_fields.append("startTime")
+        elif field == "endTime":
+            # Convert from string to datetime if needed
+            if isinstance(new_value, str):
+                script.endTime = datetime.fromisoformat(new_value.replace('Z', '+00:00'))
+            else:
+                script.endTime = new_value
+            updated_fields.append("endTime")
+        elif field == "scriptNotes":
+            script.scriptNotes = new_value
+            updated_fields.append("scriptNotes")
+    
+    # Update metadata
+    script.updatedBy = user.userID
+    script.dateUpdated = datetime.now(timezone.utc)
+    
+    return {"script_id": str(script_id), "updated_fields": updated_fields}
