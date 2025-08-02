@@ -222,6 +222,34 @@ const DOCUMENTATION_FILES: DocFile[] = [
     description: 'Archive of July 2025 UI interaction improvements and implementation details',
     category: 'Archive',
     icon: 'archive'
+  },
+  {
+    name: 'ManageScriptPage Component',
+    path: 'components/manage-script-page.md',
+    description: 'Comprehensive component guide documenting architecture, mode system, and state management',
+    category: 'Component Architecture',
+    icon: 'component'
+  },
+  {
+    name: 'Script Mode System',
+    path: 'features/script-mode-system.md',
+    description: 'Documentation of 6-mode system with implementation details and transition logic',
+    category: 'User Interface',
+    icon: 'component'
+  },
+  {
+    name: 'User Preferences Integration',
+    path: 'features/user-preferences-integration.md',
+    description: 'Preview system, auto-sort integration, performance optimizations',
+    category: 'Data Management',
+    icon: 'component'
+  },
+  {
+    name: 'Script Management Workflows',
+    path: 'user-guides/script-management-workflows.md',
+    description: 'Step-by-step user workflows for common script management tasks',
+    category: 'Tutorial',
+    icon: 'compass'
   }
 ];
 
@@ -236,6 +264,8 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [content, setContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [documentFiles, setDocumentFiles] = useState<DocFile[]>([]);
+  const [isLoadingDocs, setIsLoadingDocs] = useState(true);
 
   // Chakra UI styled components for markdown
   const codeBlockBg = useColorModeValue('gray.100', 'gray.700');
@@ -253,6 +283,36 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
   const iconColor = useColorModeValue('gray.600', 'white');
 
   const { getToken } = useAuth();
+
+  // Load documentation files on component mount
+  React.useEffect(() => {
+    const loadDocumentationFiles = async () => {
+      try {
+        setIsLoadingDocs(true);
+        const headers: Record<string, string> = {};
+        const authToken = await getToken();
+        if (authToken) {
+          headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        
+        const response = await fetch('/api/docs/index', { headers });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        setDocumentFiles(data.documents);
+      } catch (error) {
+        console.error('Error loading documentation files:', error);
+        // Fallback to static array if API fails
+        setDocumentFiles(DOCUMENTATION_FILES);
+      } finally {
+        setIsLoadingDocs(false);
+      }
+    };
+
+    loadDocumentationFiles();
+  }, [getToken]);
 
   const markdownComponents = {
     h1: ({ children }: any) => (
@@ -377,12 +437,20 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
       onClick: () => loadCategory('Quick Start')
     },
     {
-      id: 'system-architecture',
-      title: 'System Architecture',
-      description: 'Infrastructure, performance, and core systems',
+      id: 'tutorial',
+      title: 'Tutorial',
+      description: 'User guides and feature tutorials',
+      icon: 'compass' as const,
+      isDisabled: false,
+      onClick: () => loadCategory('Tutorial')
+    },
+    {
+      id: 'user-interface',
+      title: 'User Interface',
+      description: 'Interactions, drag-and-drop, and customization',
       icon: 'component' as const,
       isDisabled: false,
-      onClick: () => loadCategory('System Architecture')
+      onClick: () => loadCategory('User Interface')
     },
     {
       id: 'component-architecture',
@@ -401,12 +469,12 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
       onClick: () => loadCategory('Data Management')
     },
     {
-      id: 'user-interface',
-      title: 'User Interface',
-      description: 'Interactions, drag-and-drop, and customization',
+      id: 'system-architecture',
+      title: 'System Architecture',
+      description: 'Infrastructure, performance, and core systems',
       icon: 'component' as const,
       isDisabled: false,
-      onClick: () => loadCategory('User Interface')
+      onClick: () => loadCategory('System Architecture')
     },
     {
       id: 'testing',
@@ -415,14 +483,6 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
       icon: 'test' as const,
       isDisabled: false,
       onClick: () => loadCategory('Testing')
-    },
-    {
-      id: 'tutorial',
-      title: 'Tutorial',
-      description: 'User guides and feature tutorials',
-      icon: 'compass' as const,
-      isDisabled: false,
-      onClick: () => loadCategory('Tutorial')
     },
     {
       id: 'archive',
@@ -441,7 +501,7 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
   };
 
   const loadDocument = async (docId: string) => {
-    const doc = DOCUMENTATION_FILES.find(d => d.name === docId);
+    const doc = documentFiles.find(d => d.name === docId);
     if (!doc) return;
 
     setIsLoading(true);
@@ -479,33 +539,51 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
     }
   };
 
-  // Default overview content
+  // Default overview content with enhanced navigation
   const defaultContent = (
     <VStack spacing={4} align="stretch">
       {/* Documentation Overview Cards */}
-      {Object.entries(
-        DOCUMENTATION_FILES.reduce((groups, doc) => {
-          if (!groups[doc.category]) groups[doc.category] = [];
-          groups[doc.category].push(doc);
-          return groups;
-        }, {} as Record<string, DocFile[]>)
+      {isLoadingDocs ? (
+        <Text>Loading documentation...</Text>
+      ) : (
+        Object.entries(
+          documentFiles.reduce((groups, doc) => {
+            if (!groups[doc.category]) groups[doc.category] = [];
+            groups[doc.category].push(doc);
+            return groups;
+          }, {} as Record<string, DocFile[]>)
       ).map(([category, docs]) => (
-        <Card key={category} size="sm" bg={cardBg}>
+        <Card 
+          key={category} 
+          size="sm" 
+          bg={cardBg}
+          borderWidth="2px"
+          borderRadius="md"
+          shadow="sm"
+          borderColor="gray.600"
+          cursor="pointer"
+          _hover={{ borderColor: "orange.400" }}
+          onClick={() => loadCategory(category)}
+        >
           <CardBody>
             <VStack align="stretch" spacing={3}>
-              <HStack spacing={2}>
+              <HStack spacing={4}>
                 <Badge
                   colorScheme="blue"
-                  size="sm"
+                  fontSize="sm"
+                  px={2}
+                  py={1}
                   cursor="pointer"
                   _hover={{ bg: "blue.600", color: "white" }}
-                  transition="all 0.2s"
-                  onClick={() => loadCategory(category)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    loadCategory(category);
+                  }}
                 >
                   {category}
                 </Badge>
-                <Text fontWeight="semibold" fontSize="sm" color={textColor}>
-                  {docs.length} document{docs.length > 1 ? 's' : ''} - Click category or documents to navigate
+                <Text fontWeight="semibold" fontSize="sm" color="cardText">
+                  {docs.length} document{docs.length > 1 ? 's' : ''}
                 </Text>
               </HStack>
               <VStack spacing={2} align="stretch">
@@ -515,14 +593,19 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
                     spacing={3}
                     p={2}
                     rounded="md"
-                    bg={itemBg}
+                    shadow="sm"
+                    bg="app.background"
+                    borderWidth="2px"
+                    borderColor="gray.600"
                     cursor="pointer"
-                    _hover={{ bg: itemHoverBg, transform: "scale(1.02)" }}
-                    transition="all 0.2s"
-                    onClick={() => loadDocument(doc.name)}
+                    _hover={{ borderColor: "orange.400" }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      loadDocument(doc.name);
+                    }}
                   >
                     <Box px={2}>
-                      <AppIcon name={doc.icon} boxSize="25px" color={iconColor} />
+                      <AppIcon name={doc.icon} boxSize="21px" color={iconColor} />
                     </Box>
                     <VStack align="start" spacing={0} flex={1}>
                       <Text fontWeight="medium" fontSize="sm" color={textColor}>
@@ -538,76 +621,71 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
             </VStack>
           </CardBody>
         </Card>
-      ))}
+      ))
+      )}
     </VStack>
   );
 
   // Category view content
   const categoryContent = selectedCategory ? (
     <VStack spacing={4} align="stretch">
-      <Card>
-        <CardBody>
-          <VStack spacing={4} align="stretch">
-            <HStack spacing={3} align="start">
-              <AppIcon
-                name={getCategoryIcon(selectedCategory)}
-                boxSize="24px"
-                color={iconColor}
-              />
-              <VStack align="start" spacing={0}>
-                <Text fontWeight="semibold" fontSize="lg">{selectedCategory} Documentation</Text>
-                <Text fontSize="sm" color="gray.500">
-                  {DOCUMENTATION_FILES.filter(doc => doc.category === selectedCategory).length} documents
-                </Text>
-              </VStack>
-            </HStack>
-            <Divider />
-            <VStack spacing={3} align="stretch">
-              {DOCUMENTATION_FILES
-                .filter(doc => doc.category === selectedCategory)
-                .map((doc) => (
-                  <HStack
-                    key={doc.name}
-                    spacing={3}
-                    p={3}
-                    rounded="md"
-                    bg={itemBg}
-                    cursor="pointer"
-                    _hover={{ bg: itemHoverBg }}
-                    onClick={() => loadDocument(doc.name)}
-                    align="start"
-                  >
-                    <Box px={2}>
-                      <AppIcon name={doc.icon} boxSize="20px" color={iconColor} />
-                    </Box>
-                    <VStack align="start" spacing={1} flex={1}>
-                      <Text fontWeight="medium" fontSize="sm" color={textColor}>
-                        {doc.name}
-                      </Text>
-                      <Text fontSize="xs" color="cardText">
-                        {doc.description}
-                      </Text>
-                    </VStack>
-                  </HStack>
-                ))}
-            </VStack>
-            <Divider />
-            <HStack spacing={4}>
-              <Button
-                size="sm"
-                variant="outline"
-                _hover={{ borderColor: 'orange.400' }}
-                onClick={() => {
-                  setSelectedCategory(null);
-                  setSelectedDoc(null);
-                }}
+      <VStack spacing={4} align="stretch">
+        <HStack spacing={3} align="center" justify="space-between">
+          <HStack spacing={3} align="center">
+            <AppIcon
+              name={getCategoryIcon(selectedCategory)}
+              boxSize="24px"
+              color={iconColor}
+            />
+            <Text fontWeight="semibold" fontSize="lg">{selectedCategory} Documentation</Text>
+            <Text fontSize="sm" color="gray.500">
+              {documentFiles.filter(doc => doc.category === selectedCategory).length} documents
+            </Text>
+          </HStack>
+          <Button
+            size="xs"
+            variant="outline"
+            onClick={() => {
+              setSelectedCategory(null);
+              setSelectedDoc(null);
+            }}
+          >
+            Back to Overview
+          </Button>
+        </HStack>
+        <VStack spacing={3} align="stretch">
+          {documentFiles
+            .filter(doc => doc.category === selectedCategory)
+            .map((doc) => (
+              <HStack
+                key={doc.name}
+                spacing={3}
+                p={3}
+                rounded="md"
+                shadow="sm"
+                bg={cardBg}
+                borderWidth="2px"
+                borderColor="gray.600"
+                cursor="pointer"
+                _hover={{ borderColor: "orange.400" }}
+                onClick={() => loadDocument(doc.name)}
+                align="start"
               >
-                Back to Overview
-              </Button>
-            </HStack>
-          </VStack>
-        </CardBody>
-      </Card>
+                <Box px={2}>
+                  <AppIcon name={doc.icon} boxSize="16px" color={iconColor} />
+                </Box>
+                <VStack align="start" spacing={1} flex={1}>
+                  <Text fontWeight="medium" fontSize="sm" color={textColor}>
+                    {doc.name}
+                  </Text>
+                  <Text fontSize="xs" color="cardText">
+                    {doc.description}
+                  </Text>
+                </VStack>
+              </HStack>
+            ))}
+        </VStack>
+      </VStack>
     </VStack>
   ) : null;
 
@@ -625,7 +703,7 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
             <CardBody>
               <VStack spacing={4} align="stretch">
                 <HStack spacing={3} align="start">
-                  <AppIcon name={DOCUMENTATION_FILES.find(doc => doc.name === selectedDoc)?.icon || 'docs'} boxSize="24px" color={iconColor} />
+                  <AppIcon name={documentFiles.find(doc => doc.name === selectedDoc)?.icon || 'docs'} boxSize="24px" color={iconColor} />
                   <VStack align="start" spacing={0}>
                     <Text fontWeight="semibold">{selectedDoc}</Text>
                   </VStack>
@@ -644,7 +722,8 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
                   <Button
                     size="sm"
                     variant="outline"
-                    _hover={{ borderColor: 'orange.400' }}
+                    colorScheme="orange"
+                    _hover={{ bg: 'orange.50', borderColor: 'orange.400' }}
                     onClick={() => {
                       if (selectedCategory) {
                         // Go back to category view

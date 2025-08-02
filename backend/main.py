@@ -159,6 +159,125 @@ async def custom_redoc_html():
 # DOCUMENTATION ENDPOINTS
 # =============================================================================
 
+@app.get("/api/docs/index")
+async def get_documentation_index(
+    current_user: models.User = Depends(get_current_user)
+):
+    """Discover and return metadata for all documentation files in the docs directory."""
+    import re
+    
+    try:
+        # Path resolution for Docker vs local development
+        docs_dir = Path("/docs") if Path("/docs").exists() else Path(__file__).parent.parent / "docs"
+        
+        if not docs_dir.exists():
+            raise HTTPException(status_code=404, detail="Documentation directory not found")
+        
+        documents = []
+        
+        # Walk through all .md files in the docs directory
+        for md_file in docs_dir.rglob("*.md"):
+            try:
+                # Skip README.md as it's now just a regular document
+                if md_file.name.lower() == "readme.md":
+                    continue
+                    
+                # Get relative path from docs directory
+                relative_path = md_file.relative_to(docs_dir)
+                
+                # Read file content to extract metadata
+                content = md_file.read_text(encoding="utf-8")
+                
+                # Extract title from first # heading or use filename
+                title_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
+                title = title_match.group(1).strip() if title_match else md_file.stem.replace('-', ' ').title()
+                
+                # Extract description from first paragraph after title
+                # Look for content between title and next heading or first substantial paragraph
+                desc_pattern = r'^#\s+.+?\n\n(?:## Overview\n\n)?(.+?)(?:\n\n|\n##|\Z)'
+                desc_match = re.search(desc_pattern, content, re.MULTILINE | re.DOTALL)
+                description = desc_match.group(1).strip()[:200] + "..." if desc_match and len(desc_match.group(1).strip()) > 200 else (desc_match.group(1).strip() if desc_match else "No description available")
+                
+                # Determine category based on directory structure
+                parts = relative_path.parts
+                if len(parts) > 1:
+                    category_map = {
+                        'planning': 'Planning',
+                        'development': 'Quick Start',
+                        'architecture': 'System Architecture',
+                        'components': 'Component Architecture',
+                        'features': 'User Interface',
+                        'user-guides': 'Tutorial',
+                        'testing': 'Testing',
+                        'standards': 'Planning',
+                        'archive': 'Archive',
+                        'tutorial': 'Tutorial'
+                    }
+                    category = category_map.get(parts[0], 'Quick Start')
+                else:
+                    category = 'Quick Start'
+                
+                # Determine icon based on category and filename
+                if 'test' in md_file.name.lower():
+                    icon = 'test'
+                elif 'performance' in md_file.name.lower():
+                    icon = 'performance'
+                elif 'roadmap' in md_file.name.lower():
+                    icon = 'roadmap'
+                elif 'archive' in md_file.name.lower() or parts[0] == 'archive':
+                    icon = 'archive'
+                elif 'guide' in md_file.name.lower() or 'tutorial' in md_file.name.lower():
+                    icon = 'compass'
+                elif 'warning' in md_file.name.lower() or 'error' in md_file.name.lower():
+                    icon = 'warning'
+                elif parts[0] == 'planning':
+                    icon = 'planning'
+                else:
+                    icon = 'component'
+                
+                documents.append({
+                    'name': title,
+                    'path': str(relative_path),
+                    'description': description,
+                    'category': category,
+                    'icon': icon
+                })
+                
+            except Exception as e:
+                logger.warning(f"Error processing documentation file {md_file}: {str(e)}")
+                continue
+        
+        # Sort documents by category (in frontend order) then by name
+        category_order = [
+            'Planning',
+            'Quick Start',
+            'Tutorial',
+            'User Interface',
+            'Component Architecture',
+            'Data Management',
+            'System Architecture',
+            'Testing',
+            'Archive'
+        ]
+        
+        def get_category_sort_key(doc):
+            try:
+                return (category_order.index(doc['category']), doc['name'])
+            except ValueError:
+                # If category not in list, put it at the end
+                return (len(category_order), doc['name'])
+        
+        documents.sort(key=get_category_sort_key)
+        
+        logger.info(f"Discovered {len(documents)} documentation files")
+        return {"documents": documents}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error discovering documentation files: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 @app.get("/api/docs/{file_path:path}")
 async def get_documentation(
     file_path: str,
