@@ -46,15 +46,15 @@ interface AddScriptElementModalProps {
 }
 
 const INITIAL_FORM_STATE: ScriptElementCreate = {
-    elementType: 'cue',
+    elementType: 'CUE',
     description: '',
     timeOffsetMs: 0,
-    triggerType: 'manual', // Will be set automatically
+    triggerType: 'MANUAL', // Will be set automatically
     cueID: '', // Will be auto-generated
     cueNotes: '',
     departmentID: '',
     location: undefined, // Not needed in form
-    priority: 'normal',
+    priority: 'NORMAL',
     isSafetyCritical: false,
     customColor: '' // For note background color
 };
@@ -87,25 +87,25 @@ const VALIDATION_CONFIG: FormValidationConfig = {
 };
 
 const ELEMENT_TYPE_OPTIONS: { value: ElementType; label: string; description: string }[] = [
-    { value: 'cue', label: 'Cue', description: 'Technical cue (lighting, sound, etc.)' },
-    { value: 'note', label: 'Note', description: 'Informational note or reminder' }
+    { value: 'CUE', label: 'Cue', description: 'Technical cue (lighting, sound, etc.)' },
+    { value: 'NOTE', label: 'Note', description: 'Informational note or reminder' }
 ];
 
 const TRIGGER_TYPE_OPTIONS: { value: TriggerType; label: string }[] = [
-    { value: 'manual', label: 'Manual' },
-    { value: 'time', label: 'Time-based' },
-    { value: 'auto', label: 'Auto-follow' },
-    { value: 'follow', label: 'Follow Cue' },
-    { value: 'go', label: 'GO Command' },
-    { value: 'standby', label: 'Standby' }
+    { value: 'MANUAL', label: 'Manual' },
+    { value: 'TIME', label: 'Time-based' },
+    { value: 'AUTO', label: 'Auto-follow' },
+    { value: 'FOLLOW', label: 'Follow Cue' },
+    { value: 'GO', label: 'GO Command' },
+    { value: 'STANDBY', label: 'Standby' }
 ];
 
 const PRIORITY_OPTIONS: { value: PriorityLevel; label: string }[] = [
-    { value: 'critical', label: 'Critical' },
-    { value: 'high', label: 'High' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'low', label: 'Low' },
-    { value: 'optional', label: 'Optional' }
+    { value: 'CRITICAL', label: 'Critical' },
+    { value: 'HIGH', label: 'High' },
+    { value: 'NORMAL', label: 'Normal' },
+    { value: 'LOW', label: 'Low' },
+    { value: 'OPTIONAL', label: 'Optional' }
 ];
 
 const LOCATION_OPTIONS: { value: LocationArea; label: string }[] = [
@@ -181,9 +181,9 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
         const elementData = {
             ...form.formData,
             elementID: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary ID
-            elementType: form.formData.elementType.toUpperCase(),
-            triggerType: form.formData.triggerType?.toUpperCase() || 'MANUAL',
-            priority: form.formData.priority?.toUpperCase() || 'NORMAL',
+            elementType: form.formData.elementType,
+            triggerType: form.formData.triggerType || 'MANUAL',
+            priority: form.formData.priority || 'NORMAL',
             // Convert empty departmentID to null for notes
             departmentID: form.formData.departmentID && form.formData.departmentID.trim() ? form.formData.departmentID : null,
             // Include department information
@@ -208,7 +208,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
 
     const canSubmit = form.formData.description.trim().length >= 3 && 
                      // Department only required for cues, not notes
-                     (form.formData.elementType === 'note' || form.formData.departmentID.trim().length > 0) &&
+                     (form.formData.elementType === 'NOTE' || form.formData.departmentID.trim().length > 0) &&
                      form.formData.timeOffsetMs >= 0 &&
                      form.fieldErrors.length === 0;
 
@@ -243,7 +243,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                         onChange={(value) => {
                             form.updateField('elementType', value as ElementType);
                             // Reset department field when switching to note
-                            if (value === 'note') {
+                            if (value === 'NOTE') {
                                 form.updateField('departmentID', '');
                             }
                         }}
@@ -259,7 +259,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                 </FormControl>
 
                 {/* Department for Cues, Color Picker for Notes */}
-                {form.formData.elementType === 'cue' ? (
+                {form.formData.elementType === 'CUE' ? (
                     <FormControl isRequired>
                         <FormLabel>Department</FormLabel>
                         <Menu>

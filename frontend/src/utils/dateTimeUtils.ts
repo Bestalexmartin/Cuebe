@@ -6,34 +6,46 @@
  */
 
 /**
- * Formats a UTC datetime string for display in local time
- * @param utcDateTimeString - ISO string from backend (stored in UTC)
+ * Formats a UTC datetime for display in local time
+ * @param utcDateTime - ISO string from backend or Date object (stored in UTC)
  * @param options - Intl.DateTimeFormatOptions for formatting
  * @returns Formatted string in local timezone
  */
 export const formatDateTimeLocal = (
-  utcDateTimeString: string | null | undefined,
+  utcDateTime: string | Date | null | undefined,
   options: Intl.DateTimeFormatOptions = {}
 ): string => {
-  if (!utcDateTimeString) return 'Not set';
+  if (!utcDateTime) return 'Not set';
   
-  // Parse as UTC and display in local time
-  const utcDate = new Date(utcDateTimeString + (utcDateTimeString.includes('Z') ? '' : 'Z'));
+  // Handle both string and Date inputs
+  let utcDate: Date;
+  if (utcDateTime instanceof Date) {
+    utcDate = utcDateTime;
+  } else {
+    // Parse as UTC and display in local time
+    utcDate = new Date(utcDateTime + (utcDateTime.includes('Z') ? '' : 'Z'));
+  }
   return utcDate.toLocaleDateString('en-US', options);
 };
 
 /**
- * Formats a UTC datetime string to show only the time portion in local timezone
- * @param utcDateTimeString - ISO string from backend (stored in UTC)
+ * Formats a UTC datetime to show only the time portion in local timezone
+ * @param utcDateTime - ISO string from backend or Date object (stored in UTC)
  * @returns Time string in local timezone (e.g., "6:00 PM")
  */
 export const formatTimeLocal = (
-  utcDateTimeString: string | null | undefined
+  utcDateTime: string | Date | null | undefined
 ): string => {
-  if (!utcDateTimeString) return 'Not set';
+  if (!utcDateTime) return 'Not set';
   
-  // Parse as UTC and display in local time
-  const utcDate = new Date(utcDateTimeString + (utcDateTimeString.includes('Z') ? '' : 'Z'));
+  // Handle both string and Date inputs
+  let utcDate: Date;
+  if (utcDateTime instanceof Date) {
+    utcDate = utcDateTime;
+  } else {
+    // Parse as UTC and display in local time
+    utcDate = new Date(utcDateTime + (utcDateTime.includes('Z') ? '' : 'Z'));
+  }
   return utcDate.toLocaleTimeString([], {
     hour: 'numeric',
     minute: '2-digit'
@@ -46,12 +58,18 @@ export const formatTimeLocal = (
  * @returns Formatted string like "Saturday, July 12, 2025"
  */
 export const formatDateFriendly = (
-  utcDateTimeString: string | null | undefined
+  utcDateTime: string | Date | null | undefined
 ): string => {
-  if (!utcDateTimeString) return 'No date set';
+  if (!utcDateTime) return 'No date set';
   
-  // Parse as UTC and display in local time
-  const utcDate = new Date(utcDateTimeString + (utcDateTimeString.includes('Z') ? '' : 'Z'));
+  // Handle both string and Date inputs
+  let utcDate: Date;
+  if (utcDateTime instanceof Date) {
+    utcDate = utcDateTime;
+  } else {
+    // Parse as UTC and display in local time
+    utcDate = new Date(utcDateTime + (utcDateTime.includes('Z') ? '' : 'Z'));
+  }
   return utcDate.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -66,12 +84,18 @@ export const formatDateFriendly = (
  * @returns UTC ISO string for backend storage
  */
 export const convertLocalToUTC = (
-  localDateTimeString: string | null | undefined
+  localDateTime: string | Date | null | undefined
 ): string | null => {
-  if (!localDateTimeString) return null;
+  if (!localDateTime) return null;
   
-  // Create date object from local datetime-local input
-  const localDate = new Date(localDateTimeString);
+  // Handle both string and Date inputs
+  let localDate: Date;
+  if (localDateTime instanceof Date) {
+    localDate = localDateTime;
+  } else {
+    // Create date object from local datetime-local input
+    localDate = new Date(localDateTime);
+  }
   // Convert to UTC ISO string
   return localDate.toISOString();
 };
@@ -82,12 +106,19 @@ export const convertLocalToUTC = (
  * @returns Local datetime string for datetime-local inputs (e.g., "2025-01-21T18:00")
  */
 export const convertUTCToLocal = (
-  utcDateTimeString: string | null | undefined
+  utcDateTime: string | Date | null | undefined
 ): string => {
-  if (!utcDateTimeString) return '';
+  if (!utcDateTime) return '';
   
-  // Parse as UTC
-  const utcDate = new Date(utcDateTimeString + (utcDateTimeString.includes('Z') ? '' : 'Z'));
+  // Handle both string and Date inputs
+  let utcDate: Date;
+  if (utcDateTime instanceof Date) {
+    utcDate = utcDateTime;
+  } else {
+    // Parse as UTC
+    utcDate = new Date(utcDateTime + (utcDateTime.includes('Z') ? '' : 'Z'));
+  }
+  
   // Convert to local time and format for datetime-local input
   const year = utcDate.getFullYear();
   const month = String(utcDate.getMonth() + 1).padStart(2, '0');

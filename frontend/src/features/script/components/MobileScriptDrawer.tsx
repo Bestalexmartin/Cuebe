@@ -9,7 +9,9 @@ import {
     DrawerContent,
     DrawerCloseButton,
     VStack,
+    HStack,
     Button,
+    Text,
     Divider
 } from '@chakra-ui/react';
 import { AppIcon } from '../../../components/AppIcon';
@@ -43,17 +45,39 @@ export const MobileScriptDrawer: React.FC<MobileScriptDrawerProps> = ({
         }
     };
 
-    // Filter buttons into logical groups
-    const navigationButtons = toolButtons.filter(tool => 
-        tool.id === 'jump-top' || tool.id === 'jump-bottom'
-    );
-    
+    // Define mode-specific buttons (same logic as desktop)
+    const getModeSpecificButtons = () => {
+        const navigationButtons = toolButtons.filter(tool => 
+            tool.id === 'jump-top' || tool.id === 'jump-bottom'
+        );
+
+        if (activeMode === 'view') {
+            // View mode: Head, Tail, Play, Share
+            const modeButtons = toolButtons.filter(tool => 
+                ['play', 'share'].includes(tool.id)
+            );
+            return [...navigationButtons, ...modeButtons];
+        } else if (activeMode === 'edit') {
+            // Edit mode: Head, Tail, Add, Modify, Copy, Stack, Trash
+            const modeButtons = toolButtons.filter(tool => 
+                ['add-element', 'edit-element', 'duplicate-element', 'group-elements', 'delete-element'].includes(tool.id)
+            );
+            return [...navigationButtons, ...modeButtons];
+        } else if (activeMode === 'info') {
+            // Info mode: Head, Tail
+            return navigationButtons;
+        } else if (activeMode === 'history') {
+            // History mode: Head, Tail, Clear
+            const clearButton = toolButtons.filter(tool => tool.id === 'clear-history');
+            return [...navigationButtons, ...clearButton];
+        }
+        
+        return navigationButtons;
+    };
+
+    const modeSpecificButtons = getModeSpecificButtons();
     const viewStateButtons = toolButtons.filter(tool => 
         ['view', 'edit', 'info', 'history', 'exit'].includes(tool.id)
-    );
-    
-    const toolsButtons = toolButtons.filter(tool => 
-        !['jump-top', 'jump-bottom', 'view', 'edit', 'info', 'history', 'exit'].includes(tool.id)
     );
 
     const renderButton = (tool: ToolButton) => (
@@ -103,24 +127,14 @@ export const MobileScriptDrawer: React.FC<MobileScriptDrawerProps> = ({
                 <DrawerHeader>Script Tools</DrawerHeader>
                 <DrawerBody>
                     <VStack spacing={4} align="stretch">
-                        {/* Navigation buttons */}
-                        {navigationButtons.map(renderButton)}
-                        
-                        {/* Separator after navigation */}
-                        {navigationButtons.length > 0 && (
-                            <Divider borderColor="container.border" />
-                        )}
-                        
                         {/* View state buttons */}
                         {viewStateButtons.map(renderButton)}
                         
-                        {/* Separator before tools */}
-                        {toolsButtons.length > 0 && activeMode !== 'info' && (
-                            <Divider borderColor="container.border" />
-                        )}
+                        {/* Separator */}
+                        <Divider borderColor="container.border" />
                         
-                        {/* Tool buttons */}
-                        {toolsButtons.map(renderButton)}
+                        {/* Mode-specific buttons */}
+                        {modeSpecificButtons.map(renderButton)}
                     </VStack>
                 </DrawerBody>
             </DrawerContent>

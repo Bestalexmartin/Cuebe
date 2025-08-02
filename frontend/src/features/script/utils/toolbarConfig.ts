@@ -13,6 +13,7 @@ export interface ToolbarContext {
     scrollState: ScrollState;
     hasSelection: boolean;
     hasUnsavedChanges: boolean;
+    pendingOperationsCount: number;
 }
 
 /**
@@ -42,7 +43,7 @@ export const getNavigationButtons = (scrollState: ScrollState): ToolButton[] => 
 /**
  * View state buttons configuration
  */
-export const getViewStateButtons = (activeMode: string): ToolButton[] => {
+export const getViewStateButtons = (activeMode: string, pendingOperationsCount: number): ToolButton[] => {
     return [
         {
             id: 'view',
@@ -74,7 +75,7 @@ export const getViewStateButtons = (activeMode: string): ToolButton[] => {
             label: 'HIST',
             description: 'Edit History',
             isActive: activeMode === 'history',
-            isDisabled: false
+            isDisabled: pendingOperationsCount === 0
         }
     ];
 };
@@ -103,7 +104,7 @@ export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean)
             label: 'PLAY',
             description: 'Performance Mode',
             isActive: false,
-            isDisabled: false
+            isDisabled: true // Not implemented yet
         });
         
         buttons.push({
@@ -112,7 +113,7 @@ export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean)
             label: 'SHARE',
             description: 'Share Script',
             isActive: false,
-            isDisabled: false
+            isDisabled: true // Not implemented yet
         });
     } else if (activeMode === 'history') {
         buttons.push({
@@ -181,7 +182,7 @@ export const getElementManagementButtons = (hasSelection: boolean): ToolButton[]
  * Generates all toolbar buttons based on current context
  */
 export const getToolbarButtons = (context: ToolbarContext): ToolButton[] => {
-    const { activeMode, scrollState, hasSelection, hasUnsavedChanges } = context;
+    const { activeMode, scrollState, hasSelection, hasUnsavedChanges, pendingOperationsCount } = context;
     
     const buttons: ToolButton[] = [];
     
@@ -189,7 +190,7 @@ export const getToolbarButtons = (context: ToolbarContext): ToolButton[] => {
     buttons.push(...getNavigationButtons(scrollState));
     
     // View state buttons
-    buttons.push(...getViewStateButtons(activeMode));
+    buttons.push(...getViewStateButtons(activeMode, pendingOperationsCount));
     
     // Action buttons
     buttons.push(...getActionButtons(activeMode, hasUnsavedChanges));

@@ -496,6 +496,15 @@ def update_script(
     try:
         db.commit()
         db.refresh(script)
+        
+        # Update SHOW START duration if start or end times were changed
+        if 'startTime' in update_data or 'endTime' in update_data:
+            from .script_elements import _auto_populate_show_start_duration
+            elements = db.query(models.ScriptElement).filter(
+                models.ScriptElement.scriptID == script_id
+            ).all()
+            _auto_populate_show_start_duration(db, script, elements)
+        
         return script
     except Exception as e:
         db.rollback()

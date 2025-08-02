@@ -10,11 +10,14 @@ import {
   ModalBody,
   ModalCloseButton,
   Button,
-  ModalContentProps
+  ModalContentProps,
+  HStack,
+  Text
 } from '@chakra-ui/react';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { ValidationErrors } from './ValidationErrors';
 import { FieldError } from '../../types/validation';
+import { AppIcon } from '../AppIcon';
 
 export interface BaseModalAction {
   label: string;
@@ -30,6 +33,10 @@ export interface BaseModalProps extends Omit<ModalContentProps, 'children'> {
   isOpen: boolean;
   onClose: () => void;
   onCloseComplete?: () => void;
+  
+  // Header customization
+  headerIcon?: string;
+  headerIconColor?: string;
   
   // Content
   children: React.ReactNode;
@@ -58,6 +65,8 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
   isOpen,
   onClose,
   onCloseComplete,
+  headerIcon,
+  headerIconColor,
   children,
   onSubmit,
   primaryAction,
@@ -177,7 +186,16 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
         borderColor="gray.600"
         {...modalContentProps}
       >
-        <ModalHeader>{title}</ModalHeader>
+        <ModalHeader>
+          {headerIcon ? (
+            <HStack spacing={3}>
+              <AppIcon name={headerIcon} boxSize="20px" color={headerIconColor} />
+              <Text>{title}</Text>
+            </HStack>
+          ) : (
+            title
+          )}
+        </ModalHeader>
         {showCloseButton && <ModalCloseButton />}
         
         <ModalBody pb={6}>

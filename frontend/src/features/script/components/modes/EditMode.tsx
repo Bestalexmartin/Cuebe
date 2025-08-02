@@ -19,10 +19,10 @@ import {
 } from '@dnd-kit/sortable';
 import { useScriptElements } from '../../hooks/useScriptElements';
 import { useScript } from '../../hooks/useScript';
-import { useAuth } from '@clerk/clerk-react';
 import { CueElement } from '../CueElement';
 import { ScriptElementsHeader } from '../ScriptElementsHeader';
 import { DragReorderModal } from '../modals/DragReorderModal';
+import { EditElementModal } from '../modals/EditElementModal';
 
 interface EditModeProps {
     scriptId: string;
@@ -69,7 +69,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const shouldFetchScript = !providedScript;
     const { script: scriptFromHook } = useScript(shouldFetchScript ? scriptId : undefined);
     const script = providedScript || scriptFromHook;
-    const { getToken } = useAuth();
 
     const elements = externalElements || serverElements;
     const [localElements, setLocalElements] = useState(elements);
@@ -80,6 +79,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const [pendingReorder, setPendingReorder] = useState<any>(null);
     const [originalElementsBeforeDrag, setOriginalElementsBeforeDrag] = useState<any[]>([]);
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [elementToEdit, setElementToEdit] = useState<any>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const lastScrollStateRef = useRef<{isAtTop: boolean; isAtBottom: boolean; allElementsFitOnScreen: boolean} | null>(null);
     
@@ -269,35 +270,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             return;
         }
 
-        // Fallback to direct API call for backward compatibility
-        try {
-            const token = await getToken();
-            if (!token) return;
-
-            // Create reorder data
-            const reorderData = {
-                elements: pendingReorderData.reorderedElements.map((el: any, index: number) => ({
-                    elementID: el.elementID,
-                    sequence: index + 1
-                }))
-            };
-
-            const response = await fetch(`/api/scripts/${scriptId}/elements/reorder`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(reorderData)
-            });
-
-            if (!response.ok) {
-                console.error('Failed to reorder elements');
-                setLocalElements(elements);
-            }
-        } catch (error) {
-            console.error('Error reordering elements:', error);
-        }
+        // This should not happen - edit queue is always available
+        console.error('Edit queue not available for reorder operation');
         
     };
 
@@ -323,35 +297,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             return;
         }
 
-        // Fallback to direct API call for backward compatibility
-        try {
-            const token = await getToken();
-            if (!token) return;
-
-            // Create reorder data
-            const reorderData = {
-                elements: pendingReorder.reorderedElements.map((el: any, index: number) => ({
-                    elementID: el.elementID,
-                    sequence: index + 1
-                }))
-            };
-
-            const response = await fetch(`/api/scripts/${scriptId}/elements/reorder`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(reorderData)
-            });
-
-            if (!response.ok) {
-                console.error('Failed to reorder elements');
-                setLocalElements(elements);
-            }
-        } catch (error) {
-            console.error('Error reordering elements:', error);
-        }
+        // This should not happen - edit queue is always available
+        console.error('Edit queue not available for reorder operation');
     };
 
     const updateElementTimeOffset = async (elementId: string, newTimeOffsetMs: number) => {
@@ -381,46 +328,54 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             return;
         }
 
-        // Fallback to direct API call for backward compatibility
-        try {
-            const token = await getToken();
-            if (!token) {
-                return;
-            }
-
-            const updateData = {
-                timeOffsetMs: newTimeOffsetMs
-            };
-            
-
-            const response = await fetch(`/api/elements/${elementId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updateData)
-            });
-
-
-            if (response.ok) {
-                setLocalElements(prevElements => {
-                    const updatedElements = prevElements.map(el =>
-                        el.elementID === elementId
-                            ? { ...el, timeOffsetMs: newTimeOffsetMs }
-                            : el
-                    );
-                    return updatedElements;
-                });
-            } else {
-                const errorText = await response.text();
-                console.error('Failed to update element time offset. Status:', response.status);
-                console.error('Error response:', errorText);
-            }
-        } catch (error) {
-            console.error('Error updating element time offset:', error);
-        }
+        // This should not happen - edit queue is always available
+        console.error('Edit queue not available for time offset update operation');
         
+    };
+
+    // Handle element edit
+    const handleEditElement = (element: any) => {
+        setElementToEdit(element);
+        setEditModalOpen(true);
+    };
+
+    // Handle element edit modal save
+    const handleElementEditSave = (changes: Record<string, { oldValue: any; newValue: any }>) => {
+        if (!elementToEdit || !onApplyLocalChange) return;
+
+        // Create UPDATE_FIELD operations for each changed field
+        Object.entries(changes).forEach(([field, { oldValue, newValue }]) => {
+            if (field === 'timeOffsetMs') {
+                // Special handling for time offset changes
+                const timeOffsetOperation = {
+                    type: 'UPDATE_TIME_OFFSET',
+                    elementId: elementToEdit.elementID,
+                    oldTimeOffsetMs: oldValue,
+                    newTimeOffsetMs: newValue
+                };
+                onApplyLocalChange(timeOffsetOperation);
+            } else {
+                // Regular field update operation
+                const fieldUpdateOperation = {
+                    type: 'UPDATE_FIELD',
+                    elementId: elementToEdit.elementID,
+                    field: field,
+                    oldValue: oldValue,
+                    newValue: newValue
+                };
+                onApplyLocalChange(fieldUpdateOperation);
+            }
+        });
+
+        // Close modal and clear state
+        setEditModalOpen(false);
+        setElementToEdit(null);
+    };
+
+    // Handle edit modal close
+    const handleEditModalClose = () => {
+        setEditModalOpen(false);
+        setElementToEdit(null);
     };
 
     // Function to check scroll state
@@ -527,8 +482,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                                                 allElements={localElements}
                                                 colorizeDepNames={colorizeDepNames}
                                                 showClockTimes={shouldShowClockTimes}
-                                                scriptStartTime={script?.startTime}
-                                                scriptEndTime={script?.endTime}
+                                                scriptStartTime={script?.startTime instanceof Date ? script.startTime.toISOString() : script?.startTime}
+                                                scriptEndTime={script?.endTime instanceof Date ? script.endTime.toISOString() : script?.endTime}
                                                 isDragEnabled={true}
                                                 isSelected={selectedElementId === element.elementID}
                                                 onSelect={() => {
@@ -539,6 +494,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                                                     setSelectedElementId(newId);
                                                     onSelectionChange?.(newId);
                                                 }}
+                                                onEdit={handleEditElement}
                                             />
                                         );
                                     })}
@@ -560,6 +516,14 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 onMatchBefore={handleMatchBefore}
                 onMatchAfter={handleMatchAfter}
                 onCancel={handleCancelDrag}
+            />
+
+            {/* Edit Element Modal */}
+            <EditElementModal
+                isOpen={editModalOpen}
+                onClose={handleEditModalClose}
+                element={elementToEdit}
+                onSave={handleElementEditSave}
             />
         </VStack>
     );

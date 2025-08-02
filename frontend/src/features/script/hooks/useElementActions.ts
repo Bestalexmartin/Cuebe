@@ -21,20 +21,12 @@ export function useElementActions(
         }
       }
 
-      if (insertIndex === elements.length) {
-        applyLocalChange({
-          type: "CREATE_ELEMENT",
-          elementId: cleanData.elementID,
-          elementData: cleanData,
-        } as any);
-      } else {
-        applyLocalChange({
-          type: "CREATE_ELEMENT_AT_INDEX",
-          elementId: cleanData.elementID,
-          elementData: cleanData,
-          insertIndex,
-        } as any);
-      }
+      applyLocalChange({
+        type: "CREATE_ELEMENT",
+        elementId: cleanData.elementID,
+        elementData: cleanData,
+        insertIndex: insertIndex === elements.length ? undefined : insertIndex,
+      } as any);
     },
     [elements, autoSort, applyLocalChange],
   );

@@ -29,11 +29,8 @@ export class EditQueueFormatter {
             
             case 'CREATE_ELEMENT':
                 const elementType = operation.elementData.elementType?.toLowerCase() || 'element';
-                return `Created new ${elementType}: "${operation.elementData.description || 'Untitled'}"`;
-            
-            case 'CREATE_ELEMENT_AT_INDEX':
-                const elementTypeAtIndex = operation.elementData.elementType?.toLowerCase() || 'element';
-                return `Created new ${elementTypeAtIndex}: "${operation.elementData.description || 'Untitled'}"`;
+                const insertText = operation.insertIndex !== undefined ? ` at position ${operation.insertIndex + 1}` : '';
+                return `Created new ${elementType}${insertText}: "${operation.elementData.description || 'Untitled'}"`;
             
             case 'DELETE_ELEMENT':
                 const deletedType = operation.elementData.elementType?.toLowerCase() || 'element';
@@ -50,8 +47,91 @@ export class EditQueueFormatter {
             case 'DISABLE_AUTO_SORT':
                 return `Disabled batch reorder`;
             
+            case 'UPDATE_SCRIPT_INFO':
+                return this.formatScriptInfoUpdate(operation);
+            
             default:
                 return `Unknown operation on "${elementName}"`;
+        }
+    }
+    
+    /**
+     * Format script info updates with appropriate descriptions
+     */
+    private static formatScriptInfoUpdate(operation: any): string {
+        const changes = operation.changes || {};
+        const changedFields = Object.keys(changes);
+        
+        if (changedFields.length === 0) {
+            return 'Updated script information';
+        }
+        
+        if (changedFields.length === 1) {
+            const field = changedFields[0];
+            const change = changes[field];
+            const fieldDisplayNames: Record<string, string> = {
+                'scriptName': 'script name',
+                'scriptStatus': 'script status',
+                'startTime': 'start time',
+                'endTime': 'end time',
+                'scriptNotes': 'script notes'
+            };
+            
+            const fieldName = fieldDisplayNames[field] || field;
+            const oldValue = this.formatScriptValue(field, change.oldValue);
+            const newValue = this.formatScriptValue(field, change.newValue);
+            
+            return `Updated ${fieldName} from "${oldValue}" to "${newValue}"`;
+        }
+        
+        // Multiple fields changed
+        const fieldDisplayNames: Record<string, string> = {
+            'scriptName': 'name',
+            'scriptStatus': 'status',
+            'startTime': 'start time',
+            'endTime': 'end time',
+            'scriptNotes': 'notes'
+        };
+        
+        const fieldNames = changedFields.map(field => fieldDisplayNames[field] || field).join(', ');
+        return `Updated script ${fieldNames}`;
+    }
+    
+    /**
+     * Format script-specific values for display
+     */
+    private static formatScriptValue(field: string, value: any): string {
+        if (value === null || value === undefined || value === '') {
+            return '(empty)';
+        }
+        
+        switch (field) {
+            case 'startTime':
+            case 'endTime':
+                // Format ISO date string to readable format
+                try {
+                    const date = new Date(value);
+                    return date.toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+                } catch {
+                    return String(value);
+                }
+            
+            case 'scriptStatus':
+                return String(value).toLowerCase();
+            
+            case 'scriptNotes':
+                return String(value).length > 30 
+                    ? String(value).substring(0, 30) + '...'
+                    : String(value);
+            
+            default:
+                return String(value);
         }
     }
     
@@ -224,9 +304,11 @@ export class EditQueueFormatter {
             'UPDATE_FIELD': 'updates',
             'UPDATE_TIME_OFFSET': 'time changes',
             'CREATE_ELEMENT': 'additions',
-            'CREATE_ELEMENT_AT_INDEX': 'additions',
             'DELETE_ELEMENT': 'deletions',
-            'BULK_REORDER': 'bulk moves'
+            'BULK_REORDER': 'bulk moves',
+            'ENABLE_AUTO_SORT': 'batch reorders',
+            'DISABLE_AUTO_SORT': 'preference changes',
+            'UPDATE_SCRIPT_INFO': 'script info updates'
         };
         
         const parts = Object.entries(types).map(([type, count]) => {

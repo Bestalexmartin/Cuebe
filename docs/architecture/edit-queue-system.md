@@ -219,6 +219,45 @@ The edit history uses an intuitive color theme to help users quickly identify op
 
 ## Implementation Details
 
+### Data Source Priority - Critical Principle
+
+**The current view state is the authoritative source of truth, not the original database values.**
+
+When displaying data or making calculations in components:
+
+❌ **Never reference original/stored values directly for display**
+```typescript
+// WRONG - uses stored database value
+if (element.duration) {
+    return formatDuration(element.duration);
+}
+```
+
+✅ **Always use computed current state that includes edit queue changes**
+```typescript
+// CORRECT - uses current state with edit queue applied
+const currentDuration = getCurrentElementDuration(element, currentScript);
+return formatDuration(currentDuration);
+```
+
+**Why this matters:**
+- Original database values don't reflect pending user changes
+- Edit queue operations update logical state but stored values remain unchanged until save
+- Components must prioritize current computed state over stored database values
+- Only use original values for change detection (highlighting save buttons, etc.)
+
+**Common Pitfall:** Components with fallback logic that checks stored values first will display stale data:
+```typescript
+// PROBLEMATIC - stored value takes precedence over current state
+if (element.storedField) {
+    return element.storedField; // ❌ Shows old database value
+} else if (computedCurrentValue) {
+    return computedCurrentValue; // ✅ This logic never runs
+}
+```
+
+**Solution:** Prioritize current/computed values over stored values for display logic.
+
 ### Operation Application
 
 Operations are applied in sequence to transform server state:

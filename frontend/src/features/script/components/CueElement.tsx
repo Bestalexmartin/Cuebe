@@ -18,6 +18,7 @@ interface CueElementProps {
     scriptEndTime?: string;
     isDragEnabled?: boolean;
     onSelect?: () => void;
+    onEdit?: (element: ScriptElement) => void;
 }
 
 export const CueElement: React.FC<CueElementProps> = React.memo(({
@@ -30,7 +31,8 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
     scriptStartTime,
     scriptEndTime,
     isDragEnabled = false,
-    onSelect
+    onSelect,
+    onEdit
 }) => {
     // Drag functionality
     const dragTimeoutRef = useRef<number | null>(null);
@@ -101,6 +103,16 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
             isDragStartedRef.current = true;
         }
     }, [isDragEnabled]);
+
+    // Handle double-click to edit element
+    const handleDoubleClick = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        if (onEdit) {
+            onEdit(element);
+        }
+    }, [onEdit, element]);
 
     const isNote = (element as any).elementType === 'NOTE';
 
@@ -186,6 +198,30 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
     }, [element.timeOffsetMs, showClockTimes, scriptStartTime]);
 
     const durationDisplay = useMemo(() => {
+        // For SHOW START elements, always calculate from script times if available
+        if (element.description?.toUpperCase() === 'SHOW START' && 
+            scriptStartTime && scriptEndTime) {
+            const startTime = new Date(scriptStartTime);
+            const endTime = new Date(scriptEndTime);
+            const durationMs = endTime.getTime() - startTime.getTime();
+
+            if (durationMs > 0) {
+                const totalSeconds = Math.round(durationMs / 1000);
+                const days = Math.floor(totalSeconds / 86400);
+                const hours = Math.floor((totalSeconds % 86400) / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+
+                if (days > 0) {
+                    return `${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else if (hours > 0) {
+                    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else {
+                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }
+        }
+        
         if (element.duration) {
             const totalSeconds = element.duration;
             const days = Math.floor(totalSeconds / 86400);
@@ -210,28 +246,6 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
             }
         }
 
-        if (element.description?.toUpperCase() === 'SHOW START' &&
-            scriptStartTime && scriptEndTime) {
-            const startTime = new Date(scriptStartTime);
-            const endTime = new Date(scriptEndTime);
-            const durationMs = endTime.getTime() - startTime.getTime();
-
-            if (durationMs > 0) {
-                const totalSeconds = Math.round(durationMs / 1000);
-                const days = Math.floor(totalSeconds / 86400);
-                const hours = Math.floor((totalSeconds % 86400) / 3600);
-                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                const seconds = totalSeconds % 60;
-
-                if (days > 0) {
-                    return `${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                } else if (hours > 0) {
-                    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                } else {
-                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                }
-            }
-        }
 
         return '-';
     }, [element.duration, element.description, scriptStartTime, scriptEndTime]);
@@ -261,6 +275,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
             onMouseDown={handleMouseDown}
             onMouseUp={handleMouseUp}
             onMouseMove={handleMouseMove}
+            onDoubleClick={handleDoubleClick}
             {...(isDragEnabled ? { ...attributes, ...listeners } : {})}
         >
             <HStack spacing={0} align="center" h="32px">

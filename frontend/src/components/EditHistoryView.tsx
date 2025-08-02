@@ -274,7 +274,6 @@ function getOperationColor(operationType: string): string {
         // Creation/Addition
         case 'CREATE_ELEMENT':
         case 'DUPLICATE_ELEMENT':
-        case 'CREATE_ELEMENT_AT_INDEX':
             return 'green';
 
         // Deletion/Removal

@@ -142,6 +142,7 @@ export const useScriptElementsWithEditQueue = (
             }
             
             // Send batch of operations to server
+            console.log('Sending operations to batch-update:', editQueueRef.current.operations);
             const response = await fetch(`/api/scripts/${scriptId}/elements/batch-update`, {
                 method: 'PATCH',
                 headers: {
@@ -154,7 +155,14 @@ export const useScriptElementsWithEditQueue = (
             });
             
             if (!response.ok) {
-                throw new Error(`Failed to save changes: ${response.status}`);
+                let errorData;
+                try {
+                    errorData = await response.json();
+                } catch {
+                    errorData = await response.text();
+                }
+                console.error('Backend error response:', response.status, errorData);
+                throw new Error(`Failed to save changes: ${response.status} - ${JSON.stringify(errorData)}`);
             }
             
             // Clear the edit queue and refresh from server
@@ -270,18 +278,20 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             
         case 'CREATE_ELEMENT':
             const createOp = operation as any;
-            return [...elements, createOp.elementData];
-            
-        case 'CREATE_ELEMENT_AT_INDEX':
-            const createAtIndexOp = operation as any;
-            const newElements = [...elements];
-            newElements.splice(createAtIndexOp.insertIndex, 0, createAtIndexOp.elementData);
-            
-            // Update sequences for all elements after insertion
-            return newElements.map((el, index) => ({
-                ...el,
-                sequence: index + 1
-            }));
+            if (createOp.insertIndex !== undefined) {
+                // Insert at specific index
+                const newElements = [...elements];
+                newElements.splice(createOp.insertIndex, 0, createOp.elementData);
+                
+                // Update sequences for all elements after insertion
+                return newElements.map((el, index) => ({
+                    ...el,
+                    sequence: index + 1
+                }));
+            } else {
+                // Append to end
+                return [...elements, createOp.elementData];
+            }
             
         case 'DELETE_ELEMENT':
             return elements.filter(el => el.elementID !== operation.elementId);
@@ -324,6 +334,10 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             
         case 'DISABLE_AUTO_SORT':
             // Handle auto-sort disabling (no element changes, just preference tracking)
+            return elements;
+            
+        case 'UPDATE_SCRIPT_INFO':
+            // Script info operations don't affect elements, just track for undo/redo
             return elements;
             
         default:

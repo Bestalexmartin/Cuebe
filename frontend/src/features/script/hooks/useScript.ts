@@ -21,6 +21,7 @@ interface UseScriptReturn {
   script: Script | null;
   isLoading: boolean;
   error: string | null;
+  refetchScript: () => Promise<void>;
 }
 
 export const useScript = (scriptId: string | undefined): UseScriptReturn => {
@@ -61,5 +62,10 @@ export const useScript = (scriptId: string | undefined): UseScriptReturn => {
         fetchScript();
     }, [fetchScript]);
 
-    return useMemo(() => ({ script, isLoading, error }), [script, isLoading, error]);
+    return useMemo(() => ({ 
+        script, 
+        isLoading, 
+        error, 
+        refetchScript: fetchScript 
+    }), [script, isLoading, error, fetchScript]);
 };
