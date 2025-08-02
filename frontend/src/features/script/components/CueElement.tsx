@@ -185,16 +185,18 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
         }
 
         // Show offset time when clock times are not requested
-        const totalSeconds = Math.round(timeValue / 1000);
+        const isNegative = timeValue < 0;
+        const absTimeValue = Math.abs(timeValue);
+        const totalSeconds = Math.round(absTimeValue / 1000);
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
 
-        if (hours > 0) {
-            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        } else {
-            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }
+        const timeString = hours > 0 
+            ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+            : `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        return isNegative ? `-${timeString}` : timeString;
     }, [element.timeOffsetMs, showClockTimes, scriptStartTime]);
 
     const durationDisplay = useMemo(() => {

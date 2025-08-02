@@ -13,26 +13,20 @@ import {
     Button,
     useBreakpointValue
 } from "@chakra-ui/react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from '@clerk/clerk-react';
+import { useParams } from "react-router-dom";
 import { useScript } from "../features/script/hooks/useScript";
 import { useShow } from "../features/shows/hooks/useShow";
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AppIcon } from '../components/AppIcon';
-import { ActionsMenu, ActionItem } from '../components/ActionsMenu';
-// Modal imports now handled by ScriptModals component
-import { useEnhancedToast } from '../utils/toastUtils';
+import { ActionsMenu } from '../components/ActionsMenu';
 import { useValidatedForm } from '../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../types/validation';
-import { convertUTCToLocal, convertLocalToUTC } from '../utils/dateTimeUtils';
-import { useChangeDetection } from '../hooks/useChangeDetection';
+import { useEnhancedToast } from '../utils/toastUtils';
 import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
 import { EditHistoryView } from '../components/EditHistoryView';
 import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
-import { UpdateElementOperation } from '../features/script/types/editQueue';
 import { useModalState } from '../hooks/useModalState';
-import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
 import { SaveConfirmationModal } from '../components/modals/SaveConfirmationModal';
 import { SaveProcessingModal } from '../components/modals/SaveProcessingModal';
 
@@ -43,12 +37,18 @@ import { ViewMode, ViewModeRef } from '../features/script/components/modes/ViewM
 import { EditMode, EditModeRef } from '../features/script/components/modes/EditMode';
 import { PlayMode } from '../features/script/components/modes/PlayMode';
 import { ShareMode } from '../features/script/components/modes/ShareMode';
-// AddScriptElementModal now handled by ScriptModals component
-import { useScriptModes } from '../features/script/hooks/useScriptModes';
+import { useScriptModes, ScriptMode } from '../features/script/hooks/useScriptModes';
 import { useElementActions } from '../features/script/hooks/useElementActions';
 import { ScriptModals } from '../features/script/components/ScriptModals';
 import { MobileScriptDrawer } from '../features/script/components/MobileScriptDrawer';
 import { getToolbarButtons, ToolbarContext } from '../features/script/utils/toolbarConfig';
+
+// New custom hooks
+import { useElementModalActions } from '../features/script/hooks/useElementModalActions';
+import { useScriptModalHandlers } from '../features/script/hooks/useScriptModalHandlers';
+import { useScriptNavigation } from '../hooks/useScriptNavigation';
+import { useScriptFormSync } from '../features/script/hooks/useScriptFormSync';
+import { createActionMenuConfig } from '../features/script/config/actionMenuConfig';
 
 // Modal names for type safety and consistency
 const MODAL_NAMES = {
@@ -120,54 +120,10 @@ const VALIDATION_CONFIG: FormValidationConfig = {
 
 export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, onMenuClose }) => {
     const { scriptId } = useParams<{ scriptId: string }>();
-    const navigate = useNavigate();
-    const { getToken } = useAuth();
-    const { showSuccess, showError } = useEnhancedToast();
 
-    // Modal state management using custom hook
-    const modalState = useModalState(Object.values(MODAL_NAMES));
-
-    // Dashboard navigation hook
-    const { navigateWithCurrentContext } = useDashboardNavigation();
-
-    // Processing states (separate from modal states)
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [isDeletingCue, setIsDeletingCue] = useState(false);
-    const [isDuplicatingElement, setIsDuplicatingElement] = useState(false);
-    const [forceRender, setForceRender] = useState(0); // Used to force re-renders when edit operations complete
-
-    // Element selection and refs
-    const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-    const [selectedElement, setSelectedElement] = useState<any>(null); // TODO: Type this properly with ScriptElement interface
-    const [selectedElementName, setSelectedElementName] = useState<string>('');
-    const [selectedElementTimeOffset, setSelectedElementTimeOffset] = useState<number>(0);
+    // Refs for mode components
     const viewModeRef = useRef<ViewModeRef>(null);
     const editModeRef = useRef<EditModeRef>(null);
-
-    // Options modal data management
-    const [previewPreferences, setPreviewPreferences] = useState<UserPreferences | null>(null);
-    const {
-        preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues },
-        updatePreference,
-        updatePreferences
-    } = useUserPreferences();
-
-    // Use preview preferences when options modal is open, otherwise use saved preferences  
-    // Note: activePreferences is calculated after currentAutoSortState is defined
-
-    // Navigation state
-    const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
-
-    // Scroll state for jump button ghosting
-    const [scrollState, setScrollState] = useState<{
-        isAtTop: boolean;
-        isAtBottom: boolean;
-        allElementsFitOnScreen: boolean;
-    }>({
-        isAtTop: true,
-        isAtBottom: false,
-        allElementsFitOnScreen: true
-    });
 
     // Responsive breakpoint for mobile layout
     const isMobile = useBreakpointValue({ base: true, lg: false });
@@ -179,15 +135,13 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         validateOnBlur: true,
         showFieldErrorsInToast: false
     };
-
     const form = useValidatedForm<ScriptFormData>(INITIAL_FORM_STATE, formConfig);
 
-    // Fetch the script data
-    const { script: scriptFromHook, isLoading: isLoadingScript, error: scriptError } = useScript(scriptId);
+    // Modal state management
+    const modalState = useModalState(Object.values(MODAL_NAMES));
 
-    const script = scriptFromHook;
-
-    // Fetch the show data using the script's showID
+    // Fetch the script and show data
+    const { script, isLoading: isLoadingScript, error: scriptError } = useScript(scriptId);
     const { show } = useShow(script?.showID);
 
     // Edit queue for tracking changes
@@ -202,18 +156,22 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         saveChanges
     } = editQueueHook;
 
+    // User preferences management
+    const [previewPreferences, setPreviewPreferences] = useState<UserPreferences | null>(null);
+    const {
+        preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues },
+        updatePreference,
+        updatePreferences
+    } = useUserPreferences();
+
     // Calculate the current auto-sort state from edit queue operations
     const currentAutoSortState = useMemo(() => {
-        // Start with the base preference value
         let currentState = autoSortCues;
-        
-        // Check for any ENABLE_AUTO_SORT or DISABLE_AUTO_SORT operations in the pending operations
         for (const operation of pendingOperations) {
             if (operation.type === 'ENABLE_AUTO_SORT' || operation.type === 'DISABLE_AUTO_SORT') {
                 currentState = (operation as any).newPreferenceValue;
             }
         }
-        
         return currentState;
     }, [autoSortCues, pendingOperations]);
 
@@ -224,208 +182,68 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState }
         , [modalState, previewPreferences, darkMode, colorizeDepNames, showClockTimes, currentAutoSortState]);
 
+    // Element actions hook
     const { insertElement } = useElementActions(
         editQueueElements,
         activePreferences.autoSortCues,
         applyLocalChange
     );
 
-    // Debug logging for stability
-    // useEffect(() => {
-    //     console.log('🔍 ManageScriptPage: editQueueElements changed:', editQueueElements.length);
-    // }, [editQueueElements]);
-    
-    // useEffect(() => {
-    //     console.log('🔍 ManageScriptPage: activePreferences.autoSortCues changed:', activePreferences.autoSortCues);
-    // }, [activePreferences.autoSortCues]);
-    
-    // useEffect(() => {
-    //     console.log('🔍 ManageScriptPage: applyLocalChange changed, identity:', applyLocalChange.toString().slice(0, 50));
-    // }, [applyLocalChange]);
-
-    // Use applyLocalChange directly from the hook (already stable)
-
-    // Active mode state using script-specific hook
+    // Active mode state
     const { activeMode, setActiveMode } = useScriptModes('view');
-    
-    // Log mode transitions
-    // useEffect(() => {
-    //     console.log(`🔄 ManageScriptPage: Mode changed to "${activeMode}"`);
-    // }, [activeMode]);
 
-    // Calculate current script including all edit queue changes (this becomes the "truth")
-    const currentScript = useMemo(() => {
-        if (!script) return null;
-        
-        // Start with server data
-        let current = { ...script };
-        
-        // Apply all script info operations from edit queue
-        for (const operation of pendingOperations) {
-            if (operation.type === 'UPDATE_SCRIPT_INFO') {
-                const changes = (operation as any).changes;
-                for (const [field, change] of Object.entries(changes)) {
-                    const changeData = change as { oldValue: any; newValue: any };
-                    if (field === 'scriptName') {
-                        current.scriptName = changeData.newValue;
-                    } else if (field === 'scriptStatus') {
-                        current.scriptStatus = changeData.newValue;
-                    } else if (field === 'startTime') {
-                        // Ensure we store as Date object consistently
-                        current.startTime = typeof changeData.newValue === 'string' 
-                            ? new Date(changeData.newValue) 
-                            : changeData.newValue;
-                    } else if (field === 'endTime') {
-                        // Ensure we store as Date object consistently
-                        current.endTime = typeof changeData.newValue === 'string' 
-                            ? new Date(changeData.newValue) 
-                            : changeData.newValue;
-                    } else if (field === 'scriptNotes') {
-                        current.scriptNotes = changeData.newValue;
-                    }
-                }
-            }
+    // Script form synchronization hook
+    const { currentScript, hasChanges, handleInfoModeExit } = useScriptFormSync({
+        script,
+        pendingOperations,
+        form,
+        activeMode,
+        applyLocalChange,
+        setActiveMode
+    });
+
+    // Navigation hook
+    const navigation = useScriptNavigation({
+        hasUnsavedChanges,
+        script,
+        scriptId,
+        onUnsavedChangesDetected: (pendingPath: string) => {
+            modalHandlers.setPendingNavigation(pendingPath);
+            modalState.openModal(MODAL_NAMES.UNSAVED_CHANGES);
         }
-        
-        return current;
-    }, [script, pendingOperations]);
+    });
 
+    // Modal handlers hook
+    const modalHandlers = useScriptModalHandlers({
+        scriptId,
+        script,
+        hasUnsavedChanges,
+        saveChanges,
+        discardChanges,
+        modalState,
+        modalNames: MODAL_NAMES
+    });
 
-    // Data for change detection should compare current state (including edit queue) vs form changes
-    const changeDetectionBaseData = currentScript && show ? {
-        scriptName: currentScript.scriptName,
-        showName: show.showName,
-        scriptStatus: currentScript.scriptStatus,
-        startTime: convertLocalToUTC(convertUTCToLocal(currentScript.startTime)), // Normalize the format
-        endTime: convertLocalToUTC(convertUTCToLocal(currentScript.endTime)), // Normalize the format
-        scriptNotes: currentScript.scriptNotes || ''
-    } : null;
+    // Element modal actions hook
+    const elementActions = useElementModalActions({
+        scriptId,
+        editQueueElements,
+        applyLocalChange,
+        insertElement,
+        modalState,
+        modalNames: MODAL_NAMES
+    });
 
-    const { hasChanges } = useChangeDetection(
-        changeDetectionBaseData,
-        {
-            scriptName: form.formData.scriptName,
-            scriptStatus: form.formData.scriptStatus,
-            startTime: convertLocalToUTC(form.formData.startTime),
-            endTime: convertLocalToUTC(form.formData.endTime),
-            scriptNotes: form.formData.scriptNotes
-        },
-        activeMode === 'info'
-    );
-
-    // Populate form when script data loads or edit queue changes
-    React.useEffect(() => {
-        if (currentScript) {
-            form.setFormData({
-                scriptName: currentScript.scriptName || '',
-                scriptStatus: currentScript.scriptStatus || 'DRAFT',
-                startTime: convertUTCToLocal(currentScript.startTime),
-                endTime: convertUTCToLocal(currentScript.endTime),
-                scriptNotes: currentScript.scriptNotes || ''
-            });
-        }
-    }, [currentScript, form.setFormData]);
-
-    const handleSelectionChange = useCallback((id: string | null) => {
-        setSelectedElementId(id);
-    }, []);
-
-    useEffect(() => {
-        if (activeMode !== 'edit') {
-            setSelectedElementId(null);
-        }
-    }, [activeMode]);
-
-    // Handle browser beforeunload event (tab close, refresh, etc.)
-    useEffect(() => {
-        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-            if (hasUnsavedChanges) {
-                event.preventDefault();
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore - returnValue is deprecated but required for Chrome compatibility
-                event.returnValue = ''; // Required for Chrome
-                return ''; // Required for some older browsers
-            }
-        };
-
-        window.addEventListener('beforeunload', handleBeforeUnload);
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-    }, [hasUnsavedChanges]);
-
-    // Push initial history state to enable popstate detection
-    useEffect(() => {
-        window.history.pushState({ manageScript: true }, '', window.location.pathname);
-    }, []);
-
-    // Handle browser back/forward button using popstate
-    useEffect(() => {
-        const handlePopState = (event: PopStateEvent) => {
-            if (hasUnsavedChanges) {
-                event.preventDefault();
-                // Push current state back to history to "block" the navigation
-                window.history.pushState({ manageScript: true }, '', window.location.pathname);
-                setPendingNavigation('/dashboard'); // Default to dashboard on back
-                modalState.openModal(MODAL_NAMES.UNSAVED_CHANGES);
-            }
-        };
-
-        window.addEventListener('popstate', handlePopState);
-        return () => window.removeEventListener('popstate', handlePopState);
-    }, [hasUnsavedChanges, modalState]);
-
-
-    // Unsaved Changes Modal handlers (two-tier pattern)
-    const handleUnsavedChangesCancel = () => {
-        modalState.closeModal(MODAL_NAMES.UNSAVED_CHANGES);
-        modalState.closeModal(MODAL_NAMES.FINAL_UNSAVED_CHANGES);
-        setPendingNavigation(null);
-    };
-
-    const handleInitialUnsavedConfirm = () => {
-        modalState.closeModal(MODAL_NAMES.UNSAVED_CHANGES);
-        modalState.openModal(MODAL_NAMES.FINAL_UNSAVED_CHANGES);
-    };
-
-    const handleSaveScriptChanges = async () => {
-        // Close confirmation modal and show processing modal
-        modalState.closeModal(MODAL_NAMES.SAVE_CONFIRMATION);
-        modalState.closeModal(MODAL_NAMES.FINAL_UNSAVED_CHANGES);
-        modalState.openModal(MODAL_NAMES.SAVE_PROCESSING);
-        
-        try {
-            // Save all pending changes using the comprehensive save function
-            const success = await saveChanges();
-            
-            if (success) {
-                // Wait a brief moment to ensure everything is stable
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                modalState.closeModal(MODAL_NAMES.SAVE_PROCESSING);
-                showSuccess('Changes Saved', 'All pending changes have been saved successfully.');
-                
-                if (pendingNavigation) {
-                    // Handle dashboard navigation with state
-                    if (pendingNavigation === '/dashboard') {
-                        navigateWithCurrentContext(script, scriptId);
-                    } else {
-                        navigate(pendingNavigation);
-                    }
-                    setPendingNavigation(null);
-                }
-            } else {
-                modalState.closeModal(MODAL_NAMES.SAVE_PROCESSING);
-                showError('Failed to save changes. Please try again.');
-            }
-        } catch (error) {
-            console.error('Error saving changes:', error);
-            modalState.closeModal(MODAL_NAMES.SAVE_PROCESSING);
-            showError('An error occurred while saving changes.');
-        }
-    };
-
-    const handleShowSaveConfirmation = () => {
-        modalState.openModal(MODAL_NAMES.SAVE_CONFIRMATION);
-    };
+    // Scroll state for jump button ghosting
+    const [scrollState, setScrollState] = useState<{
+        isAtTop: boolean;
+        isAtBottom: boolean;
+        allElementsFitOnScreen: boolean;
+    }>({
+        isAtTop: true,
+        isAtBottom: false,
+        allElementsFitOnScreen: true
+    });
 
     // Callback for child components to update scroll state
     const handleScrollStateChange = useCallback((newScrollState: {
@@ -440,75 +258,25 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const toolbarContext: ToolbarContext = {
         activeMode,
         scrollState,
-        hasSelection: !!selectedElementId,
+        hasSelection: !!elementActions.selectedElementId,
         hasUnsavedChanges,
         pendingOperationsCount: pendingOperations.length
     };
 
     const toolButtons = getToolbarButtons(toolbarContext);
 
-    // Handle exiting Info mode with unsaved changes - add to edit history
-    const handleInfoModeExit = (targetModeId: string) => {
-        if (!hasChanges || !changeDetectionBaseData) {
-            // No changes to save, proceed with mode change
-            setActiveMode(targetModeId as any);
-            return;
+    // Clear selection when exiting edit mode
+    useEffect(() => {
+        if (activeMode !== 'edit') {
+            elementActions.setSelectedElementId(null);
         }
+    }, [activeMode, elementActions]);
 
-        // Create a collective operation for all form changes
-        const formChanges = {
-            scriptName: {
-                oldValue: changeDetectionBaseData.scriptName,
-                newValue: form.formData.scriptName
-            },
-            scriptStatus: {
-                oldValue: changeDetectionBaseData.scriptStatus,
-                newValue: form.formData.scriptStatus
-            },
-            startTime: {
-                oldValue: changeDetectionBaseData.startTime,
-                newValue: convertLocalToUTC(form.formData.startTime)
-            },
-            endTime: {
-                oldValue: changeDetectionBaseData.endTime,
-                newValue: convertLocalToUTC(form.formData.endTime)
-            },
-            scriptNotes: {
-                oldValue: changeDetectionBaseData.scriptNotes,
-                newValue: form.formData.scriptNotes
-            }
-        };
-
-        // Filter out fields that haven't actually changed
-        const actualChanges: any = {};
-        for (const [field, values] of Object.entries(formChanges)) {
-            if (values.oldValue !== values.newValue) {
-                actualChanges[field] = values;
-            }
-        }
-
-        // Only create operation if there are actual changes
-        if (Object.keys(actualChanges).length > 0) {
-            const infoFormOperation = {
-                type: 'UPDATE_SCRIPT_INFO' as const,
-                elementId: 'script-info',
-                changes: actualChanges
-            };
-
-            applyLocalChange(infoFormOperation);
-
-            // Update the original data to reflect the new state - this will be handled
-            // automatically by the currentScript calculation, no need to manually update
-        }
-
-        // Proceed with the mode change
-        setActiveMode(targetModeId as any);
-    };
-
+    // Main mode change handler
     const handleModeChange = (modeId: string) => {
-        // Handle EXIT button (replaces dashboard)
+        // Handle EXIT button
         if (modeId === 'exit') {
-            handleCancel();
+            navigation.handleCancel();
             return;
         }
 
@@ -521,11 +289,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         if (modeId === 'view' || modeId === 'info' || modeId === 'edit' || modeId === 'history') {
             // Check if we're leaving Info mode with unsaved changes
             if (activeMode === 'info' && modeId !== 'info' && hasChanges) {
-                handleInfoModeExit(modeId);
+                handleInfoModeExit(modeId as ScriptMode);
                 return;
             }
             
-            setActiveMode(modeId);
+            setActiveMode(modeId as ScriptMode);
             return;
         }
 
@@ -543,10 +311,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         if (activeMode === 'view') {
             switch (modeId) {
                 case 'play':
-                    setActiveMode('play');
+                    setActiveMode('play' as ScriptMode);
                     return;
                 case 'share':
-                    setActiveMode('share');
+                    setActiveMode('share' as ScriptMode);
                     return;
             }
         }
@@ -555,7 +323,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         if (activeMode === 'history') {
             switch (modeId) {
                 case 'clear-history':
-                    handleClearHistory();
+                    modalHandlers.handleClearHistory();
                     return;
             }
         }
@@ -567,338 +335,19 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     modalState.openModal(MODAL_NAMES.ADD_ELEMENT);
                     return;
                 case 'edit-element':
-                    handleElementEdit();
+                    elementActions.handleElementEdit();
                     return;
                 case 'duplicate-element':
-                    handleElementDuplicate();
+                    elementActions.handleElementDuplicate();
                     return;
                 case 'group-elements':
-                    handleElementGroup();
+                    elementActions.handleElementGroup();
                     return;
                 case 'delete-element':
-                    handleElementDelete();
+                    elementActions.handleElementDelete();
                     return;
             }
         }
-    };
-
-    // NOTE: This function is currently unused - functionality moved to handleInfoModeExit
-    // Removed to clean up TypeScript warnings
-
-    const handleCancel = () => {
-        const dashboardPath = '/dashboard';
-        if (hasUnsavedChanges) {
-            setPendingNavigation(dashboardPath);
-            modalState.openModal(MODAL_NAMES.UNSAVED_CHANGES);
-        } else {
-            navigate(dashboardPath, {
-                state: {
-                    view: 'shows',
-                    selectedShowId: script?.showID,
-                    selectedScriptId: scriptId,
-                    returnFromManage: true
-                }
-            });
-        }
-    };
-
-    // Clear history functionality
-    const handleClearHistory = () => {
-        modalState.openModal(MODAL_NAMES.CLEAR_HISTORY);
-    };
-
-    const handleInitialClearHistoryConfirm = () => {
-        modalState.closeModal(MODAL_NAMES.CLEAR_HISTORY);
-        modalState.openModal(MODAL_NAMES.FINAL_CLEAR_HISTORY);
-    };
-
-    const handleFinalClearHistoryConfirm = () => {
-        // Clear the edit queue (restore to server state)
-        discardChanges();
-        modalState.closeModal(MODAL_NAMES.FINAL_CLEAR_HISTORY);
-        setActiveMode('view'); // Return to view mode
-        showSuccess('Edit History Cleared', 'All changes have been discarded and the script has been restored to its original state.');
-    };
-
-    const handleClearHistoryCancel = () => {
-        modalState.closeModal(MODAL_NAMES.CLEAR_HISTORY);
-        modalState.closeModal(MODAL_NAMES.FINAL_CLEAR_HISTORY);
-    };
-
-    // Delete functionality
-    const handleDeleteClick = () => {
-        modalState.openModal(MODAL_NAMES.DELETE);
-    };
-
-    const handleInitialDeleteConfirm = () => {
-        modalState.closeModal(MODAL_NAMES.DELETE);
-        modalState.openModal(MODAL_NAMES.FINAL_DELETE);
-    };
-
-    const handleFinalDeleteConfirm = async () => {
-        if (!scriptId) return;
-
-        setIsDeleting(true);
-        try {
-            const token = await getToken();
-            if (!token) {
-                throw new Error('Authentication token not available');
-            }
-
-            const response = await fetch(`/api/scripts/${scriptId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to delete script');
-            }
-
-            showSuccess('Script Deleted', `"${script?.scriptName}" has been permanently deleted`);
-
-            // Navigate back to dashboard shows view
-            navigate('/dashboard', {
-                state: {
-                    view: 'shows',
-                    selectedShowId: script?.showID,
-                    returnFromManage: true
-                }
-            });
-
-        } catch (error) {
-            console.error('Error deleting script:', error);
-            showError('Failed to delete script. Please try again.');
-        } finally {
-            setIsDeleting(false);
-            modalState.closeModal(MODAL_NAMES.FINAL_DELETE);
-        }
-    };
-
-    const handleDeleteCancel = useCallback(() => {
-        modalState.closeModal(MODAL_NAMES.DELETE);
-        modalState.closeModal(MODAL_NAMES.FINAL_DELETE);
-    }, [modalState]);
-
-
-    // Element action handlers
-    const handleElementCreated = async (elementData: any) => {
-        insertElement(elementData);
-
-        modalState.closeModal(MODAL_NAMES.ADD_ELEMENT);
-        showSuccess('Script Element Created', 'New element added to script. Save to apply changes.');
-    };
-
-    const handleAutoSortElements = useCallback(async () => {
-        if (!scriptId) {
-            return;
-        }
-
-        try {
-            // Get current elements from edit queue
-            const currentElements = [...editQueueElements];
-
-            // Sort elements by timeOffsetMs (create a copy to avoid mutating original)
-            const sortedElements = [...currentElements].sort((a, b) => a.timeOffsetMs - b.timeOffsetMs);
-
-            // Check if any reordering is needed
-            const needsReordering = currentElements.some((element, index) => {
-                const sortedElement = sortedElements[index];
-                const matches = element.elementID === sortedElement.elementID;
-                return !matches;
-            });
-
-            if (!needsReordering) {
-                showSuccess('Auto-Sort Complete', 'Elements are already in correct time order.');
-                return;
-            }
-
-            // Create bulk reorder operation for all elements that changed position
-            const elementChanges: any[] = [];
-            for (let newIndex = 0; newIndex < sortedElements.length; newIndex++) {
-                const element = sortedElements[newIndex];
-                const oldIndex = currentElements.findIndex(el => el.elementID === element.elementID);
-
-                if (oldIndex !== newIndex) {
-                    elementChanges.push({
-                        elementId: element.elementID,
-                        oldIndex: oldIndex,
-                        newIndex: newIndex,
-                        oldSequence: oldIndex + 1,
-                        newSequence: newIndex + 1
-                    });
-                }
-            }
-
-            // Apply as compound operation: preference change + resulting sort
-            applyLocalChange({
-                type: 'ENABLE_AUTO_SORT',
-                elementId: 'auto-sort-preference',
-                oldPreferenceValue: false,
-                newPreferenceValue: true,
-                elementMoves: elementChanges
-            } as any);
-            showSuccess('Elements Auto-Sorted', `Reordered ${elementChanges.length} elements by time offset. Save to apply changes.`);
-        } catch (error) {
-            console.error('Error auto-sorting elements:', error);
-            showError(error instanceof Error ? error.message : 'Failed to auto-sort elements');
-        }
-    }, [scriptId, editQueueElements, applyLocalChange, showSuccess, showError]);
-
-    const handleAutoSortToggle = useCallback(
-        async (value: boolean) => {
-            if (value && !activePreferences.autoSortCues && scriptId) {
-                // Enabling auto-sort - this will create the ENABLE_AUTO_SORT operation
-                handleAutoSortElements();
-            } else if (!value && activePreferences.autoSortCues) {
-                // Disabling auto-sort - create a disable operation for edit history
-                const disableOperation = {
-                    type: 'DISABLE_AUTO_SORT' as const,
-                    elementId: 'auto-sort-preference',
-                    oldPreferenceValue: true,
-                    newPreferenceValue: false
-                };
-                applyLocalChange(disableOperation);
-            }
-            
-            // Update the preference after creating the operation
-            await updatePreference('autoSortCues', value);
-        },
-        [updatePreference, scriptId, activePreferences.autoSortCues, handleAutoSortElements, applyLocalChange]
-    );
-
-    // Handle immediate auto-sort when checkbox is clicked in modal
-    const handleAutoSortCheckboxChange = async (newAutoSortValue: boolean) => {
-
-
-        // Update the preference immediately
-        await updatePreference('autoSortCues', newAutoSortValue);
-
-        // If auto-sort is being enabled, trigger immediate re-sort
-        if (newAutoSortValue && !autoSortCues && scriptId) {
-            handleAutoSortElements();
-        } else {
-            // Not triggering auto-sort immediately
-        }
-    };
-
-    const handleOptionsModalSave = async (newPreferences: any) => {
-        // Just save the preferences - auto-sort was already handled by checkbox change
-        await updatePreferences(newPreferences);
-
-        setPreviewPreferences(null);
-    };
-
-    const handleElementDuplicate = async () => {
-        if (!selectedElementId) {
-            showError('No script element selected for duplication');
-            return;
-        }
-
-        // Find element in current edit queue elements (includes pending changes)
-        try {
-            const elementData = editQueueElements.find(el => el.elementID === selectedElementId);
-            
-            if (!elementData) {
-                showError('Selected element not found');
-                return;
-            }
-
-            setSelectedElementName(elementData.description || 'Unknown Element');
-            setSelectedElementTimeOffset(elementData.timeOffsetMs || 0);
-            modalState.openModal(MODAL_NAMES.DUPLICATE_ELEMENT);
-
-        } catch (error) {
-            console.error('Error finding element details:', error);
-            showError('Failed to load element details. Please try again.');
-        }
-    };
-
-    const handleConfirmDuplicate = async (description: string, timeOffsetMs: number) => {
-        if (!selectedElementId || !scriptId) {
-            return;
-        }
-
-        setIsDuplicatingElement(true);
-        try {
-            // Find the original element in the current elements
-            const originalElement = editQueueElements.find(el => el.elementID === selectedElementId);
-            if (!originalElement) {
-                throw new Error('Original element not found');
-            }
-
-            // Create duplicate with new description and time offset
-            const duplicateData = {
-                ...originalElement,
-                description,
-                timeOffsetMs,
-                // Generate a temporary ID for the duplicate (will be replaced by server)
-                elementID: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
-                // Remove server-only fields
-                created_at: undefined,
-                updated_at: undefined,
-                is_deleted: undefined
-            };
-
-            insertElement(duplicateData);
-
-            showSuccess('Script Element Duplicated', 'Script element has been duplicated. Save to apply changes.');
-            modalState.closeModal(MODAL_NAMES.DUPLICATE_ELEMENT);
-
-        } catch (error) {
-            console.error('Error duplicating element:', error);
-            showError('Failed to duplicate script element. Please try again.');
-        } finally {
-            setIsDuplicatingElement(false);
-        }
-    };
-
-    const handleElementEditSave = async (changes: Record<string, { oldValue: any; newValue: any }>) => {
-        if (!selectedElement) {
-            return;
-        }
-
-        try {
-            // Create single UPDATE_ELEMENT operation for all changes
-            applyLocalChange({
-                type: 'UPDATE_ELEMENT',
-                elementId: selectedElement.elementID,
-                changes: changes,
-                description: `Updated element "${selectedElement.description}"`
-            } as UpdateElementOperation);
-
-            // Force a re-render to ensure UI updates immediately
-            setForceRender(prev => prev + 1);
-
-            modalState.closeModal(MODAL_NAMES.EDIT_ELEMENT);
-            showSuccess('Element Updated', 'Element changes have been applied. Save to persist changes.');
-        } catch (error) {
-            console.error('Error updating element:', error);
-            showError('Failed to update script element. Please try again.');
-        }
-    };
-
-    const handleElementGroup = () => {
-        showError('Element grouping feature is under development');
-    };
-
-    const handleElementEdit = () => {
-        if (!selectedElementId) {
-            showError('Please select an element to edit');
-            return;
-        }
-        
-        // Find the selected element in the current elements
-        const elementToEdit = editQueueElements.find(el => el.elementID === selectedElementId);
-        if (!elementToEdit) {
-            showError('Selected element not found');
-            return;
-        }
-        
-        setSelectedElement(elementToEdit);
-        modalState.openModal(MODAL_NAMES.EDIT_ELEMENT);
     };
 
     const handleJump = (direction: 'top' | 'bottom') => {
@@ -927,95 +376,91 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         }
     };
 
-    const handleElementDelete = async () => {
-        if (!selectedElementId) {
-            showError('No script element selected for deletion');
-            return;
-        }
+    // Auto-sort functionality
+    const { showSuccess, showError } = useEnhancedToast();
+    
+    const handleAutoSortElements = useCallback(async () => {
+        if (!scriptId) return;
 
-        // Find element details in the local edit queue instead of fetching from API
-        const elementToDelete = editQueueElements.find(el => el.elementID === selectedElementId);
-        if (!elementToDelete) {
-            showError('Selected element not found in current script');
-            return;
-        }
-
-        setSelectedElementName(elementToDelete.description || 'Unknown Element');
-        modalState.openModal(MODAL_NAMES.DELETE_CUE);
-    };
-
-    const handleConfirmDeleteCue = async () => {
-        if (!selectedElementId) {
-            return;
-        }
-
-        setIsDeletingCue(true);
         try {
-            // Find the element to delete in the current elements
-            const elementToDelete = editQueueElements.find(el => el.elementID === selectedElementId);
-            if (!elementToDelete) {
-                throw new Error('Element to delete not found');
+            const currentElements = [...editQueueElements];
+            const sortedElements = [...currentElements].sort((a, b) => a.timeOffsetMs - b.timeOffsetMs);
+
+            const needsReordering = currentElements.some((element, index) => {
+                return element.elementID !== sortedElements[index]?.elementID;
+            });
+
+            if (!needsReordering) {
+                showSuccess('Auto-Sort Complete', 'Elements are already in correct time order.');
+                return;
             }
 
-            // Add the delete operation to the edit queue
+            const elementChanges: any[] = [];
+            for (let newIndex = 0; newIndex < sortedElements.length; newIndex++) {
+                const element = sortedElements[newIndex];
+                const oldIndex = currentElements.findIndex(el => el.elementID === element.elementID);
+
+                if (oldIndex !== newIndex) {
+                    elementChanges.push({
+                        elementId: element.elementID,
+                        oldIndex: oldIndex,
+                        newIndex: newIndex,
+                        oldSequence: oldIndex + 1,
+                        newSequence: newIndex + 1
+                    });
+                }
+            }
+
             applyLocalChange({
-                type: 'DELETE_ELEMENT',
-                elementId: selectedElementId,
-                elementData: elementToDelete
+                type: 'ENABLE_AUTO_SORT',
+                elementId: 'auto-sort-preference',
+                oldPreferenceValue: false,
+                newPreferenceValue: true,
+                elementMoves: elementChanges
             } as any);
-
-            showSuccess('Script Element Deleted', 'Script element has been deleted. Save to apply changes.');
-
-            // Clear selection and close modal
-            setSelectedElementId(null);
-            modalState.closeModal(MODAL_NAMES.DELETE_CUE);
-
+            showSuccess('Elements Auto-Sorted', `Reordered ${elementChanges.length} elements by time offset. Save to apply changes.`);
         } catch (error) {
-            console.error('Error deleting element:', error);
-            showError('Failed to delete script element. Please try again.');
-        } finally {
-            setIsDeletingCue(false);
+            console.error('Error auto-sorting elements:', error);
+            showError(error instanceof Error ? error.message : 'Failed to auto-sort elements');
+        }
+    }, [scriptId, editQueueElements, applyLocalChange, showSuccess, showError]);
+
+    const handleAutoSortToggle = useCallback(
+        async (value: boolean) => {
+            if (value && !activePreferences.autoSortCues && scriptId) {
+                handleAutoSortElements();
+            } else if (!value && activePreferences.autoSortCues) {
+                const disableOperation = {
+                    type: 'DISABLE_AUTO_SORT' as const,
+                    elementId: 'auto-sort-preference',
+                    oldPreferenceValue: true,
+                    newPreferenceValue: false
+                };
+                applyLocalChange(disableOperation);
+            }
+            await updatePreference('autoSortCues', value);
+        },
+        [updatePreference, scriptId, activePreferences.autoSortCues, handleAutoSortElements, applyLocalChange]
+    );
+
+    const handleAutoSortCheckboxChange = async (newAutoSortValue: boolean) => {
+        await updatePreference('autoSortCues', newAutoSortValue);
+        if (newAutoSortValue && !autoSortCues && scriptId) {
+            handleAutoSortElements();
         }
     };
 
-    // Configure actions menu
-    const actions: ActionItem[] = [
-        {
-            id: 'options',
-            label: 'Options',
-            onClick: () => modalState.openModal(MODAL_NAMES.OPTIONS),
-            isDestructive: false,
-            isDisabled: false
-        },
-        {
-            id: 'duplicate-script',
-            label: 'Duplicate Script',
-            onClick: () => modalState.openModal(MODAL_NAMES.DUPLICATE),
-            isDestructive: false,
-            isDisabled: false
-        },
-        {
-            id: 'export-script',
-            label: 'Export Script',
-            onClick: () => { },
-            isDestructive: false,
-            isDisabled: true
-        },
-        {
-            id: 'edit-history',
-            label: 'Edit History',
-            onClick: () => { },
-            isDestructive: false,
-            isDisabled: true
-        },
-        {
-            id: 'delete-script',
-            label: 'Delete Script',
-            onClick: handleDeleteClick,
-            isDestructive: true,
-            isDisabled: false
-        }
-    ];
+    const handleOptionsModalSave = async (newPreferences: any) => {
+        await updatePreferences(newPreferences);
+        setPreviewPreferences(null);
+    };
+
+    // Configure actions menu using extracted config
+    const actions = createActionMenuConfig({
+        onOptionsClick: () => modalState.openModal(MODAL_NAMES.OPTIONS),
+        onDuplicateClick: () => modalState.openModal(MODAL_NAMES.DUPLICATE),
+        onDeleteClick: modalHandlers.handleDeleteClick
+    });
 
     return (
         <ErrorBoundary context="Script Management Page">
@@ -1060,7 +505,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                 <Button
                                     size="xs"
                                     variant="outline"
-                                    onClick={handleCancel}
+                                    onClick={navigation.handleCancel}
                                     _hover={{ bg: 'gray.100' }}
                                     _dark={{ _hover: { bg: 'gray.700' } }}
                                 >
@@ -1070,7 +515,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                     size="xs"
                                     bg="blue.400"
                                     color="white"
-                                    onClick={handleShowSaveConfirmation}
+                                    onClick={modalHandlers.handleShowSaveConfirmation}
                                     isDisabled={(!hasChanges && !hasUnsavedChanges) || !form.isValid}
                                     _hover={{ bg: 'orange.400' }}
                                 >
@@ -1141,7 +586,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                         autoSortCues={activePreferences.autoSortCues}
                                         onAutoSortChange={handleAutoSortToggle}
                                         onScrollStateChange={handleScrollStateChange}
-                                        onSelectionChange={handleSelectionChange}
+                                        onSelectionChange={elementActions.handleSelectionChange}
                                         elements={editQueueElements}
                                         script={currentScript}
                                         onApplyLocalChange={applyLocalChange}
@@ -1215,52 +660,51 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 modalNames={MODAL_NAMES}
                 script={script}
                 scriptId={scriptId || ''}
-                selectedElement={selectedElement}
-                selectedElementName={selectedElementName}
-                selectedElementTimeOffset={selectedElementTimeOffset}
+                selectedElement={elementActions.selectedElement}
+                selectedElementName={elementActions.selectedElementName}
+                selectedElementTimeOffset={elementActions.selectedElementTimeOffset}
                 pendingOperations={pendingOperations}
-                isDeleting={isDeleting}
-                isDeletingCue={isDeletingCue}
-                isDuplicatingElement={isDuplicatingElement}
-                isSavingChanges={false} // TODO: Re-enable when save logic is implemented
+                isDeleting={modalHandlers.isDeleting}
+                isDeletingCue={elementActions.isDeletingCue}
+                isDuplicatingElement={elementActions.isDuplicatingElement}
+                isSavingChanges={false}
                 previewPreferences={previewPreferences}
                 darkMode={activePreferences.darkMode}
                 colorizeDepNames={activePreferences.colorizeDepNames}
                 showClockTimes={activePreferences.showClockTimes}
                 autoSortCues={activePreferences.autoSortCues}
-                onDeleteCancel={handleDeleteCancel}
-                onInitialDeleteConfirm={handleInitialDeleteConfirm}
-                onFinalDeleteConfirm={handleFinalDeleteConfirm}
-                onClearHistoryCancel={handleClearHistoryCancel}
-                onInitialClearHistoryConfirm={handleInitialClearHistoryConfirm}
-                onFinalClearHistoryConfirm={handleFinalClearHistoryConfirm}
+                onDeleteCancel={modalHandlers.handleDeleteCancel}
+                onInitialDeleteConfirm={modalHandlers.handleInitialDeleteConfirm}
+                onFinalDeleteConfirm={modalHandlers.handleFinalDeleteConfirm}
+                onClearHistoryCancel={modalHandlers.handleClearHistoryCancel}
+                onInitialClearHistoryConfirm={modalHandlers.handleInitialClearHistoryConfirm}
+                onFinalClearHistoryConfirm={modalHandlers.handleFinalClearHistoryConfirm}
                 onDuplicateClose={() => modalState.closeModal(MODAL_NAMES.DUPLICATE)}
                 onDuplicateConfirm={(scriptName: string, showId: string) => {
-                    // Handle script duplication - placeholder for actual implementation
                     console.log('Script duplication:', scriptName, showId);
                     modalState.closeModal(MODAL_NAMES.DUPLICATE);
                 }}
-                onElementCreated={handleElementCreated}
+                onElementCreated={elementActions.handleElementCreated}
                 onOptionsPreview={(preferences) => setPreviewPreferences(preferences)}
                 onOptionsSave={handleOptionsModalSave}
                 onAutoSortChange={handleAutoSortCheckboxChange}
                 onColorizeChange={async (value: boolean) => await updatePreference('colorizeDepNames', value)}
                 onClockTimesChange={async (value: boolean) => await updatePreference('showClockTimes', value)}
-                onConfirmDeleteCue={handleConfirmDeleteCue}
-                onConfirmDuplicate={handleConfirmDuplicate}
-                onUnsavedChangesCancel={handleUnsavedChangesCancel}
-                onInitialUnsavedConfirm={handleInitialUnsavedConfirm}
-                onSaveScriptChanges={handleSaveScriptChanges}
-                onElementEdit={handleElementEditSave}
+                onConfirmDeleteCue={elementActions.handleConfirmDeleteCue}
+                onConfirmDuplicate={elementActions.handleConfirmDuplicate}
+                onUnsavedChangesCancel={modalHandlers.handleUnsavedChangesCancel}
+                onInitialUnsavedConfirm={modalHandlers.handleInitialUnsavedConfirm}
+                onSaveScriptChanges={modalHandlers.handleSaveScriptChanges}
+                onElementEdit={elementActions.handleElementEditSave}
             />
 
             {/* Save Confirmation Modal */}
             <SaveConfirmationModal
                 isOpen={modalState.isOpen(MODAL_NAMES.SAVE_CONFIRMATION)}
                 onClose={() => modalState.closeModal(MODAL_NAMES.SAVE_CONFIRMATION)}
-                onConfirm={handleSaveScriptChanges}
+                onConfirm={modalHandlers.handleSaveScriptChanges}
                 changesCount={pendingOperations.length}
-                isSaving={false} // No longer needed since we have dedicated processing modal
+                isSaving={false}
             />
 
             {/* Save Processing Modal */}

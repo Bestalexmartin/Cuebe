@@ -165,12 +165,12 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
             });
         }
 
-        // Time offset validation
-        if (formData.timeOffsetMs < 0) {
+        // Time offset validation - now allows negative values for pre-show timing
+        if (!Number.isFinite(formData.timeOffsetMs)) {
             errors.push({
                 field: 'timeOffsetMs',
-                message: 'Time offset cannot be negative',
-                code: 'min_value'
+                message: 'Time offset must be a valid time value',
+                code: 'invalid_time'
             });
         }
 
@@ -219,33 +219,40 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         }
     };
 
-    // Enhanced time formatting to support both MM:SS and HH:MM:SS formats
+    // Enhanced time formatting to support both MM:SS and HH:MM:SS formats with negative values
     const formatTimeWithHours = (timeMs: number): string => {
-        const totalSeconds = Math.round(timeMs / 1000);
+        const isNegative = timeMs < 0;
+        const absTimeMs = Math.abs(timeMs);
+        const totalSeconds = Math.round(absTimeMs / 1000);
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
         
-        if (hours > 0) {
-            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        } else {
-            // Use existing utility for MM:SS format
-            return msToDurationString(timeMs);
-        }
+        const timeString = hours > 0 
+            ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+            : `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+        return isNegative ? `-${timeString}` : timeString;
     };
 
     const parseTimeWithHours = (timeString: string): number => {
         if (!timeString || timeString.trim() === '') return 0;
         
-        const parts = timeString.split(':').map(part => parseInt(part, 10) || 0);
+        const isNegative = timeString.trim().startsWith('-');
+        const cleanTimeString = timeString.replace(/^-/, '').trim();
+        
+        const parts = cleanTimeString.split(':').map(part => parseInt(part, 10) || 0);
+        let ms = 0;
+        
         if (parts.length === 2) {
-            // MM:SS format - use existing utility
-            return durationStringToMs(timeString);
+            // MM:SS format - use existing utility (but clean string without negative)
+            ms = durationStringToMs(cleanTimeString);
         } else if (parts.length === 3) {
             // HH:MM:SS format
-            return (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000;
+            ms = (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000;
         }
-        return 0;
+        
+        return isNegative ? -ms : ms;
     };
 
     const handleTimeOffsetChange = (value: string) => {

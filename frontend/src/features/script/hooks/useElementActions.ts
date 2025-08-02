@@ -13,6 +13,7 @@ export function useElementActions(
 
       let insertIndex = elements.length;
       if (autoSort) {
+        // Find correct insertion point in chronological order
         for (let i = 0; i < elements.length; i++) {
           if (elements[i].timeOffsetMs > cleanData.timeOffsetMs) {
             insertIndex = i;
