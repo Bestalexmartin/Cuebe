@@ -24,3 +24,6 @@ docker-compose.override.yml
 
 # Personal logs
 devlog.txt
+
+# AI Assistant Instructions (local only)
+/.ai-instructions.md

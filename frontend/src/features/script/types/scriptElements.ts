@@ -204,3 +204,109 @@ export interface ElementValidationRules {
     max: number;
   };
 }
+
+// ============================================================================
+// BACKEND API INTEGRATION TYPES
+// ============================================================================
+
+// Create/Update interfaces for API calls (snake_case to match backend)
+export interface ScriptElementCreate {
+  elementType: ScriptElementType;
+  sequence?: number;
+  timeOffsetMs?: number;
+  triggerType?: TriggerType;
+  cueID?: string;
+  description: string;
+  cueNotes?: string;
+  departmentID?: string;
+  location?: LocationArea;
+  locationDetails?: string;
+  duration?: number;
+  fadeIn?: number;
+  fadeOut?: number;
+  priority?: PriorityLevel;
+  parentElementID?: string;
+  groupLevel?: number;
+  isSafetyCritical?: boolean;
+  safetyNotes?: string;
+  departmentColor?: string;
+  customColor?: string;
+}
+
+export interface ScriptElementUpdate {
+  elementType?: ScriptElementType;
+  sequence?: number;
+  timeOffsetMs?: number;
+  triggerType?: TriggerType;
+  followsCueID?: string;
+  cueID?: string;
+  description?: string;
+  cueNotes?: string;
+  departmentID?: string;
+  location?: LocationArea;
+  locationDetails?: string;
+  duration?: number;
+  fadeIn?: number;
+  fadeOut?: number;
+  priority?: PriorityLevel;
+  executionStatus?: ExecutionStatus;
+  parentElementID?: string;
+  groupLevel?: number;
+  isCollapsed?: boolean;
+  isSafetyCritical?: boolean;
+  safetyNotes?: string;
+  departmentColor?: string;
+  customColor?: string;
+}
+
+// Bulk operations for performance
+export interface ScriptElementReorderItem {
+  elementID: string;
+  sequence: number;
+}
+
+export interface ScriptElementReorderRequest {
+  elements: ScriptElementReorderItem[];
+}
+
+export interface ScriptElementBulkUpdate {
+  elementIds: string[];
+  departmentId?: string;
+  priority?: PriorityLevel;
+  executionStatus?: ExecutionStatus;
+  location?: LocationArea;
+  isSafetyCritical?: boolean;
+  customColor?: string;
+}
+
+// Equipment and crew assignments
+export interface ScriptElementEquipment {
+  equipmentName: string;
+  isRequired: boolean;
+  notes?: string;
+}
+
+export interface ScriptElementCrewAssignment {
+  crewID: string;
+  assignmentRole?: string;
+  isLead: boolean;
+}
+
+export interface ScriptElementConditionalRule {
+  ruleID: string;
+  conditionType: 'weather' | 'cast' | 'equipment' | 'time' | 'custom';
+  operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
+  conditionValue: string;
+  description: string;
+  isActive: boolean;
+}
+
+// Extended base interface with all relationships
+export interface ScriptElementFull extends ScriptElementBase {
+  equipment?: ScriptElementEquipment[];
+  crewAssignments?: ScriptElementCrewAssignment[];
+  conditionalRules?: ScriptElementConditionalRule[];
+}
+
+// Type aliases for backward compatibility
+export type ElementType = ScriptElementType;

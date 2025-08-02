@@ -182,6 +182,10 @@ async def get_documentation_index(
                 if md_file.name.lower() == "readme.md":
                     continue
                     
+                # Skip detailed-records subdirectory files from main documentation view
+                if "detailed-records" in str(md_file):
+                    continue
+                    
                 # Get relative path from docs directory
                 relative_path = md_file.relative_to(docs_dir)
                 
@@ -206,6 +210,7 @@ async def get_documentation_index(
                         'development': 'Quick Start',
                         'architecture': 'System Architecture',
                         'components': 'Component Architecture',
+                        'data': 'Data Management',
                         'features': 'User Interface',
                         'user-guides': 'Tutorial',
                         'testing': 'Testing',

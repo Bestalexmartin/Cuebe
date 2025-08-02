@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Icon, IconProps } from "@chakra-ui/react";
-import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, CopyIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, CopyIcon, MoonIcon, SunIcon } from '@chakra-ui/icons';
 import { TiPin } from "react-icons/ti";
 import { IoPeopleSharp } from "react-icons/io5";
 import { CiMenuBurger } from "react-icons/ci";
@@ -23,6 +23,7 @@ import { ImExit } from "react-icons/im";
 // TypeScript interfaces
 export type IconName =
   | 'openmenu'
+  | 'closemenu'
   | 'hamburger'
   | 'edit'
   | 'delete'
@@ -57,7 +58,9 @@ export type IconName =
   | 'jump-top'
   | 'jump-bottom'
   | 'history'
-  | 'exit';
+  | 'exit'
+  | 'moon'
+  | 'sun';
 
 interface AppIconProps extends Omit<IconProps, 'as'> {
   name: IconName;
@@ -67,6 +70,8 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
   switch (name) {
     case 'openmenu':
       return <Icon as={ChevronDownIcon} {...props} />;
+    case 'closemenu':
+      return <Icon as={ChevronUpIcon} {...props} />;
     case 'hamburger':
       return <Icon as={CiMenuBurger} {...props} />;
     case 'edit':
@@ -137,6 +142,10 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={FaHistory} {...props} />;
     case 'exit':
       return <Icon as={ImExit} {...props} />;
+    case 'moon':
+      return <Icon as={MoonIcon} {...props} />;
+    case 'sun':
+      return <Icon as={SunIcon} {...props} />;
     default:
       return null;
   }

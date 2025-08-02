@@ -1,4 +1,4 @@
-# backend/routers/system_tests/speed_tests.py
+# backend/tests/system_tests/speed_tests.py
 
 from fastapi import Request, HTTPException, Depends
 

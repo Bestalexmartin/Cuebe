@@ -628,31 +628,39 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
 
   // Category view content
   const categoryContent = selectedCategory ? (
-    <VStack spacing={4} align="stretch">
-      <VStack spacing={4} align="stretch">
-        <HStack spacing={3} align="center" justify="space-between">
-          <HStack spacing={3} align="center">
-            <AppIcon
-              name={getCategoryIcon(selectedCategory)}
-              boxSize="24px"
-              color={iconColor}
-            />
-            <Text fontWeight="semibold" fontSize="lg">{selectedCategory} Documentation</Text>
-            <Text fontSize="sm" color="gray.500">
-              {documentFiles.filter(doc => doc.category === selectedCategory).length} documents
-            </Text>
+    <VStack spacing={0} align="stretch" height="100%">
+      {/* Sticky Header */}
+      <Box position="sticky" top={0} bg="page.background" zIndex={10} pb="4px">
+        <VStack spacing={4} align="stretch">
+          <HStack spacing={3} align="center" justify="space-between">
+            <HStack spacing={3} align="center">
+              <AppIcon
+                name={getCategoryIcon(selectedCategory)}
+                boxSize="24px"
+                color={iconColor}
+              />
+              <Text fontWeight="semibold" fontSize="lg">{selectedCategory} Documentation</Text>
+              <Text fontSize="sm" color="gray.500">
+                {documentFiles.filter(doc => doc.category === selectedCategory).length} documents
+              </Text>
+            </HStack>
+            <Button
+              size="xs"
+              variant="outline"
+              onClick={() => {
+                setSelectedCategory(null);
+                setSelectedDoc(null);
+              }}
+            >
+              Back to Overview
+            </Button>
           </HStack>
-          <Button
-            size="xs"
-            variant="outline"
-            onClick={() => {
-              setSelectedCategory(null);
-              setSelectedDoc(null);
-            }}
-          >
-            Back to Overview
-          </Button>
-        </HStack>
+          <Divider />
+        </VStack>
+      </Box>
+      
+      {/* Scrollable Content */}
+      <Box flex={1} overflowY="auto" className="hide-scrollbar">
         <VStack spacing={3} align="stretch">
           {documentFiles
             .filter(doc => doc.category === selectedCategory)
@@ -685,13 +693,13 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
               </HStack>
             ))}
         </VStack>
-      </VStack>
+      </Box>
     </VStack>
   ) : null;
 
   // Selected document content
   const selectedContent = selectedDoc ? (
-    <VStack spacing={6} align="stretch">
+    <VStack spacing={0} align="stretch" height="100%">
       {isLoading ? (
         <VStack spacing={4}>
           <AppIcon name="docs" boxSize="32px" />
@@ -699,16 +707,39 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
         </VStack>
       ) : (
         <>
-          <Card>
-            <CardBody>
-              <VStack spacing={4} align="stretch">
-                <HStack spacing={3} align="start">
+          {/* Sticky Header */}
+          <Box position="sticky" top={0} bg="page.background" zIndex={10} pb="4px">
+            <VStack spacing={4} align="stretch">
+              <HStack spacing={3} align="center" justify="space-between">
+                <HStack spacing={3} align="center">
                   <AppIcon name={documentFiles.find(doc => doc.name === selectedDoc)?.icon || 'docs'} boxSize="24px" color={iconColor} />
-                  <VStack align="start" spacing={0}>
-                    <Text fontWeight="semibold">{selectedDoc}</Text>
-                  </VStack>
+                  <Text fontWeight="semibold" fontSize="lg">{selectedDoc}</Text>
                 </HStack>
-                <Divider />
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={() => {
+                    if (selectedCategory) {
+                      // Go back to category view
+                      setSelectedDoc(null);
+                    } else {
+                      // Go back to overview
+                      setSelectedDoc(null);
+                      setSelectedCategory(null);
+                    }
+                  }}
+                >
+                  {selectedCategory ? `Back to ${selectedCategory}` : 'Back to Overview'}
+                </Button>
+              </HStack>
+              <Divider />
+            </VStack>
+          </Box>
+          
+          {/* Scrollable Content */}
+          <Box flex={1} overflowY="auto" className="hide-scrollbar">
+            <Card>
+              <CardBody>
                 <Box>
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
@@ -717,30 +748,9 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
                     {content}
                   </ReactMarkdown>
                 </Box>
-                <Divider />
-                <HStack spacing={4}>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    colorScheme="orange"
-                    _hover={{ bg: 'orange.50', borderColor: 'orange.400' }}
-                    onClick={() => {
-                      if (selectedCategory) {
-                        // Go back to category view
-                        setSelectedDoc(null);
-                      } else {
-                        // Go back to overview
-                        setSelectedDoc(null);
-                        setSelectedCategory(null);
-                      }
-                    }}
-                  >
-                    {selectedCategory ? `Back to ${selectedCategory}` : 'Back to Overview'}
-                  </Button>
-                </HStack>
-              </VStack>
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
+          </Box>
         </>
       )}
     </VStack>

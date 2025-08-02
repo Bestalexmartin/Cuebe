@@ -25,8 +25,6 @@ export const SaveProcessingModal: React.FC<SaveProcessingModalProps> = ({
             size="md"
         >
             <VStack spacing={6} align="center">
-                <Spinner size="lg" color="blue.500" thickness="3px" />
-                
                 <VStack spacing={2} align="center">
                     <Text fontWeight="medium" textAlign="center">
                         Saving {changesCount} change{changesCount !== 1 ? 's' : ''} to the database...
@@ -37,7 +35,9 @@ export const SaveProcessingModal: React.FC<SaveProcessingModalProps> = ({
                     </Text>
                 </VStack>
 
-                <Text fontSize="xs" color="orange.600" fontWeight="medium" textAlign="center">
+                <Spinner size="lg" color="blue.500" thickness="3px" />
+
+                <Text fontSize="md" color="red.500" fontWeight="bold" textAlign="center">
                     Do not close this window or navigate away.
                 </Text>
             </VStack>

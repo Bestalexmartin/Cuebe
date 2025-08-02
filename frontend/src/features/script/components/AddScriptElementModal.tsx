@@ -21,12 +21,12 @@ import {
     Flex,
     Icon
 } from '@chakra-ui/react';
-import { ChevronDownIcon } from '@chakra-ui/icons';
+import { AppIcon } from '../../../components/AppIcon';
 import { BaseModal } from '../../../components/base/BaseModal';
 import { useValidatedForm } from '../../../hooks/useValidatedForm';
 import { useResource } from '../../../hooks/useResource';
 import { ValidationRules, FormValidationConfig } from '../../../types/validation';
-import { ScriptElementCreate, ElementType, TriggerType, PriorityLevel, LocationArea } from '../types/script-elements';
+import { ScriptElementCreate, ElementType, TriggerType, PriorityLevel, LocationArea } from '../types/scriptElements';
 import { getTextColorForBackground } from '../../../utils/colorUtils';
 import { msToDurationString, durationStringToMs } from '../../../utils/timeUtils';
 
@@ -296,7 +296,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                         <Menu>
                         <MenuButton
                             as={Button}
-                            rightIcon={<ChevronDownIcon />}
+                            rightIcon={<AppIcon name='openmenu' />}
                             variant="outline"
                             width="100%"
                             textAlign="left"
