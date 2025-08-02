@@ -1,6 +1,6 @@
-# backend/routers/system_tests/__init__.py
+# backend/tests/system_tests/__init__.py
 
-# backend/routers/system_tests package
+# backend/tests/system_tests package
 
 import time
 import socket
@@ -11,13 +11,13 @@ import os
 from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from database import get_db
-from routers.auth import get_current_user
-import models
+from ...database import get_db
+from ...routers.auth import get_current_user
+from ... import models
 
 # Optional rate limiting import
 try:
-    from utils.rate_limiter import limiter, RateLimitConfig
+    from ...utils.rate_limiter import limiter, RateLimitConfig
     RATE_LIMITING_AVAILABLE = True
 except ImportError:  # pragma: no cover - optional dependency
     limiter = None

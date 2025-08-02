@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { ScriptElement } from '../types/script-elements';
+import { ScriptElement } from '../types/scriptElements';
 
 interface UseScriptElementsReturn {
     elements: ScriptElement[];

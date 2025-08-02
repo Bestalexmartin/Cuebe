@@ -3,8 +3,7 @@
 import React from "react";
 import { SignedIn, UserButton } from "@clerk/clerk-react";
 import { Flex, Heading, Image, IconButton } from "@chakra-ui/react";
-import { MoonIcon, SunIcon } from '@chakra-ui/icons';
-import { CiMenuBurger } from 'react-icons/ci';
+import { AppIcon } from '../AppIcon';
 import { useIntegratedColorMode } from '../../hooks/useIntegratedColorMode';
 
 // TypeScript interfaces
@@ -24,7 +23,7 @@ const DarkModeSwitch: React.FC<DarkModeSwitchProps> = () => {
   return (
     <IconButton
       aria-label="Toggle dark mode"
-      icon={colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+      icon={<AppIcon name={colorMode === 'light' ? 'moon' : 'sun'} />}
       onClick={handleToggle}
       variant="ghost"
       isRound={true}
@@ -92,7 +91,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
           <IconButton
             aria-label="Open menu"
             aria-expanded={isMenuOpen}
-            icon={<CiMenuBurger />}
+            icon={<AppIcon name='hamburger' />}
             fontSize="20px"
             borderRadius="full"
             border="3px solid"

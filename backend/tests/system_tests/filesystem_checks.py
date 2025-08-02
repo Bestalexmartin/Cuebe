@@ -1,4 +1,4 @@
-# backend/routers/system_tests/filesystem_checks.py
+# backend/tests/system_tests/filesystem_checks.py
 
 from fastapi import Request, Depends
 

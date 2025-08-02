@@ -22,7 +22,7 @@ import {
     MenuItem,
     Button
 } from '@chakra-ui/react';
-import { ChevronDownIcon } from '@chakra-ui/icons';
+import { AppIcon } from '../../../../components/AppIcon';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { ScriptElement } from '../../types/scriptElements';
 import { useDepartments } from '../../../departments/hooks/useDepartments';
@@ -340,7 +340,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                         <Menu>
                             <MenuButton
                                 as={Button}
-                                rightIcon={<ChevronDownIcon />}
+                                rightIcon={<AppIcon name='openmenu' />}
                                 variant="outline"
                                 width="100%"
                                 textAlign="left"
