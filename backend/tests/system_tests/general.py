@@ -3,7 +3,7 @@
 from fastapi import HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from ...database import get_db
+from database import get_db
 
 from . import (
     router,

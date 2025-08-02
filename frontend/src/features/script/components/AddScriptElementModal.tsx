@@ -71,8 +71,8 @@ const VALIDATION_CONFIG: FormValidationConfig = {
         required: true,
         rules: [
             {
-                validator: (value: number) => value >= 0,
-                message: 'Time offset must be 00:00 or greater',
+                validator: (value: number) => Number.isFinite(value),
+                message: 'Time offset must be a valid time value',
                 code: 'INVALID_TIME'
             }
         ]
@@ -209,7 +209,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
     const canSubmit = form.formData.description.trim().length >= 3 && 
                      // Department only required for cues, not notes
                      (form.formData.elementType === 'NOTE' || form.formData.departmentID.trim().length > 0) &&
-                     form.formData.timeOffsetMs >= 0 &&
+                     Number.isFinite(form.formData.timeOffsetMs) &&
                      form.fieldErrors.length === 0;
 
     return (
