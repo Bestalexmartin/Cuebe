@@ -85,7 +85,6 @@ const QuickAccessItemComponent: React.FC<QuickAccessItemProps> = ({
       cursor={isDisabled ? "not-allowed" : "pointer"}
       borderColor={isActive ? 'blue.400' : 'gray.600'}
       _hover={!isDisabled ? { borderColor: 'orange.400' } : {}}
-      _focus={!isDisabled ? { boxShadow: 'outline', borderColor: 'blue.400' } : {}}
       onClick={handleClick}
       tabIndex={isDisabled ? -1 : 0}
       role="button"

@@ -13,7 +13,7 @@ import {
     Button,
     useBreakpointValue
 } from "@chakra-ui/react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useScript } from "../features/script/hooks/useScript";
 import { useShow } from "../features/shows/hooks/useShow";
@@ -30,6 +30,7 @@ import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences
 import { EditHistoryView } from '../components/EditHistoryView';
 import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
+import { UpdateElementOperation } from '../features/script/types/editQueue';
 import { useModalState } from '../hooks/useModalState';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
 import { SaveConfirmationModal } from '../components/modals/SaveConfirmationModal';
@@ -45,7 +46,6 @@ import { ShareMode } from '../features/script/components/modes/ShareMode';
 // AddScriptElementModal now handled by ScriptModals component
 import { useScriptModes } from '../features/script/hooks/useScriptModes';
 import { useElementActions } from '../features/script/hooks/useElementActions';
-import { ToolButton } from '../features/script/types/tool-button';
 import { ScriptModals } from '../features/script/components/ScriptModals';
 import { MobileScriptDrawer } from '../features/script/components/MobileScriptDrawer';
 import { getToolbarButtons, ToolbarContext } from '../features/script/utils/toolbarConfig';
@@ -134,12 +134,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeletingCue, setIsDeletingCue] = useState(false);
     const [isDuplicatingElement, setIsDuplicatingElement] = useState(false);
-    const [isSavingChanges, setIsSavingChanges] = useState(false);
-    const [forceRender, setForceRender] = useState(0);
+    const [forceRender, setForceRender] = useState(0); // Used to force re-renders when edit operations complete
 
     // Element selection and refs
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
-    const [selectedElement, setSelectedElement] = useState<any>(null);
+    const [selectedElement, setSelectedElement] = useState<any>(null); // TODO: Type this properly with ScriptElement interface
     const [selectedElementName, setSelectedElementName] = useState<string>('');
     const [selectedElementTimeOffset, setSelectedElementTimeOffset] = useState<number>(0);
     const viewModeRef = useRef<ViewModeRef>(null);
@@ -160,7 +159,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
     // Scroll state for jump button ghosting
-    const [scrollState, setScrollState] = useState({
+    const [scrollState, setScrollState] = useState<{
+        isAtTop: boolean;
+        isAtBottom: boolean;
+        allElementsFitOnScreen: boolean;
+    }>({
         isAtTop: true,
         isAtBottom: false,
         allElementsFitOnScreen: true
@@ -180,7 +183,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const form = useValidatedForm<ScriptFormData>(INITIAL_FORM_STATE, formConfig);
 
     // Fetch the script data
-    const { script: scriptFromHook, isLoading: isLoadingScript, error: scriptError, refetchScript } = useScript(scriptId);
+    const { script: scriptFromHook, isLoading: isLoadingScript, error: scriptError } = useScript(scriptId);
 
     const script = scriptFromHook;
 
@@ -196,8 +199,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         revertToPoint,
         applyLocalChange,
         discardChanges,
-        saveChanges,
-        refetchElements
+        saveChanges
     } = editQueueHook;
 
     // Calculate the current auto-sort state from edit queue operations
@@ -299,7 +301,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         scriptNotes: currentScript.scriptNotes || ''
     } : null;
 
-    const { hasChanges, updateOriginalData } = useChangeDetection(
+    const { hasChanges } = useChangeDetection(
         changeDetectionBaseData,
         {
             scriptName: form.formData.scriptName,
@@ -412,12 +414,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 }
             } else {
                 modalState.closeModal(MODAL_NAMES.SAVE_PROCESSING);
-                showError('Save Failed', 'Failed to save changes. Please try again.');
+                showError('Failed to save changes. Please try again.');
             }
         } catch (error) {
             console.error('Error saving changes:', error);
             modalState.closeModal(MODAL_NAMES.SAVE_PROCESSING);
-            showError('Save Failed', 'An error occurred while saving changes.');
+            showError('An error occurred while saving changes.');
         }
     };
 
@@ -580,74 +582,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         }
     };
 
-    const handleSave = async () => {
-        if (!scriptId || activeMode !== 'info') return;
-
-        try {
-            // Calculate what changed compared to original data
-            const changes: Record<string, { oldValue: any; newValue: any }> = {};
-
-            if (form.formData.scriptName !== originalData.scriptName) {
-                changes.scriptName = {
-                    oldValue: originalData.scriptName,
-                    newValue: form.formData.scriptName
-                };
-            }
-
-            if (form.formData.scriptStatus !== originalData.scriptStatus) {
-                changes.scriptStatus = {
-                    oldValue: originalData.scriptStatus,
-                    newValue: form.formData.scriptStatus
-                };
-            }
-
-            if (convertLocalToUTC(form.formData.startTime) !== originalData.startTime) {
-                changes.startTime = {
-                    oldValue: originalData.startTime,
-                    newValue: convertLocalToUTC(form.formData.startTime)
-                };
-            }
-
-            if (convertLocalToUTC(form.formData.endTime) !== originalData.endTime) {
-                changes.endTime = {
-                    oldValue: originalData.endTime,
-                    newValue: convertLocalToUTC(form.formData.endTime)
-                };
-            }
-
-            if (form.formData.scriptNotes !== originalData.scriptNotes) {
-                changes.scriptNotes = {
-                    oldValue: originalData.scriptNotes,
-                    newValue: form.formData.scriptNotes || null
-                };
-            }
-
-            // If there are changes, add them to the edit queue
-            if (Object.keys(changes).length > 0) {
-                applyLocalChange({
-                    type: 'UPDATE_SCRIPT_INFO',
-                    elementId: scriptId, // Use scriptId as elementId for script operations
-                    changes: changes
-                });
-            }
-
-            // Update original data to reflect the new "saved" state in edit queue
-            updateOriginalData({
-                scriptName: form.formData.scriptName,
-                scriptStatus: form.formData.scriptStatus,
-                startTime: convertLocalToUTC(form.formData.startTime),
-                endTime: convertLocalToUTC(form.formData.endTime),
-                scriptNotes: form.formData.scriptNotes
-            });
-
-            // Show success message
-            showSuccess('Changes Added', `Script info changes have been added to edit history`);
-
-        } catch (error) {
-            console.error('Error adding script info changes to edit queue:', error);
-            showError('Failed to save changes', 'There was an error adding your changes to the edit queue');
-        }
-    };
+    // NOTE: This function is currently unused - functionality moved to handleInfoModeExit
+    // Removed to clean up TypeScript warnings
 
     const handleCancel = () => {
         const dashboardPath = '/dashboard';
@@ -931,7 +867,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 elementId: selectedElement.elementID,
                 changes: changes,
                 description: `Updated element "${selectedElement.description}"`
-            });
+            } as UpdateElementOperation);
 
             // Force a re-render to ensure UI updates immediately
             setForceRender(prev => prev + 1);

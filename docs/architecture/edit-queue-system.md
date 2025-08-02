@@ -292,6 +292,173 @@ When saving, the system:
 4. Refreshes from server to ensure consistency
 5. Rolls back on failure with error handling
 
+## Script Info Operations
+
+### UPDATE_SCRIPT_INFO Operation
+
+The edit queue system supports script metadata changes through a specialized operation type:
+
+```typescript
+interface UpdateScriptInfoOperation extends BaseEditOperation {
+    type: 'UPDATE_SCRIPT_INFO';
+    elementId: 'script-info';
+    changes: Record<string, { oldValue: any; newValue: any }>;
+}
+```
+
+#### Script Metadata Fields
+
+Supported script information fields:
+- `scriptName`: Script title with validation (4-100 characters)
+- `scriptStatus`: Script status (DRAFT, ACTIVE, ARCHIVED, etc.)
+- `startTime`: Script start time (ISO datetime)
+- `endTime`: Script end time (ISO datetime)
+- `scriptNotes`: Optional notes field (0-500 characters)
+
+#### Collective Form Change Handling
+
+When exiting Info mode with unsaved changes, all modified fields are batched into a single operation:
+
+```typescript
+const handleInfoModeExit = (targetModeId: string) => {
+    // Create collective operation for all form changes
+    const formChanges = {
+        scriptName: {
+            oldValue: changeDetectionBaseData.scriptName,
+            newValue: form.formData.scriptName
+        },
+        scriptStatus: {
+            oldValue: changeDetectionBaseData.scriptStatus,
+            newValue: form.formData.scriptStatus
+        },
+        // ... other fields
+    };
+
+    // Filter out unchanged fields
+    const actualChanges = Object.fromEntries(
+        Object.entries(formChanges).filter(([_, values]) => 
+            values.oldValue !== values.newValue
+        )
+    );
+
+    if (Object.keys(actualChanges).length > 0) {
+        applyLocalChange({
+            type: 'UPDATE_SCRIPT_INFO',
+            elementId: 'script-info',
+            changes: actualChanges
+        });
+    }
+};
+```
+
+## Auto-Sort Operations
+
+### Auto-Sort State Management
+
+The edit queue system tracks auto-sort preference changes through specialized operations:
+
+```typescript
+interface EnableAutoSortOperation extends BaseEditOperation {
+    type: 'ENABLE_AUTO_SORT';
+    elementId: 'auto-sort-preference';
+    oldPreferenceValue: boolean;
+    newPreferenceValue: boolean;
+    elementMoves?: Array<{
+        elementId: string;
+        oldIndex: number;
+        newIndex: number;
+        oldSequence: number;
+        newSequence: number;
+    }>;
+}
+
+interface DisableAutoSortOperation extends BaseEditOperation {
+    type: 'DISABLE_AUTO_SORT';
+    elementId: 'auto-sort-preference';
+    oldPreferenceValue: boolean;
+    newPreferenceValue: boolean;
+}
+```
+
+#### Immediate Element Reordering
+
+When auto-sort is enabled, elements are immediately reordered by time offset:
+
+```typescript
+const handleAutoSortElements = useCallback(async () => {
+    // Sort elements by timeOffsetMs
+    const sortedElements = [...currentElements].sort((a, b) => a.timeOffsetMs - b.timeOffsetMs);
+    
+    // Check if reordering is needed
+    const needsReordering = currentElements.some((element, index) => 
+        element.elementID !== sortedElements[index].elementID
+    );
+
+    if (needsReordering) {
+        // Create element move operations
+        const elementChanges = [];
+        for (let newIndex = 0; newIndex < sortedElements.length; newIndex++) {
+            const element = sortedElements[newIndex];
+            const oldIndex = currentElements.findIndex(el => el.elementID === element.elementID);
+            
+            if (oldIndex !== newIndex) {
+                elementChanges.push({
+                    elementId: element.elementID,
+                    oldIndex,
+                    newIndex,
+                    oldSequence: oldIndex + 1,
+                    newSequence: newIndex + 1
+                });
+            }
+        }
+
+        // Apply compound operation: preference change + resulting sort
+        applyLocalChange({
+            type: 'ENABLE_AUTO_SORT',
+            elementId: 'auto-sort-preference',
+            oldPreferenceValue: false,
+            newPreferenceValue: true,
+            elementMoves: elementChanges
+        });
+    }
+}, [/* dependencies */]);
+```
+
+#### Dynamic Auto-Sort State Calculation
+
+The current auto-sort state is calculated from edit queue operations:
+
+```typescript
+const currentAutoSortState = useMemo(() => {
+    let currentState = autoSortCues; // Base preference value
+    
+    // Check for any auto-sort operations in pending operations
+    for (const operation of pendingOperations) {
+        if (operation.type === 'ENABLE_AUTO_SORT' || operation.type === 'DISABLE_AUTO_SORT') {
+            currentState = (operation as any).newPreferenceValue;
+        }
+    }
+    
+    return currentState;
+}, [autoSortCues, pendingOperations]);
+```
+
+### Preview Preferences System
+
+The options modal supports preview functionality without immediate persistence:
+
+```typescript
+// Preview preferences for options modal
+const [previewPreferences, setPreviewPreferences] = useState<UserPreferences | null>(null);
+
+// Use preview preferences when options modal is open
+const activePreferences = useMemo(() =>
+    modalState.isOpen(MODAL_NAMES.OPTIONS) && previewPreferences
+        ? previewPreferences
+        : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState }
+    , [modalState, previewPreferences, darkMode, colorizeDepNames, showClockTimes, currentAutoSortState]);
+```
+
 ## Usage Examples
 
 ### Basic Field Update
@@ -307,6 +474,26 @@ editQueue.addOperation({
 });
 ```
 
+### Script Info Update
+
+```typescript
+// User changes script metadata in Info mode
+editQueue.addOperation({
+    type: 'UPDATE_SCRIPT_INFO',
+    elementId: 'script-info',
+    changes: {
+        scriptName: {
+            oldValue: 'Old Script Name',
+            newValue: 'New Script Name'
+        },
+        scriptNotes: {
+            oldValue: '',
+            newValue: 'Added notes about the script'
+        }
+    }
+});
+```
+
 ### Element Reordering
 
 ```typescript
@@ -318,6 +505,28 @@ editQueue.addOperation({
     newIndex: 5,
     oldSequence: 3,
     newSequence: 6
+});
+```
+
+### Auto-Sort Enabling
+
+```typescript
+// Enable auto-sort with immediate reordering
+editQueue.addOperation({
+    type: 'ENABLE_AUTO_SORT',
+    elementId: 'auto-sort-preference',
+    oldPreferenceValue: false,
+    newPreferenceValue: true,
+    elementMoves: [
+        {
+            elementId: 'elem-123',
+            oldIndex: 3,
+            newIndex: 1,
+            oldSequence: 4,
+            newSequence: 2
+        }
+        // ... other moved elements
+    ]
 });
 ```
 

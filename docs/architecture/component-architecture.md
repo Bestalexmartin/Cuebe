@@ -14,9 +14,11 @@ Components use composition patterns rather than class inheritance, allowing for:
 - Easy testing and maintenance
 
 ### 2. Base Component Foundation
-Two primary base components provide the foundation:
+Multiple base components provide the foundation:
 - **BaseCard**: For displaying entity information (shows, venues, crew, etc.)
 - **BaseModal**: For forms and user interactions
+- **BaseEditPage**: For entity editing workflows
+- **BaseUtilityPage**: For administrative and utility interfaces
 
 ### 3. Consistent Patterns
 All components follow established patterns for:
@@ -25,6 +27,20 @@ All components follow established patterns for:
 - State management
 - Error boundaries
 - Loading states
+
+### 4. Modal State Management
+Centralized modal state management using the `useModalState` hook:
+- Type-safe modal naming conventions
+- Centralized open/close state tracking
+- Support for multiple simultaneous modals
+- Integration with component lifecycle
+
+### 5. ForwardRef Pattern for Mode Components
+Script mode components use React's `forwardRef` pattern for parent-child communication:
+- Eliminates useEffect dependencies
+- Provides direct method access
+- Prevents infinite re-render loops
+- Enables imperative interactions when needed
 
 ## BaseCard Architecture
 
@@ -582,18 +598,189 @@ const ManageScriptPage: React.FC = () => {
 
     return (
         <>
-            {activeMode === 'view' && <ViewMode ref={viewModeRef} scriptId={scriptId} />}
-            {activeMode === 'edit' && <EditMode ref={editModeRef} scriptId={scriptId} />}
+            {activeMode === 'view' && (
+                <ViewMode ref={viewModeRef} scriptId={scriptId} />
+            )}
+            {activeMode === 'edit' && (
+                <EditMode ref={editModeRef} scriptId={scriptId} />
+            )}
         </>
     );
 };
 ```
 
-#### Benefits
-- **Eliminates useEffect Dependencies**: No need for callback props that trigger useEffect re-runs
-- **Direct Method Access**: Parent components can directly call child methods when needed
-- **Type Safety**: Full TypeScript support for exposed methods
-- **Performance**: Avoids unnecessary re-renders from callback prop changes
+#### Benefits of ForwardRef Pattern
+1. **Eliminates useEffect Dependencies**: No need to track changing callback functions
+2. **Direct Method Access**: Parent can call child methods imperatively
+3. **Prevents Infinite Loops**: Avoids re-render cycles from changing dependencies
+4. **Performance Optimization**: Reduces unnecessary re-renders
+5. **Type Safety**: Full TypeScript support for exposed methods
+
+### Modal State Management System
+
+The ManageScriptPage implements a sophisticated modal state management system using the `useModalState` hook to handle 13+ different modals in a centralized, type-safe manner.
+
+#### Modal Naming Convention
+```typescript
+const MODAL_NAMES = {
+    DELETE: 'delete',
+    FINAL_DELETE: 'final-delete',
+    DUPLICATE: 'duplicate',
+    PROCESSING: 'processing',
+    ADD_ELEMENT: 'add-element',
+    EDIT_ELEMENT: 'edit-element',
+    OPTIONS: 'options',
+    DELETE_CUE: 'delete-cue',
+    DUPLICATE_ELEMENT: 'duplicate-element',
+    UNSAVED_CHANGES: 'unsaved-changes',
+    FINAL_UNSAVED_CHANGES: 'final-unsaved-changes',
+    CLEAR_HISTORY: 'clear-history',
+    FINAL_CLEAR_HISTORY: 'final-clear-history',
+    SAVE_CONFIRMATION: 'save-confirmation',
+    SAVE_PROCESSING: 'save-processing'
+} as const;
+```
+
+#### Centralized Modal State
+```typescript
+// Single hook manages all modal states
+const modalState = useModalState(Object.values(MODAL_NAMES));
+
+// Type-safe modal operations
+modalState.openModal(MODAL_NAMES.DELETE);
+modalState.closeModal(MODAL_NAMES.DELETE);
+const isDeleteOpen = modalState.isOpen(MODAL_NAMES.DELETE);
+```
+
+#### Two-Tier Confirmation Pattern
+```typescript
+// Initial confirmation
+const handleInitialDeleteConfirm = () => {
+    modalState.closeModal(MODAL_NAMES.DELETE);
+    modalState.openModal(MODAL_NAMES.FINAL_DELETE);
+};
+
+// Final confirmation with action
+const handleFinalDeleteConfirm = async () => {
+    await performDelete();
+    modalState.closeModal(MODAL_NAMES.FINAL_DELETE);
+};
+
+// Cancel handler for both tiers
+const handleDeleteCancel = () => {
+    modalState.closeModal(MODAL_NAMES.DELETE);
+    modalState.closeModal(MODAL_NAMES.FINAL_DELETE);
+};
+```
+
+### Component Consolidation Architecture
+
+#### ScriptModals Component
+The ScriptModals component consolidates all script-related modals into a single, manageable component:
+
+```typescript
+interface ScriptModalsProps {
+    modalState: ReturnType<typeof useModalState>;
+    modalNames: typeof MODAL_NAMES;
+    script?: any;
+    scriptId: string;
+    // ... many other props for different modal types
+}
+
+// Usage in ManageScriptPage
+<ScriptModals
+    modalState={modalState}
+    modalNames={MODAL_NAMES}
+    script={script}
+    scriptId={scriptId}
+    // Event handlers for all modal actions
+    onDeleteCancel={handleDeleteCancel}
+    onInitialDeleteConfirm={handleInitialDeleteConfirm}
+    onFinalDeleteConfirm={handleFinalDeleteConfirm}
+    // ... other handlers
+/>
+```
+
+#### MobileScriptDrawer Component
+Provides mobile-optimized toolbar access:
+
+```typescript
+<MobileScriptDrawer
+    isOpen={isMenuOpen}
+    onClose={onMenuClose}
+    activeMode={activeMode}
+    toolButtons={toolButtons}
+    onModeChange={handleModeChange}
+/>
+```
+
+### Performance Optimizations
+
+#### Component Memoization
+Mode components use custom comparison functions to prevent unnecessary re-renders:
+
+```typescript
+const areEqual = (prevProps: ViewModeProps, nextProps: ViewModeProps) => {
+    return (
+        prevProps.scriptId === nextProps.scriptId &&
+        prevProps.colorizeDepNames === nextProps.colorizeDepNames &&
+        prevProps.showClockTimes === nextProps.showClockTimes &&
+        prevprops.elements === nextProps.elements &&
+        prevProps.script === nextProps.script
+        // Deliberately ignoring callback props for performance
+    );
+};
+
+export const ViewMode = React.memo(ViewModeComponent, areEqual);
+```
+
+#### Scroll State Optimization
+Efficient scroll state tracking with change detection:
+
+```typescript
+const checkScrollState = () => {
+    const container = scrollContainerRef.current;
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    
+    const currentState = {
+        isAtTop: scrollTop <= 1,
+        isAtBottom: scrollTop + clientHeight >= scrollHeight - 1,
+        allElementsFitOnScreen: scrollHeight <= clientHeight
+    };
+    
+    // Only call callback if state actually changed
+    const stateChanged = !lastState || 
+        lastState.isAtTop !== currentState.isAtTop ||
+        lastState.isAtBottom !== currentState.isAtBottom ||
+        lastState.allElementsFitOnScreen !== currentState.allElementsFitOnScreen;
+        
+    if (stateChanged) {
+        lastScrollStateRef.current = currentState;
+        onScrollStateChange(currentState);
+    }
+};
+```
+
+### ManageScriptPage Refactoring Results
+
+The ManageScriptPage underwent significant refactoring to improve maintainability and reduce complexity:
+
+#### Code Reduction
+- **Before**: ~1,500 lines in a single component
+- **After**: ~1,350 lines with extracted components
+- **Net Reduction**: ~150 lines (10% reduction)
+
+#### Component Extraction
+1. **ScriptModals**: Consolidated 13+ modal definitions
+2. **MobileScriptDrawer**: Mobile-specific toolbar functionality
+3. **Toolbar Configuration**: Extracted button logic to utilities
+4. **Modal State Management**: Centralized with `useModalState`
+
+#### Architectural Improvements
+1. **Single Responsibility**: Each component has a focused purpose
+2. **Reusability**: Extracted components can be used elsewhere
+3. **Testability**: Smaller components are easier to test
+4. **Maintainability**: Changes are localized to specific components
 
 ### Options Modal and Display Customization
 
