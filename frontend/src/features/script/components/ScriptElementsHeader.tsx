@@ -23,7 +23,7 @@ export const ScriptElementsHeader: React.FC = () => {
                 />
 
                 {/* Time Offset Header */}
-                <Box w="122px" pl={5} pr={4} borderRight="1px solid" borderColor="gray.400">
+                <Box w="123px" pl={5} pr={4} borderRight="1px solid" borderColor="gray.400">
                     <Text fontSize="sm" color="white" fontWeight="bold" textAlign="center">
                         TIME
                     </Text>
@@ -64,8 +64,15 @@ export const ScriptElementsHeader: React.FC = () => {
                     </Text>
                 </Box>
 
+                {/* Location Header */}
+                <Box w="180px" pl={6} pr={3} borderRight="1px solid" borderColor="gray.400">
+                    <Text fontSize="sm" color="white" fontWeight="bold" textAlign="left" isTruncated>
+                        LOCATION
+                    </Text>
+                </Box>
+
                 {/* Priority Header */}
-                <Box w="122px" px={3}>
+                <Box w="123px" px={3}>
                     <Text fontSize="sm" color="white" fontWeight="bold" textAlign="center">
                         PRIORITY
                     </Text>

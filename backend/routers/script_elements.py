@@ -264,6 +264,9 @@ def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, 
     elif operation_type == "UPDATE_FIELD":
         return _process_update_field_operation(db, element_id, operation_data, user)
     
+    elif operation_type == "UPDATE_ELEMENT":
+        return _process_update_element_operation(db, element_id, operation_data, user)
+    
     elif operation_type == "UPDATE_TIME_OFFSET":
         return _process_update_time_offset_operation(db, element_id, operation_data, user)
     
@@ -349,6 +352,50 @@ def _process_update_field_operation(db: Session, element_id: str, operation_data
     element.dateUpdated = datetime.now(timezone.utc)
     
     return {"element_id": element_id, "field": field, "new_value": new_value}
+
+
+def _process_update_element_operation(db: Session, element_id: str, operation_data: dict, user: models.User):
+    """Process an element update operation with multiple field changes."""
+    
+    changes = operation_data.get("changes", {})
+    
+    element = db.query(models.ScriptElement).filter(
+        models.ScriptElement.elementID == UUID(element_id)
+    ).first()
+    
+    if not element:
+        raise ValueError(f"Element {element_id} not found")
+    
+    updated_fields = {}
+    
+    # Apply each field change
+    for field, change_data in changes.items():
+        new_value = change_data.get("newValue")
+        
+        if hasattr(element, field):
+            # Handle special cases for enum fields (convert to uppercase)
+            if field == "priority" and new_value:
+                setattr(element, field, models.PriorityLevel(new_value))
+            elif field == "executionStatus" and new_value:
+                setattr(element, field, models.ExecutionStatus(new_value))
+            elif field == "triggerType" and new_value:
+                setattr(element, field, models.TriggerType(new_value))
+            elif field == "elementType" and new_value:
+                setattr(element, field, models.ElementType(new_value))
+            elif field == "location" and new_value:
+                setattr(element, field, models.LocationArea(new_value))
+            else:
+                setattr(element, field, new_value)
+            
+            updated_fields[field] = new_value
+        else:
+            raise ValueError(f"Invalid field: {field}")
+    
+    element.updatedBy = user.userID
+    element.version = element.version + 1
+    element.dateUpdated = datetime.now(timezone.utc)
+    
+    return {"element_id": element_id, "updated_fields": updated_fields}
 
 
 def _process_update_time_offset_operation(db: Session, element_id: str, operation_data: dict, user: models.User):

@@ -236,11 +236,9 @@ class ScriptElementCreate(BaseModel):
     duration: Optional[int] = None  # Duration in milliseconds
     fadeIn: Optional[int] = None  # Fade in time in milliseconds
     fadeOut: Optional[int] = None  # Fade out time in milliseconds
-    priority: Optional[str] = "NORMAL"  # 'CRITICAL', 'HIGH', 'NORMAL', 'LOW', 'OPTIONAL'
+    priority: Optional[str] = "NORMAL"  # 'SAFETY', 'CRITICAL', 'HIGH', 'NORMAL', 'LOW', 'OPTIONAL'
     parentElementID: Optional[UUID] = None  # For grouped elements
     groupLevel: Optional[int] = 0
-    isSafetyCritical: Optional[bool] = False
-    safetyNotes: Optional[str] = None
     departmentColor: Optional[str] = None  # Hex color override
     customColor: Optional[str] = None  # Custom color for element
 
@@ -265,8 +263,6 @@ class ScriptElementUpdate(BaseModel):
     parentElementID: Optional[UUID] = None
     groupLevel: Optional[int] = None
     isCollapsed: Optional[bool] = None
-    isSafetyCritical: Optional[bool] = None
-    safetyNotes: Optional[str] = None
     departmentColor: Optional[str] = None
     customColor: Optional[str] = None
 
@@ -341,9 +337,7 @@ class ScriptElementEnhanced(BaseModel):
     groupLevel: int = 0
     isCollapsed: bool = False
     
-    # Safety and metadata
-    isSafetyCritical: bool = False
-    safetyNotes: Optional[str] = None
+    # Metadata
     version: int = 1
     
     # System fields
@@ -402,7 +396,6 @@ class ScriptElementBulkUpdate(BaseModel):
     priority: Optional[str] = None
     execution_status: Optional[str] = None
     location: Optional[str] = None
-    is_safety_critical: Optional[bool] = None
     custom_color: Optional[str] = None
 
 # Edit Queue Batch Operations

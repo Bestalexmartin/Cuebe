@@ -19,7 +19,7 @@ export type ExecutionStatus =
   | 'SKIPPED'       // Skipped during performance
   | 'FAILED';       // Execution failed
 
-export type PriorityLevel = 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW' | 'OPTIONAL';
+export type PriorityLevel = 'SAFETY' | 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW' | 'OPTIONAL';
 
 export type LocationArea = 
   | 'stage_left' | 'stage_right' | 'center_stage' | 'upstage' | 'downstage'

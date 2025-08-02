@@ -8,6 +8,7 @@ import { ProcessingModal } from './modals/ProcessingModal';
 import { OptionsModal } from './modals/OptionsModal';
 import { DeleteCueModal } from './modals/DeleteCueModal';
 import { DuplicateElementModal } from './modals/DuplicateElementModal';
+import { EditElementModal } from './modals/EditElementModal';
 import { AddScriptElementModal } from './AddScriptElementModal';
 import { ModalStateReturn } from '../../../hooks/useModalState';
 import { UserPreferences } from '../../../hooks/useUserPreferences';
@@ -20,6 +21,7 @@ interface ScriptModalsProps {
     // Script and element data
     script?: any;
     scriptId: string;
+    selectedElement: any;
     selectedElementName: string;
     selectedElementTimeOffset: number;
     pendingOperations: any[];
@@ -57,6 +59,7 @@ interface ScriptModalsProps {
     onUnsavedChangesCancel: () => void;
     onInitialUnsavedConfirm: () => void;
     onSaveScriptChanges: () => void;
+    onElementEdit: (changes: Record<string, { oldValue: any; newValue: any }>) => void;
 }
 
 /**
@@ -70,6 +73,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     modalNames,
     script,
     scriptId,
+    selectedElement,
     selectedElementName,
     selectedElementTimeOffset,
     pendingOperations,
@@ -100,7 +104,8 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     onConfirmDuplicate,
     onUnsavedChangesCancel,
     onInitialUnsavedConfirm,
-    onSaveScriptChanges
+    onSaveScriptChanges,
+    onElementEdit
 }) => {
     return (
         <>
@@ -161,6 +166,14 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 scriptId={scriptId}
                 onElementCreated={onElementCreated}
                 autoSortCues={autoSortCues}
+            />
+
+            {/* Edit Script Element Modal */}
+            <EditElementModal
+                isOpen={modalState.isOpen(modalNames.EDIT_ELEMENT)}
+                onClose={() => modalState.closeModal(modalNames.EDIT_ELEMENT)}
+                element={selectedElement}
+                onSave={onElementEdit}
             />
 
             {/* Options Modal */}

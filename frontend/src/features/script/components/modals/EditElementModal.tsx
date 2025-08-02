@@ -10,17 +10,34 @@ import {
     Select,
     NumberInput,
     NumberInputField,
-    Checkbox,
     FormControl,
     FormLabel,
     FormErrorMessage,
     Box,
-    Divider
+    Divider,
+    Flex,
+    Menu,
+    MenuButton,
+    MenuList,
+    MenuItem,
+    Button
 } from '@chakra-ui/react';
+import { ChevronDownIcon } from '@chakra-ui/icons';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { ScriptElement } from '../../types/scriptElements';
 import { useDepartments } from '../../../departments/hooks/useDepartments';
 import { FieldError } from '../../../../types/validation';
+import { msToDurationString, durationStringToMs } from '../../../../utils/timeUtils';
+
+// Preset colors for note backgrounds
+const NOTE_PRESET_COLORS = [
+    { name: 'Default', value: '#E2E8F0' },
+    { name: 'Red', value: '#EF4444' },
+    { name: 'Grey', value: '#808080' },
+    { name: 'Black', value: '#10151C' },
+    { name: 'Blue', value: '#3B82F6' },
+    { name: 'Yellow', value: '#EAB308' },
+];
 
 interface EditElementModalProps {
     isOpen: boolean;
@@ -37,10 +54,13 @@ interface FormData {
     timeOffsetMs: number;
     duration: number;
     priority: string;
-    isSafetyCritical: boolean;
-    safetyNotes: string;
     locationDetails: string;
     customColor: string;
+}
+
+interface TimeInputs {
+    timeOffsetInput: string;
+    durationInput: string;
 }
 
 export const EditElementModal: React.FC<EditElementModalProps> = ({
@@ -58,14 +78,16 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         timeOffsetMs: 0,
         duration: 0,
         priority: 'NORMAL',
-        isSafetyCritical: false,
-        safetyNotes: '',
         locationDetails: '',
         customColor: ''
     });
     const [validationErrors, setValidationErrors] = useState<FieldError[]>([]);
     const [hasChanges, setHasChanges] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [timeInputs, setTimeInputs] = useState<TimeInputs>({
+        timeOffsetInput: '',
+        durationInput: ''
+    });
 
     // Initialize form data when element changes
     useEffect(() => {
@@ -79,13 +101,15 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
             timeOffsetMs: element.timeOffsetMs || 0,
             duration: element.duration || 0,
             priority: element.priority || 'NORMAL',
-            isSafetyCritical: element.isSafetyCritical || false,
-            safetyNotes: element.safetyNotes || '',
             locationDetails: element.locationDetails || '',
             customColor: element.customColor || ''
         };
 
         setFormData(newFormData);
+        setTimeInputs({
+            timeOffsetInput: formatTimeWithHours(newFormData.timeOffsetMs),
+            durationInput: formatTimeWithHours(newFormData.duration * 1000)
+        });
         setHasChanges(false);
         setValidationErrors([]);
     }, [element]);
@@ -101,8 +125,6 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
             timeOffsetMs: element.timeOffsetMs || 0,
             duration: element.duration || 0,
             priority: element.priority || 'NORMAL',
-            isSafetyCritical: element.isSafetyCritical || false,
-            safetyNotes: element.safetyNotes || '',
             locationDetails: element.locationDetails || '',
             customColor: element.customColor || ''
         };
@@ -133,14 +155,6 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
             });
         }
 
-        // Cue ID validation for cue elements
-        if ((element as any)?.elementType === 'CUE' && !formData.cueID.trim()) {
-            errors.push({
-                field: 'cueID',
-                message: 'Cue ID is required for cue elements',
-                code: 'required'
-            });
-        }
 
         // Department validation for cue elements
         if ((element as any)?.elementType === 'CUE' && !formData.departmentID) {
@@ -205,8 +219,9 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         }
     };
 
-    const formatTimeOffset = (timeOffsetMs: number): string => {
-        const totalSeconds = Math.round(timeOffsetMs / 1000);
+    // Enhanced time formatting to support both MM:SS and HH:MM:SS formats
+    const formatTimeWithHours = (timeMs: number): string => {
+        const totalSeconds = Math.round(timeMs / 1000);
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
@@ -214,15 +229,18 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         if (hours > 0) {
             return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         } else {
-            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            // Use existing utility for MM:SS format
+            return msToDurationString(timeMs);
         }
     };
 
-    const parseTimeOffset = (timeString: string): number => {
-        const parts = timeString.split(':').map(part => parseInt(part, 10));
+    const parseTimeWithHours = (timeString: string): number => {
+        if (!timeString || timeString.trim() === '') return 0;
+        
+        const parts = timeString.split(':').map(part => parseInt(part, 10) || 0);
         if (parts.length === 2) {
-            // MM:SS format
-            return (parts[0] * 60 + parts[1]) * 1000;
+            // MM:SS format - use existing utility
+            return durationStringToMs(timeString);
         } else if (parts.length === 3) {
             // HH:MM:SS format
             return (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000;
@@ -231,8 +249,26 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
     };
 
     const handleTimeOffsetChange = (value: string) => {
-        const timeOffsetMs = parseTimeOffset(value);
+        setTimeInputs(prev => ({ ...prev, timeOffsetInput: value }));
+    };
+
+    const handleTimeOffsetBlur = () => {
+        const timeOffsetMs = parseTimeWithHours(timeInputs.timeOffsetInput);
+        const formatted = formatTimeWithHours(timeOffsetMs);
+        setTimeInputs(prev => ({ ...prev, timeOffsetInput: formatted }));
         setFormData(prev => ({ ...prev, timeOffsetMs }));
+    };
+
+    const handleDurationChange = (value: string) => {
+        setTimeInputs(prev => ({ ...prev, durationInput: value }));
+    };
+
+    const handleDurationBlur = () => {
+        const durationMs = parseTimeWithHours(timeInputs.durationInput);
+        const durationSeconds = Math.round(durationMs / 1000);
+        const formatted = formatTimeWithHours(durationMs);
+        setTimeInputs(prev => ({ ...prev, durationInput: formatted }));
+        setFormData(prev => ({ ...prev, duration: durationSeconds }));
     };
 
     const handleNumberChange = (field: keyof FormData, value: number) => {
@@ -267,187 +303,187 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
             }}
             validationErrors={validationErrors}
             errorBoundaryContext="EditElementModal"
+            showCloseButton={false}
         >
-            <VStack spacing={6} align="stretch">
-                {/* Basic Information */}
-                <Box>
-                    <Text fontSize="lg" fontWeight="semibold" mb={4}>
-                        Basic Information
-                    </Text>
-                    
-                    <VStack spacing={4} align="stretch">
-                        {/* Description */}
-                        <FormControl isInvalid={!!getFieldError('description')}>
-                            <FormLabel>Description</FormLabel>
-                            <Input
-                                value={formData.description}
-                                onChange={(e) => handleInputChange('description', e.target.value)}
-                                placeholder="Enter description..."
-                            />
-                            <FormErrorMessage>{getFieldError('description')}</FormErrorMessage>
-                        </FormControl>
+            <VStack spacing={4} align="stretch">
+                {/* Row 1: Time and Duration */}
+                <HStack spacing={4}>
+                    {/* Time Offset */}
+                    <FormControl isInvalid={!!getFieldError('timeOffsetMs')}>
+                        <FormLabel>Time Offset</FormLabel>
+                        <Input
+                            value={timeInputs.timeOffsetInput}
+                            onChange={(e) => handleTimeOffsetChange(e.target.value)}
+                            onBlur={handleTimeOffsetBlur}
+                            placeholder="0:00 or 0:00:00"
+                        />
+                        <FormErrorMessage>{getFieldError('timeOffsetMs')}</FormErrorMessage>
+                    </FormControl>
 
-                        {/* Cue ID (for cues only) */}
-                        {isCue && (
-                            <FormControl isInvalid={!!getFieldError('cueID')}>
-                                <FormLabel>Cue ID</FormLabel>
-                                <Input
-                                    value={formData.cueID}
-                                    onChange={(e) => handleInputChange('cueID', e.target.value)}
-                                    placeholder="e.g., LX-01, SND-05"
-                                />
-                                <FormErrorMessage>{getFieldError('cueID')}</FormErrorMessage>
-                            </FormControl>
-                        )}
+                    {/* Duration */}
+                    <FormControl isInvalid={!!getFieldError('duration')}>
+                        <FormLabel>Duration</FormLabel>
+                        <Input
+                            value={timeInputs.durationInput}
+                            onChange={(e) => handleDurationChange(e.target.value)}
+                            onBlur={handleDurationBlur}
+                            placeholder="0:00 or 0:00:00"
+                        />
+                        <FormErrorMessage>{getFieldError('duration')}</FormErrorMessage>
+                    </FormControl>
+                </HStack>
 
-                        {/* Department (for cues, optional for notes) */}
-                        <FormControl isInvalid={!!getFieldError('departmentID')}>
-                            <FormLabel>Department {isCue && '*'}</FormLabel>
-                            <Select
-                                value={formData.departmentID}
-                                onChange={(e) => handleInputChange('departmentID', e.target.value)}
-                                placeholder="Select department..."
+                {/* Row 2: Department or Color */}
+                {isCue ? (
+                    <FormControl isInvalid={!!getFieldError('departmentID')}>
+                        <FormLabel>Department *</FormLabel>
+                        <Menu>
+                            <MenuButton
+                                as={Button}
+                                rightIcon={<ChevronDownIcon />}
+                                variant="outline"
+                                width="100%"
+                                textAlign="left"
                                 isDisabled={departmentsLoading}
+                                bg="white"
+                                _dark={{ bg: "gray.800" }}
+                                height="40px"
                             >
+                                {formData.departmentID ? (
+                                    <Flex align="center" gap={2}>
+                                        <Box
+                                            width="14px"
+                                            height="14px"
+                                            borderRadius="50%"
+                                            bg={departments?.find(d => d.departmentID === formData.departmentID)?.departmentColor || 'gray.400'}
+                                            flexShrink={0}
+                                        />
+                                        <Text isTruncated>
+                                            {departments?.find(d => d.departmentID === formData.departmentID)?.departmentName || 'Select department'}
+                                        </Text>
+                                    </Flex>
+                                ) : (
+                                    <Text color="gray.500">Select department...</Text>
+                                )}
+                            </MenuButton>
+                            <MenuList>
                                 {departments.map(dept => (
-                                    <option key={dept.departmentID} value={dept.departmentID}>
-                                        {dept.departmentName}
-                                    </option>
+                                    <MenuItem
+                                        key={dept.departmentID}
+                                        onClick={() => handleInputChange('departmentID', dept.departmentID)}
+                                    >
+                                        <Flex align="center" gap={2}>
+                                            <Box
+                                                width="14px"
+                                                height="14px"
+                                                borderRadius="50%"
+                                                bg={dept.departmentColor}
+                                                flexShrink={0}
+                                            />
+                                            <Text>{dept.departmentName}</Text>
+                                        </Flex>
+                                    </MenuItem>
                                 ))}
-                            </Select>
-                            <FormErrorMessage>{getFieldError('departmentID')}</FormErrorMessage>
-                        </FormControl>
-
-                        {/* Notes */}
-                        <FormControl>
-                            <FormLabel>{isNote ? 'Content' : 'Cue Notes'}</FormLabel>
-                            <Textarea
-                                value={formData.cueNotes}
-                                onChange={(e) => handleInputChange('cueNotes', e.target.value)}
-                                placeholder={isNote ? "Enter note content..." : "Enter cue notes..."}
-                                rows={3}
-                            />
-                        </FormControl>
-                    </VStack>
-                </Box>
-
-                <Divider />
-
-                {/* Timing */}
-                <Box>
-                    <Text fontSize="lg" fontWeight="semibold" mb={4}>
-                        Timing
-                    </Text>
-                    
-                    <HStack spacing={4}>
-                        {/* Time Offset */}
-                        <FormControl isInvalid={!!getFieldError('timeOffsetMs')}>
-                            <FormLabel>Time Offset</FormLabel>
+                            </MenuList>
+                        </Menu>
+                        <FormErrorMessage>{getFieldError('departmentID')}</FormErrorMessage>
+                    </FormControl>
+                ) : (
+                    <FormControl>
+                        <FormLabel>Background Color</FormLabel>
+                        <HStack spacing={3} align="center">
                             <Input
-                                value={formatTimeOffset(formData.timeOffsetMs)}
-                                onChange={(e) => handleTimeOffsetChange(e.target.value)}
-                                placeholder="0:00 or 0:00:00"
+                                type="color"
+                                value={formData.customColor || '#E2E8F0'}
+                                onChange={(e) => handleInputChange('customColor', e.target.value)}
+                                width="60px"
+                                height="40px"
+                                padding="1"
+                                cursor="pointer"
                             />
-                            <FormErrorMessage>{getFieldError('timeOffsetMs')}</FormErrorMessage>
-                        </FormControl>
-
-                        {/* Duration */}
-                        <FormControl isInvalid={!!getFieldError('duration')}>
-                            <FormLabel>Duration (seconds)</FormLabel>
-                            <NumberInput
-                                value={formData.duration}
-                                onChange={(valueString, valueNumber) => 
-                                    handleNumberChange('duration', valueNumber || 0)
-                                }
-                                min={0}
-                            >
-                                <NumberInputField />
-                            </NumberInput>
-                            <FormErrorMessage>{getFieldError('duration')}</FormErrorMessage>
-                        </FormControl>
-                    </HStack>
-                </Box>
-
-                <Divider />
-
-                {/* Priority and Safety */}
-                <Box>
-                    <Text fontSize="lg" fontWeight="semibold" mb={4}>
-                        Priority & Safety
-                    </Text>
-                    
-                    <VStack spacing={4} align="stretch">
-                        {/* Priority */}
-                        <FormControl>
-                            <FormLabel>Priority</FormLabel>
-                            <Select
-                                value={formData.priority}
-                                onChange={(e) => handleInputChange('priority', e.target.value)}
-                            >
-                                <option value="CRITICAL">Critical</option>
-                                <option value="HIGH">High</option>
-                                <option value="NORMAL">Normal</option>
-                                <option value="LOW">Low</option>
-                                <option value="OPTIONAL">Optional</option>
-                            </Select>
-                        </FormControl>
-
-                        {/* Safety Critical */}
-                        <FormControl>
-                            <Checkbox
-                                isChecked={formData.isSafetyCritical}
-                                onChange={(e) => handleInputChange('isSafetyCritical', e.target.checked)}
-                            >
-                                Safety Critical
-                            </Checkbox>
-                        </FormControl>
-
-                        {/* Safety Notes */}
-                        {formData.isSafetyCritical && (
-                            <FormControl>
-                                <FormLabel>Safety Notes</FormLabel>
-                                <Textarea
-                                    value={formData.safetyNotes}
-                                    onChange={(e) => handleInputChange('safetyNotes', e.target.value)}
-                                    placeholder="Enter safety notes..."
-                                    rows={2}
-                                />
-                            </FormControl>
-                        )}
-
-                        {/* Location Details */}
-                        <FormControl>
-                            <FormLabel>Location Details</FormLabel>
                             <Input
-                                value={formData.locationDetails}
-                                onChange={(e) => handleInputChange('locationDetails', e.target.value)}
-                                placeholder="e.g., Stage left, Booth, etc."
+                                value={formData.customColor || '#E2E8F0'}
+                                onChange={(e) => handleInputChange('customColor', e.target.value)}
+                                placeholder="#E2E8F0"
+                                width="120px"
+                                fontFamily="mono"
                             />
-                        </FormControl>
-                    </VStack>
-                </Box>
-
-                {/* Custom Color for Notes */}
-                {isNote && (
-                    <>
-                        <Divider />
-                        <Box>
-                            <Text fontSize="lg" fontWeight="semibold" mb={4}>
-                                Appearance
-                            </Text>
-                            
-                            <FormControl>
-                                <FormLabel>Custom Color</FormLabel>
-                                <Input
-                                    type="color"
-                                    value={formData.customColor || '#E2E8F0'}
-                                    onChange={(e) => handleInputChange('customColor', e.target.value)}
-                                    w="100px"
-                                />
-                            </FormControl>
-                        </Box>
-                    </>
+                            <HStack spacing={1} ml={2}>
+                                {/* Preset color buttons */}
+                                {NOTE_PRESET_COLORS.map((color) => (
+                                    <Button
+                                        key={color.value}
+                                        size="sm"
+                                        height="30px"
+                                        width="30px"
+                                        minWidth="30px"
+                                        backgroundColor={color.value}
+                                        border={formData.customColor === color.value ? '3px solid' : '1px solid'}
+                                        borderColor={formData.customColor === color.value ? 'white' : 'gray.300'}
+                                        onClick={() => handleInputChange('customColor', color.value)}
+                                        _hover={{ transform: 'scale(1.1)' }}
+                                        title={color.name}
+                                        tabIndex={-1}
+                                    />
+                                ))}
+                            </HStack>
+                        </HStack>
+                    </FormControl>
                 )}
+
+                {/* Row 3: Cue (Description) */}
+                <FormControl isInvalid={!!getFieldError('description')}>
+                    <FormLabel>Cue</FormLabel>
+                    <Input
+                        value={formData.description}
+                        onChange={(e) => handleInputChange('description', e.target.value)}
+                        placeholder="Describe what happens during this cue or note..."
+                    />
+                    <FormErrorMessage>{getFieldError('description')}</FormErrorMessage>
+                </FormControl>
+
+                {/* Row 4: Notes */}
+                <FormControl>
+                    <FormLabel>Notes</FormLabel>
+                    <Textarea
+                        value={formData.cueNotes}
+                        onChange={(e) => handleInputChange('cueNotes', e.target.value)}
+                        placeholder="Additional instructions or details..."
+                        minHeight="60px"
+                        resize="vertical"
+                    />
+                </FormControl>
+
+                {/* Row 5: Location */}
+                <FormControl>
+                    <FormLabel>Location</FormLabel>
+                    <Input
+                        value={formData.locationDetails}
+                        onChange={(e) => handleInputChange('locationDetails', e.target.value)}
+                        placeholder="e.g., Stage left, Booth, etc."
+                    />
+                </FormControl>
+
+                {/* Row 6: Priority and Safety Critical */}
+                <HStack spacing={4} align="flex-start">
+                    {/* Priority */}
+                    <FormControl>
+                        <FormLabel>Priority</FormLabel>
+                        <Select
+                            value={formData.priority}
+                            onChange={(e) => handleInputChange('priority', e.target.value)}
+                        >
+                            <option value="SAFETY">Safety</option>
+                            <option value="CRITICAL">Critical</option>
+                            <option value="HIGH">High</option>
+                            <option value="NORMAL">Normal</option>
+                            <option value="LOW">Low</option>
+                            <option value="OPTIONAL">Optional</option>
+                        </Select>
+                    </FormControl>
+
+                </HStack>
+
             </VStack>
         </BaseModal>
     );

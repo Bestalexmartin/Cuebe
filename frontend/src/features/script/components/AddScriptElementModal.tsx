@@ -55,7 +55,6 @@ const INITIAL_FORM_STATE: ScriptElementCreate = {
     departmentID: '',
     location: undefined, // Not needed in form
     priority: 'NORMAL',
-    isSafetyCritical: false,
     customColor: '' // For note background color
 };
 
@@ -101,6 +100,7 @@ const TRIGGER_TYPE_OPTIONS: { value: TriggerType; label: string }[] = [
 ];
 
 const PRIORITY_OPTIONS: { value: PriorityLevel; label: string }[] = [
+    { value: 'SAFETY', label: 'Safety' },
     { value: 'CRITICAL', label: 'Critical' },
     { value: 'HIGH', label: 'High' },
     { value: 'NORMAL', label: 'Normal' },
@@ -258,7 +258,38 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                     </RadioGroup>
                 </FormControl>
 
-                {/* Department for Cues, Color Picker for Notes */}
+                {/* Row 2: Time Offset and Duration */}
+                <HStack spacing={4}>
+                    <FormControl isRequired>
+                        <FormLabel>Time Offset</FormLabel>
+                        <Input
+                            type="text"
+                            value={timeInputValue}
+                            onChange={(e) => {
+                                // Allow completely free typing
+                                setTimeInputValue(e.target.value);
+                            }}
+                            onBlur={(e) => {
+                                // Auto-format, update form data, and validate on blur
+                                const ms = durationStringToMs(e.target.value);
+                                const formatted = msToDurationString(ms);
+                                setTimeInputValue(formatted);
+                                form.updateField('timeOffsetMs', ms);
+                                form.validateField('timeOffsetMs');
+                            }}
+                            placeholder="0:00 or 0:00:00"
+                        />
+                    </FormControl>
+
+                    <FormControl>
+                        <FormLabel>Duration</FormLabel>
+                        <Input
+                            placeholder="0:00 or 0:00:00"
+                        />
+                    </FormControl>
+                </HStack>
+
+                {/* Row 3: Department for Cues, Color Picker for Notes */}
                 {form.formData.elementType === 'CUE' ? (
                     <FormControl isRequired>
                         <FormLabel>Department</FormLabel>
@@ -361,61 +392,20 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                     </FormControl>
                 )}
 
-                {/* Cue Event (Description) */}
+                {/* Row 4: Cue (Description) */}
                 <FormControl isRequired>
-                    <FormLabel>Cue Event</FormLabel>
-                    <Textarea
+                    <FormLabel>Cue</FormLabel>
+                    <Input
                         value={form.formData.description}
                         onChange={(e) => form.updateField('description', e.target.value)}
                         onBlur={() => form.validateField('description')}
                         placeholder="Describe what happens during this cue or note..."
-                        minHeight="80px"
-                        resize="vertical"
                     />
                 </FormControl>
 
-                {/* Time Offset and Priority Row */}
-                <HStack spacing={4}>
-                    <FormControl isRequired>
-                        <FormLabel>Time Offset (MM:SS)</FormLabel>
-                        <Input
-                            type="text"
-                            value={timeInputValue}
-                            onChange={(e) => {
-                                // Allow completely free typing
-                                setTimeInputValue(e.target.value);
-                            }}
-                            onBlur={(e) => {
-                                // Auto-format, update form data, and validate on blur
-                                const ms = durationStringToMs(e.target.value);
-                                const formatted = msToDurationString(ms);
-                                setTimeInputValue(formatted);
-                                form.updateField('timeOffsetMs', ms);
-                                form.validateField('timeOffsetMs');
-                            }}
-                            placeholder="00:00"
-                            maxLength={5}
-                        />
-                    </FormControl>
-
-                    <FormControl>
-                        <FormLabel>Priority</FormLabel>
-                        <Select
-                            value={form.formData.priority}
-                            onChange={(e) => form.updateField('priority', e.target.value as PriorityLevel)}
-                        >
-                            {PRIORITY_OPTIONS.map(option => (
-                                <option key={option.value} value={option.value}>
-                                    {option.label}
-                                </option>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </HStack>
-
-                {/* Cue Notes */}
+                {/* Row 5: Notes */}
                 <FormControl>
-                    <FormLabel>Cue Notes</FormLabel>
+                    <FormLabel>Notes</FormLabel>
                     <Textarea
                         value={form.formData.cueNotes}
                         onChange={(e) => form.updateField('cueNotes', e.target.value)}
@@ -424,6 +414,29 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                         minHeight="60px"
                         resize="vertical"
                     />
+                </FormControl>
+
+                {/* Row 6: Location */}
+                <FormControl>
+                    <FormLabel>Location</FormLabel>
+                    <Input
+                        placeholder="e.g., Stage left, Booth, etc."
+                    />
+                </FormControl>
+
+                {/* Row 7: Priority */}
+                <FormControl>
+                    <FormLabel>Priority</FormLabel>
+                    <Select
+                        value={form.formData.priority}
+                        onChange={(e) => form.updateField('priority', e.target.value as PriorityLevel)}
+                    >
+                        {PRIORITY_OPTIONS.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </Select>
                 </FormControl>
             </VStack>
         </BaseModal>

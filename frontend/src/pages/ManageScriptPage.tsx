@@ -57,6 +57,7 @@ const MODAL_NAMES = {
     DUPLICATE: 'duplicate',
     PROCESSING: 'processing',
     ADD_ELEMENT: 'add-element',
+    EDIT_ELEMENT: 'edit-element',
     OPTIONS: 'options',
     DELETE_CUE: 'delete-cue',
     DUPLICATE_ELEMENT: 'duplicate-element',
@@ -93,17 +94,17 @@ const INITIAL_FORM_STATE: ScriptFormData = {
 
 const VALIDATION_CONFIG: FormValidationConfig = {
     scriptName: {
-        required: false,
+        required: true,
         rules: [
             {
                 validator: (value: string) => {
                     if (!value || value.trim().length === 0) {
-                        return true; // Empty is valid
+                        return false; // Empty is invalid
                     }
                     return value.trim().length >= 4; // Must have 4+ chars if not empty
                 },
-                message: 'Script name must be at least 4 characters',
-                code: 'MIN_LENGTH'
+                message: 'Script name is required and must be at least 4 characters',
+                code: 'REQUIRED_MIN_LENGTH'
             },
             ValidationRules.maxLength(100, 'Script name must be no more than 100 characters')
         ]
@@ -134,9 +135,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const [isDeletingCue, setIsDeletingCue] = useState(false);
     const [isDuplicatingElement, setIsDuplicatingElement] = useState(false);
     const [isSavingChanges, setIsSavingChanges] = useState(false);
+    const [forceRender, setForceRender] = useState(0);
 
     // Element selection and refs
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+    const [selectedElement, setSelectedElement] = useState<any>(null);
     const [selectedElementName, setSelectedElementName] = useState<string>('');
     const [selectedElementTimeOffset, setSelectedElementTimeOffset] = useState<number>(0);
     const viewModeRef = useRef<ViewModeRef>(null);
@@ -916,12 +919,50 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         }
     };
 
+    const handleElementEditSave = async (changes: Record<string, { oldValue: any; newValue: any }>) => {
+        if (!selectedElement) {
+            return;
+        }
+
+        try {
+            // Create single UPDATE_ELEMENT operation for all changes
+            applyLocalChange({
+                type: 'UPDATE_ELEMENT',
+                elementId: selectedElement.elementID,
+                changes: changes,
+                description: `Updated element "${selectedElement.description}"`
+            });
+
+            // Force a re-render to ensure UI updates immediately
+            setForceRender(prev => prev + 1);
+
+            modalState.closeModal(MODAL_NAMES.EDIT_ELEMENT);
+            showSuccess('Element Updated', 'Element changes have been applied. Save to persist changes.');
+        } catch (error) {
+            console.error('Error updating element:', error);
+            showError('Failed to update script element. Please try again.');
+        }
+    };
+
     const handleElementGroup = () => {
         showError('Element grouping feature is under development');
     };
 
     const handleElementEdit = () => {
-        showError('Element editing feature is under development');
+        if (!selectedElementId) {
+            showError('Please select an element to edit');
+            return;
+        }
+        
+        // Find the selected element in the current elements
+        const elementToEdit = editQueueElements.find(el => el.elementID === selectedElementId);
+        if (!elementToEdit) {
+            showError('Selected element not found');
+            return;
+        }
+        
+        setSelectedElement(elementToEdit);
+        modalState.openModal(MODAL_NAMES.EDIT_ELEMENT);
     };
 
     const handleJump = (direction: 'top' | 'bottom') => {
@@ -1094,7 +1135,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                     bg="blue.400"
                                     color="white"
                                     onClick={handleShowSaveConfirmation}
-                                    isDisabled={!hasChanges && !hasUnsavedChanges}
+                                    isDisabled={(!hasChanges && !hasUnsavedChanges) || !form.isValid}
                                     _hover={{ bg: 'orange.400' }}
                                 >
                                     Save Changes
@@ -1148,6 +1189,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                 overflowY="auto"
                                 className="hide-scrollbar edit-form-container"
                                 minHeight={0}
+                                maxHeight="100%"
                             >
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
@@ -1237,6 +1279,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 modalNames={MODAL_NAMES}
                 script={script}
                 scriptId={scriptId || ''}
+                selectedElement={selectedElement}
                 selectedElementName={selectedElementName}
                 selectedElementTimeOffset={selectedElementTimeOffset}
                 pendingOperations={pendingOperations}
@@ -1272,6 +1315,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onUnsavedChangesCancel={handleUnsavedChangesCancel}
                 onInitialUnsavedConfirm={handleInitialUnsavedConfirm}
                 onSaveScriptChanges={handleSaveScriptChanges}
+                onElementEdit={handleElementEditSave}
             />
 
             {/* Save Confirmation Modal */}

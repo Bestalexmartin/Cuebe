@@ -94,7 +94,21 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         // Only update if the elements have actually changed (deep comparison)
         const elementsChanged = !localElements || 
             localElements.length !== elements?.length ||
-            localElements.some((el, index) => el.elementID !== elements?.[index]?.elementID);
+            localElements.some((el, index) => {
+                const newEl = elements?.[index];
+                if (!newEl) return true;
+                if (el.elementID !== newEl.elementID) return true;
+                // Check if any key fields have changed
+                return el.duration !== newEl.duration ||
+                       el.priority !== newEl.priority ||
+                       el.description !== newEl.description ||
+                       el.timeOffsetMs !== newEl.timeOffsetMs ||
+                       el.locationDetails !== newEl.locationDetails ||
+                       el.cueNotes !== newEl.cueNotes ||
+                       el.cueID !== newEl.cueID ||
+                       el.departmentID !== newEl.departmentID ||
+                       el.customColor !== newEl.customColor;
+            });
             
         if (elementsChanged) {
             // console.log(`📊 EditMode: Elements updated - from ${localElements?.length || 0} to ${elements?.length || 0} elements`);

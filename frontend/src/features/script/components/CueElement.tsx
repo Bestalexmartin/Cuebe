@@ -108,7 +108,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
     const handleDoubleClick = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         if (onEdit) {
             onEdit(element);
         }
@@ -164,13 +164,13 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
 
     const timeDisplay = useMemo(() => {
         const timeValue = element.timeOffsetMs || 0;
-        
+
         // If clock times are requested but we don't have script start time yet, show placeholder
         if (showClockTimes) {
             if (!scriptStartTime) {
                 return '--:--:--'; // Placeholder to prevent offset time from showing
             }
-            
+
             // Calculate clock time directly
             const showStartTime = new Date(scriptStartTime);
             const clockTime = new Date(showStartTime.getTime() + timeValue);
@@ -183,7 +183,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
             const seconds = clockTime.getSeconds().toString().padStart(2, '0');
             return `${hours}:${minutes}:${seconds}`;
         }
-        
+
         // Show offset time when clock times are not requested
         const totalSeconds = Math.round(timeValue / 1000);
         const hours = Math.floor(totalSeconds / 3600);
@@ -199,7 +199,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
 
     const durationDisplay = useMemo(() => {
         // For SHOW START elements, always calculate from script times if available
-        if (element.description?.toUpperCase() === 'SHOW START' && 
+        if (element.description?.toUpperCase() === 'SHOW START' &&
             scriptStartTime && scriptEndTime) {
             const startTime = new Date(scriptStartTime);
             const endTime = new Date(scriptEndTime);
@@ -221,7 +221,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                 }
             }
         }
-        
+
         if (element.duration) {
             const totalSeconds = element.duration;
             const days = Math.floor(totalSeconds / 86400);
@@ -262,7 +262,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
             ref={isDragEnabled ? setNodeRef : undefined}
             style={isDragEnabled ? dragStyle : undefined}
             bg={backgroundColor}
-            border="2px solid"
+            border="3px solid"
             borderColor={isSelected ? "blue.400" : "transparent"}
             mb="1px"
             _hover={{
@@ -278,31 +278,50 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
             onDoubleClick={handleDoubleClick}
             {...(isDragEnabled ? { ...attributes, ...listeners } : {})}
         >
-            <HStack spacing={0} align="center" h="32px">
+            <HStack spacing={0} align="center" h="28px">
                 <Box
                     w="10px"
-                    h="100%"
+                    h="28px"
                     bg={leftBarColor}
                     flexShrink={0}
+                    mt="1px"
+                    mb="1px"
                 />
 
                 {/* Time Offset */}
-                <Box w="120px" pl={5} pr={4} borderRight={"1px solid"} borderColor={"gray.400"}>
-                    <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight}>
+                <Box w="120px" pl={5} pr={4} position="relative">
+                    <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight} marginTop="-1px">
                         {timeDisplay}
                     </Text>
+                    <Box
+                        position="absolute"
+                        right="0"
+                        top="-3px"
+                        height="29px"
+                        width="1px"
+                        bg="gray.400"
+                    />
                 </Box>
 
                 {/* Duration */}
                 <Box
                     w="100px"
                     px={3}
-                    borderRight={colorizeDepNames && (element as any).elementType !== 'NOTE' ? 'none' : '1px solid'}
-                    borderColor={"gray.400"}
+                    position="relative"
                 >
-                    <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight}>
+                    <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight} marginTop="-1px">
                         {durationDisplay}
                     </Text>
+                    {!(colorizeDepNames && (element as any).elementType !== 'NOTE') && (
+                        <Box
+                            position="absolute"
+                            right="0"
+                            top="-4px"
+                            height="31px"
+                            width="1px"
+                            bg="gray.400"
+                        />
+                    )}
                 </Box>
 
                 {/* Department Name */}
@@ -325,12 +344,12 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                             alignItems="center"
                             justifyContent="center"
                         >
-                            <Text fontSize="sm" color="white" fontWeight="bold" isTruncated>
+                            <Text fontSize="sm" color="white" fontWeight="bold" isTruncated marginTop="-1px">
                                 {element.departmentName || ''}
                             </Text>
                         </Box>
                     ) : (
-                        <Text fontSize="sm" color={textColor} textAlign="center" isTruncated fontWeight={fontWeight} width="100%">
+                        <Text fontSize="sm" color={textColor} textAlign="center" isTruncated fontWeight={fontWeight} width="100%" marginTop="-1px">
                             {(element as any).elementType === 'NOTE' ? '' : (element.departmentName || '')}
                         </Text>
                     )}
@@ -340,12 +359,29 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                 <Box
                     w="80px"
                     px={3}
-                    borderLeft={colorizeDepNames && (element as any).elementType !== 'NOTE' ? 'none' : '1px solid'}
-                    borderRight={"1px solid"}
-                    borderColor={"gray.400"}>
-                    <Text fontSize="sm" fontWeight={hasCustomBackground ? "bold" : "normal"} color={cueIdColor} textAlign="center">
+                    position="relative"
+                >
+                    <Text fontSize="sm" fontWeight={hasCustomBackground ? "bold" : "normal"} color={cueIdColor} textAlign="center" marginTop="-1px">
                         {dynamicCueID || '\u00A0'}
                     </Text>
+                    {!(colorizeDepNames && (element as any).elementType !== 'NOTE') && (
+                        <Box
+                            position="absolute"
+                            left="0"
+                            top="-4px"
+                            height="31px"
+                            width="1px"
+                            bg="gray.400"
+                        />
+                    )}
+                    <Box
+                        position="absolute"
+                        right="0"
+                        top="-3px"
+                        height="29px"
+                        width="1px"
+                        bg="gray.400"
+                    />
                 </Box>
 
                 {/* Cue Name/Description */}
@@ -353,12 +389,19 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                     w="240px"
                     pl={6}
                     pr={3}
-                    borderRight={"1px solid"}
-                    borderColor={"gray.400"}
+                    position="relative"
                 >
-                    <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight}>
+                    <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
                         {element.description}
                     </Text>
+                    <Box
+                        position="absolute"
+                        right="0"
+                        top="-3px"
+                        height="29px"
+                        width="1px"
+                        bg="gray.400"
+                    />
                 </Box>
 
                 {/* Cue Notes */}
@@ -366,19 +409,118 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                     flex={1}
                     pl={6}
                     pr={3}
-                    borderRight={"1px solid"}
-                    borderColor={"gray.400"}
+                    position="relative"
                 >
-                    <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight}>
+                    <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
                         {(element as any).cueNotes || '\u00A0'}
                     </Text>
+                    <Box
+                        position="absolute"
+                        right="0"
+                        top="-3px"
+                        height="29px"
+                        width="1px"
+                        bg="gray.400"
+                    />
+                    <Box
+                        position="absolute"
+                        right="0"
+                        top="-3px"
+                        height="29px"
+                        width="1px"
+                        bg="gray.400"
+                    />
+                </Box>
+
+                {/* Location */}
+                <Box
+                    w="180px"
+                    pl={6}
+                    pr={3}
+                    position="relative"
+                >
+                    <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
+                        {element.locationDetails || '\u00A0'}
+                    </Text>
+                    {element.priority !== 'SAFETY' && (
+                        <Box
+                            position="absolute"
+                            right="0"
+                            top="-4px"
+                            height="31px"
+                            width="1px"
+                            bg="gray.400"
+                        />
+                    )}
                 </Box>
 
                 {/* Priority */}
-                <Box w="120px" px={3}>
-                    <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight}>
-                        {element.priority}
-                    </Text>
+                <Box
+                    w="120px"
+                    height="100%"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    px={element.priority === 'SAFETY' ? 0 : 3}
+                >
+                    {element.priority === 'SAFETY' ? (
+                        <Box
+                            position="relative"
+                            width="100%"
+                            height="100%"
+                            ml="2px"
+                            mr="0px"
+                            my="2px"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                        >
+                            {/* Striped border/frame */}
+                            <Box
+                                position="absolute"
+                                top="0"
+                                left="0"
+                                right="0"
+                                bottom="0"
+                                background={`repeating-linear-gradient(
+                                    -45deg,
+                                    #000000 0px,
+                                    #000000 8px,
+                                    #EAB308 8px,
+                                    #EAB308 16px
+                                )`}
+                                borderRadius="sm"
+                            />
+                            
+                            {/* Solid background layer for text */}
+                            <Box
+                                position="absolute"
+                                top="4px"
+                                left="4px"
+                                right="4px"
+                                bottom="4px"
+                                background={backgroundColor}
+                                borderRadius="sm"
+                            />
+                            
+                            {/* Text layer */}
+                            <Text
+                                fontSize="sm"
+                                color={textColor}
+                                textAlign="center"
+                                fontWeight="bold"
+                                position="relative"
+                                zIndex="1"
+                                marginTop="-1px"
+                            >
+                                {element.priority}
+                            </Text>
+                        </Box>
+                    ) : (
+                        <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight} marginTop="-1px">
+                            {element.priority}
+                        </Text>
+                    )}
                 </Box>
             </HStack>
         </Box>

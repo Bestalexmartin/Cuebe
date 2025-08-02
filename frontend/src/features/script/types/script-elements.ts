@@ -64,7 +64,7 @@ export type TriggerType = 'MANUAL' | 'TIME' | 'AUTO' | 'FOLLOW' | 'GO' | 'STANDB
 
 export type ExecutionStatus = 'PENDING' | 'READY' | 'EXECUTING' | 'COMPLETED' | 'SKIPPED' | 'FAILED';
 
-export type PriorityLevel = 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW' | 'OPTIONAL';
+export type PriorityLevel = 'SAFETY' | 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW' | 'OPTIONAL';
 
 export type LocationArea = 
     | 'stage_left' | 'stage_right' | 'center_stage' | 'upstage' | 'downstage'
