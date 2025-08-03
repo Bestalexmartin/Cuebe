@@ -82,11 +82,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
   }, [location.state]); // Removed hookHandleViewChange from dependencies to prevent loop
 
   // Modal handlers
-  const handleCreateShow = () => openModal(MODAL_TYPES.CREATE_SHOW);
-  const handleCreateScript = (showId: string) => openModal(MODAL_TYPES.CREATE_SCRIPT, { showId });
-  const handleCreateVenue = () => openModal(MODAL_TYPES.CREATE_VENUE);
-  const handleCreateDepartment = () => openModal(MODAL_TYPES.CREATE_DEPARTMENT);
-  const handleCreateCrew = () => openModal(MODAL_TYPES.CREATE_CREW);
+  const handleCreateShow = () => openModal(MODAL_TYPES.createShow);
+  const handleCreateScript = (showId: string) => openModal(MODAL_TYPES.createScript, { showId });
+  const handleCreateVenue = () => openModal(MODAL_TYPES.createVenue);
+  const handleCreateDepartment = () => openModal(MODAL_TYPES.createDepartment);
+  const handleCreateCrew = () => openModal(MODAL_TYPES.createCrew);
 
   // Data refresh handlers
   const handleDataRefresh = () => {
@@ -96,7 +96,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
 
   const renderModal = () => {
     switch (activeModal) {
-      case MODAL_TYPES.CREATE_SHOW:
+      case MODAL_TYPES.createShow:
         return (
           <CreateShowModal
             isOpen={isOpen}
@@ -104,7 +104,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
             onShowCreated={handleDataRefresh}
           />
         );
-      case MODAL_TYPES.CREATE_SCRIPT:
+      case MODAL_TYPES.createScript:
         return (
           <CreateScriptModal
             isOpen={isOpen}
@@ -113,7 +113,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
             onScriptCreated={handleDataRefresh}
           />
         );
-      case MODAL_TYPES.CREATE_VENUE:
+      case MODAL_TYPES.createVenue:
         return (
           <CreateVenueModal
             isOpen={isOpen}
@@ -121,7 +121,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
             onVenueCreated={handleDataRefresh}
           />
         );
-      case MODAL_TYPES.CREATE_DEPARTMENT:
+      case MODAL_TYPES.createDepartment:
         return (
           <CreateDepartmentModal
             isOpen={isOpen}
@@ -129,7 +129,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({ isMenuOpen, onMenuClose }
             onDepartmentCreated={handleDataRefresh}
           />
         );
-      case MODAL_TYPES.CREATE_CREW:
+      case MODAL_TYPES.createCrew:
         return (
           <CreateCrewModal
             isOpen={isOpen}

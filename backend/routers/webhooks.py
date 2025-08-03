@@ -65,32 +65,32 @@ async def handle_clerk_webhook(
         email = user_data.get('email_addresses', [{}])[0].get('email_address')
         new_clerk_id = user_data.get('id')
         
-        existing_user = db.query(models.User).filter(models.User.emailAddress == email).first()
+        existing_user = db.query(models.User).filter(models.User.email_address == email).first()
 
         if existing_user:
             # Update existing user (whether active guest or inactive user)
-            setattr(existing_user, 'isActive', True)
+            existing_user.is_active = True
             existing_user.clerk_user_id = new_clerk_id
-            existing_user.userName = user_data.get('username')
-            setattr(existing_user, 'userStatus', models.UserStatus.VERIFIED)
+            existing_user.user_name = user_data.get('username')
+            existing_user.user_status = models.UserStatus.VERIFIED
             # Update name and profile if provided by Clerk and not already set
-            if user_data.get('first_name') and not bool(existing_user.fullnameFirst):
-                existing_user.fullnameFirst = user_data.get('first_name')
-            if user_data.get('last_name') and not bool(existing_user.fullnameLast):
-                existing_user.fullnameLast = user_data.get('last_name')
+            if user_data.get('first_name') and not bool(existing_user.fullname_first):
+                existing_user.fullname_first = user_data.get('first_name')
+            if user_data.get('last_name') and not bool(existing_user.fullname_last):
+                existing_user.fullname_last = user_data.get('last_name')
             if user_data.get('image_url'):
-                existing_user.profileImgURL = user_data.get('image_url')
+                existing_user.profile_img_url = user_data.get('image_url')
         else:
             logger.info(f"Creating new user for email: {email}")
             new_user = models.User(
                 clerk_user_id=new_clerk_id,
-                emailAddress=email,
-                userName=user_data.get('username'),
-                fullnameFirst=user_data.get('first_name'),
-                fullnameLast=user_data.get('last_name'),
-                profileImgURL=user_data.get('image_url'),
-                userStatus=models.UserStatus.VERIFIED,
-                isActive=True
+                email_address=email,
+                user_name=user_data.get('username'),
+                fullname_first=user_data.get('first_name'),
+                fullname_last=user_data.get('last_name'),
+                profile_img_url=user_data.get('image_url'),
+                user_status=models.UserStatus.VERIFIED,
+                is_active=True
             )
             db.add(new_user)
         
@@ -99,11 +99,11 @@ async def handle_clerk_webhook(
     elif event_type == 'user.updated':
         user_to_update = db.query(models.User).filter(models.User.clerk_user_id == user_data['id']).first()
         if user_to_update:
-            user_to_update.emailAddress = user_data['email_addresses'][0]['email_address']
-            user_to_update.userName = user_data.get('username')
-            user_to_update.fullnameFirst = user_data.get('first_name')
-            user_to_update.fullnameLast = user_data.get('last_name')
-            user_to_update.profileImgURL = user_data.get('image_url')
+            user_to_update.email_address = user_data['email_addresses'][0]['email_address']
+            user_to_update.user_name = user_data.get('username')
+            user_to_update.fullname_first = user_data.get('first_name')
+            user_to_update.fullname_last = user_data.get('last_name')
+            user_to_update.profile_img_url = user_data.get('image_url')
             db.commit()
             logger.info(f"User {user_data['id']} updated.")
 
@@ -112,7 +112,7 @@ async def handle_clerk_webhook(
         if clerk_id_to_delete:
             user_to_deactivate = db.query(models.User).filter(models.User.clerk_user_id == clerk_id_to_delete).first()
             if user_to_deactivate:
-                setattr(user_to_deactivate, 'isActive', False)
+                user_to_deactivate.is_active = False
                 db.commit()
                 logger.info(f"User {clerk_id_to_delete} deactivated.")
     

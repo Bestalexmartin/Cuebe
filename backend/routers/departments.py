@@ -39,7 +39,7 @@ def read_departments(
     db: Session = Depends(get_db)
 ):
     """Get departments owned by the current user."""
-    departments = db.query(models.Department).filter(models.Department.ownerID == user.userID).all()
+    departments = db.query(models.Department).filter(models.Department.owner_id == user.user_id).all()
     return departments
 
 
@@ -51,11 +51,11 @@ def create_department(
 ):
     """Create a new department owned by the current user."""
     new_department = models.Department(
-        departmentName=department.departmentName,
-        departmentDescription=department.departmentDescription,
-        departmentColor=department.departmentColor,
-        departmentInitials=department.departmentInitials,
-        ownerID=user.userID
+        department_name=department.department_name,
+        department_description=department.department_description,
+        department_color=department.department_color,
+        department_initials=department.department_initials,
+        owner_id=user.user_id
     )
     db.add(new_department)
     db.commit()
@@ -71,8 +71,8 @@ def read_department(
 ):
     """Get a single department by ID (must be owned by current user)."""
     department = db.query(models.Department).filter(
-        models.Department.departmentID == department_id,
-        models.Department.ownerID == user.userID
+        models.Department.department_id == department_id,
+        models.Department.owner_id == user.user_id
     ).first()
     if not department:
         raise HTTPException(status_code=404, detail="Department not found")
@@ -88,20 +88,19 @@ def update_department(
 ):
     """Update a department."""
     department_to_update = db.query(models.Department).filter(
-        models.Department.departmentID == department_id,
-        models.Department.ownerID == user.userID
+        models.Department.department_id == department_id,
+        models.Department.owner_id == user.user_id
     ).first()
     if not department_to_update:
         raise HTTPException(status_code=404, detail="Department not found")
 
     update_data = department_update.model_dump(exclude_unset=True)
-    logger.info(f"Updating department {department_id} with data: {update_data}")
 
     for key, value in update_data.items():
         setattr(department_to_update, key, value)
     
-    # Update the dateUpdated timestamp
-    department_to_update.dateUpdated = datetime.utcnow() # type: ignore
+    # Update the date_updated timestamp
+    department_to_update.date_updated = datetime.utcnow()
     
     db.commit()
     db.refresh(department_to_update)
@@ -117,19 +116,19 @@ def delete_department(
 ):
     """Delete a department after checking for dependencies."""
     department_to_delete = db.query(models.Department).filter(
-        models.Department.departmentID == department_id,
-        models.Department.ownerID == user.userID
+        models.Department.department_id == department_id,
+        models.Department.owner_id == user.user_id
     ).first()
     if not department_to_delete:
         raise HTTPException(status_code=404, detail="Department not found")
 
     # Check for dependent records that would prevent deletion
     crew_assignments = db.query(models.CrewAssignment).filter(
-        models.CrewAssignment.departmentID == department_id
+        models.CrewAssignment.department_id == department_id
     ).count()
     
     script_elements = db.query(models.ScriptElement).filter(
-        models.ScriptElement.departmentID == department_id
+        models.ScriptElement.department_id == department_id
     ).count()
     
     # If there are dependencies, prevent deletion and inform user

@@ -12,7 +12,7 @@ interface NavigationItemProps {
   icon: IconName;
   title: string;
   description: string;
-  isActive: boolean;
+  is_active: boolean;
   onClick: () => void;
 }
 

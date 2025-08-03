@@ -47,7 +47,7 @@ def check_user_by_email(
     db: Session = Depends(get_db)
 ):
     """Check if a user exists by email address."""
-    existing_user = db.query(models.User).filter(models.User.emailAddress == email).first()
+    existing_user = db.query(models.User).filter(models.User.email_address == email).first()
     return existing_user
 
 
@@ -61,32 +61,32 @@ def create_guest_user_with_relationship(
 ):
     """Create a guest user with crew relationship in an atomic operation."""
     # Double-check user doesn't already exist
-    existing_user = db.query(models.User).filter(models.User.emailAddress == guest_data.emailAddress).first()
+    existing_user = db.query(models.User).filter(models.User.email_address == guest_data.email_address).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="User with this email already exists")
     
     # Create new guest user
     new_guest_user = models.User(
-        emailAddress=guest_data.emailAddress,
-        fullnameFirst=guest_data.fullnameFirst,
-        fullnameLast=guest_data.fullnameLast,
-        userRole=guest_data.userRole,
-        userStatus=models.UserStatus.GUEST,  # Explicitly set as guest
-        phoneNumber=guest_data.phoneNumber,
+        email_address=guest_data.email_address,
+        fullname_first=guest_data.fullname_first,
+        fullname_last=guest_data.fullname_last,
+        user_role=guest_data.user_role,
+        user_status=models.UserStatus.GUEST,  # Explicitly set as guest
+        phone_number=guest_data.phone_number,
         notes=None,  # Notes belong in the relationship, not the user
-        createdBy=user.userID,  # Track who created this guest user
+        created_by=user.user_id,  # Track who created this guest user
         clerk_user_id=None,  # Clerk user ID will be set when webhooks sync data
-        userName=None,
-        profileImgURL=None,
-        isActive=True
+        user_name=None,
+        profile_img_url=None,
+        is_active=True
     )
     db.add(new_guest_user)
     db.flush()  # Get the ID without committing
     
     # Create crew relationship
     crew_relationship = models.CrewRelationship(
-        manager_user_id=user.userID,
-        crew_user_id=new_guest_user.userID,
+        manager_user_id=user.user_id,
+        crew_user_id=new_guest_user.user_id,
         notes=guest_data.notes
     )
     db.add(crew_relationship)
@@ -113,7 +113,7 @@ def get_user_options(
         "showClockTimes": False
     }
     
-    return user.userPrefsJSON or default_options
+    return user.user_prefs_json or default_options
 
 
 @router.patch("/options", response_model=dict)
@@ -148,7 +148,7 @@ def update_user_options(
         )
     
     # Get current options or defaults
-    current_options = user.userPrefsJSON or {
+    current_options = user.user_prefs_json or {
         "colorizeDepNames": True,
         "autoSortCues": True,
         "showClockTimes": False
@@ -158,12 +158,10 @@ def update_user_options(
     current_options.update(filtered_options)
     
     # Save to database
-    user.userPrefsJSON = current_options
-    flag_modified(user, 'userPrefsJSON')
+    user.user_prefs_json = current_options
+    flag_modified(user, 'user_prefs_json')
     db.commit()
     db.refresh(user)
-    
-    logger.info(f"Updated user options for user {user.userID}: {filtered_options}")
     
     return current_options
 
@@ -176,7 +174,7 @@ def get_user_preferences(
     db: Session = Depends(get_db)
 ):
     """Get user's preference settings using bitmap system."""
-    bitmap = user.userPrefsBitmap
+    bitmap = user.user_prefs_bitmap
     if bitmap is None:
         bitmap = DEFAULT_PREFERENCES_BITMAP
     
@@ -202,7 +200,7 @@ def update_user_preferences(
         )
     
     # Get current bitmap
-    current_bitmap = user.userPrefsBitmap
+    current_bitmap = user.user_prefs_bitmap
     if current_bitmap is None:
         current_bitmap = DEFAULT_PREFERENCES_BITMAP
     
@@ -210,13 +208,11 @@ def update_user_preferences(
     updated_bitmap = preferences_to_bitmap_updates(current_bitmap, preference_updates)
     
     # Save to database
-    user.userPrefsBitmap = updated_bitmap
+    user.user_prefs_bitmap = updated_bitmap
     db.commit()
     db.refresh(user)
     
     # Return updated preferences
     updated_preferences = bitmap_to_preferences(updated_bitmap)
-    
-    logger.info(f"Updated user preferences for user {user.userID}: {preference_updates} -> bitmap: {updated_bitmap}")
     
     return updated_preferences

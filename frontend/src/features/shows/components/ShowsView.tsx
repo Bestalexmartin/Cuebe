@@ -7,27 +7,27 @@ import { ShowCard } from "./ShowCard";
 
 // TypeScript interfaces
 interface Venue {
-    venueID: string;
-    venueName: string;
+    venue_id: string;
+    venue_name: string;
 }
 
 interface Script {
-    scriptID: string;
-    scriptName: string;
-    scriptStatus: string;
-    showID: string;
-    startTime: string;
-    dateCreated: string;
-    dateUpdated: string;
+    script_id: string;
+    script_name: string;
+    script_status: string;
+    show_id: string;
+    start_time: string;
+    date_created: string;
+    date_updated: string;
     lastUsed?: string;
 }
 
 interface Show {
-    showID: string;
-    showName: string;
-    showDate?: string;
-    dateCreated: string;
-    dateUpdated: string;
+    show_id: string;
+    show_name: string;
+    show_date?: string;
+    date_created: string;
+    date_updated: string;
     venue?: Venue;
     scripts: Script[];
 }
@@ -51,7 +51,7 @@ interface ShowsViewProps {
     onSortChange: (sortBy: SortBy, sortDirection: SortDirection) => void;
 }
 
-type SortBy = 'showName' | 'showDate' | 'dateUpdated' | 'dateCreated';
+type SortBy = 'show_name' | 'show_date' | 'date_updated' | 'date_created';
 type SortDirection = 'asc' | 'desc';
 
 export const ShowsView: React.FC<ShowsViewProps> = ({
@@ -78,7 +78,7 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
             const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
             onSortChange(newSortBy, newDirection);
         } else {
-            const newDirection = newSortBy === 'dateUpdated' ? 'desc' : 'asc';
+            const newDirection = newSortBy === 'date_updated' ? 'desc' : 'asc';
             onSortChange(newSortBy, newDirection);
         }
     };
@@ -89,16 +89,16 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
         const showsToSort = [...shows];
         showsToSort.sort((a, b) => {
             let comparison = 0;
-            if (sortBy === 'showName') {
-                comparison = a.showName.localeCompare(b.showName);
-            } else if (sortBy === 'showDate') {
-                if (!a.showDate) return 1;
-                if (!b.showDate) return -1;
-                comparison = new Date(a.showDate).getTime() - new Date(b.showDate).getTime();
-            } else if (sortBy === 'dateCreated') {
-                comparison = new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime();
+            if (sortBy === 'show_name') {
+                comparison = a.show_name.localeCompare(b.show_name);
+            } else if (sortBy === 'show_date') {
+                if (!a.show_date) return 1;
+                if (!b.show_date) return -1;
+                comparison = new Date(a.show_date).getTime() - new Date(b.show_date).getTime();
+            } else if (sortBy === 'date_created') {
+                comparison = new Date(b.date_created).getTime() - new Date(a.date_created).getTime();
             } else {
-                comparison = new Date(b.dateUpdated).getTime() - new Date(a.dateUpdated).getTime();
+                comparison = new Date(b.date_updated).getTime() - new Date(a.date_updated).getTime();
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
@@ -118,33 +118,33 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                         <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
                         <MenuList zIndex={9999}>
                             <MenuItem
-                                onClick={() => handleSortClick('showName')}
-                                color={sortBy === 'showName' ? 'blue.400' : 'inherit'}
-                                fontWeight={sortBy === 'showName' ? 'bold' : 'normal'}
+                                onClick={() => handleSortClick('show_name')}
+                                color={sortBy === 'show_name' ? 'blue.400' : 'inherit'}
+                                fontWeight={sortBy === 'show_name' ? 'bold' : 'normal'}
                                 _hover={{ borderColor: 'orange.400' }}
                             >
                                 Name
                             </MenuItem>
                             <MenuItem
-                                onClick={() => handleSortClick('showDate')}
-                                color={sortBy === 'showDate' ? 'blue.400' : 'inherit'}
-                                fontWeight={sortBy === 'showDate' ? 'bold' : 'normal'}
+                                onClick={() => handleSortClick('show_date')}
+                                color={sortBy === 'show_date' ? 'blue.400' : 'inherit'}
+                                fontWeight={sortBy === 'show_date' ? 'bold' : 'normal'}
                                 _hover={{ borderColor: 'orange.400' }}
                             >
                                 Show Date
                             </MenuItem>
                             <MenuItem
-                                onClick={() => handleSortClick('dateCreated')}
-                                color={sortBy === 'dateCreated' ? 'blue.400' : 'inherit'}
-                                fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
+                                onClick={() => handleSortClick('date_created')}
+                                color={sortBy === 'date_created' ? 'blue.400' : 'inherit'}
+                                fontWeight={sortBy === 'date_created' ? 'bold' : 'normal'}
                                 _hover={{ borderColor: 'orange.400' }}
                             >
                                 Created
                             </MenuItem>
                             <MenuItem
-                                onClick={() => handleSortClick('dateUpdated')}
-                                color={sortBy === 'dateUpdated' ? 'blue.400' : 'inherit'}
-                                fontWeight={sortBy === 'dateUpdated' ? 'bold' : 'normal'}
+                                onClick={() => handleSortClick('date_updated')}
+                                color={sortBy === 'date_updated' ? 'blue.400' : 'inherit'}
+                                fontWeight={sortBy === 'date_updated' ? 'bold' : 'normal'}
                                 _hover={{ borderColor: 'orange.400' }}
                             >
                                 Updated
@@ -194,13 +194,13 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                     sortedShows.length > 0 ? (
                         <VStack spacing={4} align="stretch">
                             {sortedShows.map(show => (
-                                <div key={show.showID} ref={el => { showCardRefs.current[show.showID] = el; }}>
+                                <div key={show.show_id} ref={el => { showCardRefs.current[show.show_id] = el; }}>
                                     <ShowCard
                                         show={show}
                                         sortBy={sortBy}
                                         sortDirection={sortDirection}
-                                        isSelected={selectedShowId === show.showID}
-                                        isHovered={hoveredCardId === show.showID}
+                                        isSelected={selectedShowId === show.show_id}
+                                        isHovered={hoveredCardId === show.show_id}
                                         onShowHover={setHoveredCardId}
                                         onShowClick={handleShowClick}
                                         selectedScriptId={selectedScriptId}

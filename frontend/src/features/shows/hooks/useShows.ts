@@ -5,28 +5,28 @@ import { useAuth } from '@clerk/clerk-react';
 
 // TypeScript interfaces
 interface Venue {
-  venueID: string;
-  venueName: string;
+  venue_id: string;
+  venue_name: string;
 }
 
 interface Script {
-  scriptID: string;
-  scriptName: string;
-  scriptNotes?: string;
-  scriptStatus: string;
-  showID: string;
-  startTime: string;
-  dateCreated: string;
-  dateUpdated: string;
+  script_id: string;
+  script_name: string;
+  script_notes?: string;
+  script_status: string;
+  show_id: string;
+  start_time: string;
+  date_created: string;
+  date_updated: string;
   lastUsed?: string;
 }
 
 interface Show {
-  showID: string;
-  showName: string;
-  showDate?: string;
-  dateCreated: string;
-  dateUpdated: string;
+  show_id: string;
+  show_name: string;
+  show_date?: string;
+  date_created: string;
+  date_updated: string;
   venue?: Venue;
   scripts: Script[];
 }

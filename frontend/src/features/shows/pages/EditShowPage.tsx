@@ -22,30 +22,30 @@ import { ErrorBoundary } from '../../../components/ErrorBoundary';
 
 // TypeScript interfaces
 interface ShowFormData {
-    showName: string;
-    showNotes: string;
-    showDate: string;
-    showDuration: string;  // End Time of show
+    show_name: string;
+    show_notes: string;
+    show_date: string;
+    show_duration: string;  // End Time of show
     deadline: string;
-    venueID: string;
+    venue_id: string;
 }
 
 interface Venue {
-    venueID: string;
-    venueName: string;
+    venue_id: string;
+    venue_name: string;
 }
 
 const INITIAL_FORM_STATE: ShowFormData = {
-    showName: '',
-    showNotes: '',
-    showDate: '',
-    showDuration: '',  // End Time of show
+    show_name: '',
+    show_notes: '',
+    show_date: '',
+    show_duration: '',  // End Time of show
     deadline: '',
-    venueID: ''
+    venue_id: ''
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
-    showName: {
+    show_name: {
         required: false, // Handle through custom minLength rule
         rules: [
             // Custom minLength rule that requires at least 4 characters (empty is allowed)
@@ -62,7 +62,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             ValidationRules.maxLength(100, 'Show name must be no more than 100 characters')
         ]
     },
-    showNotes: {
+    show_notes: {
         required: false,
         rules: [
             ValidationRules.maxLength(500, 'Notes must be no more than 500 characters')
@@ -102,24 +102,24 @@ export const EditShowPage: React.FC = () => {
     useEffect(() => {
         if (show) {
             form.setFormData({
-                showName: show.showName || '',
-                showNotes: show.showNotes || '',
-                showDate: convertUTCToLocal(show.showDate),
-                showDuration: convertUTCToLocal(show.showDuration),
+                show_name: show.show_name || '',
+                show_notes: show.show_notes || '',
+                show_date: convertUTCToLocal(show.show_date),
+                show_duration: convertUTCToLocal(show.show_duration),
                 deadline: convertUTCToLocal(show.deadline),
-                venueID: show.venue?.venueID || ''
+                venue_id: show.venue?.venue_id || ''
             });
         }
     }, [show, form.setFormData]);
 
     // Change detection for save button
     const initialData = show ? {
-        showName: show.showName || '',
-        showNotes: show.showNotes || '',
-        showDate: convertUTCToLocal(show.showDate),
-        showDuration: convertUTCToLocal(show.showDuration),
+        show_name: show.show_name || '',
+        show_notes: show.show_notes || '',
+        show_date: convertUTCToLocal(show.show_date),
+        show_duration: convertUTCToLocal(show.show_duration),
         deadline: convertUTCToLocal(show.deadline),
-        venueID: show.venue?.venueID || ''
+        venue_id: show.venue?.venue_id || ''
     } : null;
 
     const { hasChanges, updateOriginalData } = useChangeDetection(
@@ -151,17 +151,17 @@ export const EditShowPage: React.FC = () => {
             // Prepare data for API (convert venueID to integer if provided)
             const updateData = {
                 ...form.formData,
-                venueID: form.formData.venueID || null,
-                showDate: convertLocalToUTC(form.formData.showDate),
-                showDuration: convertLocalToUTC(form.formData.showDuration),
+                venue_id: form.formData.venue_id || null,
+                show_date: convertLocalToUTC(form.formData.show_date),
+                show_duration: convertLocalToUTC(form.formData.show_duration),
                 deadline: convertLocalToUTC(form.formData.deadline),
-                showNotes: form.formData.showNotes || null,
+                show_notes: form.formData.show_notes || null,
             };
 
             await form.submitForm(
                 `/api/shows/${showId}`,
                 'PATCH',
-                `"${form.formData.showName}" has been updated successfully`,
+                `"${form.formData.show_name}" has been updated successfully`,
                 updateData
             );
 
@@ -194,7 +194,7 @@ export const EditShowPage: React.FC = () => {
 
     const isFormValid = (): boolean => {
         // Now rely entirely on the validation system
-        return form.fieldErrors.length === 0 && form.formData.showName.trim().length >= 4;
+        return form.fieldErrors.length === 0 && form.formData.show_name.trim().length >= 4;
     };
 
     const canSave = (): boolean => {
@@ -233,7 +233,7 @@ export const EditShowPage: React.FC = () => {
                 throw new Error('Failed to delete show');
             }
 
-            showSuccess('Show Deleted', `"${show?.showName}" and all associated scripts have been permanently deleted`);
+            showSuccess('Show Deleted', `"${show?.show_name}" and all associated scripts have been permanently deleted`);
 
             // Navigate back to dashboard
             navigate('/dashboard', {
@@ -269,7 +269,7 @@ export const EditShowPage: React.FC = () => {
     return (
         <ErrorBoundary context="Edit Show Page">
             <BaseEditPage
-                pageTitle={show?.showName || 'Show'}
+                pageTitle={show?.show_name || 'Show'}
                 onSubmit={handleSubmit}
                 isLoading={isLoadingShow}
                 primaryAction={{
@@ -308,9 +308,9 @@ export const EditShowPage: React.FC = () => {
                         <FormControl isRequired>
                             <FormLabel>Show Name</FormLabel>
                             <Input
-                                value={form.formData.showName}
-                                onChange={(e) => handleChange('showName', e.target.value)}
-                                onPaste={() => handlePaste('showName')}
+                                value={form.formData.show_name}
+                                onChange={(e) => handleChange('show_name', e.target.value)}
+                                onPaste={() => handlePaste('show_name')}
                                 placeholder="Enter show title"
                             />
                         </FormControl>
@@ -318,14 +318,14 @@ export const EditShowPage: React.FC = () => {
                         <FormControl>
                             <FormLabel>Venue</FormLabel>
                             <Select
-                                value={form.formData.venueID}
-                                onChange={(e) => handleChange('venueID', e.target.value)}
+                                value={form.formData.venue_id}
+                                onChange={(e) => handleChange('venue_id', e.target.value)}
                                 placeholder={isLoadingVenues ? "Loading venues..." : "Select venue"}
                                 disabled={isLoadingVenues}
                             >
                                 {venues?.map(venue => (
-                                    <option key={venue.venueID} value={venue.venueID}>
-                                        {venue.venueName}
+                                    <option key={venue.venue_id} value={venue.venue_id}>
+                                        {venue.venue_name}
                                     </option>
                                 ))}
                             </Select>
@@ -337,16 +337,16 @@ export const EditShowPage: React.FC = () => {
                                 <FormLabel>Show Date</FormLabel>
                                 <Input
                                     type="datetime-local"
-                                    value={form.formData.showDate}
-                                    onChange={(e) => handleChange('showDate', e.target.value)}
+                                    value={form.formData.show_date}
+                                    onChange={(e) => handleChange('show_date', e.target.value)}
                                 />
                             </FormControl>
                             <FormControl>
                                 <FormLabel>End Time</FormLabel>
                                 <Input
                                     type="datetime-local"
-                                    value={form.formData.showDuration}
-                                    onChange={(e) => handleChange('showDuration', e.target.value)}
+                                    value={form.formData.show_duration}
+                                    onChange={(e) => handleChange('show_duration', e.target.value)}
                                 />
                             </FormControl>
                             <FormControl>
@@ -363,9 +363,9 @@ export const EditShowPage: React.FC = () => {
                         <FormControl>
                             <FormLabel>Notes</FormLabel>
                             <Textarea
-                                value={form.formData.showNotes}
-                                onChange={(e) => handleChange('showNotes', e.target.value)}
-                                onBlur={() => form.validateField('showNotes')}
+                                value={form.formData.show_notes}
+                                onChange={(e) => handleChange('show_notes', e.target.value)}
+                                onBlur={() => form.validateField('show_notes')}
                                 placeholder="Additional show information, special requirements, etc."
                                 minHeight="120px"
                                 resize="vertical"
@@ -410,7 +410,7 @@ export const EditShowPage: React.FC = () => {
                 onClose={handleDeleteCancel}
                 onConfirm={handleInitialDeleteConfirm}
                 entityType="Show"
-                entityName={show?.showName || ''}
+                entityName={show?.show_name || ''}
             />
 
             <FinalDeleteConfirmationModal
@@ -419,7 +419,7 @@ export const EditShowPage: React.FC = () => {
                 onConfirm={handleFinalDeleteConfirm}
                 isLoading={isDeleting}
                 entityType="Show"
-                entityName={show?.showName || ''}
+                entityName={show?.show_name || ''}
                 warningMessage={`Deleting this show will also delete ${show?.scripts?.length || 0} ${(show?.scripts?.length || 0) === 1 ? 'script' : 'scripts'} and all related venue, department and crew assignments.`}
             />
         </ErrorBoundary>

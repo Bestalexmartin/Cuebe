@@ -14,7 +14,7 @@ import { useState, useEffect, useMemo } from 'react';
 export function useChangeDetection<T extends Record<string, any>>(
     initialData: T | null,
     currentData: Partial<T>,
-    isActive: boolean = true
+    is_active: boolean = true
 ) {
     const [originalData, setOriginalData] = useState<T | null>(null);
 
@@ -27,7 +27,7 @@ export function useChangeDetection<T extends Record<string, any>>(
 
     // Deep comparison to detect changes
     const hasChanges = useMemo(() => {
-        if (!isActive || !originalData) return false;
+        if (!is_active || !originalData) return false;
 
         // Compare each field in currentData with originalData
         for (const key in currentData) {
@@ -37,7 +37,7 @@ export function useChangeDetection<T extends Record<string, any>>(
         }
         
         return false;
-    }, [isActive, originalData, currentData]);
+    }, [is_active, originalData, currentData]);
 
     // Function to update original data after successful save
     const updateOriginalData = (newData: Partial<T>) => {

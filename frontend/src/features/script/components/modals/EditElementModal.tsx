@@ -29,10 +29,10 @@ import { useDepartments } from '../../../departments/hooks/useDepartments';
 import { FieldError } from '../../../../types/validation';
 import { msToDurationString, durationStringToMs } from '../../../../utils/timeUtils';
 
-// Preset colors for note backgrounds
+// Preset colors for note backgrounds - consistent with Show Start and semantic tokens
 const NOTE_PRESET_COLORS = [
     { name: 'Default', value: '#E2E8F0' },
-    { name: 'Red', value: '#EF4444' },
+    { name: 'Red', value: '#EF4444' },     // Matches semantic token note.preset.red
     { name: 'Grey', value: '#808080' },
     { name: 'Black', value: '#10151C' },
     { name: 'Blue', value: '#3B82F6' },
@@ -48,14 +48,14 @@ interface EditElementModalProps {
 
 interface FormData {
     description: string;
-    cueID: string;
-    cueNotes: string;
-    departmentID: string;
-    timeOffsetMs: number;
+    cue_id: string;
+    cue_notes: string;
+    department_id: string;
+    time_offset_ms: number;
     duration: number;
     priority: string;
-    locationDetails: string;
-    customColor: string;
+    location_details: string;
+    custom_color: string;
 }
 
 interface TimeInputs {
@@ -72,14 +72,14 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
     const { departments, isLoading: departmentsLoading } = useDepartments();
     const [formData, setFormData] = useState<FormData>({
         description: '',
-        cueID: '',
-        cueNotes: '',
-        departmentID: '',
-        timeOffsetMs: 0,
+        cue_id: '',
+        cue_notes: '',
+        department_id: '',
+        time_offset_ms: 0,
         duration: 0,
         priority: 'NORMAL',
-        locationDetails: '',
-        customColor: ''
+        location_details: '',
+        custom_color: ''
     });
     const [validationErrors, setValidationErrors] = useState<FieldError[]>([]);
     const [hasChanges, setHasChanges] = useState(false);
@@ -95,19 +95,19 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
 
         const newFormData: FormData = {
             description: element.description || '',
-            cueID: element.cueID || '',
-            cueNotes: (element as any).cueNotes || '',
-            departmentID: element.departmentID || '',
-            timeOffsetMs: element.timeOffsetMs || 0,
+            cue_id: element.cue_id || '',
+            cue_notes: (element as any).cue_notes || '',
+            department_id: element.department_id || '',
+            time_offset_ms: element.time_offset_ms || 0,
             duration: element.duration || 0,
             priority: element.priority || 'NORMAL',
-            locationDetails: element.locationDetails || '',
-            customColor: element.customColor || ''
+            location_details: element.location_details || '',
+            custom_color: element.custom_color || ''
         };
 
         setFormData(newFormData);
         setTimeInputs({
-            timeOffsetInput: formatTimeWithHours(newFormData.timeOffsetMs),
+            timeOffsetInput: formatTimeWithHours(newFormData.time_offset_ms),
             durationInput: formatTimeWithHours(newFormData.duration * 1000)
         });
         setHasChanges(false);
@@ -119,14 +119,14 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         if (!element) return null;
         return {
             description: element.description || '',
-            cueID: element.cueID || '',
-            cueNotes: (element as any).cueNotes || '',
-            departmentID: element.departmentID || '',
-            timeOffsetMs: element.timeOffsetMs || 0,
+            cue_id: element.cue_id || '',
+            cue_notes: (element as any).cue_notes || '',
+            department_id: element.department_id || '',
+            time_offset_ms: element.time_offset_ms || 0,
             duration: element.duration || 0,
             priority: element.priority || 'NORMAL',
-            locationDetails: element.locationDetails || '',
-            customColor: element.customColor || ''
+            location_details: element.location_details || '',
+            custom_color: element.custom_color || ''
         };
     }, [element]);
 
@@ -157,18 +157,18 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
 
 
         // Department validation for cue elements
-        if ((element as any)?.elementType === 'CUE' && !formData.departmentID) {
+        if ((element as any)?.element_type === 'CUE' && !formData.department_id) {
             errors.push({
-                field: 'departmentID',
+                field: 'department_id',
                 message: 'Department is required for cue elements',
                 code: 'required'
             });
         }
 
         // Time offset validation - now allows negative values for pre-show timing
-        if (!Number.isFinite(formData.timeOffsetMs)) {
+        if (!Number.isFinite(formData.time_offset_ms)) {
             errors.push({
-                field: 'timeOffsetMs',
+                field: 'time_offset_ms',
                 message: 'Time offset must be a valid time value',
                 code: 'invalid_time'
             });
@@ -263,7 +263,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         const timeOffsetMs = parseTimeWithHours(timeInputs.timeOffsetInput);
         const formatted = formatTimeWithHours(timeOffsetMs);
         setTimeInputs(prev => ({ ...prev, timeOffsetInput: formatted }));
-        setFormData(prev => ({ ...prev, timeOffsetMs }));
+        setFormData(prev => ({ ...prev, time_offset_ms: timeOffsetMs }));
     };
 
     const handleDurationChange = (value: string) => {
@@ -290,8 +290,8 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         return validationErrors.find(error => error.field === field)?.message;
     };
 
-    const isNote = (element as any)?.elementType === 'NOTE';
-    const isCue = (element as any)?.elementType === 'CUE';
+    const isNote = (element as any)?.element_type === 'NOTE';
+    const isCue = (element as any)?.element_type === 'CUE';
 
     if (!element) return null;
 
@@ -316,7 +316,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                 {/* Row 1: Time and Duration */}
                 <HStack spacing={4}>
                     {/* Time Offset */}
-                    <FormControl isInvalid={!!getFieldError('timeOffsetMs')}>
+                    <FormControl isInvalid={!!getFieldError('time_offset_ms')}>
                         <FormLabel>Time Offset</FormLabel>
                         <Input
                             value={timeInputs.timeOffsetInput}
@@ -324,7 +324,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                             onBlur={handleTimeOffsetBlur}
                             placeholder="0:00 or 0:00:00"
                         />
-                        <FormErrorMessage>{getFieldError('timeOffsetMs')}</FormErrorMessage>
+                        <FormErrorMessage>{getFieldError('time_offset_ms')}</FormErrorMessage>
                     </FormControl>
 
                     {/* Duration */}
@@ -342,7 +342,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
 
                 {/* Row 2: Department or Color */}
                 {isCue ? (
-                    <FormControl isInvalid={!!getFieldError('departmentID')}>
+                    <FormControl isInvalid={!!getFieldError('department_id')}>
                         <FormLabel>Department *</FormLabel>
                         <Menu>
                             <MenuButton
@@ -356,17 +356,17 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                                 _dark={{ bg: "gray.800" }}
                                 height="40px"
                             >
-                                {formData.departmentID ? (
+                                {formData.department_id ? (
                                     <Flex align="center" gap={2}>
                                         <Box
                                             width="14px"
                                             height="14px"
                                             borderRadius="50%"
-                                            bg={departments?.find(d => d.departmentID === formData.departmentID)?.departmentColor || 'gray.400'}
+                                            bg={departments?.find(d => d.department_id === formData.department_id)?.department_color || 'gray.400'}
                                             flexShrink={0}
                                         />
                                         <Text isTruncated>
-                                            {departments?.find(d => d.departmentID === formData.departmentID)?.departmentName || 'Select department'}
+                                            {departments?.find(d => d.department_id === formData.department_id)?.department_name || 'Select department'}
                                         </Text>
                                     </Flex>
                                 ) : (
@@ -376,24 +376,24 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                             <MenuList>
                                 {departments.map(dept => (
                                     <MenuItem
-                                        key={dept.departmentID}
-                                        onClick={() => handleInputChange('departmentID', dept.departmentID)}
+                                        key={dept.department_id}
+                                        onClick={() => handleInputChange('department_id', dept.department_id)}
                                     >
                                         <Flex align="center" gap={2}>
                                             <Box
                                                 width="14px"
                                                 height="14px"
                                                 borderRadius="50%"
-                                                bg={dept.departmentColor}
+                                                bg={dept.department_color}
                                                 flexShrink={0}
                                             />
-                                            <Text>{dept.departmentName}</Text>
+                                            <Text>{dept.department_name}</Text>
                                         </Flex>
                                     </MenuItem>
                                 ))}
                             </MenuList>
                         </Menu>
-                        <FormErrorMessage>{getFieldError('departmentID')}</FormErrorMessage>
+                        <FormErrorMessage>{getFieldError('department_id')}</FormErrorMessage>
                     </FormControl>
                 ) : (
                     <FormControl>
@@ -401,16 +401,16 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                         <HStack spacing={3} align="center">
                             <Input
                                 type="color"
-                                value={formData.customColor || '#E2E8F0'}
-                                onChange={(e) => handleInputChange('customColor', e.target.value)}
+                                value={formData.custom_color || '#E2E8F0'}
+                                onChange={(e) => handleInputChange('custom_color', e.target.value)}
                                 width="60px"
                                 height="40px"
                                 padding="1"
                                 cursor="pointer"
                             />
                             <Input
-                                value={formData.customColor || '#E2E8F0'}
-                                onChange={(e) => handleInputChange('customColor', e.target.value)}
+                                value={formData.custom_color || '#E2E8F0'}
+                                onChange={(e) => handleInputChange('custom_color', e.target.value)}
                                 placeholder="#E2E8F0"
                                 width="120px"
                                 fontFamily="mono"
@@ -425,9 +425,9 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                                         width="30px"
                                         minWidth="30px"
                                         backgroundColor={color.value}
-                                        border={formData.customColor === color.value ? '3px solid' : '1px solid'}
-                                        borderColor={formData.customColor === color.value ? 'white' : 'gray.300'}
-                                        onClick={() => handleInputChange('customColor', color.value)}
+                                        border={formData.custom_color === color.value ? '3px solid' : '1px solid'}
+                                        borderColor={formData.custom_color === color.value ? 'white' : 'gray.300'}
+                                        onClick={() => handleInputChange('custom_color', color.value)}
                                         _hover={{ transform: 'scale(1.1)' }}
                                         title={color.name}
                                         tabIndex={-1}
@@ -453,8 +453,8 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                 <FormControl>
                     <FormLabel>Notes</FormLabel>
                     <Textarea
-                        value={formData.cueNotes}
-                        onChange={(e) => handleInputChange('cueNotes', e.target.value)}
+                        value={formData.cue_notes}
+                        onChange={(e) => handleInputChange('cue_notes', e.target.value)}
                         placeholder="Additional instructions or details..."
                         minHeight="60px"
                         resize="vertical"
@@ -465,8 +465,8 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                 <FormControl>
                     <FormLabel>Location</FormLabel>
                     <Input
-                        value={formData.locationDetails}
-                        onChange={(e) => handleInputChange('locationDetails', e.target.value)}
+                        value={formData.location_details}
+                        onChange={(e) => handleInputChange('location_details', e.target.value)}
                         placeholder="e.g., Stage left, Booth, etc."
                     />
                 </FormControl>

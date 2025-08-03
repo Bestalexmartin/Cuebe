@@ -15,20 +15,20 @@ import { formatDateTimeLocal } from '../../../utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface CrewMember {
-    userID: string;
-    fullnameFirst?: string;
-    fullnameLast?: string;
-    emailAddress?: string;
-    phoneNumber?: string;
-    userRole?: string;
-    userStatus?: string;
-    isActive?: boolean;
-    profileImgURL?: string;
+    user_id: string;
+    fullname_first?: string;
+    fullname_last?: string;
+    email_address?: string;
+    phone_number?: string;
+    user_role?: string;
+    user_status?: string;
+    is_active?: boolean;
+    profile_img_url?: string;
     notes?: string; // User table notes
-    relationshipNotes?: string; // Relationship table notes
+    relationship_notes?: string; // Relationship table notes
     clerk_user_id?: string; // To identify if this is the current user
-    dateCreated: string;
-    dateUpdated: string;
+    date_created: string;
+    date_updated: string;
 }
 
 interface CrewCardProps {
@@ -61,7 +61,7 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
             onSaveNavigationState();
         }
 
-        onEdit(crewMember.userID);
+        onEdit(crewMember.user_id);
     };
 
     const formatRole = (role?: string): string => {
@@ -72,13 +72,13 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
     };
 
     const getFullName = (): string => {
-        const firstName = crewMember.fullnameFirst || '';
-        const lastName = crewMember.fullnameLast || '';
+        const firstName = crewMember.fullname_first || '';
+        const lastName = crewMember.fullname_last || '';
         return `${firstName} ${lastName}`.trim() || 'Unknown User';
     };
 
     const getUserStatusBadge = () => {
-        const isVerified = crewMember.userStatus === 'verified';
+        const isVerified = crewMember.user_status === 'verified';
         return (
             <Badge
                 variant={isVerified ? "solid" : "outline"}
@@ -98,14 +98,14 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
         }
 
         // For all other users (both verified and guest): show relationship notes
-        return crewMember.relationshipNotes; // Relationship table notes
+        return crewMember.relationship_notes; // Relationship table notes
     };
 
     const headerBadges = (
         <Avatar
             size="sm"
             name={getFullName()}
-            src={crewMember.profileImgURL}
+            src={crewMember.profile_img_url}
         />
     );
 
@@ -122,10 +122,10 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
         <VStack align="stretch" spacing="1" fontSize="sm" color="cardText">
             <HStack spacing="2" align="center">
                 <Badge variant="outline" colorScheme="blue" size="sm">
-                    {formatRole(crewMember.userRole)}
+                    {formatRole(crewMember.user_role)}
                 </Badge>
                 {getUserStatusBadge()}
-                {!crewMember.isActive && (
+                {!crewMember.is_active && (
                     <Badge variant="solid" colorScheme="red" size="sm">
                         Inactive
                     </Badge>
@@ -133,57 +133,57 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
             </HStack>
 
             {/* Handle different combinations of email and phone with dates */}
-            {crewMember.emailAddress && crewMember.phoneNumber ? (
+            {crewMember.email_address && crewMember.phone_number ? (
                 // Both email and phone present
                 <>
                     <HStack justify="space-between">
                         <Text isTruncated>
-                            {crewMember.emailAddress}
+                            {crewMember.email_address}
                         </Text>
                         <Text fontSize="xs">
-                            Created: {formatDateTimeLocal(crewMember.dateCreated)}
+                            Created: {formatDateTimeLocal(crewMember.date_created)}
                         </Text>
                     </HStack>
                     <HStack justify="space-between">
                         <Text isTruncated>
-                            {crewMember.phoneNumber}
+                            {crewMember.phone_number}
                         </Text>
                         <Text fontSize="xs">
-                            Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
+                            Updated: {formatDateTimeLocal(crewMember.date_updated)}
                         </Text>
                     </HStack>
                 </>
-            ) : crewMember.emailAddress ? (
+            ) : crewMember.email_address ? (
                 // Only email present - need another line for both dates
                 <>
                     <HStack justify="space-between">
                         <Text isTruncated>
-                            {crewMember.emailAddress}
+                            {crewMember.email_address}
                         </Text>
                         <Text fontSize="xs">
-                            Created: {formatDateTimeLocal(crewMember.dateCreated)}
+                            Created: {formatDateTimeLocal(crewMember.date_created)}
                         </Text>
                     </HStack>
                     <HStack justify="flex-end">
                         <Text fontSize="xs">
-                            Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
+                            Updated: {formatDateTimeLocal(crewMember.date_updated)}
                         </Text>
                     </HStack>
                 </>
-            ) : crewMember.phoneNumber ? (
+            ) : crewMember.phone_number ? (
                 // Only phone present - need another line for both dates
                 <>
                     <HStack justify="space-between">
                         <Text isTruncated>
-                            {crewMember.phoneNumber}
+                            {crewMember.phone_number}
                         </Text>
                         <Text fontSize="xs">
-                            Created: {formatDateTimeLocal(crewMember.dateCreated)}
+                            Created: {formatDateTimeLocal(crewMember.date_created)}
                         </Text>
                     </HStack>
                     <HStack justify="flex-end">
                         <Text fontSize="xs">
-                            Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
+                            Updated: {formatDateTimeLocal(crewMember.date_updated)}
                         </Text>
                     </HStack>
                 </>
@@ -192,12 +192,12 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
                 <>
                     <HStack justify="flex-end">
                         <Text fontSize="xs">
-                            Created: {formatDateTimeLocal(crewMember.dateCreated)}
+                            Created: {formatDateTimeLocal(crewMember.date_created)}
                         </Text>
                     </HStack>
                     <HStack justify="flex-end">
                         <Text fontSize="xs">
-                            Updated: {formatDateTimeLocal(crewMember.dateUpdated)}
+                            Updated: {formatDateTimeLocal(crewMember.date_updated)}
                         </Text>
                     </HStack>
                 </>
@@ -217,10 +217,10 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
     return (
         <BaseCard
             title={getFullName()}
-            cardId={crewMember.userID}
+            cardId={crewMember.user_id}
             isSelected={isSelected}
             isHovered={isHovered}
-            onCardClick={() => onCrewClick(crewMember.userID)}
+            onCardClick={() => onCrewClick(crewMember.user_id)}
             onHover={onHover}
             headerBadges={headerBadges}
             headerActions={headerActions}

@@ -16,8 +16,8 @@ import { SCRIPT_STATUS_OPTIONS } from '../../../script/constants';
 
 // TypeScript interfaces
 interface ScriptFormData {
-    scriptName: string;
-    scriptStatus: string;
+    script_name: string;
+    script_status: string;
 }
 
 
@@ -29,12 +29,12 @@ interface CreateScriptModalProps {
 }
 
 const INITIAL_FORM_STATE: ScriptFormData = {
-    scriptName: '',
-    scriptStatus: 'DRAFT',
+    script_name: '',
+    script_status: 'DRAFT',
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
-    scriptName: {
+    script_name: {
         required: false, // Handle required validation manually for button state
         rules: [
             {
@@ -69,14 +69,14 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
 
         try {
             const scriptData = {
-                scriptName: form.formData.scriptName,
-                scriptStatus: form.formData.scriptStatus
+                script_name: form.formData.script_name,
+                script_status: form.formData.script_status
             };
 
             await form.submitForm(
                 `/api/shows/${showId}/scripts/`,
                 'POST',
-                `"${form.formData.scriptName}" has been created successfully`,
+                `"${form.formData.script_name}" has been created successfully`,
                 scriptData
             );
 
@@ -93,7 +93,7 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
         onClose();
     };
 
-    const { canSubmit } = useStandardFormValidation(form, ['scriptName']);
+    const { canSubmit } = useStandardFormValidation(form, ['script_name']);
 
     return (
         <BaseModal
@@ -116,7 +116,7 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
             <VStack spacing={4} align="stretch">
                 <FormInput
                     form={form}
-                    name="scriptName"
+                    name="script_name"
                     label="Script Name"
                     placeholder="Enter script name"
                     isRequired
@@ -125,8 +125,8 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
                 <FormControl>
                     <FormLabel>Script Status</FormLabel>
                     <Select
-                        value={form.formData.scriptStatus}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => form.updateField('scriptStatus', e.target.value)}
+                        value={form.formData.script_status}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => form.updateField('script_status', e.target.value)}
                     >
                         {SCRIPT_STATUS_OPTIONS.map(option => (
                             <option key={option.value} value={option.value}>

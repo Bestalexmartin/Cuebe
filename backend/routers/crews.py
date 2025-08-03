@@ -45,11 +45,11 @@ def read_crew_members(
     # Get all crew members (current user + users they manage)
     crew_members = db.query(models.User).filter(
         or_(
-            models.User.userID == user.userID,  # Show yourself
-            models.User.userID.in_(  # Show users you manage
+            models.User.user_id == user.user_id,  # Show yourself
+            models.User.user_id.in_(  # Show users you manage
                 db.query(models.CrewRelationship.crew_user_id)
-                .filter(models.CrewRelationship.manager_user_id == user.userID)
-                .filter(models.CrewRelationship.isActive.is_(True))
+                .filter(models.CrewRelationship.manager_user_id == user.user_id)
+                .filter(models.CrewRelationship.is_active.is_(True))
             )
         )
     ).all()
@@ -59,33 +59,33 @@ def read_crew_members(
     for crew_member in crew_members:
         # Get relationship data if this is not the current user
         relationship = None
-        if not bool(crew_member.userID == user.userID):
+        if str(crew_member.user_id) != str(user.user_id):
             relationship = db.query(models.CrewRelationship).filter(
-                models.CrewRelationship.manager_user_id == user.userID,
-                models.CrewRelationship.crew_user_id == crew_member.userID,
-                models.CrewRelationship.isActive.is_(True)
+                models.CrewRelationship.manager_user_id == user.user_id,
+                models.CrewRelationship.crew_user_id == crew_member.user_id,
+                models.CrewRelationship.is_active.is_(True)
             ).first()
         
         # Create response data combining user data with relationship notes
         crew_data = {
             # User fields
-            "userID": crew_member.userID,
+            "user_id": crew_member.user_id,
             "clerk_user_id": crew_member.clerk_user_id,
-            "emailAddress": crew_member.emailAddress,
-            "fullnameFirst": crew_member.fullnameFirst,
-            "fullnameLast": crew_member.fullnameLast,
-            "userName": crew_member.userName,
-            "profileImgURL": crew_member.profileImgURL,
-            "phoneNumber": crew_member.phoneNumber,
-            "userStatus": crew_member.userStatus.value if crew_member.userStatus is not None else "guest",
-            "userRole": crew_member.userRole,
-            "createdBy": crew_member.createdBy,
+            "email_address": crew_member.email_address,
+            "fullname_first": crew_member.fullname_first,
+            "fullname_last": crew_member.fullname_last,
+            "user_name": crew_member.user_name,
+            "profile_img_url": crew_member.profile_img_url,
+            "phone_number": crew_member.phone_number,
+            "user_status": crew_member.user_status.value if crew_member.user_status is not None else "guest",
+            "user_role": crew_member.user_role,
+            "created_by": crew_member.created_by,
             "notes": crew_member.notes,  # Notes from User table
-            "isActive": crew_member.isActive,
-            "dateCreated": crew_member.dateCreated,
-            "dateUpdated": crew_member.dateUpdated,
+            "is_active": crew_member.is_active,
+            "date_created": crew_member.date_created,
+            "date_updated": crew_member.date_updated,
             # Include both user notes and relationship notes
-            "relationshipNotes": relationship.notes if relationship else None
+            "relationship_notes": relationship.notes if relationship else None
         }
         
         crew_response.append(schemas.CrewMemberWithRelationship(**crew_data))
@@ -103,22 +103,22 @@ def get_crew_member(
     Get a single crew member by ID with relationship notes.
     Only returns crew members that the current user manages or is themselves.
     """
-    crew_member = db.query(models.User).filter(models.User.userID == crew_id).first()
+    crew_member = db.query(models.User).filter(models.User.user_id == crew_id).first()
     
     if not crew_member:
         raise HTTPException(status_code=404, detail="Crew member not found")
     
     # Determine if this is a self-access vs manager-access
-    is_self_access = bool(crew_member.userID == user.userID)
+    is_self_access = str(crew_member.user_id) == str(user.user_id)
     
     # Get relationship data for manager access
     relationship = None
     if not is_self_access:
         # Check if current user manages this crew member
         relationship = db.query(models.CrewRelationship).filter(
-            models.CrewRelationship.manager_user_id == user.userID,
+            models.CrewRelationship.manager_user_id == user.user_id,
             models.CrewRelationship.crew_user_id == crew_id,
-            models.CrewRelationship.isActive.is_(True)
+            models.CrewRelationship.is_active.is_(True)
         ).first()
         
         if not relationship:
@@ -127,23 +127,23 @@ def get_crew_member(
     # Create response combining user data with appropriate notes
     crew_data = {
         # User fields
-        "userID": crew_member.userID,
+        "user_id": crew_member.user_id,
         "clerk_user_id": crew_member.clerk_user_id,
-        "emailAddress": crew_member.emailAddress,
-        "fullnameFirst": crew_member.fullnameFirst,
-        "fullnameLast": crew_member.fullnameLast,
-        "userName": crew_member.userName,
-        "profileImgURL": crew_member.profileImgURL,
-        "phoneNumber": crew_member.phoneNumber,
-        "userStatus": crew_member.userStatus.value if crew_member.userStatus is not None else "guest",
-        "userRole": crew_member.userRole,
-        "createdBy": crew_member.createdBy,
+        "email_address": crew_member.email_address,
+        "fullname_first": crew_member.fullname_first,
+        "fullname_last": crew_member.fullname_last,
+        "user_name": crew_member.user_name,
+        "profile_img_url": crew_member.profile_img_url,
+        "phone_number": crew_member.phone_number,
+        "user_status": crew_member.user_status.value if crew_member.user_status is not None else "guest",
+        "user_role": crew_member.user_role,
+        "created_by": crew_member.created_by,
         "notes": crew_member.notes,  # Notes from User table
-        "isActive": crew_member.isActive,
-        "dateCreated": crew_member.dateCreated,
-        "dateUpdated": crew_member.dateUpdated,
+        "is_active": crew_member.is_active,
+        "date_created": crew_member.date_created,
+        "date_updated": crew_member.date_updated,
         # Include relationship notes separately
-        "relationshipNotes": relationship.notes if relationship else None
+        "relationship_notes": relationship.notes if relationship else None
     }
     
     return schemas.CrewMemberWithRelationship(**crew_data)
@@ -160,18 +160,18 @@ def update_crew_member(
     Update a crew member's information.
     Only allows updating crew members that the current user manages or is themselves.
     """
-    crew_member = db.query(models.User).filter(models.User.userID == crew_id).first()
+    crew_member = db.query(models.User).filter(models.User.user_id == crew_id).first()
     
     if not crew_member:
         raise HTTPException(status_code=404, detail="Crew member not found")
     
     # Security check: User can only update themselves or crew they manage
-    if crew_member.userID != user.userID: # type: ignore
+    if str(crew_member.user_id) != str(user.user_id):
         # Check if current user manages this crew member
         relationship = db.query(models.CrewRelationship).filter(
-            models.CrewRelationship.manager_user_id == user.userID,
+            models.CrewRelationship.manager_user_id == user.user_id,
             models.CrewRelationship.crew_user_id == crew_id,
-            models.CrewRelationship.isActive.is_(True)
+            models.CrewRelationship.is_active.is_(True)
         ).first()
         
         if not relationship:
@@ -182,7 +182,7 @@ def update_crew_member(
     logger.info(f"Updating crew member {crew_id} with data: {update_data}")
     
     # Determine if this is a self-edit vs manager-edit
-    is_self_edit = bool(crew_member.userID == user.userID)
+    is_self_edit = str(crew_member.user_id) == str(user.user_id)
     
     if is_self_edit:
         # User editing themselves - update their actual user data
@@ -202,14 +202,14 @@ def update_crew_member(
         relationship_notes = update_data.pop('notes', None)
         
         # Don't allow changing certain fields for verified users when manager is editing
-        if crew_member.userStatus.is_(models.UserStatus.VERIFIED):
+        if str(crew_member.user_status) == str(models.UserStatus.VERIFIED):
             # Remove fields that shouldn't be changed for verified users (they own their contact info and role)
-            protected_fields = ['emailAddress', 'phoneNumber', 'fullnameFirst', 'fullnameLast', 'userRole']
+            protected_fields = ['email_address', 'phone_number', 'fullname_first', 'fullname_last', 'user_role']
             for field in protected_fields:
                 if update_data.pop(field, None) is not None:
                     logger.info(f"Removed {field} from update for verified user {crew_id} (manager edit)")
         
-        # Update user fields (userRole, etc.)
+        # Update user fields (user_role, etc.)
         for key, value in update_data.items():
             if hasattr(crew_member, key):
                 setattr(crew_member, key, value)
@@ -217,22 +217,22 @@ def update_crew_member(
         # Update relationship notes if provided
         if relationship_notes is not None:
             relationship = db.query(models.CrewRelationship).filter(
-                models.CrewRelationship.manager_user_id == user.userID,
+                models.CrewRelationship.manager_user_id == user.user_id,
                 models.CrewRelationship.crew_user_id == crew_id,
-                models.CrewRelationship.isActive.is_(True)
+                models.CrewRelationship.is_active.is_(True)
             ).first()
             
             if relationship:
                 relationship.notes = relationship_notes
-                # dateUpdated will be automatically set by SQLAlchemy due to onupdate=func.now()
+                # date_updated will be automatically set by SQLAlchemy due to onupdate=func.now()
                 logger.info(f"Updated relationship notes for crew member {crew_id}")
         
         # Clear user notes field for guest users (notes should be in relationship)
-        if crew_member.userStatus.is_(models.UserStatus.GUEST):
-            setattr(crew_member, 'notes', None)
+        if str(crew_member.user_status) == str(models.UserStatus.GUEST):
+            crew_member.notes = None
     
-    # Update the dateUpdated timestamp
-    setattr(crew_member, 'dateUpdated', datetime.now(timezone.utc))
+    # Update the date_updated timestamp
+    crew_member.date_updated = datetime.now(timezone.utc)
     
     try:
         db.commit()
@@ -256,23 +256,23 @@ def create_crew_relationship(
     """Create a crew relationship for existing users."""
     # Check if relationship already exists
     existing_relationship = db.query(models.CrewRelationship).filter(
-        models.CrewRelationship.manager_user_id == user.userID,
+        models.CrewRelationship.manager_user_id == user.user_id,
         models.CrewRelationship.crew_user_id == relationship_data.crew_user_id
     ).first()
     
     if existing_relationship:
-        if existing_relationship.isActive.is_(True):
+        if existing_relationship.is_active is True:
             raise HTTPException(status_code=400, detail="User already in your crew")
         else:
             # Reactivate existing relationship
-            setattr(existing_relationship, 'isActive', True)
-            setattr(existing_relationship, 'notes', relationship_data.notes)
+            existing_relationship.is_active = True
+            existing_relationship.notes = relationship_data.notes
             db.commit()
             return {"message": "Crew relationship reactivated"}
     
     # Create new relationship
     new_relationship = models.CrewRelationship(
-        manager_user_id=user.userID,
+        manager_user_id=user.user_id,
         crew_user_id=relationship_data.crew_user_id,
         notes=relationship_data.notes
     )
@@ -291,9 +291,9 @@ def delete_crew_relationship(
     """Delete a crew relationship (remove crew member from manager's crew)."""
     # Find the crew relationship
     relationship_to_delete = db.query(models.CrewRelationship).filter(
-        models.CrewRelationship.manager_user_id == user.userID,
+        models.CrewRelationship.manager_user_id == user.user_id,
         models.CrewRelationship.crew_user_id == crew_user_id,
-        models.CrewRelationship.isActive.is_(True)
+        models.CrewRelationship.is_active.is_(True)
     ).first()
     
     if not relationship_to_delete:

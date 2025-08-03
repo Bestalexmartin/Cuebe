@@ -22,11 +22,11 @@ import { ErrorBoundary } from '../../../components/ErrorBoundary';
 
 // TypeScript interfaces
 interface CrewFormData {
-    fullnameFirst: string;
-    fullnameLast: string;
-    emailAddress: string;
-    phoneNumber: string;
-    userRole: string;
+    fullname_first: string;
+    fullname_last: string;
+    email_address: string;
+    phone_number: string;
+    user_role: string;
     notes: string;
 }
 
@@ -36,16 +36,16 @@ interface UserRoleOption {
 }
 
 const INITIAL_FORM_STATE: CrewFormData = {
-    fullnameFirst: '',
-    fullnameLast: '',
-    emailAddress: '',
-    phoneNumber: '',
-    userRole: '',
+    fullname_first: '',
+    fullname_last: '',
+    email_address: '',
+    phone_number: '',
+    user_role: '',
     notes: ''
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
-    fullnameFirst: {
+    fullname_first: {
         required: false,
         rules: [
             {
@@ -61,7 +61,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             ValidationRules.maxLength(50, 'First name must be no more than 50 characters')
         ]
     },
-    fullnameLast: {
+    fullname_last: {
         required: false,
         rules: [
             {
@@ -77,13 +77,13 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             ValidationRules.maxLength(50, 'Last name must be no more than 50 characters')
         ]
     },
-    emailAddress: {
+    email_address: {
         required: false,
         rules: [
             ValidationRules.email('Please enter a valid email address')
         ]
     },
-    phoneNumber: {
+    phone_number: {
         required: false,
         rules: [
             ValidationRules.phone('Please enter a valid phone number')
@@ -148,24 +148,24 @@ export const EditCrewPage: React.FC = () => {
     useEffect(() => {
         if (crew) {
             form.setFormData({
-                fullnameFirst: crew.fullnameFirst || '',
-                fullnameLast: crew.fullnameLast || '',
-                emailAddress: crew.emailAddress || '',
-                phoneNumber: crew.phoneNumber || '',
-                userRole: crew.userRole || '',
-                notes: crew.relationshipNotes || '' // Use relationship notes, not user notes
+                fullname_first: crew.fullname_first || '',
+                fullname_last: crew.fullname_last || '',
+                email_address: crew.email_address || '',
+                phone_number: crew.phone_number || '',
+                user_role: crew.user_role || '',
+                notes: crew.relationship_notes || '' // Use relationship notes, not user notes
             });
         }
     }, [crew, form.setFormData]);
 
     // Change detection for save button
     const initialData = crew ? {
-        fullnameFirst: crew.fullnameFirst || '',
-        fullnameLast: crew.fullnameLast || '',
-        emailAddress: crew.emailAddress || '',
-        phoneNumber: crew.phoneNumber || '',
-        userRole: crew.userRole || '',
-        notes: crew.relationshipNotes || ''
+        fullname_first: crew.fullname_first || '',
+        fullname_last: crew.fullname_last || '',
+        email_address: crew.email_address || '',
+        phone_number: crew.phone_number || '',
+        user_role: crew.user_role || '',
+        notes: crew.relationship_notes || ''
     } : null;
 
     const { hasChanges, updateOriginalData } = useChangeDetection(
@@ -188,18 +188,18 @@ export const EditCrewPage: React.FC = () => {
         try {
             // Prepare data for API
             const updateData = {
-                fullnameFirst: form.formData.fullnameFirst,
-                fullnameLast: form.formData.fullnameLast,
-                emailAddress: form.formData.emailAddress,
-                phoneNumber: form.formData.phoneNumber || null,
-                userRole: form.formData.userRole,
+                fullname_first: form.formData.fullname_first,
+                fullname_last: form.formData.fullname_last,
+                email_address: form.formData.email_address,
+                phone_number: form.formData.phone_number || null,
+                user_role: form.formData.user_role,
                 notes: form.formData.notes || null,
             };
 
             await form.submitForm(
                 `/api/crew/${crewId}`,
                 'PATCH',
-                `"${form.formData.fullnameFirst} ${form.formData.fullnameLast}" has been updated successfully`,
+                `"${form.formData.fullname_first} ${form.formData.fullname_last}" has been updated successfully`,
                 updateData
             );
 
@@ -232,10 +232,10 @@ export const EditCrewPage: React.FC = () => {
 
     const isFormValid = (): boolean => {
         return form.fieldErrors.length === 0 && 
-            form.formData.fullnameFirst.trim().length >= 4 &&
-            form.formData.fullnameLast.trim().length >= 4 &&
-            form.formData.emailAddress.trim().length > 0 &&
-            form.formData.userRole.trim().length > 0;
+            form.formData.fullname_first.trim().length >= 4 &&
+            form.formData.fullname_last.trim().length >= 4 &&
+            form.formData.email_address.trim().length > 0 &&
+            form.formData.user_role.trim().length > 0;
     };
 
     const canSave = (): boolean => {
@@ -243,11 +243,11 @@ export const EditCrewPage: React.FC = () => {
     };
 
     const getFullName = (): string => {
-        return `${form.formData.fullnameFirst} ${form.formData.fullnameLast}`.trim() || 'Crew';
+        return `${form.formData.fullname_first} ${form.formData.fullname_last}`.trim() || 'Crew';
     };
 
     const isVerifiedUser = (): boolean => {
-        return crew?.userStatus === 'verified';
+        return crew?.user_status === 'verified';
     };
 
     const isSelfEdit = (): boolean => {
@@ -332,7 +332,7 @@ export const EditCrewPage: React.FC = () => {
 
     const getUserStatusBadge = () => {
         if (!crew) return null;
-        const isVerified = crew.userStatus === 'verified';
+        const isVerified = crew.user_status === 'verified';
         return (
             <Badge
                 variant={isVerified ? "solid" : "outline"}
@@ -394,13 +394,13 @@ export const EditCrewPage: React.FC = () => {
                                 <Avatar
                                     size="md"
                                     name={getFullName()}
-                                    src={crew.profileImgURL}
+                                    src={crew.profile_img_url}
                                 />
                                 <VStack align="start" spacing="1" flex="1">
                                     <HStack spacing="2" align="center">
                                         <Text fontWeight="medium">{getFullName()}</Text>
                                         {getUserStatusBadge()}
-                                        {!crew.isActive && (
+                                        {!crew.is_active && (
                                             <Badge variant="solid" colorScheme="red" size="sm">
                                                 Inactive
                                             </Badge>
@@ -408,38 +408,23 @@ export const EditCrewPage: React.FC = () => {
                                     </HStack>
                                     <HStack justify="space-between" width="100%">
                                         <Text fontSize="sm" color="detail.text">
-                                            {formatRole(form.formData.userRole)}
+                                            {formatRole(form.formData.user_role)}
                                         </Text>
                                          <Text fontSize="xs" color="detail.text">
-                                            Updated: {formatDateTimeLocal(crew.dateUpdated)}
+                                            Updated: {formatDateTimeLocal(crew.date_updated)}
                                         </Text>
                                     </HStack>
                                     <HStack justify="space-between" width="100%">
                                         <Text fontSize="sm" color="detail.text">
-                                            {form.formData.emailAddress}
+                                            {form.formData.email_address}
                                         </Text>
                                         <Text fontSize="xs" color="detail.text">
-                                            Created: {formatDateTimeLocal(crew.dateCreated)}
+                                            Created: {formatDateTimeLocal(crew.date_created)}
                                         </Text>
                                     </HStack>
                                 </VStack>
                             </HStack>
                         </Box>
-
-                        {/* Manager Notes Section - Move up above contact fields */}
-                        {!isSelfEdit() && (
-                            <FormControl>
-                                <FormLabel>Manager Notes</FormLabel>
-                                <Textarea
-                                    value={form.formData.notes}
-                                    onChange={(e) => handleChange('notes', e.target.value)}
-                                    onBlur={() => form.validateField('notes')}
-                                    placeholder="Your private notes about this crew"
-                                    resize="vertical"
-                                    minHeight="100px"
-                                />
-                            </FormControl>
-                        )}
 
                         {/* Contact Information Explanation for Verified Users (Manager Edit Only) */}
                         {isVerifiedUser() && !isSelfEdit() && (
@@ -459,9 +444,9 @@ export const EditCrewPage: React.FC = () => {
                             <FormControl isRequired={!(isVerifiedUser() && !isSelfEdit())}>
                                 <FormLabel>First Name</FormLabel>
                                 <Input
-                                    value={form.formData.fullnameFirst}
-                                    onChange={(e) => handleChange('fullnameFirst', e.target.value)}
-                                    onBlur={() => form.validateField('fullnameFirst')}
+                                    value={form.formData.fullname_first}
+                                    onChange={(e) => handleChange('fullname_first', e.target.value)}
+                                    onBlur={() => form.validateField('fullname_first')}
                                     placeholder="Enter first name"
                                     isDisabled={isVerifiedUser() && !isSelfEdit()}
                                     bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
@@ -471,9 +456,9 @@ export const EditCrewPage: React.FC = () => {
                             <FormControl isRequired={!(isVerifiedUser() && !isSelfEdit())}>
                                 <FormLabel>Last Name</FormLabel>
                                 <Input
-                                    value={form.formData.fullnameLast}
-                                    onChange={(e) => handleChange('fullnameLast', e.target.value)}
-                                    onBlur={() => form.validateField('fullnameLast')}
+                                    value={form.formData.fullname_last}
+                                    onChange={(e) => handleChange('fullname_last', e.target.value)}
+                                    onBlur={() => form.validateField('fullname_last')}
                                     placeholder="Enter last name"
                                     isDisabled={isVerifiedUser() && !isSelfEdit()}
                                     bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
@@ -488,9 +473,9 @@ export const EditCrewPage: React.FC = () => {
                                 <FormLabel>Email Address</FormLabel>
                                 <Input
                                     type="email"
-                                    value={form.formData.emailAddress}
-                                    onChange={(e) => handleChange('emailAddress', e.target.value)}
-                                    onBlur={() => form.validateField('emailAddress')}
+                                    value={form.formData.email_address}
+                                    onChange={(e) => handleChange('email_address', e.target.value)}
+                                    onBlur={() => form.validateField('email_address')}
                                     placeholder="crew@example.com"
                                     isDisabled={isVerifiedUser() && !isSelfEdit()}
                                     bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
@@ -501,9 +486,9 @@ export const EditCrewPage: React.FC = () => {
                                 <FormLabel>Phone Number</FormLabel>
                                 <Input
                                     type="tel"
-                                    value={form.formData.phoneNumber}
-                                    onChange={(e) => handleChange('phoneNumber', e.target.value)}
-                                    onBlur={() => form.validateField('phoneNumber')}
+                                    value={form.formData.phone_number}
+                                    onChange={(e) => handleChange('phone_number', e.target.value)}
+                                    onBlur={() => form.validateField('phone_number')}
                                     placeholder="(555) 123-4567"
                                     isDisabled={isVerifiedUser() && !isSelfEdit()}
                                     bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
@@ -516,8 +501,8 @@ export const EditCrewPage: React.FC = () => {
                         <FormControl isRequired={!(isVerifiedUser() && !isSelfEdit())}>
                             <FormLabel>Role</FormLabel>
                             <Select
-                                value={form.formData.userRole}
-                                onChange={(e) => handleChange('userRole', e.target.value)}
+                                value={form.formData.user_role}
+                                onChange={(e) => handleChange('user_role', e.target.value)}
                                 placeholder="Select role"
                                 isDisabled={isVerifiedUser() && !isSelfEdit()}
                                 bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
@@ -531,20 +516,18 @@ export const EditCrewPage: React.FC = () => {
                             </Select>
                         </FormControl>
 
-                        {/* Personal Notes Section - Only for self-edit */}
-                        {isSelfEdit() && (
-                            <FormControl>
-                                <FormLabel>Personal Notes</FormLabel>
-                                <Textarea
-                                    value={form.formData.notes}
-                                    onChange={(e) => handleChange('notes', e.target.value)}
-                                    onBlur={() => form.validateField('notes')}
-                                    placeholder="Your personal notes"
-                                    resize="vertical"
-                                    minHeight="100px"
-                                />
-                            </FormControl>
-                        )}
+                        {/* Notes Section - Personal notes for self-edit, Manager notes for manager edit */}
+                        <FormControl>
+                            <FormLabel>{isSelfEdit() ? 'Personal Notes' : 'Manager Notes'}</FormLabel>
+                            <Textarea
+                                value={form.formData.notes}
+                                onChange={(e) => handleChange('notes', e.target.value)}
+                                onBlur={() => form.validateField('notes')}
+                                placeholder={isSelfEdit() ? "Your personal notes" : "Your private notes about this crew"}
+                                resize="vertical"
+                                minHeight="100px"
+                            />
+                        </FormControl>
                     </VStack>
                 )}
                 

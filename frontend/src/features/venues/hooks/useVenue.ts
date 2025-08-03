@@ -5,25 +5,25 @@ import { useAuth } from '@clerk/clerk-react';
 
 // TypeScript interfaces
 interface Venue {
-  venueID: string;
-  venueName: string;
+  venue_id: string;
+  venue_name: string;
   address?: string;
   city?: string;
   state?: string;
   capacity?: number;
-  venueType?: string;
-  contactName?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  stageWidth?: number;
-  stageDepth?: number;
-  flyHeight?: number;
+  venue_type?: string;
+  contact_name?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  stage_width?: number;
+  stage_depth?: number;
+  fly_height?: number;
   equipment?: string[];
-  venueNotes?: string;
-  rentalRate?: number;
-  minimumRental?: number;
-  dateCreated: string;
-  dateUpdated: string;
+  venue_notes?: string;
+  rental_rate?: number;
+  minimum_rental?: number;
+  date_created: string;
+  date_updated: string;
 }
 
 interface UseVenueReturn {

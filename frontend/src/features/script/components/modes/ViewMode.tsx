@@ -163,17 +163,17 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                     >
                         {elements.map((element, index) => {
                             // Only show clock times if we have the required script start time
-                            const shouldShowClockTimes = showClockTimes && !!script?.startTime;
+                            const shouldShowClockTimes = showClockTimes && !!script?.start_time;
                             return (
                                 <CueElement
-                                    key={element.elementID}
+                                    key={element.element_id}
                                     element={element}
                                     index={index}
                                     allElements={elements}
                                     colorizeDepNames={colorizeDepNames}
                                     showClockTimes={shouldShowClockTimes}
-                                    scriptStartTime={script?.startTime}
-                                    scriptEndTime={script?.endTime}
+                                    scriptStartTime={script?.start_time}
+                                    scriptEndTime={script?.end_time}
                                 />
                             );
                         })}

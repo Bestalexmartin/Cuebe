@@ -22,7 +22,7 @@ import { UtilitiesMenu } from '../UtilitiesMenu';
 interface QuickAccessItemProps {
   title: string;
   description: string;
-  isActive?: boolean;
+  is_active?: boolean;
   onClick?: () => void;
   isDisabled?: boolean;
   badgeTitle?: string;

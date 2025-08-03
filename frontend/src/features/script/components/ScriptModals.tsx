@@ -47,7 +47,7 @@ interface ScriptModalsProps {
     onInitialClearHistoryConfirm: () => void;
     onFinalClearHistoryConfirm: () => void;
     onDuplicateClose: () => void;
-    onDuplicateConfirm: (scriptName: string, showId: string) => void;
+    onDuplicateConfirm: (script_name: string, showId: string) => void;
     onElementCreated: (element: any) => void;
     onOptionsPreview: (preferences: UserPreferences) => void;
     onOptionsSave: (preferences: UserPreferences) => void;
@@ -55,7 +55,7 @@ interface ScriptModalsProps {
     onColorizeChange: (enabled: boolean) => void;
     onClockTimesChange: (enabled: boolean) => void;
     onConfirmDeleteCue: () => void;
-    onConfirmDuplicate: (description: string, timeOffsetMs: number) => void;
+    onConfirmDuplicate: (description: string, time_offset_ms: number) => void;
     onUnsavedChangesCancel: () => void;
     onInitialUnsavedConfirm: () => void;
     onSaveScriptChanges: () => void;
@@ -114,8 +114,8 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 isOpen={modalState.isOpen(modalNames.DUPLICATE)}
                 onClose={onDuplicateClose}
                 onConfirm={onDuplicateConfirm}
-                scriptName={script?.scriptName || ''}
-                showId={script?.showID || ''}
+                scriptName={script?.script_name || ''}
+                showId={script?.show_id || ''}
             />
 
             {/* Processing Modal */}
@@ -127,7 +127,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 onClose={onDeleteCancel}
                 onConfirm={onInitialDeleteConfirm}
                 entityType="Script"
-                entityName={script?.scriptName || ''}
+                entityName={script?.script_name || ''}
             />
 
             <FinalDeleteConfirmationModal
@@ -136,7 +136,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 onConfirm={onFinalDeleteConfirm}
                 isLoading={isDeleting}
                 entityType="Script"
-                entityName={script?.scriptName || ''}
+                entityName={script?.script_name || ''}
                 warningMessage="Deleting this script will permanently remove all script elements and cannot be undone."
             />
 

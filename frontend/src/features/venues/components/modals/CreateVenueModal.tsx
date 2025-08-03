@@ -13,7 +13,7 @@ import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
 
 // TypeScript interfaces
 interface VenueFormData {
-    venueName: string;
+    venue_name: string;
     city: string;
     state: string;
 }
@@ -25,13 +25,13 @@ interface CreateVenueModalProps {
 }
 
 const INITIAL_FORM_STATE: VenueFormData = {
-    venueName: '',
+    venue_name: '',
     city: '',
     state: '',
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
-    venueName: {
+    venue_name: {
         required: false, // Handle required validation manually for button state
         rules: [
             {
@@ -77,7 +77,7 @@ export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
 
         try {
             const venueData = {
-                venueName: form.formData.venueName,
+                venue_name: form.formData.venue_name,
                 ...(form.formData.city.trim() && { city: form.formData.city.trim() }),
                 ...(form.formData.state.trim() && { state: form.formData.state.trim() }),
             };
@@ -85,7 +85,7 @@ export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
             await form.submitForm(
                 '/api/me/venues',
                 'POST',
-                `"${form.formData.venueName}" has been added to your venues`,
+                `"${form.formData.venue_name}" has been added to your venues`,
                 venueData
             );
 
@@ -102,7 +102,7 @@ export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
         onClose();
     };
 
-    const { canSubmit } = useStandardFormValidation(form, ['venueName']);
+    const { canSubmit } = useStandardFormValidation(form, ['venue_name']);
 
     return (
         <BaseModal
@@ -125,7 +125,7 @@ export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
             <VStack spacing={4} align="stretch">
                 <FormInput
                     form={form}
-                    name="venueName"
+                    name="venue_name"
                     label="Venue Name"
                     placeholder="Enter venue name"
                     isRequired

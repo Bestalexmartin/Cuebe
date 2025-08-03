@@ -509,8 +509,8 @@ export const AuthenticationTest: React.FC = () => {
               const user = userData[0];
               userInfo = {
                 clerk_user_id: user.clerk_user_id,
-                email: user.emailAddress,
-                status: user.userStatus,
+                email: user.email_address,
+                status: user.user_status,
                 permissions: ['read', 'write'] // Placeholder - would need actual permission system
               };
             }

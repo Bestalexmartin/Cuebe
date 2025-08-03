@@ -47,12 +47,12 @@ def create_show(
 ):
     """Create a new show with a default first draft script."""
     new_show = models.Show(
-        showName=show.showName,
-        venueID=show.venueID,
-        showDate=show.showDate,
-        showNotes=show.showNotes,
+        show_name=show.show_name,
+        venue_id=show.venue_id,
+        show_date=show.show_date,
+        show_notes=show.show_notes,
         deadline=show.deadline,
-        ownerID=user.userID
+        owner_id=user.user_id
     )
     db.add(new_show)
     db.commit()
@@ -60,9 +60,9 @@ def create_show(
 
     # Create first draft script
     first_draft = models.Script(
-        scriptName="First Draft",
-        showID=new_show.showID,
-        ownerID=user.userID
+        script_name="First Draft",
+        show_id=new_show.show_id,
+        owner_id=user.user_id
     )
     db.add(first_draft)
     db.commit()
@@ -83,7 +83,7 @@ def read_shows_for_current_user(
     shows = db.query(models.Show).options(
         joinedload(models.Show.scripts),  # Load basic script info (name, status, dates) but not elements
         joinedload(models.Show.venue)     # Load venue for venue name display
-    ).filter(models.Show.ownerID == user.userID).offset(skip).limit(limit).all()
+    ).filter(models.Show.owner_id == user.user_id).offset(skip).limit(limit).all()
     
     return shows
 
@@ -95,20 +95,19 @@ def read_show(
     db: Session = Depends(get_db)
 ):
     """Get a single show by ID."""
-    logger.info(f"Looking for show with UUID: {show_id}")
     show = db.query(models.Show).options(
         joinedload(models.Show.scripts).joinedload(models.Script.elements),
         joinedload(models.Show.venue),
         joinedload(models.Show.crew)
-    ).filter(models.Show.showID == show_id).first()
+    ).filter(models.Show.show_id == show_id).first()
     
     if not show:
         logger.warning(f"Show not found in DB: {show_id}")
         raise HTTPException(status_code=404, detail="Show not found")
     
     # Security check: ensure the user owns this show
-    if show.ownerID != user.userID: # type: ignore
-        logger.warning(f"User {user.userID} attempted to access show {show_id} without permission")
+    if show.owner_id != user.user_id:
+        logger.warning(f"User {user.user_id} attempted to access show {show_id} without permission")
         raise HTTPException(status_code=403, detail="Not authorized to view this show")
 
     return show
@@ -122,22 +121,21 @@ def update_show(
     db: Session = Depends(get_db)
 ):
     """Update a show."""
-    show_to_update = db.query(models.Show).filter(models.Show.showID == show_id).first()
+    show_to_update = db.query(models.Show).filter(models.Show.show_id == show_id).first()
     if not show_to_update:
         raise HTTPException(status_code=404, detail="Show not found")
 
     # Security check
-    if show_to_update.ownerID != user.userID: # type: ignore
+    if show_to_update.owner_id != user.user_id:
         raise HTTPException(status_code=403, detail="Not authorized to update this show")
 
     update_data = show_update.model_dump(exclude_unset=True)
-    logger.info(f"Updating show {show_id} with data: {update_data}")
 
     for key, value in update_data.items():
         setattr(show_to_update, key, value)
     
-    # Update the dateUpdated timestamp
-    setattr(show_to_update, 'dateUpdated', datetime.now(timezone.utc))
+    # Update the date_updated timestamp
+    setattr(show_to_update, 'date_updated', datetime.now(timezone.utc))
     
     db.commit()
     db.refresh(show_to_update)
@@ -153,16 +151,16 @@ def delete_show(
 ):
     """Delete a show and all associated scripts."""
     show_to_delete = db.query(models.Show).filter(
-        models.Show.showID == show_id,
-        models.Show.ownerID == user.userID
+        models.Show.show_id == show_id,
+        models.Show.owner_id == user.user_id
     ).first()
     if not show_to_delete:
         raise HTTPException(status_code=404, detail="Show not found")
 
     # Delete all scripts associated with this show
     scripts_to_delete = db.query(models.Script).filter(
-        models.Script.showID == show_id,
-        models.Script.ownerID == user.userID
+        models.Script.show_id == show_id,
+        models.Script.owner_id == user.user_id
     ).all()
     
     script_count = len(scripts_to_delete)
@@ -170,7 +168,7 @@ def delete_show(
     # Delete script elements first (due to foreign key constraints)
     for script in scripts_to_delete:
         script_elements = db.query(models.ScriptElement).filter(
-            models.ScriptElement.scriptID == script.scriptID
+            models.ScriptElement.script_id == script.script_id
         ).all()
         for element in script_elements:
             db.delete(element)
@@ -204,22 +202,22 @@ def create_script_for_show(
 ):
     """Create a new script for a show."""
     # Find the show this script will belong to
-    show = db.query(models.Show).filter(models.Show.showID == show_id).first()
+    show = db.query(models.Show).filter(models.Show.show_id == show_id).first()
     if not show:
         raise HTTPException(status_code=404, detail="Show not found")
 
     # Security Check: Make sure the current user owns this show
-    if show.ownerID != user.userID: # type: ignore
+    if show.owner_id != user.user_id:
         raise HTTPException(status_code=403, detail="Not authorized to add a script to this show")
 
     # Create the new script
     new_script = models.Script(
-        showID=show_id,
-        scriptName=script.scriptName or "New Script",
-        scriptStatus=models.ScriptStatus(script.scriptStatus) if script.scriptStatus is not None else models.ScriptStatus.DRAFT,
-        startTime=show.showDate,
-        endTime=show.showDuration if show.showDuration else None,
-        ownerID=user.userID
+        show_id=show_id,
+        script_name=script.script_name or "New Script",
+        script_status=models.ScriptStatus(script.script_status) if script.script_status is not None else models.ScriptStatus.DRAFT,
+        start_time=show.show_date,
+        end_time=show.show_duration if show.show_duration is not None else None,
+        owner_id=user.user_id
     )
     db.add(new_script)
     db.commit()
@@ -228,21 +226,21 @@ def create_script_for_show(
     # Create automatic "Show Start" cue with minimal required fields
     from datetime import timedelta
     show_start_cue = models.ScriptElement(
-        scriptID=new_script.scriptID,
-        elementType=models.ElementType.NOTE,
-        cueID=None,  # No cue ID needed for show start
+        script_id=new_script.script_id,
+        element_type=models.ElementType.NOTE,
+        cue_id=None,  # No cue ID needed for show start
         description="SHOW START",  # All caps title
-        timeOffsetMs=0,  # Start at 00:00
-        triggerType=models.TriggerType.MANUAL,
-        executionStatus=models.ExecutionStatus.PENDING,
+        time_offset_ms=0,  # Start at 00:00
+        trigger_type=models.TriggerType.MANUAL,
+        execution_status=models.ExecutionStatus.PENDING,
         priority=models.PriorityLevel.CRITICAL,
-        customColor="#DC2626",
+        custom_color="#EF4444",  # Matches frontend note preset red
         sequence=1,
-        elementOrder=1,
-        isActive=True,
-        groupLevel=0,
-        createdBy=user.userID
-        # departmentID intentionally left out (None/NULL)
+        element_order=1,
+        is_active=True,
+        group_level=0,
+        created_by=user.user_id
+        # department_id intentionally left out (None/NULL)
     )
     db.add(show_start_cue)
     db.commit()
@@ -263,24 +261,24 @@ def duplicate_script(
     # Find the original script
     original_script = db.query(models.Script).options(
         joinedload(models.Script.show)
-    ).filter(models.Script.scriptID == script_id).first()
+    ).filter(models.Script.script_id == script_id).first()
     
     if not original_script:
         raise HTTPException(status_code=404, detail="Original script not found")
 
     # Security Check: Make sure the current user owns the show
-    if original_script.show.ownerID != user.userID:
+    if original_script.show.owner_id != user.user_id:
         raise HTTPException(status_code=403, detail="Not authorized to duplicate this script")
 
     # Create the new script
     new_script = models.Script(
-        showID=original_script.showID,
-        scriptName=script.scriptName or f"{original_script.scriptName} copy",
-        scriptStatus=models.ScriptStatus(script.scriptStatus) if script.scriptStatus is not None else models.ScriptStatus.COPY,
-        startTime=original_script.startTime,
-        endTime=original_script.endTime,
-        scriptNotes=original_script.scriptNotes,
-        ownerID=user.userID
+        show_id=original_script.show_id,
+        script_name=script.script_name or f"{original_script.script_name} copy",
+        script_status=models.ScriptStatus(script.script_status) if script.script_status is not None else models.ScriptStatus.COPY,
+        start_time=original_script.start_time,
+        end_time=original_script.end_time,
+        script_notes=original_script.script_notes,
+        owner_id=user.user_id
     )
     db.add(new_script)
     db.commit()
@@ -288,7 +286,7 @@ def duplicate_script(
 
     # Get all elements for the original script
     original_elements = db.query(models.ScriptElement).filter(
-        models.ScriptElement.scriptID == script_id
+        models.ScriptElement.script_id == script_id
     ).all()
 
     # Track element ID mapping for relationships
@@ -297,54 +295,54 @@ def duplicate_script(
     # Duplicate all script elements
     for original_element in original_elements:
         new_element = models.ScriptElement(
-            scriptID=new_script.scriptID,
-            elementType=original_element.elementType,
-            departmentID=original_element.departmentID,
-            parentElementID=None,  # Will be updated later for hierarchical elements
-            cueID=original_element.cueID,
-            cueNumber=original_element.cueNumber,
+            script_id=new_script.script_id,
+            element_type=original_element.element_type,
+            department_id=original_element.department_id,
+            parent_element_id=None,  # Will be updated later for hierarchical elements
+            cue_id=original_element.cue_id,
+            cue_number=original_element.cue_number,
             description=original_element.description,
-            elementDescription=original_element.elementDescription,
-            timeOffsetMs=original_element.timeOffsetMs,
+            element_description=original_element.element_description,
+            time_offset_ms=original_element.time_offset_ms,
             duration=original_element.duration,
-            fadeIn=original_element.fadeIn,
-            fadeOut=original_element.fadeOut,
-            triggerType=original_element.triggerType,
-            followsCueID=original_element.followsCueID,
-            executionStatus=models.ExecutionStatus.PENDING,  # Reset to pending
+            fade_in=original_element.fade_in,
+            fade_out=original_element.fade_out,
+            trigger_type=original_element.trigger_type,
+            follows_cue_id=original_element.follows_cue_id,
+            execution_status=models.ExecutionStatus.PENDING,  # Reset to pending
             priority=original_element.priority,
-            customColor=original_element.customColor,
-            departmentColor=original_element.departmentColor,
+            custom_color=original_element.custom_color,
+            department_color=original_element.department_color,
             sequence=original_element.sequence,
-            elementOrder=original_element.elementOrder,
+            element_order=original_element.element_order,
             location=original_element.location,
-            locationDetails=original_element.locationDetails,
-            isActive=original_element.isActive,
-            groupLevel=original_element.groupLevel,
-            isCollapsed=original_element.isCollapsed,
-            cueNotes=original_element.cueNotes,
+            location_details=original_element.location_details,
+            is_active=original_element.is_active,
+            group_level=original_element.group_level,
+            is_collapsed=original_element.is_collapsed,
+            cue_notes=original_element.cue_notes,
             version=1,  # Reset version to 1 for new duplicate
-            createdBy=user.userID
+            created_by=user.user_id
         )
         db.add(new_element)
         db.commit()
         db.refresh(new_element)
         
         # Store mapping for relationship updates
-        element_id_mapping[original_element.elementID] = new_element.elementID
+        element_id_mapping[original_element.element_id] = new_element.element_id
 
     # Duplicate all related data separately to avoid complex joins
     # Duplicate equipment relationships
     original_equipment = db.query(models.ScriptElementEquipment).join(
         models.ScriptElement
-    ).filter(models.ScriptElement.scriptID == script_id).all()
+    ).filter(models.ScriptElement.script_id == script_id).all()
     
     for equipment in original_equipment:
-        if equipment.elementID in element_id_mapping:
+        if equipment.element_id in element_id_mapping:
             new_equipment = models.ScriptElementEquipment(
-                elementID=element_id_mapping[equipment.elementID],
-                equipmentName=equipment.equipmentName,
-                isRequired=equipment.isRequired,
+                element_id=element_id_mapping[equipment.element_id],
+                equipment_name=equipment.equipment_name,
+                is_required=equipment.is_required,
                 notes=equipment.notes
             )
             db.add(new_equipment)
@@ -352,29 +350,29 @@ def duplicate_script(
     # Duplicate crew assignments
     original_crew_assignments = db.query(models.ScriptElementCrewAssignment).join(
         models.ScriptElement
-    ).filter(models.ScriptElement.scriptID == script_id).all()
+    ).filter(models.ScriptElement.script_id == script_id).all()
     
     for crew_assignment in original_crew_assignments:
-        if crew_assignment.elementID in element_id_mapping:
+        if crew_assignment.element_id in element_id_mapping:
             new_crew_assignment = models.ScriptElementCrewAssignment(
-                elementID=element_id_mapping[crew_assignment.elementID],
-                crewID=crew_assignment.crewID,
-                assignmentRole=crew_assignment.assignmentRole,
-                isLead=crew_assignment.isLead
+                element_id=element_id_mapping[crew_assignment.element_id],
+                crew_id=crew_assignment.crew_id,
+                assignment_role=crew_assignment.assignment_role,
+                is_lead=crew_assignment.is_lead
             )
             db.add(new_crew_assignment)
 
     # Duplicate performer assignments
     original_performer_assignments = db.query(models.ScriptElementPerformerAssignment).join(
         models.ScriptElement
-    ).filter(models.ScriptElement.scriptID == script_id).all()
+    ).filter(models.ScriptElement.script_id == script_id).all()
     
     for performer_assignment in original_performer_assignments:
-        if performer_assignment.elementID in element_id_mapping:
+        if performer_assignment.element_id in element_id_mapping:
             new_performer_assignment = models.ScriptElementPerformerAssignment(
-                elementID=element_id_mapping[performer_assignment.elementID],
-                performerID=performer_assignment.performerID,
-                characterName=performer_assignment.characterName,
+                element_id=element_id_mapping[performer_assignment.element_id],
+                performer_id=performer_assignment.performer_id,
+                character_name=performer_assignment.character_name,
                 notes=performer_assignment.notes
             )
             db.add(new_performer_assignment)
@@ -382,42 +380,42 @@ def duplicate_script(
     # Duplicate conditional rules
     original_conditional_rules = db.query(models.ScriptElementConditionalRule).join(
         models.ScriptElement
-    ).filter(models.ScriptElement.scriptID == script_id).all()
+    ).filter(models.ScriptElement.script_id == script_id).all()
     
     for conditional_rule in original_conditional_rules:
-        if conditional_rule.elementID in element_id_mapping:
+        if conditional_rule.element_id in element_id_mapping:
             new_conditional_rule = models.ScriptElementConditionalRule(
-                elementID=element_id_mapping[conditional_rule.elementID],
-                conditionType=conditional_rule.conditionType,
+                element_id=element_id_mapping[conditional_rule.element_id],
+                condition_type=conditional_rule.condition_type,
                 operator=conditional_rule.operator,
-                conditionValue=conditional_rule.conditionValue,
+                condition_value=conditional_rule.condition_value,
                 description=conditional_rule.description,
-                isActive=conditional_rule.isActive
+                is_active=conditional_rule.is_active
             )
             db.add(new_conditional_rule)
 
     # Second pass: Update parent relationships and group relationships
     for original_element in original_elements:
-        new_element_id = element_id_mapping[original_element.elementID]
+        new_element_id = element_id_mapping[original_element.element_id]
         
         # Update parent element relationships
-        if original_element.parentElementID and original_element.parentElementID in element_id_mapping:
-            new_parent_id = element_id_mapping[original_element.parentElementID]
+        if original_element.parent_element_id is not None and original_element.parent_element_id in element_id_mapping:
+            new_parent_id = element_id_mapping[original_element.parent_element_id]
             db.query(models.ScriptElement).filter(
-                models.ScriptElement.elementID == new_element_id
-            ).update({"parentElementID": new_parent_id})
+                models.ScriptElement.element_id == new_element_id
+            ).update({"parent_element_id": new_parent_id})
 
     # Duplicate group relationships
     original_group_relationships = db.query(models.ScriptElementGroup).join(
-        models.ScriptElement, models.ScriptElementGroup.groupID == models.ScriptElement.elementID
-    ).filter(models.ScriptElement.scriptID == script_id).all()
+        models.ScriptElement, models.ScriptElementGroup.group_id == models.ScriptElement.element_id
+    ).filter(models.ScriptElement.script_id == script_id).all()
     
     for group_rel in original_group_relationships:
-        if group_rel.groupID in element_id_mapping and group_rel.childElementID in element_id_mapping:
+        if group_rel.group_id in element_id_mapping and group_rel.child_element_id in element_id_mapping:
             new_group_rel = models.ScriptElementGroup(
-                groupID=element_id_mapping[group_rel.groupID],
-                childElementID=element_id_mapping[group_rel.childElementID],
-                orderInGroup=group_rel.orderInGroup
+                group_id=element_id_mapping[group_rel.group_id],
+                child_element_id=element_id_mapping[group_rel.child_element_id],
+                order_in_group=group_rel.order_in_group
             )
             db.add(new_group_rel)
 
@@ -436,7 +434,7 @@ def get_script(
     script = db.query(models.Script).options(
         joinedload(models.Script.show),
         joinedload(models.Script.elements)
-    ).filter(models.Script.scriptID == script_id).first()
+    ).filter(models.Script.script_id == script_id).first()
     
     if not script:
         raise HTTPException(
@@ -445,7 +443,7 @@ def get_script(
         )
     
     # Check if user has access to this script (through direct ownership or show ownership)
-    if script.ownerID != user.userID and script.show.ownerID != user.userID: # type: ignore
+    if script.owner_id != user.user_id and script.show.owner_id != user.user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this script"
@@ -465,7 +463,7 @@ def update_script(
     # Query the script from database with show relationship for authorization
     script = db.query(models.Script).options(
         joinedload(models.Script.show)
-    ).filter(models.Script.scriptID == script_id).first()
+    ).filter(models.Script.script_id == script_id).first()
     
     if not script:
         raise HTTPException(
@@ -474,7 +472,7 @@ def update_script(
         )
     
     # Check if user has access to this script (through show ownership)
-    if script.show.ownerID != user.userID:
+    if script.show.owner_id != user.user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to modify this script"
@@ -487,18 +485,18 @@ def update_script(
         if hasattr(script, field):
             setattr(script, field, value)
     
-    # Update the dateUpdated timestamp
-    setattr(script, 'dateUpdated', datetime.now(timezone.utc))
+    # Update the date_updated timestamp
+    setattr(script, 'date_updated', datetime.now(timezone.utc))
     
     try:
         db.commit()
         db.refresh(script)
         
         # Update SHOW START duration if start or end times were changed
-        if 'startTime' in update_data or 'endTime' in update_data:
+        if 'start_time' in update_data or 'end_time' in update_data:
             from .script_elements import _auto_populate_show_start_duration
             elements = db.query(models.ScriptElement).filter(
-                models.ScriptElement.scriptID == script_id
+                models.ScriptElement.script_id == script_id
             ).all()
             _auto_populate_show_start_duration(db, script, elements)
         
@@ -522,7 +520,7 @@ def delete_script(
     # Query the script from database with show relationship for authorization
     script = db.query(models.Script).options(
         joinedload(models.Script.show)
-    ).filter(models.Script.scriptID == script_id).first()
+    ).filter(models.Script.script_id == script_id).first()
     
     if not script:
         raise HTTPException(
@@ -531,7 +529,7 @@ def delete_script(
         )
     
     # Check if user has access to this script (through show ownership)
-    if script.show.ownerID != user.userID:
+    if script.show.owner_id != user.user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this script"

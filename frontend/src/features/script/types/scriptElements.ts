@@ -30,46 +30,46 @@ export type LocationArea =
 // Core interfaces
 export interface ScriptElementBase {
   // Primary identification
-  elementID: string;
-  scriptID: string;
+  element_id: string;
+  script_id: string;
   type: ScriptElementType;
   
   // Sequencing and timing
   sequence: number;                    // Order in script (auto-incrementing)
-  timeOffsetMs: number;                // Milliseconds from script start
-  triggerType: TriggerType;
-  followsCueID?: string;               // If triggerType is 'follow'
+  time_offset_ms: number;                // Milliseconds from script start
+  trigger_type: TriggerType;
+  follows_cue_id?: string;               // If triggerType is 'follow'
   
   // Content and identification
-  cueID?: string;                      // LX5, SND12, etc.
+  cue_id?: string;                      // LX5, SND12, etc.
   description: string;
-  cueNotes?: string;
+  cue_notes?: string;
   
   // Department and visual
-  departmentID?: string;               // Link to department
-  departmentName?: string;             // Department name from relationship
-  departmentColor?: string;            // Department color from relationship
-  departmentInitials?: string;         // Department initials from relationship
-  customColor?: string;                // Custom row color for notes
+  department_id?: string;               // Link to department
+  department_name?: string;             // Department name from relationship
+  department_color?: string;            // Department color from relationship
+  department_initials?: string;         // Department initials from relationship
+  custom_color?: string;                // Custom row color for notes
   
   // Location and logistics
   location?: LocationArea;
-  locationDetails?: string;            // Specific location description
+  location_details?: string;            // Specific location description
   
   // Timing and execution
   duration?: number;                   // Runtime in milliseconds
-  fadeIn?: number;                     // Fade in time in milliseconds
-  fadeOut?: number;                    // Fade out time in milliseconds
+  fade_in?: number;                     // Fade in time in milliseconds
+  fade_out?: number;                    // Fade out time in milliseconds
   
   // Status and management
-  isActive: boolean;                   // Can be disabled without deletion
+  is_active: boolean;                   // Can be disabled without deletion
   priority: PriorityLevel;
-  executionStatus: ExecutionStatus;
+  execution_status: ExecutionStatus;
   
   // Relationships and grouping
-  parentElementID?: string;            // For groups and hierarchies
-  groupLevel: number;                  // Depth level (0 = root)
-  isCollapsed?: boolean;               // For group display state
+  parent_element_id?: string;            // For groups and hierarchies
+  group_level: number;                  // Depth level (0 = root)
+  is_collapsed?: boolean;               // For group display state
   
   // Equipment and resources
   equipmentRequired?: string[];        // List of required equipment
@@ -82,10 +82,10 @@ export interface ScriptElementBase {
   conditionalRules?: ConditionalRule[];
   
   // Metadata
-  createdBy: string;                   // User ID
-  updatedBy: string;                   // User ID  
-  dateCreated: string;                 // ISO timestamp
-  dateUpdated: string;                 // ISO timestamp
+  created_by: string;                   // User ID
+  updated_by: string;                   // User ID  
+  date_created: string;                 // ISO timestamp
+  date_updated: string;                 // ISO timestamp
   version: number;                     // For change tracking
 }
 
@@ -101,20 +101,20 @@ export interface ConditionalRule {
 // Specific element types extending the base
 export interface CueElement extends ScriptElementBase {
   type: 'CUE';
-  cueID: string;                       // Required for cues
-  departmentID: string;                // Required for cues
-  departmentName?: string;             // Department name from relationship
-  departmentColor?: string;            // Department color from relationship
-  departmentInitials?: string;         // Department initials from relationship
+  cue_id: string;                       // Required for cues
+  department_id: string;                // Required for cues
+  department_name?: string;             // Department name from relationship
+  department_color?: string;            // Department color from relationship
+  department_initials?: string;         // Department initials from relationship
 }
 
 export interface NoteElement extends ScriptElementBase {
   type: 'NOTE';
-  departmentID?: string;               // Optional for notes
-  departmentName?: string;             // Department name from relationship
-  departmentColor?: string;            // Department color from relationship
-  departmentInitials?: string;         // Department initials from relationship
-  customColor: string;                 // Required for visual distinction
+  department_id?: string;               // Optional for notes
+  department_name?: string;             // Department name from relationship
+  department_color?: string;            // Department color from relationship
+  department_initials?: string;         // Department initials from relationship
+  custom_color: string;                 // Required for visual distinction
 }
 
 // Union type for all elements
@@ -122,7 +122,7 @@ export type ScriptElement = CueElement | NoteElement;
 
 // Department information for display
 export interface Department {
-  departmentID: string;
+  department_id: string;
   name: string;
   shortName: string;                   // For cue IDs (LX, SND, etc.)
   color: string;                       // Hex color code
@@ -131,7 +131,7 @@ export interface Department {
 
 // Script element collection with metadata
 export interface ScriptElementCollection {
-  scriptID: string;
+  script_id: string;
   elements: ScriptElement[];
   departments: Department[];
   lastUpdated: string;
@@ -144,7 +144,7 @@ export interface ElementDisplayOptions {
   filterByDepartment?: string[];
   filterByType?: ScriptElementType[];
   filterByPriority?: PriorityLevel[];
-  sortBy: 'sequence' | 'timeOffset' | 'department' | 'cueID';
+  sortBy: 'sequence' | 'timeOffset' | 'department' | 'cue_id';
   sortDirection: 'asc' | 'desc';
   groupBy?: 'department' | 'type' | 'none';
 }
@@ -162,31 +162,31 @@ export interface PlaybackState {
 // Form data interfaces for editing
 export interface ScriptElementFormData {
   type: ScriptElementType;
-  cueID?: string;
+  cue_id?: string;
   description: string;
-  cueNotes?: string;
-  departmentID?: string;
-  timeOffsetMs: number;
-  triggerType: TriggerType;
-  followsCueID?: string;
+  cue_notes?: string;
+  department_id?: string;
+  time_offset_ms: number;
+  trigger_type: TriggerType;
+  follows_cue_id?: string;
   duration?: number;
-  fadeIn?: number;
-  fadeOut?: number;
+  fade_in?: number;
+  fade_out?: number;
   location?: LocationArea;
-  locationDetails?: string;
+  location_details?: string;
   priority: PriorityLevel;
   equipmentRequired?: string[];
   crewAssignments?: string[];
   performerAssignments?: string[];
   isSafetyCritical: boolean;
   safetyNotes?: string;
-  customColor?: string;
+  custom_color?: string;
   conditionalRules?: ConditionalRule[];
 }
 
 // Validation rules for form elements
 export interface ElementValidationRules {
-  cueID: {
+  cue_id: {
     required: boolean;
     pattern?: RegExp;
     maxLength: number;
@@ -211,57 +211,57 @@ export interface ElementValidationRules {
 
 // Create/Update interfaces for API calls (snake_case to match backend)
 export interface ScriptElementCreate {
-  elementType: ScriptElementType;
+  element_type: ScriptElementType;
   sequence?: number;
-  timeOffsetMs?: number;
-  triggerType?: TriggerType;
-  cueID?: string;
+  time_offset_ms?: number;
+  trigger_type?: TriggerType;
+  cue_id?: string;
   description: string;
-  cueNotes?: string;
-  departmentID?: string;
+  cue_notes?: string;
+  department_id?: string;
   location?: LocationArea;
-  locationDetails?: string;
+  location_details?: string;
   duration?: number;
-  fadeIn?: number;
-  fadeOut?: number;
+  fade_in?: number;
+  fade_out?: number;
   priority?: PriorityLevel;
-  parentElementID?: string;
-  groupLevel?: number;
+  parent_element_id?: string;
+  group_level?: number;
   isSafetyCritical?: boolean;
   safetyNotes?: string;
-  departmentColor?: string;
-  customColor?: string;
+  department_color?: string;
+  custom_color?: string;
 }
 
 export interface ScriptElementUpdate {
-  elementType?: ScriptElementType;
+  element_type?: ScriptElementType;
   sequence?: number;
-  timeOffsetMs?: number;
-  triggerType?: TriggerType;
-  followsCueID?: string;
-  cueID?: string;
+  time_offset_ms?: number;
+  trigger_type?: TriggerType;
+  follows_cue_id?: string;
+  cue_id?: string;
   description?: string;
-  cueNotes?: string;
-  departmentID?: string;
+  cue_notes?: string;
+  department_id?: string;
   location?: LocationArea;
-  locationDetails?: string;
+  location_details?: string;
   duration?: number;
-  fadeIn?: number;
-  fadeOut?: number;
+  fade_in?: number;
+  fade_out?: number;
   priority?: PriorityLevel;
-  executionStatus?: ExecutionStatus;
-  parentElementID?: string;
-  groupLevel?: number;
-  isCollapsed?: boolean;
+  execution_status?: ExecutionStatus;
+  parent_element_id?: string;
+  group_level?: number;
+  is_collapsed?: boolean;
   isSafetyCritical?: boolean;
   safetyNotes?: string;
-  departmentColor?: string;
-  customColor?: string;
+  department_color?: string;
+  custom_color?: string;
 }
 
 // Bulk operations for performance
 export interface ScriptElementReorderItem {
-  elementID: string;
+  element_id: string;
   sequence: number;
 }
 
@@ -273,10 +273,10 @@ export interface ScriptElementBulkUpdate {
   elementIds: string[];
   departmentId?: string;
   priority?: PriorityLevel;
-  executionStatus?: ExecutionStatus;
+  execution_status?: ExecutionStatus;
   location?: LocationArea;
   isSafetyCritical?: boolean;
-  customColor?: string;
+  custom_color?: string;
 }
 
 // Equipment and crew assignments
@@ -298,7 +298,7 @@ export interface ScriptElementConditionalRule {
   operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
   conditionValue: string;
   description: string;
-  isActive: boolean;
+  is_active: boolean;
 }
 
 // Extended base interface with all relationships

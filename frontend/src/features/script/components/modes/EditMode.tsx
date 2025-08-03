@@ -97,17 +97,17 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             localElements.some((el, index) => {
                 const newEl = elements?.[index];
                 if (!newEl) return true;
-                if (el.elementID !== newEl.elementID) return true;
+                if (el.element_id !== newEl.element_id) return true;
                 // Check if any key fields have changed
                 return el.duration !== newEl.duration ||
                        el.priority !== newEl.priority ||
                        el.description !== newEl.description ||
-                       el.timeOffsetMs !== newEl.timeOffsetMs ||
-                       el.locationDetails !== newEl.locationDetails ||
-                       el.cueNotes !== newEl.cueNotes ||
-                       el.cueID !== newEl.cueID ||
-                       el.departmentID !== newEl.departmentID ||
-                       el.customColor !== newEl.customColor;
+                       el.time_offset_ms !== newEl.time_offset_ms ||
+                       el.location_details !== newEl.location_details ||
+                       el.cue_notes !== newEl.cue_notes ||
+                       el.cue_id !== newEl.cue_id ||
+                       el.department_id !== newEl.department_id ||
+                       el.custom_color !== newEl.custom_color;
             });
             
         if (elementsChanged) {
@@ -147,8 +147,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             return;
         }
 
-        const oldIndex = localElements.findIndex(el => el.elementID === active.id);
-        const newIndex = localElements.findIndex(el => el.elementID === over.id);
+        const oldIndex = localElements.findIndex(el => el.element_id === active.id);
+        const newIndex = localElements.findIndex(el => el.element_id === over.id);
 
 
         if (oldIndex === -1 || newIndex === -1) {
@@ -188,9 +188,9 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         setLocalElements(reorderedElements);
 
         // Check if all three elements (above, dragged, below) have the same time offset
-        const draggedTimeOffset = draggedEl.timeOffsetMs;
-        const aboveTimeOffset = elementAbove?.timeOffsetMs;
-        const belowTimeOffset = elementBelow?.timeOffsetMs;
+        const draggedTimeOffset = draggedEl.time_offset_ms;
+        const aboveTimeOffset = elementAbove?.time_offset_ms;
+        const belowTimeOffset = elementBelow?.time_offset_ms;
         
         
         const allHaveSameTimeOffset = (
@@ -233,7 +233,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         await applyReorder();
 
         if (elementAbove && draggedElement) {
-            await updateElementTimeOffset(draggedElement.elementID, elementAbove.timeOffsetMs);
+            await updateElementTimeOffset(draggedElement.element_id, elementAbove.time_offset_ms);
         }
         
         closeDragModal();
@@ -243,7 +243,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         await applyReorder();
 
         if (elementBelow && draggedElement) {
-            await updateElementTimeOffset(draggedElement.elementID, elementBelow.timeOffsetMs);
+            await updateElementTimeOffset(draggedElement.element_id, elementBelow.time_offset_ms);
         }
         
         closeDragModal();
@@ -273,7 +273,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             // Create reorder operation for edit queue
             const reorderOperation = {
                 type: 'REORDER',
-                elementId: draggedElement?.elementID,
+                elementId: draggedElement?.element_id,
                 oldIndex: pendingReorderData.oldIndex,
                 newIndex: pendingReorderData.newIndex,
                 oldSequence: pendingReorderData.oldIndex + 1,
@@ -300,7 +300,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             // Create reorder operation for edit queue
             const reorderOperation = {
                 type: 'REORDER',
-                elementId: draggedElement?.elementID,
+                elementId: draggedElement?.element_id,
                 oldIndex: pendingReorder.oldIndex,
                 newIndex: pendingReorder.newIndex,
                 oldSequence: pendingReorder.oldIndex + 1,
@@ -318,13 +318,13 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const updateElementTimeOffset = async (elementId: string, newTimeOffsetMs: number) => {
         
         // Find the element to get old value
-        const element = localElements.find(el => el.elementID === elementId);
-        const oldTimeOffsetMs = element?.timeOffsetMs || 0;
+        const element = localElements.find(el => el.element_id === elementId);
+        const oldTimeOffsetMs = element?.time_offset_ms || 0;
         
         // Update local elements immediately for UI feedback
         const updatedElements = localElements.map(el => 
-            el.elementID === elementId 
-                ? { ...el, timeOffsetMs: newTimeOffsetMs }
+            el.element_id === elementId 
+                ? { ...el, time_offset_ms: newTimeOffsetMs }
                 : el
         );
         setLocalElements(updatedElements);
@@ -359,11 +359,11 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
 
         // Create UPDATE_FIELD operations for each changed field
         Object.entries(changes).forEach(([field, { oldValue, newValue }]) => {
-            if (field === 'timeOffsetMs') {
+            if (field === 'time_offset_ms') {
                 // Special handling for time offset changes
                 const timeOffsetOperation = {
                     type: 'UPDATE_TIME_OFFSET',
-                    elementId: elementToEdit.elementID,
+                    elementId: elementToEdit.element_id,
                     oldTimeOffsetMs: oldValue,
                     newTimeOffsetMs: newValue
                 };
@@ -372,7 +372,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 // Regular field update operation
                 const fieldUpdateOperation = {
                     type: 'UPDATE_FIELD',
-                    elementId: elementToEdit.elementID,
+                    elementId: elementToEdit.element_id,
                     field: field,
                     oldValue: oldValue,
                     newValue: newValue
@@ -480,31 +480,31 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                         onDragEnd={handleDragEnd}
                     >
                         <SortableContext
-                            items={localElements.map(el => el.elementID)}
+                            items={localElements.map(el => el.element_id)}
                             strategy={verticalListSortingStrategy}
                         >
                             <Box>
                                 <VStack spacing={0} align="stretch">
                                     {localElements.map((element, index) => {
                                         // Only show clock times if we have the required script start time
-                                        const shouldShowClockTimes = showClockTimes && !!script?.startTime;
+                                        const shouldShowClockTimes = showClockTimes && !!script?.start_time;
                                         return (
                                             <CueElement
-                                                key={element.elementID}
+                                                key={element.element_id}
                                                 element={element}
                                                 index={index}
                                                 allElements={localElements}
                                                 colorizeDepNames={colorizeDepNames}
                                                 showClockTimes={shouldShowClockTimes}
-                                                scriptStartTime={script?.startTime instanceof Date ? script.startTime.toISOString() : script?.startTime}
-                                                scriptEndTime={script?.endTime instanceof Date ? script.endTime.toISOString() : script?.endTime}
+                                                scriptStartTime={script?.start_time instanceof Date ? script.start_time.toISOString() : script?.start_time}
+                                                scriptEndTime={script?.end_time instanceof Date ? script.end_time.toISOString() : script?.end_time}
                                                 isDragEnabled={true}
-                                                isSelected={selectedElementId === element.elementID}
+                                                isSelected={selectedElementId === element.element_id}
                                                 onSelect={() => {
                                                     const newId =
-                                                        selectedElementId === element.elementID
+                                                        selectedElementId === element.element_id
                                                             ? null
-                                                            : element.elementID;
+                                                            : element.element_id;
                                                     setSelectedElementId(newId);
                                                     onSelectionChange?.(newId);
                                                 }}

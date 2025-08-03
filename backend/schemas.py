@@ -10,38 +10,38 @@ from typing import List, Optional, Any
 # =============================================================================
 
 class User(BaseModel):
-    userID: UUID  # CHANGED TO UUID
+    user_id: UUID  # CHANGED TO UUID
     clerk_user_id: Optional[str] = None  # Nullable for guest users
-    emailAddress: str
-    fullnameFirst: str
-    fullnameLast: str
-    userName: Optional[str] = None
-    profileImgURL: Optional[str] = None
-    phoneNumber: Optional[str] = None
-    userStatus: str  # 'guest' or 'verified'
-    userRole: str
-    createdBy: Optional[UUID] = None  # CHANGED TO UUID
+    email_address: str
+    fullname_first: str
+    fullname_last: str
+    user_name: Optional[str] = None
+    profile_img_url: Optional[str] = None
+    phone_number: Optional[str] = None
+    user_status: str  # 'guest' or 'verified'
+    user_role: str
+    created_by: Optional[UUID] = None  # CHANGED TO UUID
     notes: Optional[str] = None
-    userPrefsJSON: Optional[dict] = None
-    isActive: bool
-    dateCreated: datetime
-    dateUpdated: datetime
+    user_prefs_json: Optional[dict] = None
+    is_active: bool
+    date_created: datetime
+    date_updated: datetime
 
     class Config:
         from_attributes = True
 
 class CrewMemberCreate(BaseModel):
-    emailAddress: str
-    fullnameFirst: str
-    fullnameLast: str
-    userRole: str
+    email_address: str
+    fullname_first: str
+    fullname_last: str
+    user_role: str
 
 class GuestUserCreate(BaseModel):
-    emailAddress: str
-    fullnameFirst: str
-    fullnameLast: str
-    userRole: str = "crew"
-    phoneNumber: Optional[str] = None
+    email_address: str
+    fullname_first: str
+    fullname_last: str
+    user_role: str = "crew"
+    phone_number: Optional[str] = None
     notes: Optional[str] = None
 
 class CrewRelationshipCreate(BaseModel):
@@ -51,24 +51,24 @@ class CrewRelationshipCreate(BaseModel):
 class CrewMemberWithRelationship(BaseModel):
     """User data combined with relationship notes for crew management"""
     # User fields
-    userID: UUID
+    user_id: UUID
     clerk_user_id: Optional[str] = None
-    emailAddress: str
-    fullnameFirst: str
-    fullnameLast: str
-    userName: Optional[str] = None
-    profileImgURL: Optional[str] = None
-    phoneNumber: Optional[str] = None
-    userStatus: str
-    userRole: str
-    createdBy: Optional[UUID] = None
+    email_address: str
+    fullname_first: str
+    fullname_last: str
+    user_name: Optional[str] = None
+    profile_img_url: Optional[str] = None
+    phone_number: Optional[str] = None
+    user_status: str
+    user_role: str
+    created_by: Optional[UUID] = None
     notes: Optional[str] = None  # Notes from User table
-    isActive: bool
-    dateCreated: datetime
-    dateUpdated: datetime
+    is_active: bool
+    date_created: datetime
+    date_updated: datetime
     
     # Relationship fields
-    relationshipNotes: Optional[str] = None  # Notes from CrewRelationship
+    relationship_notes: Optional[str] = None  # Notes from CrewRelationship
     
     class Config:
         from_attributes = True
@@ -78,30 +78,30 @@ class CrewMemberWithRelationship(BaseModel):
 # =============================================================================
 
 class VenueBase(BaseModel):
-    venueName: str
+    venue_name: str
     address: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
     capacity: Optional[int] = None
-    venueType: Optional[str] = None
-    contactName: Optional[str] = None
-    contactEmail: Optional[str] = None
-    contactPhone: Optional[str] = None
-    stageWidth: Optional[int] = None
-    stageDepth: Optional[int] = None
-    flyHeight: Optional[int] = None
+    venue_type: Optional[str] = None
+    contact_name: Optional[str] = None
+    contact_email: Optional[str] = None
+    contact_phone: Optional[str] = None
+    stage_width: Optional[int] = None
+    stage_depth: Optional[int] = None
+    fly_height: Optional[int] = None
     equipment: Optional[List[str]] = None
-    venueNotes: Optional[str] = None
-    rentalRate: Optional[int] = None
-    minimumRental: Optional[int] = None
+    venue_notes: Optional[str] = None
+    rental_rate: Optional[int] = None
+    minimum_rental: Optional[int] = None
 
 class VenueCreate(VenueBase):
     pass
 
 class Venue(VenueBase):
-    venueID: UUID  # CHANGED TO UUID
-    dateCreated: datetime
-    dateUpdated: datetime
+    venue_id: UUID  # CHANGED TO UUID
+    date_created: datetime
+    date_updated: datetime
 
     class Config:
         from_attributes = True
@@ -111,19 +111,19 @@ class Venue(VenueBase):
 # =============================================================================
 
 class DepartmentCreate(BaseModel):
-    departmentName: str
-    departmentDescription: Optional[str] = None
-    departmentColor: str
-    departmentInitials: Optional[str] = None
+    department_name: str
+    department_description: Optional[str] = None
+    department_color: str
+    department_initials: Optional[str] = None
 
 class Department(BaseModel):
-    departmentID: UUID  # CHANGED TO UUID
-    departmentName: str
-    departmentDescription: Optional[str] = None
-    departmentColor: str
-    departmentInitials: Optional[str] = None
-    dateCreated: datetime
-    dateUpdated: datetime
+    department_id: UUID  # CHANGED TO UUID
+    department_name: str
+    department_description: Optional[str] = None
+    department_color: str
+    department_initials: Optional[str] = None
+    date_created: datetime
+    date_updated: datetime
 
     class Config:
         from_attributes = True
@@ -133,24 +133,24 @@ class Department(BaseModel):
 # =============================================================================
 
 class ShowCreate(BaseModel):
-    showName: str
-    venueID: Optional[UUID] = None
-    showDate: Optional[datetime] = None
-    showDuration: Optional[datetime] = None  # End time of show
-    showNotes: Optional[str] = None
+    show_name: str
+    venue_id: Optional[UUID] = None
+    show_date: Optional[datetime] = None
+    show_duration: Optional[datetime] = None  # End time of show
+    show_notes: Optional[str] = None
     deadline: Optional[datetime] = None
 
 class Show(BaseModel):
-    showID: UUID
-    ownerID: UUID
-    showName: str
+    show_id: UUID
+    owner_id: UUID
+    show_name: str
     venue: Optional[Venue] = None
-    showDate: Optional[datetime] = None
-    showDuration: Optional[datetime] = None  # End time of show
-    showNotes: Optional[str] = None
+    show_date: Optional[datetime] = None
+    show_duration: Optional[datetime] = None  # End time of show
+    show_notes: Optional[str] = None
     deadline: Optional[datetime] = None
-    dateCreated: datetime
-    dateUpdated: datetime
+    date_created: datetime
+    date_updated: datetime
     
     # Forward reference to Script (defined below)
     scripts: List['Script'] = []
@@ -163,21 +163,22 @@ class Show(BaseModel):
 # =============================================================================
 
 class ScriptCreate(BaseModel):
-    scriptName: Optional[str] = None
-    scriptNotes: Optional[str] = None
-    scriptStatus: Optional[str] = None
-    endTime: Optional[datetime] = None  # Planned end time
+    script_name: Optional[str] = None
+    script_notes: Optional[str] = None
+    script_status: Optional[str] = None
+    end_time: Optional[datetime] = None  # Planned end time
 
 class Script(BaseModel):
-    scriptID: UUID  # ALREADY UUID
-    scriptName: str
-    scriptNotes: Optional[str] = None
-    scriptStatus: str
-    startTime: Optional[datetime] = None
-    endTime: Optional[datetime] = None  # Planned end time
-    showID: UUID  # ALREADY UUID
-    dateCreated: datetime
-    dateUpdated: datetime
+    script_id: UUID  # ALREADY UUID
+    script_name: str
+    script_notes: Optional[str] = None
+    script_status: str
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None  # Planned end time
+    show_id: UUID  # ALREADY UUID
+    owner_id: UUID  # Missing field needed for authorization
+    date_created: datetime
+    date_updated: datetime
     
     # Forward reference to ScriptElement (defined below) - Optional for dashboard performance
     elements: Optional[List['ScriptElement']] = []
@@ -186,11 +187,11 @@ class Script(BaseModel):
         from_attributes = True
 
 class ScriptUpdate(BaseModel):
-    scriptName: Optional[str] = None
-    scriptNotes: Optional[str] = None
-    scriptStatus: Optional[str] = None
-    startTime: Optional[datetime] = None
-    endTime: Optional[datetime] = None  # Planned end time
+    script_name: Optional[str] = None
+    script_notes: Optional[str] = None
+    script_status: Optional[str] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None  # Planned end time
 
 # =============================================================================
 # SCRIPT ELEMENT SCHEMAS
@@ -198,21 +199,21 @@ class ScriptUpdate(BaseModel):
 
 class ScriptElementFromDB(BaseModel):
     """Schema for script elements coming FROM the database"""
-    elementID: UUID  # CHANGED TO UUID
-    scriptID: UUID  # CHANGED TO UUID
+    element_id: UUID  # CHANGED TO UUID
+    script_id: UUID  # CHANGED TO UUID
 
     class Config:
         from_attributes = True
 
 class ScriptElement(BaseModel):
     """Schema for script elements going TO the frontend"""
-    elementID: UUID  # CHANGED TO UUID
-    scriptID: UUID  # CHANGED TO UUID
-    departmentID: Optional[UUID] = None  # CHANGED TO UUID
-    elementType: str
-    elementOrder: int
-    cueNumber: Optional[str] = None
-    elementDescription: Optional[str] = None
+    element_id: UUID  # CHANGED TO UUID
+    script_id: UUID  # CHANGED TO UUID
+    department_id: Optional[UUID] = None  # CHANGED TO UUID
+    element_type: str
+    element_order: int
+    cue_number: Optional[str] = None
+    element_description: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -223,53 +224,53 @@ class ScriptElement(BaseModel):
 
 class ScriptElementCreate(BaseModel):
     """Schema for creating new script elements"""
-    elementType: str  # 'CUE', 'NOTE'
+    element_type: str  # 'CUE', 'NOTE'
     sequence: Optional[int] = None  # Auto-calculated if not provided
-    timeOffsetMs: Optional[int] = 0  # Time offset in milliseconds
-    triggerType: Optional[str] = "MANUAL"  # 'MANUAL', 'TIME', 'AUTO', 'FOLLOW', 'GO', 'STANDBY'
-    cueID: Optional[str] = None
+    time_offset_ms: Optional[int] = 0  # Time offset in milliseconds
+    trigger_type: Optional[str] = "MANUAL"  # 'MANUAL', 'TIME', 'AUTO', 'FOLLOW', 'GO', 'STANDBY'
+    cue_id: Optional[str] = None
     description: str = ""
-    cueNotes: Optional[str] = None
-    departmentID: Optional[UUID] = None
+    cue_notes: Optional[str] = None
+    department_id: Optional[UUID] = None
     location: Optional[str] = None  # LocationArea enum values
-    locationDetails: Optional[str] = None
+    location_details: Optional[str] = None
     duration: Optional[int] = None  # Duration in milliseconds
-    fadeIn: Optional[int] = None  # Fade in time in milliseconds
-    fadeOut: Optional[int] = None  # Fade out time in milliseconds
+    fade_in: Optional[int] = None  # Fade in time in milliseconds
+    fade_out: Optional[int] = None  # Fade out time in milliseconds
     priority: Optional[str] = "NORMAL"  # 'SAFETY', 'CRITICAL', 'HIGH', 'NORMAL', 'LOW', 'OPTIONAL'
-    parentElementID: Optional[UUID] = None  # For grouped elements
-    groupLevel: Optional[int] = 0
-    departmentColor: Optional[str] = None  # Hex color override
-    customColor: Optional[str] = None  # Custom color for element
+    parent_element_id: Optional[UUID] = None  # For grouped elements
+    group_level: Optional[int] = 0
+    department_color: Optional[str] = None  # Hex color override
+    custom_color: Optional[str] = None  # Custom color for element
 
 class ScriptElementUpdate(BaseModel):
     """Schema for updating script elements"""
-    elementType: Optional[str] = None
+    element_type: Optional[str] = None
     sequence: Optional[int] = None
-    timeOffsetMs: Optional[int] = None
-    triggerType: Optional[str] = None
-    followsCueID: Optional[str] = None
-    cueID: Optional[str] = None
+    time_offset_ms: Optional[int] = None
+    trigger_type: Optional[str] = None
+    follows_cue_id: Optional[str] = None
+    cue_id: Optional[str] = None
     description: Optional[str] = None
-    cueNotes: Optional[str] = None
-    departmentID: Optional[UUID] = None
+    cue_notes: Optional[str] = None
+    department_id: Optional[UUID] = None
     location: Optional[str] = None
-    locationDetails: Optional[str] = None
+    location_details: Optional[str] = None
     duration: Optional[int] = None
-    fadeIn: Optional[int] = None
-    fadeOut: Optional[int] = None
+    fade_in: Optional[int] = None
+    fade_out: Optional[int] = None
     priority: Optional[str] = None
-    executionStatus: Optional[str] = None  # 'pending', 'ready', 'executing', 'completed', 'skipped', 'failed'
-    parentElementID: Optional[UUID] = None
-    groupLevel: Optional[int] = None
-    isCollapsed: Optional[bool] = None
-    departmentColor: Optional[str] = None
-    customColor: Optional[str] = None
+    execution_status: Optional[str] = None  # 'pending', 'ready', 'executing', 'completed', 'skipped', 'failed'
+    parent_element_id: Optional[UUID] = None
+    group_level: Optional[int] = None
+    is_collapsed: Optional[bool] = None
+    department_color: Optional[str] = None
+    custom_color: Optional[str] = None
 
 class ScriptElementEquipment(BaseModel):
     """Schema for script element equipment requirements"""
-    equipmentName: str
-    isRequired: bool = True
+    equipment_name: str
+    is_required: bool = True
     notes: Optional[str] = None
     
     class Config:
@@ -277,75 +278,75 @@ class ScriptElementEquipment(BaseModel):
 
 class ScriptElementCrewAssignment(BaseModel):
     """Schema for script element crew assignments"""
-    crewID: UUID
-    assignmentRole: Optional[str] = None
-    isLead: bool = False
+    crew_id: UUID
+    assignment_role: Optional[str] = None
+    is_lead: bool = False
     
     class Config:
         from_attributes = True
 
 class ScriptElementConditionalRule(BaseModel):
     """Schema for script element conditional rules"""
-    ruleID: UUID
-    conditionType: str  # 'weather', 'cast', 'equipment', 'time', 'custom'
+    rule_id: UUID
+    condition_type: str  # 'weather', 'cast', 'equipment', 'time', 'custom'
     operator: str  # 'equals', 'not_equals', 'contains', 'greater_than', 'less_than'
-    conditionValue: str
+    condition_value: str
     description: str
-    isActive: bool = True
+    is_active: bool = True
     
     class Config:
         from_attributes = True
 
 class ScriptElementEnhanced(BaseModel):
     """Enhanced schema for script elements with all new fields"""
-    elementID: UUID
-    scriptID: UUID
-    elementType: str
+    element_id: UUID
+    script_id: UUID
+    element_type: str
     sequence: Optional[int] = None
-    elementOrder: int  # Legacy field
+    element_order: int  # Legacy field
     
     # Timing fields
-    timeOffsetMs: int = 0  # Timing in milliseconds
+    time_offset_ms: int = 0  # Timing in milliseconds
     duration: Optional[int] = None
-    fadeIn: Optional[int] = None
-    fadeOut: Optional[int] = None
+    fade_in: Optional[int] = None
+    fade_out: Optional[int] = None
     
     # Trigger and execution
-    triggerType: str = "manual"
-    followsCueID: Optional[str] = None
-    executionStatus: str = "pending"
+    trigger_type: str = "manual"
+    follows_cue_id: Optional[str] = None
+    execution_status: str = "pending"
     priority: str = "normal"
     
     # Content
-    cueID: Optional[str] = None
-    cueNumber: Optional[str] = None  # Legacy field
+    cue_id: Optional[str] = None
+    cue_number: Optional[str] = None  # Legacy field
     description: str = ""
-    elementDescription: Optional[str] = None  # Legacy field
-    cueNotes: Optional[str] = None
+    element_description: Optional[str] = None  # Legacy field
+    cue_notes: Optional[str] = None
     
     # Location and visual
-    departmentID: Optional[UUID] = None
-    departmentName: Optional[str] = None  # Computed from department relationship
-    departmentColor: Optional[str] = None  # Computed from department relationship
-    departmentInitials: Optional[str] = None  # Computed from department relationship
+    department_id: Optional[UUID] = None
+    department_name: Optional[str] = None  # Computed from department relationship
+    department_color: Optional[str] = None  # Computed from department relationship
+    department_initials: Optional[str] = None  # Computed from department relationship
     location: Optional[str] = None
-    locationDetails: Optional[str] = None
-    customColor: Optional[str] = None
+    location_details: Optional[str] = None
+    custom_color: Optional[str] = None
     
     # Grouping and hierarchy
-    parentElementID: Optional[UUID] = None
-    groupLevel: int = 0
-    isCollapsed: bool = False
+    parent_element_id: Optional[UUID] = None
+    group_level: int = 0
+    is_collapsed: bool = False
     
     # Metadata
     version: int = 1
     
     # System fields
-    isActive: bool = True
-    createdBy: Optional[UUID] = None
-    updatedBy: Optional[UUID] = None
-    dateCreated: datetime
-    dateUpdated: datetime
+    is_active: bool = True
+    created_by: Optional[UUID] = None
+    updated_by: Optional[UUID] = None
+    date_created: datetime
+    date_updated: datetime
     
     # Relationships
     equipment: List[ScriptElementEquipment] = []
@@ -361,20 +362,19 @@ class ScriptElementEnhanced(BaseModel):
         """Populate department name, color, and initials from department relationship"""
         if hasattr(data, 'department') and data.department:
             # If this is a SQLAlchemy model instance with department relationship
-            data.departmentName = data.department.departmentName
-            data.departmentColor = data.department.departmentColor
-            data.departmentInitials = data.department.departmentInitials
+            data.department_name = data.department.department_name
+            data.department_color = data.department.department_color
+            data.department_initials = data.department.department_initials
         elif isinstance(data, dict):
             # If this is already a dict, check if department data is available
             department = data.get('department')
             if department:
-                data['departmentName'] = department.get('departmentName')
-                data['departmentColor'] = department.get('departmentColor')
-                data['departmentInitials'] = department.get('departmentInitials')
+                data['department_name'] = department.get('department_name')
+                data['department_color'] = department.get('department_color')
+                data['department_initials'] = department.get('department_initials')
         return data
 
-# Update the main ScriptElement schema to use enhanced version
-ScriptElement = ScriptElementEnhanced
+# Note: ScriptElement and ScriptElementEnhanced are separate schemas for different use cases
 
 # =============================================================================
 # BULK OPERATION SCHEMAS
@@ -382,7 +382,7 @@ ScriptElement = ScriptElementEnhanced
 
 class ScriptElementReorderItem(BaseModel):
     """Schema for individual element in reorder operation"""
-    elementID: UUID
+    element_id: UUID
     sequence: int
 
 class ScriptElementReorderRequest(BaseModel):
@@ -403,45 +403,45 @@ class EditQueueOperation(BaseModel):
     """Base schema for edit queue operations"""
     id: str
     timestamp: int
-    elementId: str
+    element_id: str
     description: str
     type: str
 
 class ReorderEditOperation(EditQueueOperation):
     """Schema for reorder operations"""
     type: str = "REORDER"
-    oldIndex: int
-    newIndex: int
-    oldSequence: int
-    newSequence: int
+    old_index: int
+    new_index: int
+    old_sequence: int
+    new_sequence: int
 
 class UpdateFieldEditOperation(EditQueueOperation):
     """Schema for field update operations"""
     type: str = "UPDATE_FIELD"
     field: str
-    oldValue: Optional[Any] = None
-    newValue: Optional[Any] = None
+    old_value: Optional[Any] = None
+    new_value: Optional[Any] = None
 
 class UpdateTimeOffsetEditOperation(EditQueueOperation):
     """Schema for time offset update operations"""
     type: str = "UPDATE_TIME_OFFSET"
-    oldTimeOffsetMs: int
-    newTimeOffsetMs: int
+    old_time_offset_ms: int
+    new_time_offset_ms: int
 
 class CreateElementEditOperation(EditQueueOperation):
     """Schema for element creation operations"""
     type: str = "CREATE_ELEMENT"
-    elementData: dict
+    element_data: dict
 
 class DeleteElementEditOperation(EditQueueOperation):
     """Schema for element deletion operations"""
     type: str = "DELETE_ELEMENT"
-    elementData: dict
+    element_data: dict
 
 class BulkReorderEditOperation(EditQueueOperation):
     """Schema for bulk reorder operations"""
     type: str = "BULK_REORDER"
-    elementChanges: List[dict]
+    element_changes: List[dict]
 
 class EditQueueBatchRequest(BaseModel):
     """Schema for batch processing edit queue operations"""

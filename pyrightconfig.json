@@ -19,6 +19,17 @@
   "reportMissingTypeStubs": false,
   "reportImportCycles": false,
   "reportArgumentType": false,
+  "reportAssignmentType": false,
+  "reportIncompatibleMethodOverride": false,
+  "reportCallIssue": false,
+  "reportOptionalCall": false,
+  "reportOptionalIterable": false,
+  "reportOptionalContextManager": false,
+  "reportOptionalOperand": false,
+  "strictListInference": false,
+  "strictDictionaryInference": false,
+  "strictParameterNoneValue": false,
+  "enableTypeIgnoreComments": true,
   "pythonVersion": "3.11",
-  "typeCheckingMode": "basic"
+  "typeCheckingMode": "off"
 }

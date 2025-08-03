@@ -1,6 +1,6 @@
 // frontend/src/features/script/utils/toolbarConfig.ts
 
-import { ToolButton } from '../types/tool-button';
+import { ToolButton } from '../types/toolButton';
 
 export interface ScrollState {
     isAtTop: boolean;

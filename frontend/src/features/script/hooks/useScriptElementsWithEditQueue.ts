@@ -38,7 +38,7 @@ interface UseScriptElementsWithEditQueueReturn {
 }
 
 interface UseScriptElementsOptions {
-    elementType?: string;
+    element_type?: string;
     departmentId?: string;
     activeOnly?: boolean;
     skip?: number;
@@ -93,7 +93,7 @@ export const useScriptElementsWithEditQueue = (
 
             // Build query parameters
             const params = new URLSearchParams();
-            if (options.elementType) params.append('element_type', options.elementType);
+            if (options.element_type) params.append('element_type', options.element_type);
             if (options.departmentId) params.append('department_id', options.departmentId);
             if (options.activeOnly !== undefined) params.append('active_only', options.activeOnly.toString());
             if (options.skip !== undefined) params.append('skip', options.skip.toString());
@@ -246,10 +246,10 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
     switch (operation.type) {
         case 'REORDER':
             const reorderOp = operation as any;
-            const elementToMove = elements.find(el => el.elementID === operation.elementId);
+            const elementToMove = elements.find(el => el.element_id === operation.elementId);
             if (!elementToMove) return elements;
             
-            const filtered = elements.filter(el => el.elementID !== operation.elementId);
+            const filtered = elements.filter(el => el.element_id !== operation.elementId);
             const result = [...filtered];
             result.splice(reorderOp.newIndex, 0, elementToMove);
             
@@ -262,7 +262,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
         case 'UPDATE_FIELD':
             const updateOp = operation as any;
             return elements.map(el => 
-                el.elementID === operation.elementId 
+                el.element_id === operation.elementId 
                     ? { ...el, [updateOp.field]: updateOp.newValue }
                     : el
             );
@@ -270,8 +270,8 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
         case 'UPDATE_TIME_OFFSET':
             const timeOp = operation as any;
             return elements.map(el => 
-                el.elementID === operation.elementId 
-                    ? { ...el, timeOffsetMs: timeOp.newTimeOffsetMs }
+                el.element_id === operation.elementId 
+                    ? { ...el, time_offset_ms: timeOp.newTimeOffsetMs }
                     : el
             );
             
@@ -293,7 +293,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             }
             
         case 'DELETE_ELEMENT':
-            return elements.filter(el => el.elementID !== operation.elementId);
+            return elements.filter(el => el.element_id !== operation.elementId);
             
         case 'BULK_REORDER':
             // Handle bulk reorder operations
@@ -301,7 +301,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             const bulkOp = operation as any;
             
             bulkOp.elementChanges.forEach((change: any) => {
-                const elementIndex = bulkResult.findIndex(el => el.elementID === change.elementId);
+                const elementIndex = bulkResult.findIndex(el => el.element_id === change.elementId);
                 if (elementIndex !== -1) {
                     const [element] = bulkResult.splice(elementIndex, 1);
                     bulkResult.splice(change.newIndex, 0, element);
@@ -319,7 +319,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             const autoSortOp = operation as any;
             
             autoSortOp.elementMoves.forEach((change: any) => {
-                const elementIndex = autoSortResult.findIndex(el => el.elementID === change.elementId);
+                const elementIndex = autoSortResult.findIndex(el => el.element_id === change.elementId);
                 if (elementIndex !== -1) {
                     const [element] = autoSortResult.splice(elementIndex, 1);
                     autoSortResult.splice(change.newIndex, 0, element);
@@ -342,7 +342,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
         case 'UPDATE_ELEMENT':
             const updateElementOp = operation as any;
             return elements.map(el => {
-                if (el.elementID === operation.elementId) {
+                if (el.element_id === operation.elementId) {
                     const updatedElement = { ...el };
                     // Apply all field changes from the operation
                     Object.entries(updateElementOp.changes).forEach(([field, change]: [string, any]) => {

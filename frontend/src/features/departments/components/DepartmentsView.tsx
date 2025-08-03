@@ -16,9 +16,9 @@ interface DepartmentsViewProps {
     hoveredCardId?: string | null;
     setHoveredCardId: (id: string | null) => void;
     onSaveNavigationState?: () => void;
-    sortBy: 'departmentName' | 'departmentColor' | 'dateCreated' | 'dateUpdated';
+    sortBy: 'department_name' | 'department_color' | 'date_created' | 'date_updated';
     sortDirection: 'asc' | 'desc';
-    onSortChange: (sortBy: 'departmentName' | 'departmentColor' | 'dateCreated' | 'dateUpdated', sortDirection: 'asc' | 'desc') => void;
+    onSortChange: (sortBy: 'department_name' | 'department_color' | 'date_created' | 'date_updated', sortDirection: 'asc' | 'desc') => void;
     showCardRefs: React.MutableRefObject<Record<string, HTMLElement | null>>;
 }
 
@@ -43,7 +43,7 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
             const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
             onSortChange(newSortBy, newDirection);
         } else {
-            const newDirection = newSortBy === 'departmentName' ? 'asc' : 'desc';
+            const newDirection = newSortBy === 'department_name' ? 'asc' : 'desc';
             onSortChange(newSortBy, newDirection);
         }
     };
@@ -54,9 +54,9 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
         const departmentsToSort = [...departments];
         departmentsToSort.sort((a, b) => {
             let comparison = 0;
-            if (sortBy === 'departmentName') {
-                comparison = a.departmentName.localeCompare(b.departmentName);
-            } else if (sortBy === 'departmentColor') {
+            if (sortBy === 'department_name') {
+                comparison = a.department_name.localeCompare(b.department_name);
+            } else if (sortBy === 'department_color') {
                 const getHue = (hex?: string) => {
                     if (!hex) return 999;
                     // Simple hex to hue conversion (approximate)
@@ -77,11 +77,11 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
                     }
                     return hue < 0 ? hue + 360 : hue;
                 };
-                comparison = getHue(a.departmentColor) - getHue(b.departmentColor);
-            } else if (sortBy === 'dateCreated') {
-                comparison = new Date(b.dateCreated || b.dateUpdated).getTime() - new Date(a.dateCreated || a.dateUpdated).getTime();
+                comparison = getHue(a.department_color) - getHue(b.department_color);
+            } else if (sortBy === 'date_created') {
+                comparison = new Date(b.date_created || b.date_updated).getTime() - new Date(a.date_created || a.date_updated).getTime();
             } else {
-                comparison = new Date(b.dateUpdated || b.dateCreated).getTime() - new Date(a.dateUpdated || a.dateCreated).getTime();
+                comparison = new Date(b.date_updated || b.date_created).getTime() - new Date(a.date_updated || a.date_created).getTime();
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
@@ -112,33 +112,33 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
                             <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
                             <MenuList zIndex={9999}>
                                 <MenuItem
-                                    onClick={() => handleSortClick('departmentName')}
-                                    color={sortBy === 'departmentName' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'departmentName' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('department_name')}
+                                    color={sortBy === 'department_name' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'department_name' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Name
                                 </MenuItem>
                                 <MenuItem
-                                    onClick={() => handleSortClick('departmentColor')}
-                                    color={sortBy === 'departmentColor' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'departmentColor' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('department_color')}
+                                    color={sortBy === 'department_color' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'department_color' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Color
                                 </MenuItem>
                                 <MenuItem
-                                    onClick={() => handleSortClick('dateCreated')}
-                                    color={sortBy === 'dateCreated' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('date_created')}
+                                    color={sortBy === 'date_created' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'date_created' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Date Added
                                 </MenuItem>
                                 <MenuItem
-                                    onClick={() => handleSortClick('dateUpdated')}
-                                    color={sortBy === 'dateUpdated' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'dateUpdated' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('date_updated')}
+                                    color={sortBy === 'date_updated' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'date_updated' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Updated
@@ -182,13 +182,13 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
                         sortedDepartments.length > 0 ? (
                             <VStack spacing={4} align="stretch">
                                 {sortedDepartments.map(department => (
-                                    <div key={department.departmentID} ref={el => { showCardRefs.current[department.departmentID] = el; }}>
+                                    <div key={department.department_id} ref={el => { showCardRefs.current[department.department_id] = el; }}>
                                         <DepartmentCard
                                             department={department}
                                             onEdit={handleEdit}
                                             onDepartmentClick={onDepartmentClick}
-                                            isHovered={hoveredCardId === department.departmentID}
-                                            isSelected={selectedDepartmentId === department.departmentID}
+                                            isHovered={hoveredCardId === department.department_id}
+                                            isSelected={selectedDepartmentId === department.department_id}
                                             onHover={setHoveredCardId}
                                             onSaveNavigationState={onSaveNavigationState}
                                         />

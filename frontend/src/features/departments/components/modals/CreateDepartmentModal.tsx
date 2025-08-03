@@ -20,10 +20,10 @@ import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
 
 // TypeScript interfaces
 interface DepartmentFormData {
-    departmentName: string;
-    departmentDescription: string;
-    departmentColor: string;
-    departmentInitials: string;
+    department_name: string;
+    department_description: string;
+    department_color: string;
+    department_initials: string;
 }
 
 interface CreateDepartmentModalProps {
@@ -38,14 +38,14 @@ interface PresetColor {
 }
 
 const INITIAL_FORM_STATE: DepartmentFormData = {
-    departmentName: '',
-    departmentDescription: '',
-    departmentColor: '#6495ED',
-    departmentInitials: '',
+    department_name: '',
+    department_description: '',
+    department_color: '#6495ED',
+    department_initials: '',
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
-    departmentName: {
+    department_name: {
         required: false, // Handle required validation manually for button state
         rules: [
             {
@@ -61,19 +61,19 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             ValidationRules.maxLength(50, 'Department name must be no more than 50 characters')
         ]
     },
-    departmentDescription: {
+    department_description: {
         required: false,
         rules: [
             ValidationRules.maxLength(200, 'Description must be no more than 200 characters')
         ]
     },
-    departmentColor: {
+    department_color: {
         required: false, // Handle required validation manually for button state
         rules: [
             ValidationRules.pattern(/^#[0-9A-F]{6}$/i, 'Please enter a valid hex color code')
         ]
     },
-    departmentInitials: {
+    department_initials: {
         required: false,
         rules: [
             ValidationRules.maxLength(5, 'Initials must be no more than 5 characters'),
@@ -109,20 +109,20 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
 
         try {
             const departmentData = {
-                departmentName: form.formData.departmentName,
-                departmentColor: form.formData.departmentColor,
-                ...(form.formData.departmentDescription.trim() && {
-                    departmentDescription: form.formData.departmentDescription.trim()
+                department_name: form.formData.department_name,
+                department_color: form.formData.department_color,
+                ...(form.formData.department_description.trim() && {
+                    department_description: form.formData.department_description.trim()
                 }),
-                ...(form.formData.departmentInitials.trim() && {
-                    departmentInitials: form.formData.departmentInitials.trim().toUpperCase()
+                ...(form.formData.department_initials.trim() && {
+                    department_initials: form.formData.department_initials.trim().toUpperCase()
                 }),
             };
 
             await form.submitForm(
                 '/api/me/departments',
                 'POST',
-                `"${form.formData.departmentName}" department has been created`,
+                `"${form.formData.department_name}" department has been created`,
                 departmentData
             );
 
@@ -140,18 +140,18 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
     };
 
     const handleColorButtonClick = (colorValue: string) => {
-        form.updateField('departmentColor', colorValue);
+        form.updateField('department_color', colorValue);
     };
 
     const handleDepartmentNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newName = e.target.value;
-        form.updateField('departmentName', newName);
+        form.updateField('department_name', newName);
         
         // Auto-populate initials if they haven't been manually set
-        if (!form.formData.departmentInitials || 
-            form.formData.departmentInitials === generateInitials(form.formData.departmentName)) {
+        if (!form.formData.department_initials || 
+            form.formData.department_initials === generateInitials(form.formData.department_name)) {
             const newInitials = generateInitials(newName);
-            form.updateField('departmentInitials', newInitials);
+            form.updateField('department_initials', newInitials);
         }
     };
 
@@ -159,7 +159,7 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
         return name.trim().substring(0, 2).toUpperCase();
     };
 
-    const { canSubmit } = useStandardFormValidation(form, ['departmentName']);
+    const { canSubmit } = useStandardFormValidation(form, ['department_name']);
 
     return (
         <BaseModal
@@ -183,9 +183,9 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
                 <FormControl isRequired>
                     <FormLabel>Department Name</FormLabel>
                     <Input
-                        value={form.formData.departmentName}
+                        value={form.formData.department_name}
                         onChange={handleDepartmentNameChange}
-                        onBlur={() => form.validateField('departmentName')}
+                        onBlur={() => form.validateField('department_name')}
                         placeholder="Enter department name"
                     />
                 </FormControl>
@@ -197,19 +197,21 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
                             <HStack spacing={2} align="center">
                                 <Input
                                     type="color"
-                                    value={form.formData.departmentColor}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('departmentColor', e.target.value)}
+                                    value={form.formData.department_color}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('department_color', e.target.value)}
                                     width="60px"
                                     height="40px"
                                     padding="1"
                                     cursor="pointer"
                                 />
                                 <Input
-                                    value={form.formData.departmentColor}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('departmentColor', e.target.value)}
+                                    value={form.formData.department_color}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('department_color', e.target.value)}
                                     placeholder="#6495ED"
                                     width="120px"
                                 />
+                            </HStack>
+                            <HStack spacing={2} align="center">
                                 {PRESET_COLORS.map((color) => (
                                     <Button
                                         key={color.value}
@@ -218,8 +220,8 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
                                         width="30px"
                                         minWidth="30px"
                                         backgroundColor={color.value}
-                                        border={form.formData.departmentColor === color.value ? '3px solid' : '1px solid'}
-                                        borderColor={form.formData.departmentColor === color.value ? 'white' : 'gray.300'}
+                                        border={form.formData.department_color === color.value ? '3px solid' : '1px solid'}
+                                        borderColor={form.formData.department_color === color.value ? 'white' : 'gray.300'}
                                         onClick={() => handleColorButtonClick(color.value)}
                                         _hover={{ transform: 'scale(1.1)' }}
                                         title={color.name}
@@ -233,15 +235,12 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
                     <FormControl flex="1">
                         <FormLabel>Initials</FormLabel>
                         <Input
-                            value={form.formData.departmentInitials}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('departmentInitials', e.target.value.toUpperCase())}
-                            onBlur={() => form.validateField('departmentInitials')}
+                            value={form.formData.department_initials}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => form.updateField('department_initials', e.target.value.toUpperCase())}
+                            onBlur={() => form.validateField('department_initials')}
                             placeholder="LX"
                             maxLength={5}
                         />
-                        <Text fontSize="xs" color="gray.500" mt={1}>
-                            Optional
-                        </Text>
                     </FormControl>
                 </HStack>
 
@@ -250,9 +249,9 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
                     <FormLabel>Description</FormLabel>
                     <Textarea
                         placeholder="Describe the department's role and responsibilities"
-                        value={form.formData.departmentDescription}
-                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => form.updateField('departmentDescription', e.target.value)}
-                        onBlur={() => form.validateField('departmentDescription')}
+                        value={form.formData.department_description}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => form.updateField('department_description', e.target.value)}
+                        onBlur={() => form.validateField('department_description')}
                         rows={2}
                         resize="vertical"
                     />

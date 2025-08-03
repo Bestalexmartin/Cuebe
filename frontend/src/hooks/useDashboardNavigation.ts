@@ -78,7 +78,7 @@ export const useDashboardNavigation = (): DashboardNavigationReturn => {
     const navigateWithCurrentContext = useCallback((script?: any, scriptId?: string) => {
         navigateToDashboard({
             view: 'shows',
-            selectedShowId: script?.showID,
+            selectedShowId: script?.show_id,
             selectedScriptId: scriptId,
             returnFromManage: true
         });

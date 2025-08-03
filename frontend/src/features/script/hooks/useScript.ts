@@ -5,15 +5,15 @@ import { useAuth } from '@clerk/clerk-react';
 
 // TypeScript interfaces
 interface Script {
-  scriptID: string;
-  scriptName: string;
-  scriptNotes?: string;
-  scriptStatus: string;
-  showID: string;
-  startTime: string;
-  endTime?: string;
-  dateCreated: string;
-  dateUpdated: string;
+  script_id: string;
+  script_name: string;
+  script_notes?: string;
+  script_status: string;
+  show_id: string;
+  start_time: string;
+  end_time?: string;
+  date_created: string;
+  date_updated: string;
   lastUsed?: string;
 }
 

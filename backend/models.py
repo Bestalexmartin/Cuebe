@@ -108,48 +108,48 @@ class User(Base):
     __tablename__ = "userTable"
     
     # Primary key - CHANGED TO UUID
-    userID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
     # Clerk integration (nullable for guest users)
     clerk_user_id = Column(String, unique=True, nullable=True, index=True)
     
     # Core user information
-    emailAddress = Column(String, unique=True, nullable=False, index=True)
-    fullnameFirst = Column(String, nullable=False)
-    fullnameLast = Column(String, nullable=False)
+    email_address = Column(String, unique=True, nullable=False, index=True)
+    fullname_first = Column(String, nullable=False)
+    fullname_last = Column(String, nullable=False)
     
     # Optional fields
-    userName = Column(String, unique=True, nullable=True, index=True)
-    profileImgURL = Column(String, nullable=True)
-    phoneNumber = Column(String, nullable=True)
+    user_name = Column(String, unique=True, nullable=True, index=True)
+    profile_img_url = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
     
     # User status and role
-    userStatus = Column(Enum(UserStatus), default=UserStatus.VERIFIED, nullable=False)
-    userRole = Column(String, default="admin")  # admin for verified users, crew for guests
+    user_status = Column(Enum(UserStatus), default=UserStatus.VERIFIED, nullable=False)
+    user_role = Column(String, default="admin")  # admin for verified users, crew for guests
     
     # Guest user management - CHANGED TO UUID
-    createdBy = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=True)  # Who created this guest user
-    invitedAt = Column(DateTime(timezone=True), nullable=True)  # When invitation was sent
-    invitationToken = Column(String, unique=True, nullable=True)  # For invitation links
+    created_by = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=True)  # Who created this guest user
+    invited_at = Column(DateTime(timezone=True), nullable=True)  # When invitation was sent
+    invitation_token = Column(String, unique=True, nullable=True)  # For invitation links
     
     # Internal notes (for guest users)
     notes = Column(Text, nullable=True)
     
     # User preferences and options
-    userPrefsJSON = Column(JSON, nullable=True)  # For complex preferences
-    userPrefsBitmap = Column(Integer, nullable=True, default=6)  # bitmap for boolean preferences
+    user_prefs_json = Column(JSON, nullable=True)  # For complex preferences
+    user_prefs_bitmap = Column(Integer, nullable=True, default=6)  # bitmap for boolean preferences
     
     # Status and timestamps
-    isActive = Column(Boolean, default=True)
-    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
-    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    is_active = Column(Boolean, default=True)
+    date_created = Column(DateTime(timezone=True), server_default=func.now())
+    date_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    shows = relationship("Show", back_populates="showOwner")
+    shows = relationship("Show", back_populates="show_owner")
     crew_assignments = relationship("CrewAssignment", back_populates="user")
     
     # Guest user management relationships
-    created_users = relationship("User", remote_side=[userID], backref="creator")
+    created_users = relationship("User", remote_side=[user_id], backref="creator")
     
     # Crew relationship management
     managed_crew = relationship("CrewRelationship", foreign_keys="CrewRelationship.manager_user_id", back_populates="manager")
@@ -163,17 +163,17 @@ class CrewRelationship(Base):
     )
     
     # Primary key - CHANGED TO UUID
-    relationshipID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    relationship_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
     # Foreign keys - CHANGED TO UUID
-    manager_user_id = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)  # The verified user who manages
-    crew_user_id = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)     # The user being managed
+    manager_user_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)  # The verified user who manages
+    crew_user_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)     # The user being managed
     
     # Status and metadata
-    isActive = Column(Boolean, default=True, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
     notes = Column(Text, nullable=True)
-    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
-    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    date_created = Column(DateTime(timezone=True), server_default=func.now())
+    date_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
     manager = relationship("User", foreign_keys=[manager_user_id], back_populates="managed_crew")
@@ -188,11 +188,11 @@ class Venue(Base):
     __tablename__ = "venuesTable"
     
     # Primary key - CHANGED TO UUID
-    venueID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    venueName = Column(String, nullable=False)  # Removed unique=True for user-scoped data
+    venue_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    venue_name = Column(String, nullable=False)  # Removed unique=True for user-scoped data
     
     # Owner - NEW FIELD
-    ownerID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)
     
     # Location Information
     address = Column(Text, nullable=True)
@@ -201,34 +201,34 @@ class Venue(Base):
     
     # Venue Details
     capacity = Column(Integer, nullable=True)
-    venueType = Column(String, nullable=True)  # e.g., "Proscenium", "Thrust", "Arena", "Black Box"
+    venue_type = Column(String, nullable=True)  # e.g., "Proscenium", "Thrust", "Arena", "Black Box"
     
     # Contact Information
-    contactName = Column(String, nullable=True)
-    contactEmail = Column(String, nullable=True)
-    contactPhone = Column(String, nullable=True)
+    contact_name = Column(String, nullable=True)
+    contact_email = Column(String, nullable=True)
+    contact_phone = Column(String, nullable=True)
     
     # Technical Specifications (in feet)
-    stageWidth = Column(Integer, nullable=True)
-    stageDepth = Column(Integer, nullable=True)
-    flyHeight = Column(Integer, nullable=True)
+    stage_width = Column(Integer, nullable=True)
+    stage_depth = Column(Integer, nullable=True)
+    fly_height = Column(Integer, nullable=True)
     
     # Equipment and Features (stored as JSON array)
     equipment = Column(JSON, nullable=True)  # e.g., ["Fly System", "Orchestra Pit", "Sound System"]
     
     # Additional Information
-    venueNotes = Column(Text, nullable=True)
+    venue_notes = Column(Text, nullable=True)
     
     # Rental Information
-    rentalRate = Column(Integer, nullable=True)  # Daily rate in dollars
-    minimumRental = Column(Integer, nullable=True)  # Minimum rental amount
+    rental_rate = Column(Integer, nullable=True)  # Daily rate in dollars
+    minimum_rental = Column(Integer, nullable=True)  # Minimum rental amount
     
     # Timestamps
-    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
-    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    date_created = Column(DateTime(timezone=True), server_default=func.now())
+    date_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    owner = relationship("User", foreign_keys=[ownerID])
+    owner = relationship("User", foreign_keys=[owner_id])
     shows = relationship("Show", back_populates="venue")
 
 # =============================================================================
@@ -240,21 +240,21 @@ class Department(Base):
     __tablename__ = "departmentsTable"
     
     # Primary key - CHANGED TO UUID
-    departmentID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    departmentName = Column(String, nullable=False)
-    departmentDescription = Column(String, nullable=True)
-    departmentColor = Column(String, nullable=True)  # e.g., "#FF5733"
-    departmentInitials = Column(String(5), nullable=True)  # e.g., "LX", "SND"
+    department_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    department_name = Column(String, nullable=False)
+    department_description = Column(String, nullable=True)
+    department_color = Column(String, nullable=True)  # e.g., "#FF5733"
+    department_initials = Column(String(5), nullable=True)  # e.g., "LX", "SND"
     
     # Owner - NEW FIELD
-    ownerID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)
     
     # Timestamps
-    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
-    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    date_created = Column(DateTime(timezone=True), server_default=func.now())
+    date_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     
     # Relationships
-    owner = relationship("User", foreign_keys=[ownerID])
+    owner = relationship("User", foreign_keys=[owner_id])
 
 # =============================================================================
 # SHOW MODELS
@@ -265,25 +265,25 @@ class Show(Base):
     __tablename__ = "showsTable"
 
     # Primary key - ALREADY UUID
-    showID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    show_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Core show information
-    showName = Column(String, index=True, nullable=False)
-    showDate = Column(DateTime(timezone=True), nullable=True)
-    showDuration = Column(DateTime(timezone=True), nullable=True)  # End time of show
-    showNotes = Column(Text, nullable=True)
+    show_name = Column(String, index=True, nullable=False)
+    show_date = Column(DateTime(timezone=True), nullable=True)
+    show_duration = Column(DateTime(timezone=True), nullable=True)  # End time of show
+    show_notes = Column(Text, nullable=True)
     deadline = Column(DateTime(timezone=True), nullable=True)
     
     # Foreign keys - CHANGED TO UUID
-    venueID = Column(UUID(as_uuid=True), ForeignKey("venuesTable.venueID"), nullable=True)
-    ownerID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)
+    venue_id = Column(UUID(as_uuid=True), ForeignKey("venuesTable.venue_id"), nullable=True)
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)
     
     # Timestamps
-    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
-    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    date_created = Column(DateTime(timezone=True), server_default=func.now())
+    date_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    showOwner = relationship("User", back_populates="shows", foreign_keys=[ownerID])
+    show_owner = relationship("User", back_populates="shows", foreign_keys=[owner_id])
     venue = relationship("Venue", back_populates="shows")
     scripts = relationship("Script", back_populates="show", cascade="all, delete-orphan")
     crew = relationship("CrewAssignment", back_populates="show", cascade="all, delete-orphan")
@@ -292,23 +292,23 @@ class CrewAssignment(Base):
     """Assignment of crew members to shows with specific departments and roles"""
     __tablename__ = "crewAssignmentsTable"
     __table_args__ = (
-        UniqueConstraint('showID', 'userID', 'departmentID', name='unique_user_show_dept'),
+        UniqueConstraint('show_id', 'user_id', 'department_id', name='unique_user_show_dept'),
     )
     
     # Primary key - CHANGED TO UUID
-    assignmentID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    assignment_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
     # Foreign keys - CHANGED TO UUID
-    showID = Column(UUID(as_uuid=True), ForeignKey("showsTable.showID"), nullable=False)
-    userID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)
-    departmentID = Column(UUID(as_uuid=True), ForeignKey("departmentsTable.departmentID"), nullable=False)
+    show_id = Column(UUID(as_uuid=True), ForeignKey("showsTable.show_id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)
+    department_id = Column(UUID(as_uuid=True), ForeignKey("departmentsTable.department_id"), nullable=False)
     
     # Show-specific role (may differ from user's general role)
-    showRole = Column(String, nullable=True)  # e.g., "Head of Sound", "Assistant LD"
+    show_role = Column(String, nullable=True)  # e.g., "Head of Sound", "Assistant LD"
     
     # Assignment status and timestamps
-    isActive = Column(Boolean, default=True, nullable=False)
-    dateAssigned = Column(DateTime(timezone=True), server_default=func.now())
+    is_active = Column(Boolean, default=True, nullable=False)
+    date_assigned = Column(DateTime(timezone=True), server_default=func.now())
     
     # Relationships
     user = relationship("User", back_populates="crew_assignments")
@@ -324,33 +324,33 @@ class Script(Base):
     __tablename__ = "scriptsTable"
     
     # Primary key - CHANGED TO UUID
-    scriptID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    script_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
     # Core script information
-    scriptName = Column(String, nullable=False)
-    scriptNotes = Column(Text, nullable=True)
-    scriptStatus = Column(Enum(ScriptStatus), default=ScriptStatus.DRAFT, nullable=False)  # Updated to use enum with DRAFT default
+    script_name = Column(String, nullable=False)
+    script_notes = Column(Text, nullable=True)
+    script_status = Column(Enum(ScriptStatus), default=ScriptStatus.DRAFT, nullable=False)  # Updated to use enum with DRAFT default
     
     # Timing information
-    startTime = Column(DateTime(timezone=True), nullable=True)
-    endTime = Column(DateTime(timezone=True), nullable=True)  # Planned end time
-    actualStartTime = Column(DateTime(timezone=True), nullable=True)
+    start_time = Column(DateTime(timezone=True), nullable=True)
+    end_time = Column(DateTime(timezone=True), nullable=True)  # Planned end time
+    actual_start_time = Column(DateTime(timezone=True), nullable=True)
     
     # Status flags
-    isPinned = Column(Boolean, default=False, nullable=False)
+    is_pinned = Column(Boolean, default=False, nullable=False)
     
     # Foreign keys - ALREADY UUID
-    showID = Column(UUID(as_uuid=True), ForeignKey("showsTable.showID"), nullable=False)
+    show_id = Column(UUID(as_uuid=True), ForeignKey("showsTable.show_id"), nullable=False)
     
     # Owner - NEW FIELD (explicit ownership even though tied to show)
-    ownerID = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=False)
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)
     
     # Timestamps
-    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
-    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    date_created = Column(DateTime(timezone=True), server_default=func.now())
+    date_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    owner = relationship("User", foreign_keys=[ownerID])
+    owner = relationship("User", foreign_keys=[owner_id])
     show = relationship("Show", back_populates="scripts")
     elements = relationship("ScriptElement", back_populates="script", order_by="ScriptElement.sequence", cascade="all, delete-orphan")
 
@@ -358,80 +358,80 @@ class ScriptElement(Base):
     """Individual elements (cues, notes, etc.) within a script"""
     __tablename__ = "scriptElementsTable"
     __table_args__ = (
-        Index('idx_scriptelement_script_order', 'scriptID', 'elementOrder'),
-        Index('idx_script_sequence', 'scriptID', 'sequence'),
-        Index('idx_script_time_ms', 'scriptID', 'timeOffsetMs'),
-        Index('idx_department_elements', 'departmentID'),
-        Index('idx_parent_element', 'parentElementID'),
-        Index('idx_cue_id', 'cueID'),
-        Index('idx_type_active', 'elementType', 'isActive'),
+        Index('idx_scriptelement_script_order', 'script_id', 'element_order'),
+        Index('idx_script_sequence', 'script_id', 'sequence'),
+        Index('idx_script_time_ms', 'script_id', 'time_offset_ms'),
+        Index('idx_department_elements', 'department_id'),
+        Index('idx_parent_element', 'parent_element_id'),
+        Index('idx_cue_id', 'cue_id'),
+        Index('idx_type_active', 'element_type', 'is_active'),
     )
     
     # Primary key - UUID
-    elementID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    element_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
     # Foreign keys - UUID
-    scriptID = Column(UUID(as_uuid=True), ForeignKey("scriptsTable.scriptID"), nullable=False)
-    departmentID = Column(UUID(as_uuid=True), ForeignKey("departmentsTable.departmentID"), nullable=True)  # Nullable for notes
-    parentElementID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID"), nullable=True)
-    createdBy = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=True)
-    updatedBy = Column(UUID(as_uuid=True), ForeignKey("userTable.userID"), nullable=True)
+    script_id = Column(UUID(as_uuid=True), ForeignKey("scriptsTable.script_id"), nullable=False)
+    department_id = Column(UUID(as_uuid=True), ForeignKey("departmentsTable.department_id"), nullable=True)  # Nullable for notes
+    parent_element_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id"), nullable=True)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=True)
+    updated_by = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=True)
     
     # Element information
-    elementType = Column(Enum(ElementType), nullable=False)
-    elementOrder = Column(Integer, nullable=True)  # Legacy field - made nullable for migration compatibility
+    element_type = Column(Enum(ElementType), nullable=False)
+    element_order = Column(Integer, nullable=True)  # Legacy field - made nullable for migration compatibility
     sequence = Column(Integer, nullable=True)  # New sequence field
-    cueNumber = Column(String, nullable=True)  # Legacy field
-    cueID = Column(String(50), nullable=True)  # New cue ID field
-    elementDescription = Column(Text, nullable=True)  # Legacy field
+    cue_number = Column(String, nullable=True)  # Legacy field
+    cue_id = Column(String(50), nullable=True)  # New cue ID field
+    element_description = Column(Text, nullable=True)  # Legacy field
     description = Column(Text, nullable=False, server_default='')  # New description field
-    cueNotes = Column(Text, nullable=True)
+    cue_notes = Column(Text, nullable=True)
     
     # Trigger and execution
-    triggerType = Column(Enum(TriggerType), nullable=False, server_default='MANUAL')
-    followsCueID = Column(String, nullable=True)
-    executionStatus = Column(Enum(ExecutionStatus), nullable=False, server_default='PENDING')
+    trigger_type = Column(Enum(TriggerType), nullable=False, server_default='MANUAL')
+    follows_cue_id = Column(String, nullable=True)
+    execution_status = Column(Enum(ExecutionStatus), nullable=False, server_default='PENDING')
     priority = Column(Enum(PriorityLevel), nullable=False, server_default='NORMAL')
     
     # Timing
-    timeOffsetMs = Column(Integer, nullable=False, server_default='0')  # Timing in milliseconds
+    time_offset_ms = Column(Integer, nullable=False, server_default='0')  # Timing in milliseconds
     duration = Column(Integer, nullable=True)  # Duration in milliseconds
-    fadeIn = Column(Integer, nullable=True)  # Fade in time in milliseconds
-    fadeOut = Column(Integer, nullable=True)  # Fade out time in milliseconds
+    fade_in = Column(Integer, nullable=True)  # Fade in time in milliseconds
+    fade_out = Column(Integer, nullable=True)  # Fade out time in milliseconds
     
     # Location and visual
     location = Column(Enum(LocationArea), nullable=True)
-    locationDetails = Column(Text, nullable=True)
-    departmentColor = Column(String(7), nullable=True)  # Hex color override
-    customColor = Column(String(7), nullable=True)  # Custom color for element
+    location_details = Column(Text, nullable=True)
+    department_color = Column(String(7), nullable=True)  # Hex color override
+    custom_color = Column(String(7), nullable=True)  # Custom color for element
     
     # Grouping and hierarchy
-    groupLevel = Column(Integer, nullable=False, server_default='0')
-    isCollapsed = Column(Boolean, nullable=False, server_default='false')
+    group_level = Column(Integer, nullable=False, server_default='0')
+    is_collapsed = Column(Boolean, nullable=False, server_default='false')
     
     # Metadata
     version = Column(Integer, nullable=False, server_default='1')
     
     # Status
-    isActive = Column(Boolean, default=True, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
     
     # Timestamps
-    dateCreated = Column(DateTime(timezone=True), server_default=func.now())
-    dateUpdated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    date_created = Column(DateTime(timezone=True), server_default=func.now())
+    date_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
     script = relationship("Script", back_populates="elements")
     department = relationship("Department")
-    parent_element = relationship("ScriptElement", remote_side=[elementID], backref="child_elements")
-    created_by_user = relationship("User", foreign_keys=[createdBy])
-    updated_by_user = relationship("User", foreign_keys=[updatedBy])
+    parent_element = relationship("ScriptElement", remote_side=[element_id], backref="child_elements")
+    created_by_user = relationship("User", foreign_keys=[created_by])
+    updated_by_user = relationship("User", foreign_keys=[updated_by])
     
     # Supporting table relationships
     equipment = relationship("ScriptElementEquipment", back_populates="element", cascade="all, delete-orphan")
     crew_assignments = relationship("ScriptElementCrewAssignment", back_populates="element", cascade="all, delete-orphan")
     performer_assignments = relationship("ScriptElementPerformerAssignment", back_populates="element", cascade="all, delete-orphan")
     conditional_rules = relationship("ScriptElementConditionalRule", back_populates="element", cascade="all, delete-orphan")
-    group_relationships = relationship("ScriptElementGroup", foreign_keys="ScriptElementGroup.groupID", back_populates="group_element", cascade="all, delete-orphan")
+    group_relationships = relationship("ScriptElementGroup", foreign_keys="ScriptElementGroup.group_id", back_populates="group_element", cascade="all, delete-orphan")
 
 # =============================================================================
 # SCRIPT ELEMENT SUPPORTING MODELS
@@ -442,11 +442,11 @@ class ScriptElementEquipment(Base):
     __tablename__ = "scriptElementEquipment"
     
     # Composite primary key
-    elementID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID", ondelete="CASCADE"), primary_key=True)
-    equipmentName = Column(String(100), primary_key=True)
+    element_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id", ondelete="CASCADE"), primary_key=True)
+    equipment_name = Column(String(100), primary_key=True)
     
     # Equipment details
-    isRequired = Column(Boolean, nullable=False, server_default='true')
+    is_required = Column(Boolean, nullable=False, server_default='true')
     notes = Column(Text, nullable=True)
     
     # Relationships
@@ -457,12 +457,12 @@ class ScriptElementCrewAssignment(Base):
     __tablename__ = "scriptElementCrewAssignments"
     
     # Composite primary key
-    elementID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID", ondelete="CASCADE"), primary_key=True)
-    crewID = Column(UUID(as_uuid=True), primary_key=True)  # Will link to User table when crew management is implemented
+    element_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id", ondelete="CASCADE"), primary_key=True)
+    crew_id = Column(UUID(as_uuid=True), primary_key=True)  # Will link to User table when crew management is implemented
     
     # Assignment details
-    assignmentRole = Column(String(100), nullable=True)
-    isLead = Column(Boolean, nullable=False, server_default='false')
+    assignment_role = Column(String(100), nullable=True)
+    is_lead = Column(Boolean, nullable=False, server_default='false')
     
     # Relationships
     element = relationship("ScriptElement", back_populates="crew_assignments")
@@ -472,11 +472,11 @@ class ScriptElementPerformerAssignment(Base):
     __tablename__ = "scriptElementPerformerAssignments"
     
     # Composite primary key
-    elementID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID", ondelete="CASCADE"), primary_key=True)
-    performerID = Column(UUID(as_uuid=True), primary_key=True)  # Will link to User/Performer table when implemented
+    element_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id", ondelete="CASCADE"), primary_key=True)
+    performer_id = Column(UUID(as_uuid=True), primary_key=True)  # Will link to User/Performer table when implemented
     
     # Assignment details
-    characterName = Column(String(100), nullable=True)
+    character_name = Column(String(100), nullable=True)
     notes = Column(Text, nullable=True)
     
     # Relationships
@@ -486,21 +486,21 @@ class ScriptElementConditionalRule(Base):
     """Conditional rules for script elements"""
     __tablename__ = "scriptElementConditionalRules"
     __table_args__ = (
-        Index('idx_element_conditions', 'elementID'),
+        Index('idx_element_conditions', 'element_id'),
     )
     
     # Primary key
-    ruleID = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    rule_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
     # Foreign key
-    elementID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID", ondelete="CASCADE"), nullable=False)
+    element_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id", ondelete="CASCADE"), nullable=False)
     
     # Rule definition
-    conditionType = Column(Enum(ConditionType), nullable=False)
+    condition_type = Column(Enum(ConditionType), nullable=False)
     operator = Column(Enum(OperatorType), nullable=False)
-    conditionValue = Column(Text, nullable=False)
+    condition_value = Column(Text, nullable=False)
     description = Column(Text, nullable=False)
-    isActive = Column(Boolean, nullable=False, server_default='true')
+    is_active = Column(Boolean, nullable=False, server_default='true')
     
     # Relationships
     element = relationship("ScriptElement", back_populates="conditional_rules")
@@ -509,17 +509,17 @@ class ScriptElementGroup(Base):
     """Group relationships for script elements"""
     __tablename__ = "scriptElementGroups"
     __table_args__ = (
-        Index('idx_group_order', 'groupID', 'orderInGroup'),
+        Index('idx_group_order', 'group_id', 'order_in_group'),
     )
     
     # Composite primary key
-    groupID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID", ondelete="CASCADE"), primary_key=True)
-    childElementID = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.elementID", ondelete="CASCADE"), primary_key=True)
+    group_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id", ondelete="CASCADE"), primary_key=True)
+    child_element_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id", ondelete="CASCADE"), primary_key=True)
     
     # Group details
-    orderInGroup = Column(Integer, nullable=False)
+    order_in_group = Column(Integer, nullable=False)
     
     # Relationships
-    group_element = relationship("ScriptElement", foreign_keys=[groupID], back_populates="group_relationships")
-    child_element = relationship("ScriptElement", foreign_keys=[childElementID])
+    group_element = relationship("ScriptElement", foreign_keys=[group_id], back_populates="group_relationships")
+    child_element = relationship("ScriptElement", foreign_keys=[child_element_id])
 

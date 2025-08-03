@@ -5,12 +5,12 @@ import { useAuth } from '@clerk/clerk-react';
 
 // TypeScript interfaces
 interface Department {
-    departmentID: string;
-    departmentName: string;
-    departmentDescription?: string;
-    departmentColor?: string;
-    dateCreated: string;
-    dateUpdated: string;
+    department_id: string;
+    department_name: string;
+    department_description?: string;
+    department_color?: string;
+    date_created: string;
+    date_updated: string;
 }
 
 interface UseDepartmentsReturn {

@@ -15,9 +15,9 @@ interface VenuesViewProps {
     hoveredCardId?: string | null;
     setHoveredCardId: (id: string | null) => void;
     onSaveNavigationState?: () => void;
-    sortBy: 'venueName' | 'capacity' | 'venueType' | 'dateCreated' | 'dateUpdated';
+    sortBy: 'venue_name' | 'capacity' | 'venue_type' | 'date_created' | 'date_updated';
     sortDirection: 'asc' | 'desc';
-    onSortChange: (sortBy: 'venueName' | 'capacity' | 'venueType' | 'dateCreated' | 'dateUpdated', sortDirection: 'asc' | 'desc') => void;
+    onSortChange: (sortBy: 'venue_name' | 'capacity' | 'venue_type' | 'date_created' | 'date_updated', sortDirection: 'asc' | 'desc') => void;
     showCardRefs: React.MutableRefObject<Record<string, HTMLElement | null>>;
 }
 
@@ -42,7 +42,7 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
             const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
             onSortChange(newSortBy, newDirection);
         } else {
-            const newDirection = newSortBy === 'venueName' ? 'asc' : 'desc';
+            const newDirection = newSortBy === 'venue_name' ? 'asc' : 'desc';
             onSortChange(newSortBy, newDirection);
         }
     };
@@ -53,20 +53,20 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
         const venuesToSort = [...venues];
         venuesToSort.sort((a, b) => {
             let comparison = 0;
-            if (sortBy === 'venueName') {
-                comparison = a.venueName.localeCompare(b.venueName);
+            if (sortBy === 'venue_name') {
+                comparison = a.venue_name.localeCompare(b.venue_name);
             } else if (sortBy === 'capacity') {
                 const aCapacity = a.capacity || 0;
                 const bCapacity = b.capacity || 0;
                 comparison = aCapacity - bCapacity;
-            } else if (sortBy === 'venueType') {
-                const aType = a.venueType || 'ZZZ';
-                const bType = b.venueType || 'ZZZ';
+            } else if (sortBy === 'venue_type') {
+                const aType = a.venue_type || 'ZZZ';
+                const bType = b.venue_type || 'ZZZ';
                 comparison = aType.localeCompare(bType);
-            } else if (sortBy === 'dateCreated') {
-                comparison = new Date(b.dateCreated || b.dateUpdated).getTime() - new Date(a.dateCreated || a.dateUpdated).getTime();
+            } else if (sortBy === 'date_created') {
+                comparison = new Date(b.date_created || b.date_updated).getTime() - new Date(a.date_created || a.date_updated).getTime();
             } else {
-                comparison = new Date(b.dateUpdated || b.dateCreated).getTime() - new Date(a.dateUpdated || a.dateCreated).getTime();
+                comparison = new Date(b.date_updated || b.date_created).getTime() - new Date(a.date_updated || a.date_created).getTime();
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
@@ -98,9 +98,9 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
                             <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
                             <MenuList zIndex={9999}>
                                 <MenuItem
-                                    onClick={() => handleSortClick('venueName')}
-                                    color={sortBy === 'venueName' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'venueName' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('venue_name')}
+                                    color={sortBy === 'venue_name' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'venue_name' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Name
@@ -114,25 +114,25 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
                                     Capacity
                                 </MenuItem>
                                 <MenuItem
-                                    onClick={() => handleSortClick('venueType')}
-                                    color={sortBy === 'venueType' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'venueType' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('venue_type')}
+                                    color={sortBy === 'venue_type' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'venue_type' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Type
                                 </MenuItem>
                                 <MenuItem
-                                    onClick={() => handleSortClick('dateCreated')}
-                                    color={sortBy === 'dateCreated' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('date_created')}
+                                    color={sortBy === 'date_created' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'date_created' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Created
                                 </MenuItem>
                                 <MenuItem
-                                    onClick={() => handleSortClick('dateUpdated')}
-                                    color={sortBy === 'dateUpdated' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'dateUpdated' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('date_updated')}
+                                    color={sortBy === 'date_updated' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'date_updated' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Updated
@@ -171,14 +171,14 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
                         sortedVenues.length > 0 ? (
                             <VStack spacing={4} align="stretch">
                                 {sortedVenues.map(venue => (
-                                    <div key={venue.venueID} ref={el => { showCardRefs.current[venue.venueID] = el; }}>
+                                    <div key={venue.venue_id} ref={el => { showCardRefs.current[venue.venue_id] = el; }}>
                                         <VenueCard
                                             venue={venue}
                                             onEdit={handleEdit}
                                             onVenueClick={onVenueClick}
                                             showCount={0}
-                                            isHovered={hoveredCardId === venue.venueID}
-                                            isSelected={selectedVenueId === venue.venueID}
+                                            isHovered={hoveredCardId === venue.venue_id}
+                                            isSelected={selectedVenueId === venue.venue_id}
                                             onHover={setHoveredCardId}
                                             onSaveNavigationState={onSaveNavigationState}
                                         />
