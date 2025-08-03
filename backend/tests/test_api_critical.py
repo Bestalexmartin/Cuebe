@@ -37,10 +37,10 @@ class TestCriticalEndpoints:
         """Create a test user for all tests in this class"""
         self.test_user = User(
             clerk_user_id="test_user_123",
-            emailAddress="test@example.com",
-            fullnameFirst="Test",
-            fullnameLast="User",
-            userStatus="VERIFIED"
+            email_address="test@example.com",
+            fullname_first="Test",
+            fullname_last="User",
+            user_status="VERIFIED"
         )
         db_session.add(self.test_user)
         db_session.commit()
@@ -83,19 +83,19 @@ class TestCrewManagement(TestCriticalEndpoints):
         }
         # First create a venue (required for the relationship)
         venue = Venue(
-            venueName="Test Venue",
+            venue_name="Test Venue",
             city="Test City", 
             state="NY",
-            ownerID=self.test_user.userID
+            owner_id=self.test_user.user_id
         )
         db_session.add(venue)
         db_session.commit()
         
         guest_data = {
-            "emailAddress": "jane@example.com",
-            "fullnameFirst": "Jane",
-            "fullnameLast": "Guest",
-            "userRole": "crew",
+            "email_address": "jane@example.com",
+            "fullname_first": "Jane",
+            "fullname_last": "Guest",
+            "user_role": "crew",
             "notes": "Test crew member"
         }
         
@@ -106,10 +106,10 @@ class TestCrewManagement(TestCriticalEndpoints):
         # Should succeed
         assert response.status_code == 201
         result = response.json()
-        assert result["fullnameFirst"] == "Jane"
-        assert result["fullnameLast"] == "Guest"
-        assert result["emailAddress"] == "jane@example.com"
-        assert result["userStatus"] == "guest"  # Guest users are unverified (API returns lowercase)
+        assert result["fullname_first"] == "Jane"
+        assert result["fullname_last"] == "Guest"
+        assert result["email_address"] == "jane@example.com"
+        assert result["user_status"] == "guest"  # Guest users are unverified (API returns lowercase)
         
         # Verify the crew relationship was created
         crews_response = client.get("/api/me/crews", headers=headers)
@@ -119,8 +119,8 @@ class TestCrewManagement(TestCriticalEndpoints):
         # Find the guest user in the results
         guest_user = next((crew for crew in crews if crew["clerk_user_id"] is None), None)
         assert guest_user is not None
-        assert guest_user["fullnameFirst"] == "Jane"
-        assert guest_user["fullnameLast"] == "Guest"
+        assert guest_user["fullname_first"] == "Jane"
+        assert guest_user["fullname_last"] == "Guest"
     
     @patch.dict('os.environ', {'CLERK_PEM_PUBLIC_KEY': 'fake_pem_key'})
     @patch('routers.auth.jwt.decode')
@@ -135,19 +135,19 @@ class TestCrewManagement(TestCriticalEndpoints):
         # Create a user with this email first
         existing_user = User(
             clerk_user_id="existing_user_456",
-            emailAddress="jane@example.com",
-            fullnameFirst="Existing",
-            fullnameLast="User",
-            userStatus="VERIFIED"
+            email_address="jane@example.com",
+            fullname_first="Existing",
+            fullname_last="User",
+            user_status="VERIFIED"
         )
         db_session.add(existing_user)
         db_session.commit()
         
         guest_data = {
-            "emailAddress": "jane@example.com",  # Same email
-            "fullnameFirst": "Jane",
-            "fullnameLast": "Guest",
-            "userRole": "crew",
+            "email_address": "jane@example.com",  # Same email
+            "fullname_first": "Jane",
+            "fullname_last": "Guest",
+            "user_role": "crew",
             "notes": "Test crew member"
         }
         
@@ -170,10 +170,10 @@ class TestCrewManagement(TestCriticalEndpoints):
         }
         
         guest_data = {
-            # Missing required field emailAddress to trigger validation error
-            "fullnameFirst": "Jane",
-            "fullnameLast": "Guest",
-            "userRole": "crew"
+            # Missing required field email_address to trigger validation error
+            "fullname_first": "Jane",
+            "fullname_last": "Guest",
+            "user_role": "crew"
         }
         
         headers = {"Authorization": "Bearer valid_token"}
@@ -200,16 +200,16 @@ class TestDataOwnership(TestCriticalEndpoints):
             "iat": int(time.time())
         }
         # Create venues for our test user
-        my_venue1 = Venue(venueName="My Venue 1", city="My City", state="NY", ownerID=self.test_user.userID)
-        my_venue2 = Venue(venueName="My Venue 2", city="My City", state="NY", ownerID=self.test_user.userID)
+        my_venue1 = Venue(venue_name="My Venue 1", city="My City", state="NY", owner_id=self.test_user.user_id)
+        my_venue2 = Venue(venue_name="My Venue 2", city="My City", state="NY", owner_id=self.test_user.user_id)
         
         # Create venue for different user
-        other_user = User(clerk_user_id="other_123", emailAddress="other@example.com", fullnameFirst="Other", fullnameLast="User", userStatus="VERIFIED")
+        other_user = User(clerk_user_id="other_123", email_address="other@example.com", fullname_first="Other", fullname_last="User", user_status="VERIFIED")
         db_session.add(other_user)
         db_session.commit()  # Commit user first to get UUID
         db_session.refresh(other_user)
         
-        other_venue = Venue(venueName="Other Venue", city="Other City", state="CA", ownerID=other_user.userID)
+        other_venue = Venue(venue_name="Other Venue", city="Other City", state="CA", owner_id=other_user.user_id)
         
         db_session.add_all([my_venue1, my_venue2, other_venue])
         db_session.commit()
@@ -220,7 +220,7 @@ class TestDataOwnership(TestCriticalEndpoints):
         assert response.status_code == 200
         venues = response.json()
         assert len(venues) == 2  # Only my venues
-        venue_names = [v["venueName"] for v in venues]
+        venue_names = [v["venue_name"] for v in venues]
         assert "My Venue 1" in venue_names
         assert "My Venue 2" in venue_names
         assert "Other Venue" not in venue_names
@@ -236,17 +236,17 @@ class TestDataOwnership(TestCriticalEndpoints):
             "iat": int(time.time())
         }
         # Create venue owned by different user
-        other_user = User(clerk_user_id="other_456", emailAddress="other2@example.com", fullnameFirst="Other", fullnameLast="User", userStatus="VERIFIED")
+        other_user = User(clerk_user_id="other_456", email_address="other2@example.com", fullname_first="Other", fullname_last="User", user_status="VERIFIED")
         db_session.add(other_user)
         db_session.commit()
         db_session.refresh(other_user)
         
-        other_venue = Venue(venueName="Other Venue", city="Other City", state="CA", ownerID=other_user.userID)
+        other_venue = Venue(venue_name="Other Venue", city="Other City", state="CA", owner_id=other_user.user_id)
         db_session.add(other_venue)
         db_session.commit()
         
         headers = {"Authorization": "Bearer valid_token"}
-        response = client.get(f"/api/venues/{other_venue.venueID}", headers=headers)
+        response = client.get(f"/api/venues/{other_venue.venue_id}", headers=headers)
         
         assert response.status_code == 404  # Should not find venue (owner-scoped query)
     
@@ -261,18 +261,18 @@ class TestDataOwnership(TestCriticalEndpoints):
             "iat": int(time.time())
         }
         # Create venue owned by different user
-        other_user = User(clerk_user_id="other_789", emailAddress="other3@example.com", fullnameFirst="Other", fullnameLast="User", userStatus="VERIFIED")
+        other_user = User(clerk_user_id="other_789", email_address="other3@example.com", fullname_first="Other", fullname_last="User", user_status="VERIFIED")
         db_session.add(other_user)
         db_session.commit()
         db_session.refresh(other_user)
         
-        other_venue = Venue(venueName="Other Venue", city="Other City", state="CA", ownerID=other_user.userID)
+        other_venue = Venue(venue_name="Other Venue", city="Other City", state="CA", owner_id=other_user.user_id)
         db_session.add(other_venue)
         db_session.commit()
         
-        update_data = {"venueName": "Hacked Venue Name"}
+        update_data = {"venue_name": "Hacked Venue Name"}
         headers = {"Authorization": "Bearer valid_token"}
-        response = client.patch(f"/api/venues/{other_venue.venueID}", json=update_data, headers=headers)
+        response = client.patch(f"/api/venues/{other_venue.venue_id}", json=update_data, headers=headers)
         
         assert response.status_code == 404  # Should not find venue to update
 
@@ -291,22 +291,22 @@ class TestCascadeOperations(TestCriticalEndpoints):
             "iat": int(time.time())
         }
         # Create venue
-        venue = Venue(venueName="Test Venue", city="Test City", state="NY", ownerID=self.test_user.userID)
+        venue = Venue(venue_name="Test Venue", city="Test City", state="NY", owner_id=self.test_user.user_id)
         db_session.add(venue)
         db_session.commit()
         
         # Create show in venue
         show = Show(
-            showName="Test Show",
-            venueID=venue.venueID,
-            ownerID=self.test_user.userID,
-            showDate=None  # Optional field
+            show_name="Test Show",
+            venue_id=venue.venue_id,
+            owner_id=self.test_user.user_id,
+            show_date=None  # Optional field
         )
         db_session.add(show)
         db_session.commit()
         
         headers = {"Authorization": "Bearer valid_token"}
-        response = client.delete(f"/api/venues/{venue.venueID}", headers=headers)
+        response = client.delete(f"/api/venues/{venue.venue_id}", headers=headers)
         
         # API handles this gracefully by nullifying venue references
         assert response.status_code == 204  # Successful deletion
@@ -322,14 +322,14 @@ class TestCascadeOperations(TestCriticalEndpoints):
             "iat": int(time.time())
         }
         # Create venue and show
-        venue = Venue(venueName="Test Venue", city="Test City", state="NY", ownerID=self.test_user.userID)
+        venue = Venue(venue_name="Test Venue", city="Test City", state="NY", owner_id=self.test_user.user_id)
         db_session.add(venue)
         db_session.commit()
         
         show = Show(
-            showName="Test Show",
-            venueID=venue.venueID,
-            ownerID=self.test_user.userID
+            show_name="Test Show",
+            venue_id=venue.venue_id,
+            owner_id=self.test_user.user_id
         )
         db_session.add(show)
         db_session.commit()
@@ -337,13 +337,13 @@ class TestCascadeOperations(TestCriticalEndpoints):
         headers = {"Authorization": "Bearer valid_token"}
         
         # Create script for the show
-        script_data = {"scriptName": "Test Script", "scriptStatus": "DRAFT"}
-        script_response = client.post(f"/api/shows/{show.showID}/scripts", 
+        script_data = {"script_name": "Test Script", "script_status": "DRAFT"}
+        script_response = client.post(f"/api/shows/{show.show_id}/scripts", 
                                     json=script_data, headers=headers)
         assert script_response.status_code == 200
         
         # Now delete the show
-        delete_response = client.delete(f"/api/shows/{show.showID}", headers=headers)
+        delete_response = client.delete(f"/api/shows/{show.show_id}", headers=headers)
         assert delete_response.status_code == 204  # Successful deletion returns 204 No Content
         
         # Verify script is also deleted (cascade)

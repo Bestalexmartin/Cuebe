@@ -12,7 +12,7 @@ interface UseScriptElementsReturn {
 }
 
 interface UseScriptElementsOptions {
-    elementType?: string;
+    element_type?: string;
     departmentId?: string;
     activeOnly?: boolean;
     skip?: number;
@@ -45,7 +45,7 @@ export const useScriptElements = (
 
             // Build query parameters
             const params = new URLSearchParams();
-            if (options.elementType) params.append('element_type', options.elementType);
+            if (options.element_type) params.append('element_type', options.element_type);
             if (options.departmentId) params.append('department_id', options.departmentId);
             if (options.activeOnly !== undefined) params.append('active_only', options.activeOnly.toString());
             if (options.skip !== undefined) params.append('skip', options.skip.toString());

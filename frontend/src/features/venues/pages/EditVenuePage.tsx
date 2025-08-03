@@ -19,21 +19,21 @@ import { useChangeDetection } from '../../../hooks/useChangeDetection';
 
 // TypeScript interfaces
 interface VenueFormData {
-    venueName: string;
+    venue_name: string;
     address: string;
     city: string;
     state: string;
     capacity: string;
-    venueType: string;
-    contactName: string;
-    contactEmail: string;
-    contactPhone: string;
-    stageWidth: string;
-    stageDepth: string;
-    flyHeight: string;
-    venueNotes: string;
-    rentalRate: string;
-    minimumRental: string;
+    venue_type: string;
+    contact_name: string;
+    contact_email: string;
+    contact_phone: string;
+    stage_width: string;
+    stage_depth: string;
+    fly_height: string;
+    venue_notes: string;
+    rental_rate: string;
+    minimum_rental: string;
 }
 
 interface VenueTypeOption {
@@ -42,21 +42,21 @@ interface VenueTypeOption {
 }
 
 const INITIAL_FORM_STATE: VenueFormData = {
-    venueName: '',
+    venue_name: '',
     address: '',
     city: '',
     state: '',
     capacity: '',
-    venueType: '',
-    contactName: '',
-    contactEmail: '',
-    contactPhone: '',
-    stageWidth: '',
-    stageDepth: '',
-    flyHeight: '',
-    venueNotes: '',
-    rentalRate: '',
-    minimumRental: ''
+    venue_type: '',
+    contact_name: '',
+    contact_email: '',
+    contact_phone: '',
+    stage_width: '',
+    stage_depth: '',
+    fly_height: '',
+    venue_notes: '',
+    rental_rate: '',
+    minimum_rental: ''
 };
 
 // Venue type options
@@ -70,7 +70,7 @@ const VENUE_TYPE_OPTIONS: VenueTypeOption[] = [
 ];
 
 const VALIDATION_CONFIG: FormValidationConfig = {
-    venueName: {
+    venue_name: {
         required: false,
         rules: [
             {
@@ -86,13 +86,13 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             ValidationRules.maxLength(100, 'Venue name must be no more than 100 characters')
         ]
     },
-    contactEmail: {
+    contact_email: {
         required: false,
         rules: [
             ValidationRules.email('Please enter a valid email address')
         ]
     },
-    contactPhone: {
+    contact_phone: {
         required: false,
         rules: [
             ValidationRules.phone('Please enter a valid phone number')
@@ -108,7 +108,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             }
         ]
     },
-    venueNotes: {
+    venue_notes: {
         required: false,
         rules: [
             ValidationRules.maxLength(1000, 'Notes must be no more than 1000 characters')
@@ -141,42 +141,42 @@ export const EditVenuePage: React.FC = () => {
     useEffect(() => {
         if (venue) {
             form.setFormData({
-                venueName: venue.venueName || '',
+                venue_name: venue.venue_name || '',
                 address: venue.address || '',
                 city: venue.city || '',
                 state: venue.state || '',
                 capacity: venue.capacity?.toString() || '',
-                venueType: venue.venueType || '',
-                contactName: venue.contactName || '',
-                contactEmail: venue.contactEmail || '',
-                contactPhone: venue.contactPhone || '',
-                stageWidth: venue.stageWidth?.toString() || '',
-                stageDepth: venue.stageDepth?.toString() || '',
-                flyHeight: venue.flyHeight?.toString() || '',
-                venueNotes: venue.venueNotes || '',
-                rentalRate: venue.rentalRate?.toString() || '',
-                minimumRental: venue.minimumRental?.toString() || ''
+                venue_type: venue.venue_type || '',
+                contact_name: venue.contact_name || '',
+                contact_email: venue.contact_email || '',
+                contact_phone: venue.contact_phone || '',
+                stage_width: venue.stage_width?.toString() || '',
+                stage_depth: venue.stage_depth?.toString() || '',
+                fly_height: venue.fly_height?.toString() || '',
+                venue_notes: venue.venue_notes || '',
+                rental_rate: venue.rental_rate?.toString() || '',
+                minimum_rental: venue.minimum_rental?.toString() || ''
             });
         }
     }, [venue, form.setFormData]);
 
     // Change detection for save button - same pattern as EditShowPage
     const initialData = venue ? {
-        venueName: venue.venueName || '',
+        venue_name: venue.venue_name || '',
         address: venue.address || '',
         city: venue.city || '',
         state: venue.state || '',
         capacity: venue.capacity?.toString() || '',
-        venueType: venue.venueType || '',
-        contactName: venue.contactName || '',
-        contactEmail: venue.contactEmail || '',
-        contactPhone: venue.contactPhone || '',
-        stageWidth: venue.stageWidth?.toString() || '',
-        stageDepth: venue.stageDepth?.toString() || '',
-        flyHeight: venue.flyHeight?.toString() || '',
-        venueNotes: venue.venueNotes || '',
-        rentalRate: venue.rentalRate?.toString() || '',
-        minimumRental: venue.minimumRental?.toString() || ''
+        venue_type: venue.venue_type || '',
+        contact_name: venue.contact_name || '',
+        contact_email: venue.contact_email || '',
+        contact_phone: venue.contact_phone || '',
+        stage_width: venue.stage_width?.toString() || '',
+        stage_depth: venue.stage_depth?.toString() || '',
+        fly_height: venue.fly_height?.toString() || '',
+        venue_notes: venue.venue_notes || '',
+        rental_rate: venue.rental_rate?.toString() || '',
+        minimum_rental: venue.minimum_rental?.toString() || ''
     } : null;
 
     const { hasChanges, updateOriginalData } = useChangeDetection(
@@ -199,27 +199,27 @@ export const EditVenuePage: React.FC = () => {
         try {
             // Prepare data for API - convert numeric fields
             const updateData = {
-                venueName: form.formData.venueName,
+                venue_name: form.formData.venue_name,
                 address: form.formData.address || null,
                 city: form.formData.city || null,
                 state: form.formData.state || null,
                 capacity: form.formData.capacity ? parseInt(form.formData.capacity) : null,
-                venueType: form.formData.venueType || null,
-                contactName: form.formData.contactName || null,
-                contactEmail: form.formData.contactEmail || null,
-                contactPhone: form.formData.contactPhone || null,
-                stageWidth: form.formData.stageWidth ? parseInt(form.formData.stageWidth) : null,
-                stageDepth: form.formData.stageDepth ? parseInt(form.formData.stageDepth) : null,
-                flyHeight: form.formData.flyHeight ? parseInt(form.formData.flyHeight) : null,
-                venueNotes: form.formData.venueNotes || null,
-                rentalRate: form.formData.rentalRate ? parseInt(form.formData.rentalRate) : null,
-                minimumRental: form.formData.minimumRental ? parseInt(form.formData.minimumRental) : null,
+                venue_type: form.formData.venue_type || null,
+                contact_name: form.formData.contact_name || null,
+                contact_email: form.formData.contact_email || null,
+                contact_phone: form.formData.contact_phone || null,
+                stage_width: form.formData.stage_width ? parseInt(form.formData.stage_width) : null,
+                stage_depth: form.formData.stage_depth ? parseInt(form.formData.stage_depth) : null,
+                fly_height: form.formData.fly_height ? parseInt(form.formData.fly_height) : null,
+                venue_notes: form.formData.venue_notes || null,
+                rental_rate: form.formData.rental_rate ? parseInt(form.formData.rental_rate) : null,
+                minimum_rental: form.formData.minimum_rental ? parseInt(form.formData.minimum_rental) : null,
             };
 
             await form.submitForm(
                 `/api/venues/${venueId}`,
                 'PATCH',
-                `"${form.formData.venueName}" has been updated successfully`,
+                `"${form.formData.venue_name}" has been updated successfully`,
                 updateData
             );
 
@@ -251,7 +251,7 @@ export const EditVenuePage: React.FC = () => {
     };
 
     const isFormValid = (): boolean => {
-        return form.fieldErrors.length === 0 && form.formData.venueName.trim().length >= 4;
+        return form.fieldErrors.length === 0 && form.formData.venue_name.trim().length >= 4;
     };
 
     // Handle venue deletion
@@ -272,7 +272,7 @@ export const EditVenuePage: React.FC = () => {
                 throw new Error('Failed to delete venue');
             }
 
-            showSuccess('Venue Deleted', `"${venue.venueName}" has been deleted successfully`);
+            showSuccess('Venue Deleted', `"${venue.venue_name}" has been deleted successfully`);
 
             // Navigate back to dashboard
             navigate('/dashboard', {
@@ -305,7 +305,7 @@ export const EditVenuePage: React.FC = () => {
     return (
         <ErrorBoundary context="Edit Venue Page">
             <BaseEditPage
-                pageTitle={venue?.venueName || 'Venue'}
+                pageTitle={venue?.venue_name || 'Venue'}
                 onSubmit={handleSubmit}
                 isLoading={isLoadingVenue}
                 primaryAction={{
@@ -345,9 +345,9 @@ export const EditVenuePage: React.FC = () => {
                         <FormControl isRequired>
                             <FormLabel>Venue Name</FormLabel>
                             <Input
-                                value={form.formData.venueName}
-                                onChange={(e) => handleChange('venueName', e.target.value)}
-                                onBlur={() => form.validateField('venueName')}
+                                value={form.formData.venue_name}
+                                onChange={(e) => handleChange('venue_name', e.target.value)}
+                                onBlur={() => form.validateField('venue_name')}
                                 placeholder="Enter venue name"
                             />
                         </FormControl>
@@ -355,8 +355,8 @@ export const EditVenuePage: React.FC = () => {
                         <FormControl>
                             <FormLabel>Venue Type</FormLabel>
                             <Select
-                                value={form.formData.venueType}
-                                onChange={(e) => handleChange('venueType', e.target.value)}
+                                value={form.formData.venue_type}
+                                onChange={(e) => handleChange('venue_type', e.target.value)}
                                 placeholder="Select venue type"
                             >
                                 {VENUE_TYPE_OPTIONS.map(option => (
@@ -413,8 +413,8 @@ export const EditVenuePage: React.FC = () => {
                                 <FormLabel>Stage Width (ft)</FormLabel>
                                 <Input
                                     type="number"
-                                    value={form.formData.stageWidth}
-                                    onChange={(e) => handleChange('stageWidth', e.target.value)}
+                                    value={form.formData.stage_width}
+                                    onChange={(e) => handleChange('stage_width', e.target.value)}
                                     placeholder="Width in feet"
                                 />
                             </FormControl>
@@ -422,8 +422,8 @@ export const EditVenuePage: React.FC = () => {
                                 <FormLabel>Stage Depth (ft)</FormLabel>
                                 <Input
                                     type="number"
-                                    value={form.formData.stageDepth}
-                                    onChange={(e) => handleChange('stageDepth', e.target.value)}
+                                    value={form.formData.stage_depth}
+                                    onChange={(e) => handleChange('stage_depth', e.target.value)}
                                     placeholder="Depth in feet"
                                 />
                             </FormControl>
@@ -431,8 +431,8 @@ export const EditVenuePage: React.FC = () => {
                                 <FormLabel>Fly Height (ft)</FormLabel>
                                 <Input
                                     type="number"
-                                    value={form.formData.flyHeight}
-                                    onChange={(e) => handleChange('flyHeight', e.target.value)}
+                                    value={form.formData.fly_height}
+                                    onChange={(e) => handleChange('fly_height', e.target.value)}
                                     placeholder="Height in feet"
                                 />
                             </FormControl>
@@ -442,8 +442,8 @@ export const EditVenuePage: React.FC = () => {
                         <FormControl>
                             <FormLabel>Contact Name</FormLabel>
                             <Input
-                                value={form.formData.contactName}
-                                onChange={(e) => handleChange('contactName', e.target.value)}
+                                value={form.formData.contact_name}
+                                onChange={(e) => handleChange('contact_name', e.target.value)}
                                 placeholder="Venue contact person"
                             />
                         </FormControl>
@@ -453,9 +453,9 @@ export const EditVenuePage: React.FC = () => {
                                 <FormLabel>Contact Email</FormLabel>
                                 <Input
                                     type="email"
-                                    value={form.formData.contactEmail}
-                                    onChange={(e) => handleChange('contactEmail', e.target.value)}
-                                    onBlur={() => form.validateField('contactEmail')}
+                                    value={form.formData.contact_email}
+                                    onChange={(e) => handleChange('contact_email', e.target.value)}
+                                    onBlur={() => form.validateField('contact_email')}
                                     placeholder="contact@venue.com"
                                 />
                             </FormControl>
@@ -463,9 +463,9 @@ export const EditVenuePage: React.FC = () => {
                                 <FormLabel>Contact Phone</FormLabel>
                                 <Input
                                     type="tel"
-                                    value={form.formData.contactPhone}
-                                    onChange={(e) => handleChange('contactPhone', e.target.value)}
-                                    onBlur={() => form.validateField('contactPhone')}
+                                    value={form.formData.contact_phone}
+                                    onChange={(e) => handleChange('contact_phone', e.target.value)}
+                                    onBlur={() => form.validateField('contact_phone')}
                                     placeholder="(555) 123-4567"
                                 />
                             </FormControl>
@@ -477,8 +477,8 @@ export const EditVenuePage: React.FC = () => {
                                 <FormLabel>Daily Rental Rate ($)</FormLabel>
                                 <Input
                                     type="number"
-                                    value={form.formData.rentalRate}
-                                    onChange={(e) => handleChange('rentalRate', e.target.value)}
+                                    value={form.formData.rental_rate}
+                                    onChange={(e) => handleChange('rental_rate', e.target.value)}
                                     placeholder="Daily rate in dollars"
                                 />
                             </FormControl>
@@ -486,8 +486,8 @@ export const EditVenuePage: React.FC = () => {
                                 <FormLabel>Minimum Rental ($)</FormLabel>
                                 <Input
                                     type="number"
-                                    value={form.formData.minimumRental}
-                                    onChange={(e) => handleChange('minimumRental', e.target.value)}
+                                    value={form.formData.minimum_rental}
+                                    onChange={(e) => handleChange('minimum_rental', e.target.value)}
                                     placeholder="Minimum rental amount"
                                 />
                             </FormControl>
@@ -497,9 +497,9 @@ export const EditVenuePage: React.FC = () => {
                         <FormControl>
                             <FormLabel>Notes</FormLabel>
                             <Textarea
-                                value={form.formData.venueNotes}
-                                onChange={(e) => handleChange('venueNotes', e.target.value)}
-                                onBlur={() => form.validateField('venueNotes')}
+                                value={form.formData.venue_notes}
+                                onChange={(e) => handleChange('venue_notes', e.target.value)}
+                                onBlur={() => form.validateField('venue_notes')}
                                 placeholder="Additional venue information, equipment, special requirements, etc."
                                 minHeight="120px"
                                 resize="vertical"
@@ -546,7 +546,7 @@ export const EditVenuePage: React.FC = () => {
                 onConfirm={handleDeleteVenue}
                 isLoading={isDeleting}
                 entityType="Venue"
-                entityName={venue?.venueName || ''}
+                entityName={venue?.venue_name || ''}
             />
         </ErrorBoundary>
     );

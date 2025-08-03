@@ -20,10 +20,10 @@ import { useChangeDetection } from '../../../hooks/useChangeDetection';
 
 // TypeScript interfaces
 interface DepartmentFormData {
-    departmentName: string;
-    departmentDescription: string;
-    departmentColor: string;
-    departmentInitials: string;
+    department_name: string;
+    department_description: string;
+    department_color: string;
+    department_initials: string;
 }
 
 interface PresetColor {
@@ -32,14 +32,14 @@ interface PresetColor {
 }
 
 const INITIAL_FORM_STATE: DepartmentFormData = {
-    departmentName: '',
-    departmentDescription: '',
-    departmentColor: '#3182CE',
-    departmentInitials: ''
+    department_name: '',
+    department_description: '',
+    department_color: '#3182CE',
+    department_initials: ''
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
-    departmentName: {
+    department_name: {
         required: false,
         rules: [
             {
@@ -55,13 +55,13 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             ValidationRules.maxLength(100, 'Department name must be no more than 100 characters')
         ]
     },
-    departmentDescription: {
+    department_description: {
         required: false,
         rules: [
             ValidationRules.maxLength(500, 'Description must be no more than 500 characters')
         ]
     },
-    departmentColor: {
+    department_color: {
         required: false,
         rules: [
             {
@@ -71,7 +71,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             }
         ]
     },
-    departmentInitials: {
+    department_initials: {
         required: false,
         rules: [
             ValidationRules.maxLength(5, 'Initials must be no more than 5 characters'),
@@ -117,20 +117,20 @@ export const EditDepartmentPage: React.FC = () => {
     useEffect(() => {
         if (department) {
             form.setFormData({
-                departmentName: department.departmentName || '',
-                departmentDescription: department.departmentDescription || '',
-                departmentColor: department.departmentColor || '#3182CE',
-                departmentInitials: department.departmentInitials || ''
+                department_name: department.department_name || '',
+                department_description: department.department_description || '',
+                department_color: department.department_color || '#3182CE',
+                department_initials: department.department_initials || ''
             });
         }
     }, [department, form.setFormData]);
 
     // Change detection for save button - same pattern as EditShowPage
     const initialData = department ? {
-        departmentName: department.departmentName || '',
-        departmentDescription: department.departmentDescription || '',
-        departmentColor: department.departmentColor || '#3182CE',
-        departmentInitials: department.departmentInitials || ''
+        department_name: department.department_name || '',
+        department_description: department.department_description || '',
+        department_color: department.department_color || '#3182CE',
+        department_initials: department.department_initials || ''
     } : null;
 
     const { hasChanges, updateOriginalData } = useChangeDetection(
@@ -153,16 +153,16 @@ export const EditDepartmentPage: React.FC = () => {
         try {
             // Prepare data for API
             const updateData = {
-                departmentName: form.formData.departmentName,
-                departmentDescription: form.formData.departmentDescription || null,
-                departmentColor: form.formData.departmentColor,
-                departmentInitials: form.formData.departmentInitials || null,
+                department_name: form.formData.department_name,
+                department_description: form.formData.department_description || null,
+                department_color: form.formData.department_color,
+                department_initials: form.formData.department_initials || null,
             };
 
             await form.submitForm(
                 `/api/departments/${departmentId}`,
                 'PATCH',
-                `"${form.formData.departmentName}" has been updated successfully`,
+                `"${form.formData.department_name}" has been updated successfully`,
                 updateData
             );
 
@@ -195,8 +195,8 @@ export const EditDepartmentPage: React.FC = () => {
 
     const isFormValid = (): boolean => {
         return form.fieldErrors.length === 0 &&
-            form.formData.departmentName.trim().length >= 3 &&
-            form.formData.departmentColor.trim().length > 0;
+            form.formData.department_name.trim().length >= 3 &&
+            form.formData.department_color.trim().length > 0;
     };
 
     // Handle department deletion
@@ -217,7 +217,7 @@ export const EditDepartmentPage: React.FC = () => {
                 throw new Error('Failed to delete department');
             }
 
-            showSuccess('Department Deleted', `"${department.departmentName}" has been deleted successfully`);
+            showSuccess('Department Deleted', `"${department.department_name}" has been deleted successfully`);
 
             // Navigate back to dashboard
             navigate('/dashboard', {
@@ -250,7 +250,7 @@ export const EditDepartmentPage: React.FC = () => {
     return (
         <ErrorBoundary context="Edit Department Page">
             <BaseEditPage
-                pageTitle={department?.departmentName || 'Department'}
+                pageTitle={department?.department_name || 'Department'}
                 onSubmit={handleSubmit}
                 isLoading={isLoadingDepartment}
                 primaryAction={{
@@ -298,7 +298,7 @@ export const EditDepartmentPage: React.FC = () => {
                                     w="48px"
                                     h="48px"
                                     borderRadius="full"
-                                    bg={form.formData.departmentColor}
+                                    bg={form.formData.department_color}
                                     border="2px solid"
                                     borderColor="gray.300"
                                     _dark={{ borderColor: "gray.600" }}
@@ -306,14 +306,14 @@ export const EditDepartmentPage: React.FC = () => {
                                 />
                                 <VStack align="start" spacing="1" flex="1">
                                     <HStack spacing="2" align="center">
-                                        <Text fontWeight="medium">{form.formData.departmentName || 'Department Name'}</Text>
+                                        <Text fontWeight="medium">{form.formData.department_name || 'Department Name'}</Text>
                                     </HStack>
                                     <HStack justify="space-between" width="100%">
                                         <Text fontSize="sm" color="detail.text">
                                             Crew Members: 0
                                         </Text>
                                         <Text fontSize="xs" color="detail.text">
-                                            Updated: {formatDateTimeLocal(department.dateUpdated)}
+                                            Updated: {formatDateTimeLocal(department.date_updated)}
                                         </Text>
                                     </HStack>
                                     <HStack justify="space-between" width="100%">
@@ -321,7 +321,7 @@ export const EditDepartmentPage: React.FC = () => {
                                             Shows Assigned: 0
                                         </Text>
                                         <Text fontSize="xs" color="detail.text">
-                                            Created: {formatDateTimeLocal(department.dateCreated)}
+                                            Created: {formatDateTimeLocal(department.date_created)}
                                         </Text>
                                     </HStack>
                                 </VStack>
@@ -332,9 +332,9 @@ export const EditDepartmentPage: React.FC = () => {
                         <FormControl isRequired>
                             <FormLabel>Department Name</FormLabel>
                             <Input
-                                value={form.formData.departmentName}
-                                onChange={(e) => handleChange('departmentName', e.target.value)}
-                                onBlur={() => form.validateField('departmentName')}
+                                value={form.formData.department_name}
+                                onChange={(e) => handleChange('department_name', e.target.value)}
+                                onBlur={() => form.validateField('department_name')}
                                 placeholder="Enter department name"
                             />
                         </FormControl>
@@ -347,8 +347,8 @@ export const EditDepartmentPage: React.FC = () => {
                                     <HStack spacing={2} align="center">
                                         <Input
                                             type="color"
-                                            value={form.formData.departmentColor}
-                                            onChange={(e) => handleChange('departmentColor', e.target.value)}
+                                            value={form.formData.department_color}
+                                            onChange={(e) => handleChange('department_color', e.target.value)}
                                             width="80px"
                                             height="40px"
                                             padding="4px"
@@ -358,9 +358,9 @@ export const EditDepartmentPage: React.FC = () => {
                                             cursor="pointer"
                                         />
                                         <Input
-                                            value={form.formData.departmentColor}
-                                            onChange={(e) => handleChange('departmentColor', e.target.value)}
-                                            onBlur={() => form.validateField('departmentColor')}
+                                            value={form.formData.department_color}
+                                            onChange={(e) => handleChange('department_color', e.target.value)}
+                                            onBlur={() => form.validateField('department_color')}
                                             placeholder="#3182CE"
                                             width="120px"
                                             fontFamily="mono"
@@ -373,9 +373,9 @@ export const EditDepartmentPage: React.FC = () => {
                                                 width="30px"
                                                 minWidth="30px"
                                                 backgroundColor={color.value}
-                                                border={form.formData.departmentColor === color.value ? '3px solid' : '1px solid'}
-                                                borderColor={form.formData.departmentColor === color.value ? 'white' : 'gray.300'}
-                                                onClick={() => handleChange('departmentColor', color.value)}
+                                                border={form.formData.department_color === color.value ? '3px solid' : '1px solid'}
+                                                borderColor={form.formData.department_color === color.value ? 'white' : 'gray.300'}
+                                                onClick={() => handleChange('department_color', color.value)}
                                                 _hover={{ transform: 'scale(1.1)' }}
                                                 title={color.name}
                                                 tabIndex={-1}
@@ -388,9 +388,9 @@ export const EditDepartmentPage: React.FC = () => {
                             <FormControl flex="1">
                                 <FormLabel>Initials</FormLabel>
                                 <Input
-                                    value={form.formData.departmentInitials}
-                                    onChange={(e) => handleChange('departmentInitials', e.target.value.toUpperCase())}
-                                    onBlur={() => form.validateField('departmentInitials')}
+                                    value={form.formData.department_initials}
+                                    onChange={(e) => handleChange('department_initials', e.target.value.toUpperCase())}
+                                    onBlur={() => form.validateField('department_initials')}
                                     placeholder="LX"
                                     maxLength={5}
                                 />
@@ -404,9 +404,9 @@ export const EditDepartmentPage: React.FC = () => {
                         <FormControl>
                             <FormLabel>Department Description</FormLabel>
                             <Textarea
-                                value={form.formData.departmentDescription}
-                                onChange={(e) => handleChange('departmentDescription', e.target.value)}
-                                onBlur={() => form.validateField('departmentDescription')}
+                                value={form.formData.department_description}
+                                onChange={(e) => handleChange('department_description', e.target.value)}
+                                onBlur={() => form.validateField('department_description')}
                                 placeholder="Describe this department's role and responsibilities"
                                 resize="vertical"
                                 minHeight="120px"
@@ -452,7 +452,7 @@ export const EditDepartmentPage: React.FC = () => {
                 onConfirm={handleDeleteDepartment}
                 isLoading={isDeleting}
                 entityType="Department"
-                entityName={department?.departmentName || ''}
+                entityName={department?.department_name || ''}
             />
         </ErrorBoundary>
     );

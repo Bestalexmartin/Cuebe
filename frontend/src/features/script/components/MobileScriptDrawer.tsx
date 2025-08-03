@@ -15,7 +15,7 @@ import {
     Divider
 } from '@chakra-ui/react';
 import { AppIcon } from '../../../components/AppIcon';
-import { ToolButton } from '../types/tool-button';
+import { ToolButton } from '../types/toolButton';
 
 interface MobileScriptDrawerProps {
     isOpen: boolean;

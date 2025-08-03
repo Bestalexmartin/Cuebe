@@ -39,7 +39,7 @@ def read_venues(
     db: Session = Depends(get_db)
 ):
     """Get venues owned by the current user."""
-    venues = db.query(models.Venue).filter(models.Venue.ownerID == user.userID).all()
+    venues = db.query(models.Venue).filter(models.Venue.owner_id == user.user_id).all()
     return venues
 
 
@@ -51,7 +51,7 @@ def create_venue(
 ):
     """Create a new venue owned by the current user."""
     venue_data = venue.model_dump()
-    venue_data['ownerID'] = user.userID
+    venue_data['owner_id'] = user.user_id
     new_venue = models.Venue(**venue_data)
     db.add(new_venue)
     db.commit()
@@ -67,8 +67,8 @@ def get_venue(
 ):
     """Get a single venue by ID (must be owned by current user)."""
     venue = db.query(models.Venue).filter(
-        models.Venue.venueID == venue_id,
-        models.Venue.ownerID == user.userID
+        models.Venue.venue_id == venue_id,
+        models.Venue.owner_id == user.user_id
     ).first()
     if not venue:
         raise HTTPException(status_code=404, detail="Venue not found")
@@ -84,8 +84,8 @@ def update_venue(
 ):
     """Update a venue."""
     venue_to_update = db.query(models.Venue).filter(
-        models.Venue.venueID == venue_id,
-        models.Venue.ownerID == user.userID
+        models.Venue.venue_id == venue_id,
+        models.Venue.owner_id == user.user_id
     ).first()
     if not venue_to_update:
         raise HTTPException(status_code=404, detail="Venue not found")
@@ -94,8 +94,8 @@ def update_venue(
     for key, value in update_data.items():
         setattr(venue_to_update, key, value)
     
-    # Update the dateUpdated timestamp
-    venue_to_update.dateUpdated = datetime.utcnow() # type: ignore
+    # Update the date_updated timestamp
+    venue_to_update.date_updated = datetime.utcnow()
     
     db.commit()
     db.refresh(venue_to_update)
@@ -110,21 +110,21 @@ def delete_venue(
 ):
     """Delete a venue and nullify venue references in shows."""
     venue_to_delete = db.query(models.Venue).filter(
-        models.Venue.venueID == venue_id,
-        models.Venue.ownerID == user.userID
+        models.Venue.venue_id == venue_id,
+        models.Venue.owner_id == user.user_id
     ).first()
     if not venue_to_delete:
         raise HTTPException(status_code=404, detail="Venue not found")
 
-    # First, nullify the venueID in any shows that reference this venue
+    # First, nullify the venue_id in any shows that reference this venue
     shows_using_venue = db.query(models.Show).filter(
-        models.Show.venueID == venue_id,
-        models.Show.ownerID == user.userID  # Only update user's own shows
+        models.Show.venue_id == venue_id,
+        models.Show.owner_id == user.user_id  # Only update user's own shows
     ).all()
     
     for show in shows_using_venue:
-        show.venueID = None # type: ignore
-        show.dateUpdated = datetime.utcnow() # type: ignore
+        show.venue_id = None
+        show.date_updated = datetime.utcnow()
     
     # Log the cleanup for debugging
     if shows_using_venue:

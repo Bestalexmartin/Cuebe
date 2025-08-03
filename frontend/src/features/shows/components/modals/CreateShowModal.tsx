@@ -19,15 +19,15 @@ import { convertLocalToUTC } from '../../../../utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface Venue {
-  venueID: string;
-  venueName: string;
+  venue_id: string;
+  venue_name: string;
 }
 
 interface ShowFormData {
-  showName: string;
-  venueID: string;
-  showDate: string;
-  showNotes: string;
+  show_name: string;
+  venue_id: string;
+  show_date: string;
+  show_notes: string;
   deadline: string;
 }
 
@@ -38,15 +38,15 @@ interface CreateShowModalProps {
 }
 
 const INITIAL_FORM_STATE: ShowFormData = {
-  showName: '',
-  venueID: '',
-  showDate: '',
-  showNotes: '',
+  show_name: '',
+  venue_id: '',
+  show_date: '',
+  show_notes: '',
   deadline: '',
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
-  showName: {
+  show_name: {
     required: false, // Handle required validation manually for button state
     rules: [
       {
@@ -62,13 +62,13 @@ const VALIDATION_CONFIG: FormValidationConfig = {
       ValidationRules.maxLength(100, 'Show name must be no more than 100 characters')
     ]
   },
-  showNotes: {
+  show_notes: {
     required: false,
     rules: [
       ValidationRules.maxLength(500, 'Notes must be no more than 500 characters')
     ]
   },
-  showDate: {
+  show_date: {
     required: false,
     rules: []
   },
@@ -113,10 +113,10 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
     const value = e.target.value;
     if (value === 'add_new') {
       setIsAddingNewVenue(true);
-      form.updateField('venueID', '');
+      form.updateField('venue_id', '');
     } else {
       setIsAddingNewVenue(false);
-      form.updateField('venueID', value);
+      form.updateField('venue_id', value);
       setNewVenueName('');
     }
   };
@@ -125,25 +125,25 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
     event.preventDefault();
 
     try {
-      let venueId = form.formData.venueID;
+      let venueId = form.formData.venue_id;
 
       if (isAddingNewVenue && newVenueName.trim()) {
-        const newVenue = await createVenue({ venueName: newVenueName.trim() });
-        venueId = newVenue.venueID;
+        const newVenue = await createVenue({ venue_name: newVenueName.trim() });
+        venueId = newVenue.venue_id;
       }
 
       const showData = {
-        showName: form.formData.showName,
-        venueID: venueId || null,
-        showDate: convertLocalToUTC(form.formData.showDate),
-        showNotes: form.formData.showNotes || null,
+        show_name: form.formData.show_name,
+        venue_id: venueId || null,
+        show_date: convertLocalToUTC(form.formData.show_date),
+        show_notes: form.formData.show_notes || null,
         deadline: convertLocalToUTC(form.formData.deadline),
       };
 
       await form.submitForm(
         '/api/shows/',
         'POST',
-        `"${form.formData.showName}" has been created successfully`,
+        `"${form.formData.show_name}" has been created successfully`,
         showData
       );
 
@@ -162,7 +162,7 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
     onClose();
   };
 
-  const { canSubmit } = useStandardFormValidation(form, ['showName']);
+  const { canSubmit } = useStandardFormValidation(form, ['show_name']);
 
   return (
     <BaseModal
@@ -185,7 +185,7 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
       <VStack spacing={4} align="stretch">
         <FormInput
           form={form}
-          name="showName"
+          name="show_name"
           label="Show Name"
           placeholder="Enter show name"
           isRequired
@@ -196,13 +196,13 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
           <VStack align="stretch" spacing={3}>
             <Select
               placeholder={isLoadingVenues ? "Loading venues..." : "Select venue"}
-              value={isAddingNewVenue ? 'add_new' : form.formData.venueID}
+              value={isAddingNewVenue ? 'add_new' : form.formData.venue_id}
               onChange={handleVenueSelectChange}
               disabled={isLoadingVenues}
             >
               {venues?.map((venue) => (
-                <option key={venue.venueID} value={venue.venueID}>
-                  {venue.venueName}
+                <option key={venue.venue_id} value={venue.venue_id}>
+                  {venue.venue_name}
                 </option>
               ))}
               <option value="add_new">+ Add New Venue</option>
@@ -220,7 +220,7 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
 
         <FormInput
           form={form}
-          name="showDate"
+          name="show_date"
           label="Show Date"
           type="datetime-local"
         />
@@ -236,9 +236,9 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
           <FormLabel>Notes</FormLabel>
           <Textarea
             placeholder="Additional notes about this show"
-            value={form.formData.showNotes}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => form.updateField('showNotes', e.target.value)}
-            onBlur={() => form.validateField('showNotes')}
+            value={form.formData.show_notes}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => form.updateField('show_notes', e.target.value)}
+            onBlur={() => form.validateField('show_notes')}
             rows={2}
             resize="vertical"
           />

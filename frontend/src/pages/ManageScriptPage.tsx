@@ -22,6 +22,7 @@ import { ActionsMenu } from '../components/ActionsMenu';
 import { useValidatedForm } from '../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../types/validation';
 import { useEnhancedToast } from '../utils/toastUtils';
+import { convertLocalToUTC } from '../utils/dateTimeUtils';
 import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
 import { EditHistoryView } from '../components/EditHistoryView';
 import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
@@ -53,20 +54,20 @@ import { createActionMenuConfig } from '../features/script/config/actionMenuConf
 // Modal names for type safety and consistency
 const MODAL_NAMES = {
     DELETE: 'delete',
-    FINAL_DELETE: 'final-delete',
+    FINAL_DELETE: 'final_delete',
     DUPLICATE: 'duplicate',
     PROCESSING: 'processing',
-    ADD_ELEMENT: 'add-element',
-    EDIT_ELEMENT: 'edit-element',
+    ADD_ELEMENT: 'add_element',
+    EDIT_ELEMENT: 'edit_element',
     OPTIONS: 'options',
-    DELETE_CUE: 'delete-cue',
-    DUPLICATE_ELEMENT: 'duplicate-element',
-    UNSAVED_CHANGES: 'unsaved-changes',
-    FINAL_UNSAVED_CHANGES: 'final-unsaved-changes',
-    CLEAR_HISTORY: 'clear-history',
-    FINAL_CLEAR_HISTORY: 'final-clear-history',
-    SAVE_CONFIRMATION: 'save-confirmation',
-    SAVE_PROCESSING: 'save-processing'
+    DELETE_CUE: 'delete_cue',
+    DUPLICATE_ELEMENT: 'duplicate_element',
+    UNSAVED_CHANGES: 'unsaved_changes',
+    FINAL_UNSAVED_CHANGES: 'final_unsaved_changes',
+    CLEAR_HISTORY: 'clear_history',
+    FINAL_CLEAR_HISTORY: 'final_clear_history',
+    SAVE_CONFIRMATION: 'save_confirmation',
+    SAVE_PROCESSING: 'save_processing'
 } as const;
 
 interface ManageScriptPageProps {
@@ -76,24 +77,24 @@ interface ManageScriptPageProps {
 
 // TypeScript interfaces for script metadata form
 interface ScriptFormData {
-    scriptName: string;
-    scriptStatus: string;
-    startTime: string;
-    endTime: string;
-    scriptNotes: string;
+    script_name: string;
+    script_status: string;
+    start_time: string;
+    end_time: string;
+    script_notes: string;
 }
 
 
 const INITIAL_FORM_STATE: ScriptFormData = {
-    scriptName: '',
-    scriptStatus: 'DRAFT',
-    startTime: '',
-    endTime: '',
-    scriptNotes: ''
+    script_name: '',
+    script_status: 'DRAFT',
+    start_time: '',
+    end_time: '',
+    script_notes: ''
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
-    scriptName: {
+    script_name: {
         required: true,
         rules: [
             {
@@ -104,12 +105,12 @@ const VALIDATION_CONFIG: FormValidationConfig = {
                     return value.trim().length >= 4; // Must have 4+ chars if not empty
                 },
                 message: 'Script name is required and must be at least 4 characters',
-                code: 'REQUIRED_MIN_LENGTH'
+                code: 'requiredMinLength'
             },
             ValidationRules.maxLength(100, 'Script name must be no more than 100 characters')
         ]
     },
-    scriptNotes: {
+    script_notes: {
         required: false,
         rules: [
             ValidationRules.maxLength(500, 'Notes must be no more than 500 characters')
@@ -142,7 +143,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     // Fetch the script and show data
     const { script, isLoading: isLoadingScript, error: scriptError } = useScript(scriptId);
-    const { show } = useShow(script?.showID);
+    const { show } = useShow(script?.show_id);
 
     // Edit queue for tracking changes
     const editQueueHook = useScriptElementsWithEditQueue(scriptId);
@@ -202,6 +203,52 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         setActiveMode
     });
 
+    // Function to capture Info mode changes without changing mode
+    const captureInfoChanges = useCallback(() => {
+        if (activeMode === 'info' && hasChanges && currentScript) {
+            // Use the same logic as handleInfoModeExit but don't change mode
+            const formChanges = {
+                script_name: {
+                    oldValue: currentScript.script_name,
+                    newValue: form.formData.script_name
+                },
+                script_status: {
+                    oldValue: currentScript.script_status,
+                    newValue: form.formData.script_status
+                },
+                start_time: {
+                    oldValue: currentScript.start_time,
+                    newValue: convertLocalToUTC(form.formData.start_time)
+                },
+                end_time: {
+                    oldValue: currentScript.end_time,
+                    newValue: convertLocalToUTC(form.formData.end_time)
+                },
+                script_notes: {
+                    oldValue: currentScript.script_notes || '',
+                    newValue: form.formData.script_notes
+                }
+            };
+
+            const actualChanges: any = {};
+            for (const [field, values] of Object.entries(formChanges)) {
+                if (values.oldValue !== values.newValue) {
+                    actualChanges[field] = values;
+                }
+            }
+
+            if (Object.keys(actualChanges).length > 0) {
+                const infoFormOperation = {
+                    type: 'UPDATE_SCRIPT_INFO' as const,
+                    elementId: 'script-info',
+                    changes: actualChanges
+                };
+
+                applyLocalChange(infoFormOperation);
+            }
+        }
+    }, [activeMode, hasChanges, currentScript, form.formData, applyLocalChange]);
+
     // Navigation hook
     const navigation = useScriptNavigation({
         hasUnsavedChanges,
@@ -221,7 +268,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         saveChanges,
         discardChanges,
         modalState,
-        modalNames: MODAL_NAMES
+        modalNames: MODAL_NAMES,
+        activeMode,
+        hasInfoChanges: hasChanges,
+        captureInfoChanges
     });
 
     // Element modal actions hook
@@ -384,10 +434,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
         try {
             const currentElements = [...editQueueElements];
-            const sortedElements = [...currentElements].sort((a, b) => a.timeOffsetMs - b.timeOffsetMs);
+            const sortedElements = [...currentElements].sort((a, b) => a.time_offset_ms - b.time_offset_ms);
 
             const needsReordering = currentElements.some((element, index) => {
-                return element.elementID !== sortedElements[index]?.elementID;
+                return element.element_id !== sortedElements[index]?.element_id;
             });
 
             if (!needsReordering) {
@@ -398,11 +448,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             const elementChanges: any[] = [];
             for (let newIndex = 0; newIndex < sortedElements.length; newIndex++) {
                 const element = sortedElements[newIndex];
-                const oldIndex = currentElements.findIndex(el => el.elementID === element.elementID);
+                const oldIndex = currentElements.findIndex(el => el.element_id === element.element_id);
 
                 if (oldIndex !== newIndex) {
                     elementChanges.push({
-                        elementId: element.elementID,
+                        elementId: element.element_id,
                         oldIndex: oldIndex,
                         newIndex: newIndex,
                         oldSequence: oldIndex + 1,
@@ -462,6 +512,16 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         onDeleteClick: modalHandlers.handleDeleteClick
     });
 
+    // Calculate total changes count including Info mode changes
+    const totalChangesCount = useMemo(() => {
+        let count = pendingOperations.length;
+        // Add 1 if we're in Info mode with unsaved changes that aren't yet in the queue
+        if (activeMode === 'info' && hasChanges) {
+            count += 1;
+        }
+        return count;
+    }, [pendingOperations.length, activeMode, hasChanges]);
+
     return (
         <ErrorBoundary context="Script Management Page">
             <Flex width="100%" height="100%" p="2rem" flexDirection="column" boxSizing="border-box">
@@ -478,7 +538,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     <HStack spacing={2} align="center">
                         <AppIcon name="script" boxSize="20px" color="white" />
                         <Heading as="h2" size="md">
-                            {show?.showName && currentScript?.scriptName ? `${show.showName} > ${currentScript.scriptName}` : currentScript?.scriptName || 'Script'}
+                            {show?.show_name && currentScript?.script_name ? `${show.show_name} > ${currentScript.script_name}` : currentScript?.script_name || 'Script'}
                         </Heading>
                     </HStack>
 
@@ -680,8 +740,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onInitialClearHistoryConfirm={modalHandlers.handleInitialClearHistoryConfirm}
                 onFinalClearHistoryConfirm={modalHandlers.handleFinalClearHistoryConfirm}
                 onDuplicateClose={() => modalState.closeModal(MODAL_NAMES.DUPLICATE)}
-                onDuplicateConfirm={(scriptName: string, showId: string) => {
-                    console.log('Script duplication:', scriptName, showId);
+                onDuplicateConfirm={(script_name: string, showId: string) => {
+                    console.log('Script duplication:', script_name, showId);
                     modalState.closeModal(MODAL_NAMES.DUPLICATE);
                 }}
                 onElementCreated={elementActions.handleElementCreated}
@@ -703,7 +763,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 isOpen={modalState.isOpen(MODAL_NAMES.SAVE_CONFIRMATION)}
                 onClose={() => modalState.closeModal(MODAL_NAMES.SAVE_CONFIRMATION)}
                 onConfirm={modalHandlers.handleSaveScriptChanges}
-                changesCount={pendingOperations.length}
+                changesCount={totalChangesCount}
                 isSaving={false}
             />
 

@@ -5,21 +5,21 @@ import { useAuth } from "@clerk/clerk-react";
 
 // TypeScript interfaces
 interface Crew {
-  userID: string;
+  user_id: string;
   clerk_user_id?: string;
-  emailAddress: string;
-  fullnameFirst: string;
-  fullnameLast: string;
-  userName?: string;
-  profileImgURL?: string;
-  phoneNumber?: string;
-  userStatus: string;
-  userRole: string;
-  createdBy?: string;
-  isActive: boolean;
-  dateCreated: string;
-  dateUpdated: string;
-  relationshipNotes?: string; // Notes from the relationship, not user notes
+  email_address: string;
+  fullname_first: string;
+  fullname_last: string;
+  user_name?: string;
+  profile_img_url?: string;
+  phone_number?: string;
+  user_status: string;
+  user_role: string;
+  created_by?: string;
+  is_active: boolean;
+  date_created: string;
+  date_updated: string;
+  relationship_notes?: string; // Notes from the relationship, not user notes
 }
 
 interface UseCrewReturn {

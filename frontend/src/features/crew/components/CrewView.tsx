@@ -15,9 +15,9 @@ interface CrewViewProps {
     hoveredCardId?: string | null;
     setHoveredCardId: (id: string | null) => void;
     onSaveNavigationState?: () => void;
-    sortBy: 'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated' | 'dateUpdated';
+    sortBy: 'fullname_first' | 'fullname_last' | 'user_role' | 'email_address' | 'date_created' | 'date_updated';
     sortDirection: 'asc' | 'desc';
-    onSortChange: (sortBy: 'fullnameFirst' | 'fullnameLast' | 'userRole' | 'emailAddress' | 'dateCreated' | 'dateUpdated', sortDirection: 'asc' | 'desc') => void;
+    onSortChange: (sortBy: 'fullname_first' | 'fullname_last' | 'user_role' | 'email_address' | 'date_created' | 'date_updated', sortDirection: 'asc' | 'desc') => void;
     showCardRefs: React.MutableRefObject<Record<string, HTMLElement | null>>;
 }
 
@@ -42,7 +42,7 @@ export const CrewView: React.FC<CrewViewProps> = ({
             const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
             onSortChange(newSortBy, newDirection);
         } else {
-            const newDirection = (newSortBy === 'dateCreated' || newSortBy === 'dateUpdated') ? 'desc' : 'asc';
+            const newDirection = (newSortBy === 'date_created' || newSortBy === 'date_updated') ? 'desc' : 'asc';
             onSortChange(newSortBy, newDirection);
         }
     };
@@ -53,26 +53,26 @@ export const CrewView: React.FC<CrewViewProps> = ({
         const crewsToSort = [...crews];
         crewsToSort.sort((a, b) => {
             let comparison = 0;
-            if (sortBy === 'fullnameFirst') {
-                const aName = `${a.fullnameFirst || ''} ${a.fullnameLast || ''}`.trim();
-                const bName = `${b.fullnameFirst || ''} ${b.fullnameLast || ''}`.trim();
+            if (sortBy === 'fullname_first') {
+                const aName = `${a.fullname_first || ''} ${a.fullname_last || ''}`.trim();
+                const bName = `${b.fullname_first || ''} ${b.fullname_last || ''}`.trim();
                 comparison = aName.localeCompare(bName);
-            } else if (sortBy === 'fullnameLast') {
-                const aName = `${a.fullnameLast || ''} ${a.fullnameFirst || ''}`.trim();
-                const bName = `${b.fullnameLast || ''} ${b.fullnameFirst || ''}`.trim();
+            } else if (sortBy === 'fullname_last') {
+                const aName = `${a.fullname_last || ''} ${a.fullname_first || ''}`.trim();
+                const bName = `${b.fullname_last || ''} ${b.fullname_first || ''}`.trim();
                 comparison = aName.localeCompare(bName);
-            } else if (sortBy === 'userRole') {
-                const aRole = a.userRole || 'zzz';
-                const bRole = b.userRole || 'zzz';
+            } else if (sortBy === 'user_role') {
+                const aRole = a.user_role || 'zzz';
+                const bRole = b.user_role || 'zzz';
                 comparison = aRole.localeCompare(bRole);
-            } else if (sortBy === 'emailAddress') {
-                const aEmail = a.emailAddress || 'zzz';
-                const bEmail = b.emailAddress || 'zzz';
+            } else if (sortBy === 'email_address') {
+                const aEmail = a.email_address || 'zzz';
+                const bEmail = b.email_address || 'zzz';
                 comparison = aEmail.localeCompare(bEmail);
-            } else if (sortBy === 'dateCreated') {
-                comparison = new Date(b.dateCreated || b.dateUpdated).getTime() - new Date(a.dateCreated || a.dateUpdated).getTime();
+            } else if (sortBy === 'date_created') {
+                comparison = new Date(b.date_created || b.date_updated).getTime() - new Date(a.date_created || a.date_updated).getTime();
             } else {
-                comparison = new Date(b.dateUpdated || b.dateCreated).getTime() - new Date(a.dateUpdated || a.dateCreated).getTime();
+                comparison = new Date(b.date_updated || b.date_created).getTime() - new Date(a.date_updated || a.date_created).getTime();
             }
             return sortDirection === 'asc' ? comparison : -comparison;
         });
@@ -103,49 +103,49 @@ export const CrewView: React.FC<CrewViewProps> = ({
                             <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
                             <MenuList zIndex={9999}>
                                 <MenuItem
-                                    onClick={() => handleSortClick('fullnameFirst')}
-                                    color={sortBy === 'fullnameFirst' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'fullnameFirst' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('fullname_first')}
+                                    color={sortBy === 'fullname_first' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'fullname_first' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     First Name
                                 </MenuItem>
                                 <MenuItem
-                                    onClick={() => handleSortClick('fullnameLast')}
-                                    color={sortBy === 'fullnameLast' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'fullnameLast' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('fullname_last')}
+                                    color={sortBy === 'fullname_last' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'fullname_last' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Last Name
                                 </MenuItem>
                                 <MenuItem
-                                    onClick={() => handleSortClick('userRole')}
-                                    color={sortBy === 'userRole' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'userRole' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('user_role')}
+                                    color={sortBy === 'user_role' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'user_role' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Role
                                 </MenuItem>
                                 <MenuItem
-                                    onClick={() => handleSortClick('emailAddress')}
-                                    color={sortBy === 'emailAddress' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'emailAddress' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('email_address')}
+                                    color={sortBy === 'email_address' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'email_address' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Email
                                 </MenuItem>
                                 <MenuItem
-                                    onClick={() => handleSortClick('dateCreated')}
-                                    color={sortBy === 'dateCreated' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'dateCreated' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('date_created')}
+                                    color={sortBy === 'date_created' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'date_created' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Created
                                 </MenuItem>
                                 <MenuItem
-                                    onClick={() => handleSortClick('dateUpdated')}
-                                    color={sortBy === 'dateUpdated' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'dateUpdated' ? 'bold' : 'normal'}
+                                    onClick={() => handleSortClick('date_updated')}
+                                    color={sortBy === 'date_updated' ? 'blue.400' : 'inherit'}
+                                    fontWeight={sortBy === 'date_updated' ? 'bold' : 'normal'}
                                     _hover={{ borderColor: 'orange.400' }}
                                 >
                                     Updated
@@ -189,13 +189,13 @@ export const CrewView: React.FC<CrewViewProps> = ({
                         sortedCrews.length > 0 ? (
                             <VStack spacing={4} align="stretch">
                                 {sortedCrews.map(crewMember => (
-                                    <div key={crewMember.userID} ref={el => { showCardRefs.current[crewMember.userID] = el; }}>
+                                    <div key={crewMember.user_id} ref={el => { showCardRefs.current[crewMember.user_id] = el; }}>
                                         <CrewCard
                                             crewMember={crewMember}
                                             onEdit={handleEdit}
                                             onCrewClick={onCrewClick}
-                                            isHovered={hoveredCardId === crewMember.userID}
-                                            isSelected={selectedCrewId === crewMember.userID}
+                                            isHovered={hoveredCardId === crewMember.user_id}
+                                            isSelected={selectedCrewId === crewMember.user_id}
                                             onHover={setHoveredCardId}
                                             onSaveNavigationState={onSaveNavigationState}
                                         />

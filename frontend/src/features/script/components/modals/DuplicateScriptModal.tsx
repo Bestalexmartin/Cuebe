@@ -16,8 +16,8 @@ import { SCRIPT_STATUS_OPTIONS } from '../../constants';
 
 // TypeScript interfaces
 interface ScriptFormData {
-    scriptName: string;
-    scriptStatus: string;
+    script_name: string;
+    script_status: string;
 }
 
 
@@ -33,7 +33,7 @@ interface DuplicateScriptModalProps {
 }
 
 const VALIDATION_CONFIG: FormValidationConfig = {
-    scriptName: {
+    script_name: {
         required: false, // Handle required validation manually for button state
         rules: [
             {
@@ -63,8 +63,8 @@ export const DuplicateScriptModal: React.FC<DuplicateScriptModalProps> = ({
 }) => {
     // Create initial form state with pre-populated values
     const getInitialFormState = (): ScriptFormData => ({
-        scriptName: `${originalScriptName} copy`,
-        scriptStatus: 'COPY',
+        script_name: `${originalScriptName} copy`,
+        script_status: 'COPY',
     });
 
     const form = useValidatedForm<ScriptFormData>(getInitialFormState(), {
@@ -88,19 +88,19 @@ export const DuplicateScriptModal: React.FC<DuplicateScriptModalProps> = ({
 
         try {
             const scriptData = {
-                scriptName: form.formData.scriptName,
-                scriptStatus: form.formData.scriptStatus
+                script_name: form.formData.script_name,
+                script_status: form.formData.script_status
             };
 
             const response = await form.submitForm(
                 `/api/scripts/${scriptId}/duplicate`,
                 'POST',
-                `"${form.formData.scriptName}" has been duplicated successfully`,
+                `"${form.formData.script_name}" has been duplicated successfully`,
                 scriptData
             );
 
             // Extract the new script ID from the response
-            const newScriptId = response?.scriptID;
+            const newScriptId = response?.script_id;
             if (!newScriptId) {
                 throw new Error('Script ID not returned from server');
             }
@@ -121,7 +121,7 @@ export const DuplicateScriptModal: React.FC<DuplicateScriptModalProps> = ({
         onClose();
     };
 
-    const { canSubmit } = useStandardFormValidation(form, ['scriptName']);
+    const { canSubmit } = useStandardFormValidation(form, ['script_name']);
 
     return (
         <BaseModal
@@ -144,7 +144,7 @@ export const DuplicateScriptModal: React.FC<DuplicateScriptModalProps> = ({
             <VStack spacing={4} align="stretch">
                 <FormInput
                     form={form}
-                    name="scriptName"
+                    name="script_name"
                     label="Script Name"
                     placeholder="Enter script name"
                     isRequired
@@ -153,8 +153,8 @@ export const DuplicateScriptModal: React.FC<DuplicateScriptModalProps> = ({
                 <FormControl>
                     <FormLabel>Script Status</FormLabel>
                     <Select
-                        value={form.formData.scriptStatus}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => form.updateField('scriptStatus', e.target.value)}
+                        value={form.formData.script_status}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => form.updateField('script_status', e.target.value)}
                     >
                         {SCRIPT_STATUS_OPTIONS.map(option => (
                             <option key={option.value} value={option.value}>

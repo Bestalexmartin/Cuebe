@@ -12,7 +12,7 @@ export class EditQueueFormatter {
      * Format a single edit operation into a human-readable string
      */
     static formatOperation(operation: EditOperation, allElements: ScriptElement[]): string {
-        const element = allElements.find(el => el.elementID === operation.elementId);
+        const element = allElements.find(el => el.element_id === operation.elementId);
         const elementName = element?.description || `Element ${operation.elementId.slice(-6)}`;
         
         switch (operation.type) {
@@ -28,12 +28,12 @@ export class EditQueueFormatter {
                 return `Updated "${elementName}" time from ${oldTime} to ${newTime}`;
             
             case 'CREATE_ELEMENT':
-                const elementType = operation.elementData.elementType?.toLowerCase() || 'element';
+                const elementType = operation.elementData.element_type?.toLowerCase() || 'element';
                 const insertText = operation.insertIndex !== undefined ? ` at position ${operation.insertIndex + 1}` : '';
                 return `Created new ${elementType}${insertText}: "${operation.elementData.description || 'Untitled'}"`;
             
             case 'DELETE_ELEMENT':
-                const deletedType = operation.elementData.elementType?.toLowerCase() || 'element';
+                const deletedType = operation.elementData.element_type?.toLowerCase() || 'element';
                 return `Deleted ${deletedType}: "${operation.elementData.description || 'Untitled'}"`;
             
             case 'BULK_REORDER':
@@ -73,11 +73,11 @@ export class EditQueueFormatter {
             const field = changedFields[0];
             const change = changes[field];
             const fieldDisplayNames: Record<string, string> = {
-                'scriptName': 'script name',
-                'scriptStatus': 'script status',
-                'startTime': 'start time',
-                'endTime': 'end time',
-                'scriptNotes': 'script notes'
+                'script_name': 'script name',
+                'script_status': 'script status',
+                'start_time': 'start time',
+                'end_time': 'end time',
+                'script_notes': 'script notes'
             };
             
             const fieldName = fieldDisplayNames[field] || field;
@@ -89,11 +89,11 @@ export class EditQueueFormatter {
         
         // Multiple fields changed
         const fieldDisplayNames: Record<string, string> = {
-            'scriptName': 'name',
-            'scriptStatus': 'status',
-            'startTime': 'start time',
-            'endTime': 'end time',
-            'scriptNotes': 'notes'
+            'script_name': 'name',
+            'script_status': 'status',
+            'start_time': 'start time',
+            'end_time': 'end time',
+            'script_notes': 'notes'
         };
         
         const fieldNames = changedFields.map(field => fieldDisplayNames[field] || field).join(', ');
@@ -116,22 +116,22 @@ export class EditQueueFormatter {
             const change = changes[field];
             const fieldDisplayNames: Record<string, string> = {
                 'description': 'description',
-                'cueID': 'cue ID',
-                'cueNotes': 'notes',
+                'cue_id': 'cue ID',
+                'cue_notes': 'notes',
                 'priority': 'priority',
-                'departmentID': 'department',
-                'customColor': 'color',
+                'department_id': 'department',
+                'custom_color': 'color',
                 'duration': 'duration',
-                'timeOffsetMs': 'time offset',
-                'executionStatus': 'execution status',
-                'locationDetails': 'location',
-                'fadeIn': 'fade in',
-                'fadeOut': 'fade out',
-                'parentElementID': 'parent element',
-                'groupLevel': 'group level',
-                'isCollapsed': 'collapsed',
-                'triggerType': 'trigger type',
-                'followsCueID': 'follows cue'
+                'time_offset_ms': 'time offset',
+                'execution_status': 'execution status',
+                'location_details': 'location',
+                'fade_in': 'fade in',
+                'fade_out': 'fade out',
+                'parent_element_id': 'parent element',
+                'group_level': 'group level',
+                'is_collapsed': 'collapsed',
+                'trigger_type': 'trigger type',
+                'follows_cue_id': 'follows cue'
             };
             
             const fieldName = fieldDisplayNames[field] || this.formatFieldName(field);
@@ -144,22 +144,22 @@ export class EditQueueFormatter {
         // Multiple fields changed
         const fieldDisplayNames: Record<string, string> = {
             'description': 'description',
-            'cueID': 'ID',
-            'cueNotes': 'notes',
+            'cue_id': 'ID',
+            'cue_notes': 'notes',
             'priority': 'priority',
-            'departmentID': 'department',
-            'customColor': 'color',
+            'department_id': 'department',
+            'custom_color': 'color',
             'duration': 'duration',
-            'timeOffsetMs': 'time',
-            'executionStatus': 'status',
-            'locationDetails': 'location',
-            'fadeIn': 'fade in',
-            'fadeOut': 'fade out',
-            'parentElementID': 'parent',
-            'groupLevel': 'group level',
-            'isCollapsed': 'collapsed state',
-            'triggerType': 'trigger',
-            'followsCueID': 'follows cue'
+            'time_offset_ms': 'time',
+            'execution_status': 'status',
+            'location_details': 'location',
+            'fade_in': 'fade in',
+            'fade_out': 'fade out',
+            'parent_element_id': 'parent',
+            'group_level': 'group level',
+            'is_collapsed': 'collapsed state',
+            'trigger_type': 'trigger',
+            'follows_cue_id': 'follows cue'
         };
         
         const fieldNames = changedFields.map(field => fieldDisplayNames[field] || this.formatFieldName(field)).join(', ');
@@ -175,8 +175,8 @@ export class EditQueueFormatter {
         }
         
         switch (field) {
-            case 'startTime':
-            case 'endTime':
+            case 'start_time':
+            case 'end_time':
                 // Format ISO date string to readable format
                 try {
                     const date = new Date(value);
@@ -191,10 +191,10 @@ export class EditQueueFormatter {
                     return String(value);
                 }
             
-            case 'scriptStatus':
+            case 'script_status':
                 return String(value).toLowerCase();
             
-            case 'scriptNotes':
+            case 'script_notes':
                 return String(value).length > 30 
                     ? String(value).substring(0, 30) + '...'
                     : String(value);
@@ -212,24 +212,24 @@ export class EditQueueFormatter {
         
         const fieldDisplayNames: Record<string, string> = {
             'description': 'description',
-            'cueID': 'cue ID',
-            'cueNotes': 'notes',
+            'cue_id': 'cue ID',
+            'cue_notes': 'notes',
             'priority': 'priority',
-            'departmentID': 'department',
-            'customColor': 'color',
+            'department_id': 'department',
+            'custom_color': 'color',
             'duration': 'duration',
-            'timeOffsetMs': 'time offset',
-            'executionStatus': 'execution status',
-            'locationDetails': 'location details',
-            'fadeIn': 'fade in',
-            'fadeOut': 'fade out',
+            'time_offset_ms': 'time offset',
+            'execution_status': 'execution status',
+            'location_details': 'location details',
+            'fade_in': 'fade in',
+            'fade_out': 'fade out',
             'isSafetyCritical': 'safety critical',
             'safetyNotes': 'safety notes',
-            'parentElementID': 'parent element',
-            'groupLevel': 'group level',
-            'isCollapsed': 'collapsed',
-            'triggerType': 'trigger type',
-            'followsCueID': 'follows cue'
+            'parent_element_id': 'parent element',
+            'group_level': 'group level',
+            'is_collapsed': 'collapsed',
+            'trigger_type': 'trigger type',
+            'follows_cue_id': 'follows cue'
         };
         
         const fieldName = fieldDisplayNames[field] || this.formatFieldName(field);
@@ -261,13 +261,13 @@ export class EditQueueFormatter {
         }
         
         switch (field) {
-            case 'timeOffsetMs':
+            case 'time_offset_ms':
                 return this.formatTime(value);
             
             case 'duration':
                 return this.formatDuration(value);
             
-            case 'customColor':
+            case 'custom_color':
                 return value === '#E2E8F0' ? 'default' : value;
             
             case 'priority':

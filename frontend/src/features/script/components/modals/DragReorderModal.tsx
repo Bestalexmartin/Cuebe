@@ -10,9 +10,9 @@ import {
 import { BaseModal } from '../../../../components/base/BaseModal';
 
 interface DraggedElement {
-    elementID: string;
+    element_id: string;
     description: string;
-    timeOffsetMs: number;
+    time_offset_ms: number;
 }
 
 interface DragReorderModalProps {
@@ -28,12 +28,12 @@ interface DragReorderModalProps {
 }
 
 // Helper function to format time offset
-const formatTimeOffset = (timeOffsetMs: number): string => {
-    const totalSeconds = Math.round(timeOffsetMs / 1000);
+const formatTimeOffset = (time_offset_ms: number): string => {
+    const totalSeconds = Math.round(time_offset_ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
-    
+
     if (hours > 0) {
         return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     } else {
@@ -60,33 +60,33 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
             return {
                 borderColor: "gray.400",
                 bg: "gray.200",
-                _dark: { 
+                _dark: {
                     borderColor: "gray.500",
-                    bg: "gray.800" 
+                    bg: "gray.800"
                 },
-                _hover: { 
+                _hover: {
                     borderColor: "orange.400",
                     bg: "orange.50",
-                    _dark: { 
+                    _dark: {
                         borderColor: "orange.400",
-                        bg: "orange.900" 
+                        bg: "orange.900"
                     }
                 },
                 _active: {
                     borderColor: "blue.400",
                     bg: "blue.50",
-                    _dark: { 
+                    _dark: {
                         borderColor: "blue.400",
-                        bg: "blue.900" 
+                        bg: "blue.900"
                     }
                 }
             };
         }
-        
-        
+
+
         return {
             borderColor: "gray.300",
-            _hover: { 
+            _hover: {
                 borderColor: "orange.400",
                 bg: "orange.50"
             },
@@ -125,7 +125,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
             <VStack spacing={6} align="stretch">
                 <Box>
                     <Text fontSize="md">
-                        <Text as="span" fontWeight="bold">Moved Cue:</Text> "{draggedElement.description}" at {formatTimeOffset(draggedElement.timeOffsetMs)}
+                        <Text as="span" fontWeight="bold">Moved Cue:</Text> "{draggedElement.description}" at {formatTimeOffset(draggedElement.time_offset_ms)}
                     </Text>
                 </Box>
 
@@ -163,7 +163,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
                             <VStack spacing={1}>
                                 <Text fontWeight="semibold">Match Time of Cue Before</Text>
                                 <Text fontSize="xs" color="gray.500">
-                                    Change offset to {formatTimeOffset(elementAbove.timeOffsetMs)} ("{elementAbove.description}")
+                                    Change offset to {formatTimeOffset(elementAbove.time_offset_ms)} ("{elementAbove.description}")
                                 </Text>
                             </VStack>
                         </Button>
@@ -183,7 +183,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
                             <VStack spacing={1}>
                                 <Text fontWeight="semibold">Match Time of Cue After</Text>
                                 <Text fontSize="xs" color="gray.500">
-                                    Change offset to {formatTimeOffset(elementBelow.timeOffsetMs)} ("{elementBelow.description}")
+                                    Change offset to {formatTimeOffset(elementBelow.time_offset_ms)} ("{elementBelow.description}")
                                 </Text>
                             </VStack>
                         </Button>

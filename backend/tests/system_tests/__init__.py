@@ -28,10 +28,10 @@ except ImportError:  # pragma: no cover - optional dependency
 HAS_PSUTIL = False
 psutil = None
 try:
-    import psutil  # type: ignore
+    import psutil
     HAS_PSUTIL = True
 except ImportError:  # pragma: no cover - optional dependency
-    psutil = None  # type: ignore
+    psutil = None
     HAS_PSUTIL = False
 
 # Redis import with proper type handling
@@ -39,12 +39,12 @@ HAS_REDIS = False
 redis = None
 RedisConnectionError = Exception
 try:
-    import redis  # type: ignore
-    from redis.exceptions import ConnectionError as RedisConnectionError  # type: ignore
+    import redis
+    from redis.exceptions import ConnectionError as RedisConnectionError
     HAS_REDIS = True
 except ImportError:  # pragma: no cover - optional dependency
-    redis = None  # type: ignore
-    RedisConnectionError = Exception  # type: ignore
+    redis = None
+    RedisConnectionError = Exception
     HAS_REDIS = False
 
 logger = logging.getLogger(__name__)

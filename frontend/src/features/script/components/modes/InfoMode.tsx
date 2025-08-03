@@ -6,11 +6,11 @@ import { useValidatedForm } from '../../../../hooks/useValidatedForm';
 import { SCRIPT_STATUS_OPTIONS } from '../../constants';
 
 interface ScriptFormData {
-    scriptName: string;
-    scriptStatus: string;
-    startTime: string;
-    endTime: string;
-    scriptNotes: string;
+    script_name: string;
+    script_status: string;
+    start_time: string;
+    end_time: string;
+    script_notes: string;
 }
 
 interface InfoModeProps {
@@ -21,24 +21,24 @@ interface InfoModeProps {
 export const InfoMode: React.FC<InfoModeProps> = ({ form }) => {
     return (
         <VStack spacing={4} align="stretch" width="100%">
-            <FormControl isRequired isInvalid={!!form.getFieldError('scriptName')}>
+            <FormControl isRequired isInvalid={!!form.getFieldError('script_name')}>
                 <FormLabel>Script Name</FormLabel>
                 <Input
-                    value={form.formData.scriptName}
-                    onChange={(e) => form.updateField('scriptName', e.target.value)}
-                    onBlur={() => form.validateField('scriptName')}
+                    value={form.formData.script_name}
+                    onChange={(e) => form.updateField('script_name', e.target.value)}
+                    onBlur={() => form.validateField('script_name')}
                     placeholder="Enter script name"
                 />
                 <FormErrorMessage>
-                    {form.getFieldError('scriptName')?.message}
+                    {form.getFieldError('script_name')?.message}
                 </FormErrorMessage>
             </FormControl>
 
             <FormControl>
                 <FormLabel>Script Status</FormLabel>
                 <Select
-                    value={form.formData.scriptStatus}
-                    onChange={(e) => form.updateField('scriptStatus', e.target.value)}
+                    value={form.formData.script_status}
+                    onChange={(e) => form.updateField('script_status', e.target.value)}
                 >
                     {SCRIPT_STATUS_OPTIONS.map(option => (
                         <option key={option.value} value={option.value}>
@@ -54,8 +54,8 @@ export const InfoMode: React.FC<InfoModeProps> = ({ form }) => {
                     <FormLabel>Start Time</FormLabel>
                     <Input
                         type="datetime-local"
-                        value={form.formData.startTime}
-                        onChange={(e) => form.updateField('startTime', e.target.value)}
+                        value={form.formData.start_time}
+                        onChange={(e) => form.updateField('start_time', e.target.value)}
                         placeholder="Select start time"
                     />
                 </FormControl>
@@ -63,25 +63,25 @@ export const InfoMode: React.FC<InfoModeProps> = ({ form }) => {
                     <FormLabel>End Time</FormLabel>
                     <Input
                         type="datetime-local"
-                        value={form.formData.endTime}
-                        onChange={(e) => form.updateField('endTime', e.target.value)}
+                        value={form.formData.end_time}
+                        onChange={(e) => form.updateField('end_time', e.target.value)}
                         placeholder="Select end time"
                     />
                 </FormControl>
             </HStack>
 
-            <FormControl isInvalid={!!form.getFieldError('scriptNotes')}>
+            <FormControl isInvalid={!!form.getFieldError('script_notes')}>
                 <FormLabel>Notes</FormLabel>
                 <Textarea
-                    value={form.formData.scriptNotes}
-                    onChange={(e) => form.updateField('scriptNotes', e.target.value)}
-                    onBlur={() => form.validateField('scriptNotes')}
+                    value={form.formData.script_notes}
+                    onChange={(e) => form.updateField('script_notes', e.target.value)}
+                    onBlur={() => form.validateField('script_notes')}
                     placeholder="Script notes or special instructions..."
                     minHeight="120px"
                     resize="vertical"
                 />
                 <FormErrorMessage>
-                    {form.getFieldError('scriptNotes')?.message}
+                    {form.getFieldError('script_notes')?.message}
                 </FormErrorMessage>
             </FormControl>
         </VStack>

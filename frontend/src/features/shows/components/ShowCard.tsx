@@ -15,29 +15,29 @@ import { formatDateFriendly, formatTimeLocal, formatDateTimeLocal } from "../../
 
 // TypeScript interfaces
 interface Venue {
-  venueID: string;
-  venueName: string;
+  venue_id: string;
+  venue_name: string;
 }
 
 interface Script {
-  scriptID: string;
-  scriptName: string;
-  scriptStatus: string;
-  showID: string;
-  startTime: string;
-  endTime?: string;
-  dateCreated: string;
-  dateUpdated: string;
+  script_id: string;
+  script_name: string;
+  script_status: string;
+  show_id: string;
+  start_time: string;
+  end_time?: string;
+  date_created: string;
+  date_updated: string;
   lastUsed?: string;
 }
 
 interface Show {
-  showID: string;
-  showName: string;
-  showDate?: string;
-  showDuration?: string;
-  dateCreated: string;
-  dateUpdated: string;
+  show_id: string;
+  show_name: string;
+  show_date?: string;
+  show_duration?: string;
+  date_created: string;
+  date_updated: string;
   venue?: Venue;
   scripts: Script[];
 }
@@ -51,7 +51,7 @@ interface ShowCardProps {
   onScriptClick: (scriptId: string) => void;
   onShowHover: (showId: string | null) => void;
   onCreateScriptClick: (showId: string) => void;
-  sortBy: "showName" | "showDate" | "dateCreated" | "dateUpdated";
+  sortBy: "show_name" | "show_date" | "date_created" | "date_updated";
   sortDirection: "asc" | "desc";
   onSaveNavigationState?: () => void;
   isLoading?: boolean;
@@ -78,11 +78,11 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
     const scriptsToSort = [...show.scripts];
     scriptsToSort.sort((a, b) => {
       let comparison = 0;
-      if (sortBy === "showName") {
-        comparison = a.scriptName.localeCompare(b.scriptName);
+      if (sortBy === "show_name") {
+        comparison = a.script_name.localeCompare(b.script_name);
       } else {
         comparison =
-          new Date(b.dateUpdated).getTime() - new Date(a.dateUpdated).getTime();
+          new Date(b.date_updated).getTime() - new Date(a.date_updated).getTime();
       }
       return sortDirection === "asc" ? comparison : -comparison;
     });
@@ -98,7 +98,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
       onSaveNavigationState();
     }
 
-    navigate(`/shows/${show.showID}/edit`);
+    navigate(`/shows/${show.show_id}/edit`);
   };
 
   // Handler for script click - now navigates to manage page
@@ -118,7 +118,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
   };
 
   // Get venue name safely
-  const venueName = show.venue?.venueName || "No venue set";
+  const venueName = show.venue?.venue_name || "No venue set";
 
   const headerActions: BaseCardAction[] = [
     {
@@ -133,23 +133,23 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
     <>
       <HStack justify="space-between" fontSize="sm" color="cardText">
         <Text>
-          {venueName} • {formatDateFriendly(show.showDate)}
+          {venueName} • {formatDateFriendly(show.show_date)}
         </Text>
       </HStack>
       <HStack justify="space-between" fontSize="sm" color="cardText" mt={1}>
         <Text>
-          Start Time: {show.showDate ? formatTimeLocal(show.showDate) : 'Not set'}
+          Start Time: {show.show_date ? formatTimeLocal(show.show_date) : 'Not set'}
         </Text>
         <Text fontSize="xs">
-          Created: {formatDateTimeLocal(show.dateCreated)}
+          Created: {formatDateTimeLocal(show.date_created)}
         </Text>
       </HStack>
       <HStack justify="space-between" fontSize="sm" color="cardText" mt={1}>
         <Text>
-          End Time: {show.showDuration ? formatTimeLocal(show.showDuration) : 'Not set'}
+          End Time: {show.show_duration ? formatTimeLocal(show.show_duration) : 'Not set'}
         </Text>
         <Text fontSize="xs">
-          Updated: {formatDateTimeLocal(show.dateUpdated)}
+          Updated: {formatDateTimeLocal(show.date_updated)}
         </Text>
       </HStack>
     </>
@@ -166,7 +166,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
           size="xs"
           onClick={(e: React.MouseEvent) => {
             e.stopPropagation();
-            onCreateScriptClick(show.showID);
+            onCreateScriptClick(show.show_id);
           }}
           _focus={{ boxShadow: "none" }}
         >
@@ -178,26 +178,26 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
           <VStack spacing={2} align="stretch">
             {sortedScripts.map((script) => (
               <Box
-                key={script.scriptID}
+                key={script.script_id}
                 p="4"
                 borderWidth="2px"
                 borderRadius="md"
                 shadow="sm"
                 cursor="pointer"
                 onClick={(e: React.MouseEvent) =>
-                  handleScriptClick(script.scriptID, e)
+                  handleScriptClick(script.script_id, e)
                 }
                 borderColor={
-                  selectedScriptId === script.scriptID
+                  selectedScriptId === script.script_id
                     ? "blue.400"
                     : "gray.600"
                 }
                 _hover={{ borderColor: "orange.400" }}
                 onMouseEnter={() => onShowHover(null)}
-                onMouseLeave={() => onShowHover(show.showID)}
+                onMouseLeave={() => onShowHover(show.show_id)}
               >
                 <VStack align="stretch" spacing="1">
-                  <Text fontWeight="semibold" size="sm">{script.scriptName}</Text>
+                  <Text fontWeight="semibold" size="sm">{script.script_name}</Text>
                   <HStack
                     justify="space-between"
                     fontSize="xs"
@@ -205,7 +205,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                     mt={2}
                   >
                     <Badge variant="solid" colorScheme="blue">
-                      {script.scriptStatus.toUpperCase()}
+                      {script.script_status.toUpperCase()}
                     </Badge>
                   </HStack>
                   <HStack
@@ -215,11 +215,11 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                   >
                     <Text>
                       Start Time:{" "}
-                      {script.startTime ? formatTimeLocal(script.startTime) : 'Not set'}
+                      {script.start_time ? formatTimeLocal(script.start_time) : 'Not set'}
                     </Text>
                     <Text fontSize="xs">
                       Created:{" "}
-                      {formatDateTimeLocal(script.dateCreated)}
+                      {formatDateTimeLocal(script.date_created)}
                     </Text>
                   </HStack>
                   <HStack
@@ -229,11 +229,11 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                   >
                     <Text>
                       End Time:{" "}
-                      {script.endTime ? formatTimeLocal(script.endTime) : 'Not set'}
+                      {script.end_time ? formatTimeLocal(script.end_time) : 'Not set'}
                     </Text>
                     <Text fontSize="xs">
                       Updated:{" "}
-                      {formatDateTimeLocal(script.dateUpdated)}
+                      {formatDateTimeLocal(script.date_updated)}
                     </Text>
                   </HStack>
                   {script.lastUsed && (
@@ -268,11 +268,11 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
 
   return (
     <BaseCard
-      title={show.showName}
-      cardId={show.showID}
+      title={show.show_name}
+      cardId={show.show_id}
       isSelected={isSelected}
       isHovered={isHovered}
-      onCardClick={() => onShowClick(show.showID)}
+      onCardClick={() => onShowClick(show.show_id)}
       onHover={onShowHover}
       headerActions={headerActions}
       quickInfo={quickInfo}

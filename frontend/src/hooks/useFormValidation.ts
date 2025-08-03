@@ -82,13 +82,13 @@ export const useStandardFormValidation = <T extends FormData>(
 };
 
 // Helper hook for forms with additional venue creation logic
-export const useVenueFormValidation = <T extends FormData & { venueName: string }>(
+export const useVenueFormValidation = <T extends FormData & { venue_name: string }>(
   form: UseValidatedFormReturn<T>,
   isAddingNewVenue: boolean,
   newVenueName: string
 ) => {
   return useFormValidation(form, {
-    requiredFields: ['venueName'],
+    requiredFields: ['venue_name'],
     customValidation: (formData) => {
       // If adding new venue, ensure newVenueName is provided
       if (isAddingNewVenue) {

@@ -32,9 +32,9 @@ import { msToDurationString, durationStringToMs } from '../../../utils/timeUtils
 
 // TypeScript interfaces
 interface Department {
-    departmentID: string;
-    departmentName: string;
-    departmentColor: string;
+    department_id: string;
+    department_name: string;
+    department_color: string;
 }
 
 interface AddScriptElementModalProps {
@@ -46,16 +46,16 @@ interface AddScriptElementModalProps {
 }
 
 const INITIAL_FORM_STATE: ScriptElementCreate = {
-    elementType: 'CUE',
+    element_type: 'CUE',
     description: '',
-    timeOffsetMs: 0,
-    triggerType: 'MANUAL', // Will be set automatically
-    cueID: '', // Will be auto-generated
-    cueNotes: '',
-    departmentID: '',
+    time_offset_ms: 0,
+    trigger_type: 'MANUAL', // Will be set automatically
+    cue_id: '', // Will be auto-generated
+    cue_notes: '',
+    department_id: '',
     location: undefined, // Not needed in form
     priority: 'NORMAL',
-    customColor: '' // For note background color
+    custom_color: '' // For note background color
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
@@ -67,7 +67,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
         ]
     },
     // departmentID validation is handled manually in canSubmit logic
-    timeOffsetMs: {
+    time_offset_ms: {
         required: true,
         rules: [
             {
@@ -77,7 +77,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             }
         ]
     },
-    cueNotes: {
+    cue_notes: {
         required: false,
         rules: [
             ValidationRules.maxLength(500, 'Cue Notes must be no more than 500 characters')
@@ -123,10 +123,10 @@ const LOCATION_OPTIONS: { value: LocationArea; label: string }[] = [
     { value: 'other', label: 'Other' }
 ];
 
-// Preset colors for note backgrounds
+// Preset colors for note backgrounds - consistent with Show Start and semantic tokens
 const NOTE_PRESET_COLORS = [
     { name: 'Default', value: '#E2E8F0' },
-    { name: 'Red', value: '#EF4444' },
+    { name: 'Red', value: '#EF4444' },     // Matches semantic token note.preset.red
     { name: 'Grey', value: '#808080' },
     { name: 'Black', value: '#10151C' },
     { name: 'Blue', value: '#3B82F6' },
@@ -173,26 +173,26 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
         event.preventDefault();
         
         // Find selected department to include department info
-        const selectedDepartment = form.formData.departmentID && form.formData.departmentID.trim() 
-            ? departments?.find(d => d.departmentID === form.formData.departmentID)
+        const selectedDepartment = form.formData.department_id && form.formData.department_id.trim() 
+            ? departments?.find(d => d.department_id === form.formData.department_id)
             : null;
         
         // Create element data locally instead of submitting to API
         const elementData = {
             ...form.formData,
-            elementID: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary ID
-            elementType: form.formData.elementType,
-            triggerType: form.formData.triggerType || 'MANUAL',
+            element_id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary ID
+            element_type: form.formData.element_type,
+            trigger_type: form.formData.trigger_type || 'MANUAL',
             priority: form.formData.priority || 'NORMAL',
             // Convert empty departmentID to null for notes
-            departmentID: form.formData.departmentID && form.formData.departmentID.trim() ? form.formData.departmentID : null,
+            department_id: form.formData.department_id && form.formData.department_id.trim() ? form.formData.department_id : null,
             // Include department information
-            departmentName: selectedDepartment?.departmentName || null,
-            departmentColor: selectedDepartment?.departmentColor || null,
+            department_name: selectedDepartment?.department_name || null,
+            department_color: selectedDepartment?.department_color || null,
             departmentPrefix: selectedDepartment?.departmentPrefix || null,
-            scriptID: scriptId,
+            script_id: scriptId,
             sequence: 1, // Will be handled by edit queue / auto-sort
-            isActive: true,
+            is_active: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             is_deleted: false,
@@ -208,8 +208,8 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
 
     const canSubmit = form.formData.description.trim().length >= 3 && 
                      // Department only required for cues, not notes
-                     (form.formData.elementType === 'NOTE' || form.formData.departmentID.trim().length > 0) &&
-                     Number.isFinite(form.formData.timeOffsetMs) &&
+                     (form.formData.element_type === 'NOTE' || form.formData.department_id.trim().length > 0) &&
+                     Number.isFinite(form.formData.time_offset_ms) &&
                      form.fieldErrors.length === 0;
 
     return (
@@ -239,12 +239,12 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                 <FormControl isRequired>
                     <FormLabel>Element Type</FormLabel>
                     <RadioGroup
-                        value={form.formData.elementType}
+                        value={form.formData.element_type}
                         onChange={(value) => {
-                            form.updateField('elementType', value as ElementType);
+                            form.updateField('element_type', value as ElementType);
                             // Reset department field when switching to note
                             if (value === 'NOTE') {
-                                form.updateField('departmentID', '');
+                                form.updateField('department_id', '');
                             }
                         }}
                     >
@@ -274,8 +274,8 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                                 const ms = durationStringToMs(e.target.value);
                                 const formatted = msToDurationString(ms);
                                 setTimeInputValue(formatted);
-                                form.updateField('timeOffsetMs', ms);
-                                form.validateField('timeOffsetMs');
+                                form.updateField('time_offset_ms', ms);
+                                form.validateField('time_offset_ms');
                             }}
                             placeholder="0:00 or 0:00:00"
                         />
@@ -290,7 +290,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                 </HStack>
 
                 {/* Row 3: Department for Cues, Color Picker for Notes */}
-                {form.formData.elementType === 'CUE' ? (
+                {form.formData.element_type === 'CUE' ? (
                     <FormControl isRequired>
                         <FormLabel>Department</FormLabel>
                         <Menu>
@@ -306,17 +306,17 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                             height="40px"
                         >
                             <Flex align="center" gap={2}>
-                                {form.formData.departmentID ? (
+                                {form.formData.department_id ? (
                                     <>
                                         <Box
                                             width="14px"
                                             height="14px"
                                             borderRadius="50%"
-                                            bg={departments?.find(d => d.departmentID === form.formData.departmentID)?.departmentColor || 'gray.400'}
+                                            bg={departments?.find(d => d.department_id === form.formData.department_id)?.department_color || 'gray.400'}
                                             flexShrink={0}
                                         />
                                         <Text isTruncated>
-                                            {departments?.find(d => d.departmentID === form.formData.departmentID)?.departmentName || 'Select department'}
+                                            {departments?.find(d => d.department_id === form.formData.department_id)?.department_name || 'Select department'}
                                         </Text>
                                     </>
                                 ) : (
@@ -329,9 +329,9 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                         <MenuList>
                             {departments?.map((department) => (
                                 <MenuItem
-                                    key={department.departmentID}
+                                    key={department.department_id}
                                     onClick={() => {
-                                        form.updateField('departmentID', department.departmentID);
+                                        form.updateField('department_id', department.department_id);
                                     }}
                                 >
                                     <Flex align="center" gap={2}>
@@ -339,10 +339,10 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                                             width="14px"
                                             height="14px"
                                             borderRadius="50%"
-                                            bg={department.departmentColor}
+                                            bg={department.department_color}
                                             flexShrink={0}
                                         />
-                                        <Text>{department.departmentName}</Text>
+                                        <Text>{department.department_name}</Text>
                                     </Flex>
                                 </MenuItem>
                             ))}
@@ -355,16 +355,16 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                         <HStack spacing={3} align="center">
                             <Input
                                 type="color"
-                                value={form.formData.customColor || '#E2E8F0'}
-                                onChange={(e) => form.updateField('customColor', e.target.value)}
+                                value={form.formData.custom_color || '#E2E8F0'}
+                                onChange={(e) => form.updateField('custom_color', e.target.value)}
                                 width="60px"
                                 height="40px"
                                 padding="1"
                                 cursor="pointer"
                             />
                             <Input
-                                value={form.formData.customColor || '#E2E8F0'}
-                                onChange={(e) => form.updateField('customColor', e.target.value)}
+                                value={form.formData.custom_color || '#E2E8F0'}
+                                onChange={(e) => form.updateField('custom_color', e.target.value)}
                                 placeholder="#E2E8F0"
                                 width="120px"
                                 fontFamily="mono"
@@ -379,9 +379,9 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                                         width="30px"
                                         minWidth="30px"
                                         backgroundColor={color.value}
-                                        border={form.formData.customColor === color.value ? '3px solid' : '1px solid'}
-                                        borderColor={form.formData.customColor === color.value ? 'white' : 'gray.300'}
-                                        onClick={() => form.updateField('customColor', color.value)}
+                                        border={form.formData.custom_color === color.value ? '3px solid' : '1px solid'}
+                                        borderColor={form.formData.custom_color === color.value ? 'white' : 'gray.300'}
+                                        onClick={() => form.updateField('custom_color', color.value)}
                                         _hover={{ transform: 'scale(1.1)' }}
                                         title={color.name}
                                         tabIndex={-1}
@@ -407,9 +407,9 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                 <FormControl>
                     <FormLabel>Notes</FormLabel>
                     <Textarea
-                        value={form.formData.cueNotes}
-                        onChange={(e) => form.updateField('cueNotes', e.target.value)}
-                        onBlur={() => form.validateField('cueNotes')}
+                        value={form.formData.cue_notes}
+                        onChange={(e) => form.updateField('cue_notes', e.target.value)}
+                        onBlur={() => form.validateField('cue_notes')}
                         placeholder="Additional instructions or details..."
                         minHeight="60px"
                         resize="vertical"

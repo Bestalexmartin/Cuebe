@@ -26,6 +26,10 @@ interface UseScriptModalHandlersParams {
         SAVE_CONFIRMATION: string;
         SAVE_PROCESSING: string;
     };
+    // New parameters for Info mode
+    activeMode: string;
+    hasInfoChanges: boolean;
+    captureInfoChanges: () => void;
 }
 
 export const useScriptModalHandlers = ({
@@ -35,7 +39,10 @@ export const useScriptModalHandlers = ({
     saveChanges,
     discardChanges,
     modalState,
-    modalNames
+    modalNames,
+    activeMode,
+    hasInfoChanges,
+    captureInfoChanges
 }: UseScriptModalHandlersParams) => {
     const navigate = useNavigate();
     const { getToken } = useAuth();
@@ -64,6 +71,11 @@ export const useScriptModalHandlers = ({
         modalState.openModal(modalNames.SAVE_PROCESSING);
         
         try {
+            // Capture Info mode changes if we're in Info mode and have changes
+            if (activeMode === 'info' && hasInfoChanges) {
+                captureInfoChanges();
+            }
+            
             const success = await saveChanges();
             
             if (success) {
@@ -86,10 +98,10 @@ export const useScriptModalHandlers = ({
             }
         } catch (error) {
             console.error('Error saving changes:', error);
-            modalState.closeModal(modalNames.SAVE_PROCESSING);
+            modalState.closeModal(modalNames.saveProcessing);
             showError('An error occurred while saving changes.');
         }
-    }, [modalState, modalNames, saveChanges, showSuccess, showError, pendingNavigation, navigateWithCurrentContext, script, scriptId, navigate]);
+    }, [modalState, modalNames, saveChanges, showSuccess, showError, pendingNavigation, navigateWithCurrentContext, script, scriptId, navigate, activeMode, hasInfoChanges, captureInfoChanges]);
 
     const handleShowSaveConfirmation = useCallback(() => {
         modalState.openModal(modalNames.SAVE_CONFIRMATION);
@@ -148,12 +160,12 @@ export const useScriptModalHandlers = ({
                 throw new Error('Failed to delete script');
             }
 
-            showSuccess('Script Deleted', `"${script?.scriptName}" has been permanently deleted`);
+            showSuccess('Script Deleted', `"${script?.script_name}" has been permanently deleted`);
 
             navigate('/dashboard', {
                 state: {
                     view: 'shows',
-                    selectedShowId: script?.showID,
+                    selectedShowId: script?.show_id,
                     returnFromManage: true
                 }
             });

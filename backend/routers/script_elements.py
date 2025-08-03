@@ -29,11 +29,11 @@ router = APIRouter(prefix="/api", tags=["script-elements"])
 def _auto_populate_show_start_duration(db: Session, script: models.Script, elements: List[models.ScriptElement]):
     """Auto-populate SHOW START duration based on script start and end times."""
     
-    if not script.startTime or not script.endTime:
+    if script.start_time is None or script.end_time is None:
         return
     
     # Calculate duration between script start and end times
-    duration_delta = script.endTime - script.startTime
+    duration_delta = script.end_time - script.start_time
     duration_seconds = int(duration_delta.total_seconds())
     
     if duration_seconds <= 0:
@@ -42,7 +42,7 @@ def _auto_populate_show_start_duration(db: Session, script: models.Script, eleme
     # Find SHOW START element
     show_start_element = None
     for element in elements:
-        if (element.description and 
+        if (element.description is not None and 
             element.description.upper() == 'SHOW START'):
             show_start_element = element
             break
@@ -84,37 +84,37 @@ def get_script_elements(
     # First verify the script exists and user has access
     script = db.query(models.Script).options(
         joinedload(models.Script.show)
-    ).filter(models.Script.scriptID == script_id).first()
+    ).filter(models.Script.script_id == script_id).first()
     
     if not script:
         raise HTTPException(status_code=404, detail="Script not found")
     
     # Security check: ensure user owns the show
-    if script.show.ownerID != user.userID:
+    if script.show.owner_id != user.user_id:
         raise HTTPException(status_code=403, detail="Not authorized to view this script")
     
     # Build query with filters and include department relationship
     query = db.query(models.ScriptElement).options(
         joinedload(models.ScriptElement.department)
-    ).filter(models.ScriptElement.scriptID == script_id)
+    ).filter(models.ScriptElement.script_id == script_id)
     
     if active_only:
-        query = query.filter(models.ScriptElement.isActive == True)
+        query = query.filter(models.ScriptElement.is_active == True)
     
     if element_type:
         try:
             element_type_enum = models.ElementType(element_type.lower())
-            query = query.filter(models.ScriptElement.elementType == element_type_enum)
+            query = query.filter(models.ScriptElement.element_type == element_type_enum)
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid element type: {element_type}")
     
     if department_id:
-        query = query.filter(models.ScriptElement.departmentID == department_id)
+        query = query.filter(models.ScriptElement.department_id == department_id)
     
     # Order by sequence, then by time offset
     query = query.order_by(
         models.ScriptElement.sequence.asc(),
-        models.ScriptElement.timeOffsetMs.asc()
+        models.ScriptElement.time_offset_ms.asc()
     )
     
     # Apply pagination
@@ -141,13 +141,13 @@ def get_script_element(
         joinedload(models.ScriptElement.crew_assignments),
         joinedload(models.ScriptElement.performer_assignments),
         joinedload(models.ScriptElement.conditional_rules)
-    ).filter(models.ScriptElement.elementID == element_id).first()
+    ).filter(models.ScriptElement.element_id == element_id).first()
     
     if not element:
         raise HTTPException(status_code=404, detail="Script element not found")
     
     # Security check: ensure user owns the show
-    if element.script.show.ownerID != user.userID:
+    if element.script.show.owner_id != user.user_id:
         raise HTTPException(status_code=403, detail="Not authorized to view this element")
     
     return element
@@ -195,13 +195,13 @@ def batch_update_from_edit_queue(
     # Verify the script exists and user has access
     script = db.query(models.Script).options(
         joinedload(models.Script.show)
-    ).filter(models.Script.scriptID == script_id).first()
+    ).filter(models.Script.script_id == script_id).first()
     
     if not script:
         raise HTTPException(status_code=404, detail="Script not found")
     
     # Security check: ensure user owns the show
-    if script.show.ownerID != user.userID:
+    if script.show.owner_id != user.user_id:
         raise HTTPException(status_code=403, detail="Not authorized to modify this script")
     
     try:
@@ -233,7 +233,7 @@ def batch_update_from_edit_queue(
         # Refresh script object and update SHOW START duration if needed
         db.refresh(script)
         elements = db.query(models.ScriptElement).filter(
-            models.ScriptElement.scriptID == script_id
+            models.ScriptElement.script_id == script_id
         ).all()
         _auto_populate_show_start_duration(db, script, elements)
         
@@ -262,20 +262,16 @@ def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, 
         return _process_reorder_operation(db, script_id, operation_data, user)
     
     elif operation_type == "UPDATE_FIELD":
-        return _process_update_field_operation(db, element_id, operation_data, user)
-    
+        return _process_update_field_operation(db, element_id, operation_data, user)    
     elif operation_type == "UPDATE_ELEMENT":
-        return _process_update_element_operation(db, element_id, operation_data, user)
-    
+        return _process_update_element_operation(db, element_id, operation_data, user)    
     elif operation_type == "UPDATE_TIME_OFFSET":
-        return _process_update_time_offset_operation(db, element_id, operation_data, user)
-    
+        return _process_update_time_offset_operation(db, element_id, operation_data, user)    
     elif operation_type == "CREATE_ELEMENT":
         return _process_create_element_operation(db, script_id, operation_data, user)
     
     elif operation_type == "DELETE_ELEMENT":
-        return _process_delete_element_operation(db, element_id, user)
-    
+        return _process_delete_element_operation(db, element_id, user)    
     elif operation_type == "BULK_REORDER":
         return _process_bulk_reorder_operation(db, script_id, operation_data, user)
     
@@ -300,8 +296,8 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
     
     element = db.query(models.ScriptElement).filter(
         and_(
-            models.ScriptElement.elementID == UUID(element_id),
-            models.ScriptElement.scriptID == script_id
+            models.ScriptElement.element_id == UUID(element_id),
+            models.ScriptElement.script_id == script_id
         )
     ).first()
     
@@ -309,10 +305,9 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
         raise ValueError(f"Element {element_id} not found")
     
     element.sequence = new_sequence
-    element.updatedBy = user.userID
+    element.updated_by = user.user_id
     element.version = element.version + 1
-    element.dateUpdated = datetime.now(timezone.utc)
-    
+    element.date_updated = datetime.now(timezone.utc)
     return {"element_id": element_id, "new_sequence": new_sequence}
 
 
@@ -323,7 +318,7 @@ def _process_update_field_operation(db: Session, element_id: str, operation_data
     new_value = operation_data.get("newValue")
     
     element = db.query(models.ScriptElement).filter(
-        models.ScriptElement.elementID == UUID(element_id)
+        models.ScriptElement.element_id == UUID(element_id)
     ).first()
     
     if not element:
@@ -334,11 +329,11 @@ def _process_update_field_operation(db: Session, element_id: str, operation_data
         # Handle special cases for enum fields (convert to uppercase)
         if field == "priority" and new_value:
             setattr(element, field, models.PriorityLevel(new_value))
-        elif field == "executionStatus" and new_value:
+        elif field == "execution_status" and new_value:
             setattr(element, field, models.ExecutionStatus(new_value))
-        elif field == "triggerType" and new_value:
+        elif field == "trigger_type" and new_value:
             setattr(element, field, models.TriggerType(new_value))
-        elif field == "elementType" and new_value:
+        elif field == "element_type" and new_value:
             setattr(element, field, models.ElementType(new_value))
         elif field == "location" and new_value:
             setattr(element, field, models.LocationArea(new_value))
@@ -347,10 +342,9 @@ def _process_update_field_operation(db: Session, element_id: str, operation_data
     else:
         raise ValueError(f"Invalid field: {field}")
     
-    element.updatedBy = user.userID
+    element.updated_by = user.user_id
     element.version = element.version + 1
-    element.dateUpdated = datetime.now(timezone.utc)
-    
+    element.date_updated = datetime.now(timezone.utc)
     return {"element_id": element_id, "field": field, "new_value": new_value}
 
 
@@ -360,7 +354,7 @@ def _process_update_element_operation(db: Session, element_id: str, operation_da
     changes = operation_data.get("changes", {})
     
     element = db.query(models.ScriptElement).filter(
-        models.ScriptElement.elementID == UUID(element_id)
+        models.ScriptElement.element_id == UUID(element_id)
     ).first()
     
     if not element:
@@ -376,25 +370,23 @@ def _process_update_element_operation(db: Session, element_id: str, operation_da
             # Handle special cases for enum fields (convert to uppercase)
             if field == "priority" and new_value:
                 setattr(element, field, models.PriorityLevel(new_value))
-            elif field == "executionStatus" and new_value:
+            elif field == "execution_status" and new_value:
                 setattr(element, field, models.ExecutionStatus(new_value))
-            elif field == "triggerType" and new_value:
+            elif field == "trigger_type" and new_value:
                 setattr(element, field, models.TriggerType(new_value))
-            elif field == "elementType" and new_value:
+            elif field == "element_type" and new_value:
                 setattr(element, field, models.ElementType(new_value))
             elif field == "location" and new_value:
                 setattr(element, field, models.LocationArea(new_value))
             else:
-                setattr(element, field, new_value)
-            
+                setattr(element, field, new_value)            
             updated_fields[field] = new_value
         else:
             raise ValueError(f"Invalid field: {field}")
     
-    element.updatedBy = user.userID
+    element.updated_by = user.user_id
     element.version = element.version + 1
-    element.dateUpdated = datetime.now(timezone.utc)
-    
+    element.date_updated = datetime.now(timezone.utc)
     return {"element_id": element_id, "updated_fields": updated_fields}
 
 
@@ -404,17 +396,16 @@ def _process_update_time_offset_operation(db: Session, element_id: str, operatio
     new_time_offset = operation_data.get("newTimeOffsetMs")
     
     element = db.query(models.ScriptElement).filter(
-        models.ScriptElement.elementID == UUID(element_id)
+        models.ScriptElement.element_id == UUID(element_id)
     ).first()
     
     if not element:
         raise ValueError(f"Element {element_id} not found")
     
-    element.timeOffsetMs = new_time_offset
-    element.updatedBy = user.userID
+    element.time_offset_ms = new_time_offset
+    element.updated_by = user.user_id
     element.version = element.version + 1
-    element.dateUpdated = datetime.now(timezone.utc)
-    
+    element.date_updated = datetime.now(timezone.utc)
     return {"element_id": element_id, "new_time_offset": new_time_offset}
 
 
@@ -424,20 +415,20 @@ def _process_create_element_operation(db: Session, script_id: UUID, operation_da
     element_data = operation_data.get("elementData", {})
     
     # Get the next elementOrder value
-    max_order = db.query(models.ScriptElement.elementOrder).filter(
-        models.ScriptElement.scriptID == script_id
-    ).order_by(models.ScriptElement.elementOrder.desc()).first()
+    max_order = db.query(models.ScriptElement.element_order).filter(
+        models.ScriptElement.script_id == script_id
+    ).order_by(models.ScriptElement.element_order.desc()).first()
     
     next_order = (max_order[0] + 1) if max_order and max_order[0] is not None else 1
     
     # Prepare enum fields with defaults (frontend sends uppercase values)
     trigger_type = models.TriggerType.MANUAL  # Default
-    if element_data.get("triggerType"):
-        trigger_type = models.TriggerType(element_data["triggerType"])
+    if element_data.get("trigger_type"):
+        trigger_type = models.TriggerType(element_data["trigger_type"])
     
     execution_status = models.ExecutionStatus.PENDING  # Default
-    if element_data.get("executionStatus"):
-        execution_status = models.ExecutionStatus(element_data["executionStatus"])
+    if element_data.get("execution_status"):
+        execution_status = models.ExecutionStatus(element_data["execution_status"])
     
     priority = models.PriorityLevel.NORMAL  # Default
     if element_data.get("priority"):
@@ -445,47 +436,46 @@ def _process_create_element_operation(db: Session, script_id: UUID, operation_da
     
     # Create new script element
     new_element = models.ScriptElement(
-        scriptID=script_id,
-        elementType=element_data.get("elementType", "CUE"),
-        elementOrder=next_order,
+        script_id=script_id,
+        element_type=element_data.get("element_type", "CUE"),
+        element_order=next_order,
         sequence=element_data.get("sequence", 1),
-        timeOffsetMs=element_data.get("timeOffsetMs", 0),
+        time_offset_ms=element_data.get("time_offset_ms", 0),
         description=element_data.get("description", ""),
-        cueNotes=element_data.get("cueNotes", ""),
-        departmentID=UUID(element_data["departmentID"]) if element_data.get("departmentID") else None,
-        customColor=element_data.get("customColor"),
+        cue_notes=element_data.get("cue_notes", ""),
+        department_id=UUID(element_data["department_id"]) if element_data.get("department_id") else None,
+        custom_color=element_data.get("custom_color"),
         # Handle enum fields properly with explicit values
-        triggerType=trigger_type,
-        executionStatus=execution_status,
+        trigger_type=trigger_type,
+        execution_status=execution_status,
         priority=priority,
-        createdBy=user.userID,
-        updatedBy=user.userID,
-        dateCreated=datetime.now(timezone.utc),
-        dateUpdated=datetime.now(timezone.utc)
+        created_by=user.user_id,
+        updated_by=user.user_id,
+        date_created=datetime.now(timezone.utc),
+        date_updated=datetime.now(timezone.utc)
     )
     
     db.add(new_element)
     db.flush()  # Get the generated ID
     
-    return {"element_id": str(new_element.elementID), "created": True}
+    return {"element_id": str(new_element.element_id), "created": True}
 
 
 def _process_delete_element_operation(db: Session, element_id: str, user: models.User):
     """Process an element deletion operation."""
     
     element = db.query(models.ScriptElement).filter(
-        models.ScriptElement.elementID == UUID(element_id)
+        models.ScriptElement.element_id == UUID(element_id)
     ).first()
     
     if not element:
         raise ValueError(f"Element {element_id} not found")
     
-    # Soft delete by setting isActive to False
-    element.isActive = False
-    element.updatedBy = user.userID
+    # Soft delete by setting is_active to False
+    element.is_active = False
+    element.updated_by = user.user_id
     element.version = element.version + 1
-    element.dateUpdated = datetime.now(timezone.utc)
-    
+    element.date_updated = datetime.now(timezone.utc)
     return {"element_id": element_id, "deleted": True}
 
 
@@ -501,16 +491,16 @@ def _process_bulk_reorder_operation(db: Session, script_id: UUID, operation_data
         
         element = db.query(models.ScriptElement).filter(
             and_(
-                models.ScriptElement.elementID == UUID(element_id),
-                models.ScriptElement.scriptID == script_id
+                models.ScriptElement.element_id == UUID(element_id),
+                models.ScriptElement.script_id == script_id
             )
         ).first()
         
         if element:
             element.sequence = new_sequence
-            element.updatedBy = user.userID
+            element.updated_by = user.user_id
             element.version = element.version + 1
-            element.dateUpdated = datetime.now(timezone.utc)
+            element.date_updated = datetime.now(timezone.utc)
             updated_count += 1
     
     return {"updated_count": updated_count, "total_changes": len(element_changes)}
@@ -528,7 +518,7 @@ def _process_update_script_info_operation(db: Session, script_id: UUID, operatio
     
     # Get the script
     script = db.query(models.Script).filter(
-        models.Script.scriptID == script_id
+        models.Script.script_id == script_id
     ).first()
     
     if not script:
@@ -540,32 +530,31 @@ def _process_update_script_info_operation(db: Session, script_id: UUID, operatio
     for field, change_data in changes.items():
         new_value = change_data.get("newValue")
         
-        if field == "scriptName":
-            script.scriptName = new_value
-            updated_fields.append("scriptName")
-        elif field == "scriptStatus":
-            script.scriptStatus = new_value
-            updated_fields.append("scriptStatus")
-        elif field == "startTime":
+        if field == "script_name":
+            script.script_name = new_value
+            updated_fields.append("script_name")
+        elif field == "script_status":
+            script.script_status = new_value
+            updated_fields.append("script_status")
+        elif field == "start_time":
             # Convert from string to datetime if needed
             if isinstance(new_value, str):
-                script.startTime = datetime.fromisoformat(new_value.replace('Z', '+00:00'))
+                script.start_time = datetime.fromisoformat(new_value.replace('Z', '+00:00'))
             else:
-                script.startTime = new_value
-            updated_fields.append("startTime")
-        elif field == "endTime":
+                script.start_time = new_value
+            updated_fields.append("start_time")
+        elif field == "end_time":
             # Convert from string to datetime if needed
             if isinstance(new_value, str):
-                script.endTime = datetime.fromisoformat(new_value.replace('Z', '+00:00'))
+                script.end_time = datetime.fromisoformat(new_value.replace('Z', '+00:00'))
             else:
-                script.endTime = new_value
-            updated_fields.append("endTime")
-        elif field == "scriptNotes":
-            script.scriptNotes = new_value
-            updated_fields.append("scriptNotes")
+                script.end_time = new_value
+            updated_fields.append("end_time")
+        elif field == "script_notes":
+            script.script_notes = new_value
+            updated_fields.append("script_notes")
     
     # Update metadata
-    script.updatedBy = user.userID
-    script.dateUpdated = datetime.now(timezone.utc)
-    
+    script.updated_by = user.user_id
+    script.date_updated = datetime.now(timezone.utc)
     return {"script_id": str(script_id), "updated_fields": updated_fields}

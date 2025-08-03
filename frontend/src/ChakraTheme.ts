@@ -148,6 +148,31 @@ const semanticTokens = {
     'toast.info.shadow': {
       _light: '0 4px 12px rgba(49, 151, 149, 0.15)',
       _dark: '0 4px 12px rgba(0, 0, 0, 0.3)',
+    },
+    // Note preset colors - consistent across app
+    'note.preset.default': {
+      _light: '#E2E8F0',
+      _dark: '#E2E8F0',
+    },
+    'note.preset.red': {
+      _light: '#EF4444',
+      _dark: '#EF4444',
+    },
+    'note.preset.grey': {
+      _light: '#808080',
+      _dark: '#808080',
+    },
+    'note.preset.black': {
+      _light: '#10151C',
+      _dark: '#10151C',
+    },
+    'note.preset.blue': {
+      _light: '#3B82F6',
+      _dark: '#3B82F6',
+    },
+    'note.preset.yellow': {
+      _light: '#EAB308',
+      _dark: '#EAB308',
     }
   },
 };

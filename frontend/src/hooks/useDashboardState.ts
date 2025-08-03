@@ -11,57 +11,57 @@ import {
 
 // TypeScript interfaces
 interface Show {
-  showID: string;
-  showName: string;
-  showDate?: string;
-  dateCreated: string;
-  dateUpdated: string;
+  show_id: string;
+  show_name: string;
+  show_date?: string;
+  date_created: string;
+  date_updated: string;
   venue?: {
-    venueID: string;
-    venueName: string;
+    venue_id: string;
+    venue_name: string;
   };
   scripts: Array<{
-    scriptID: string;
-    scriptName: string;
-    scriptStatus: string;
-    showID: string;
-    startTime: string;
-    dateCreated: string;
-    dateUpdated: string;
+    script_id: string;
+    script_name: string;
+    script_status: string;
+    show_id: string;
+    start_time: string;
+    date_created: string;
+    date_updated: string;
     lastUsed?: string;
   }>;
 }
 
 interface SortState {
   shows: {
-    sortBy: "showName" | "showDate" | "dateUpdated" | "dateCreated";
+    sortBy: "show_name" | "show_date" | "date_updated" | "date_created";
     sortDirection: "asc" | "desc";
   };
   venues: {
     sortBy:
-      | "venueName"
+      | "venue_name"
       | "capacity"
-      | "venueType"
-      | "dateCreated"
-      | "dateUpdated";
+      | "venue_type"
+      | "date_created"
+      | "date_updated";
     sortDirection: "asc" | "desc";
   };
   crew: {
     sortBy:
-      | "fullnameFirst"
-      | "fullnameLast"
-      | "userRole"
-      | "emailAddress"
-      | "dateCreated"
-      | "dateUpdated";
+      | "fullname_first"
+      | "fullname_last"
+      | "user_role"
+      | "email_address"
+      | "date_created"
+      | "date_updated";
     sortDirection: "asc" | "desc";
   };
   departments: {
     sortBy:
-      | "departmentName"
-      | "departmentColor"
-      | "dateCreated"
-      | "dateUpdated";
+      | "department_name"
+      | "department_color"
+      | "date_created"
+      | "date_updated";
     sortDirection: "asc" | "desc";
   };
 }
@@ -143,10 +143,10 @@ export const useDashboardState = (
 
   // Sort state - default all to most recently updated/created first
   const [sortState, setSortState] = useState<SortState>({
-    shows: { sortBy: "dateUpdated", sortDirection: "desc" },
-    venues: { sortBy: "dateCreated", sortDirection: "desc" },
-    crew: { sortBy: "dateCreated", sortDirection: "desc" },
-    departments: { sortBy: "dateCreated", sortDirection: "desc" },
+    shows: { sortBy: "date_updated", sortDirection: "desc" },
+    venues: { sortBy: "date_created", sortDirection: "desc" },
+    crew: { sortBy: "date_created", sortDirection: "desc" },
+    departments: { sortBy: "date_created", sortDirection: "desc" },
   });
 
   // Selected state management

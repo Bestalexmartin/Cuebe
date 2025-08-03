@@ -22,7 +22,7 @@ interface DuplicateElementFormData {
 interface DuplicateElementModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (description: string, timeOffsetMs: number) => void;
+    onConfirm: (description: string, time_offset_ms: number) => void;
     originalElementName: string;
     originalTimeOffset: number;
     isProcessing?: boolean;

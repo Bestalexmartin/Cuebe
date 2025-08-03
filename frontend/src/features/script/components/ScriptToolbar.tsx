@@ -3,7 +3,7 @@
 import React from 'react';
 import { HStack, VStack, Button, Text, Divider, Box } from '@chakra-ui/react';
 import { AppIcon } from '../../../components/AppIcon';
-import { ToolButton } from '../types/tool-button';
+import { ToolButton } from '../types/toolButton';
 
 interface ScriptToolbarProps {
     toolButtons: ToolButton[];

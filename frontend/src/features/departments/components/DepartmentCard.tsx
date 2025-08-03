@@ -12,13 +12,13 @@ import { formatDateTimeLocal } from '../../../utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface Department {
-    departmentID: string;
-    departmentName: string;
-    departmentDescription?: string;
-    departmentColor?: string;
-    departmentInitials?: string;
-    dateCreated: string;
-    dateUpdated: string;
+    department_id: string;
+    department_name: string;
+    department_description?: string;
+    department_color?: string;
+    department_initials?: string;
+    date_created: string;
+    date_updated: string;
 }
 
 interface DepartmentCardProps {
@@ -49,17 +49,17 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
             onSaveNavigationState();
         }
 
-        onEdit(department.departmentID);
+        onEdit(department.department_id);
     };
 
     const headerBadges = (
         <>
-            {department.departmentColor && (
+            {department.department_color && (
                 <Box
                     w="32px"
                     h="32px"
                     borderRadius="full"
-                    bg={department.departmentColor}
+                    bg={department.department_color}
                     border="2px solid"
                     borderColor="gray.300"
                     _dark={{ borderColor: "gray.600" }}
@@ -68,14 +68,14 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
                     alignItems="center"
                     justifyContent="center"
                 >
-                    {department.departmentInitials && (
+                    {department.department_initials && (
                         <Text
                             fontSize="xs"
                             fontWeight="bold"
                             color="black"
                             userSelect="none"
                         >
-                            {department.departmentInitials}
+                            {department.department_initials}
                         </Text>
                     )}
                 </Box>
@@ -97,13 +97,13 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
             <HStack justify="space-between">
                 <Text>0 crew members</Text>
                 <Text fontSize="xs">
-                    Created: {formatDateTimeLocal(department.dateCreated || department.dateUpdated)}
+                    Created: {formatDateTimeLocal(department.date_created || department.date_updated)}
                 </Text>
             </HStack>
             <HStack justify="space-between">
                 <Text>0 shows assigned</Text>
                 <Text fontSize="xs">
-                    Updated: {formatDateTimeLocal(department.dateUpdated || department.dateCreated)}
+                    Updated: {formatDateTimeLocal(department.date_updated || department.date_created)}
                 </Text>
             </HStack>
         </VStack>
@@ -112,7 +112,7 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
     const expandedContent = (
         <>
             {/* Color Information */}
-            {department.departmentColor && (
+            {department.department_color && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Department Color</Text>
                     <HStack spacing="3" align="center">
@@ -120,14 +120,14 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
                             w="40px"
                             h="40px"
                             borderRadius="md"
-                            bg={department.departmentColor}
+                            bg={department.department_color}
                             border="2px solid"
                             borderColor="gray.300"
                             _dark={{ borderColor: "gray.600" }}
                         />
                         <VStack align="start" spacing="0">
                             <Text fontSize="sm" fontWeight="medium">
-                                {department.departmentColor.toUpperCase()}
+                                {department.department_color.toUpperCase()}
                             </Text>
                             <Text fontSize="xs" color="cardText">
                                 Hex Color Code
@@ -138,11 +138,11 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
             )}
 
             {/* Full Description */}
-            {department.departmentDescription && (
+            {department.department_description && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Description</Text>
                     <Text fontSize="sm" color="cardText">
-                        {department.departmentDescription}
+                        {department.department_description}
                     </Text>
                 </Box>
             )}
@@ -151,11 +151,11 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
 
     return (
         <BaseCard
-            title={department.departmentName}
-            cardId={department.departmentID}
+            title={department.department_name}
+            cardId={department.department_id}
             isSelected={isSelected}
             isHovered={isHovered}
-            onCardClick={() => onDepartmentClick(department.departmentID)}
+            onCardClick={() => onDepartmentClick(department.department_id)}
             onHover={onHover}
             headerBadges={headerBadges}
             headerActions={headerActions}

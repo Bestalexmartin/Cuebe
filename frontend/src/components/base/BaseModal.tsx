@@ -22,7 +22,7 @@ import { AppIcon } from '../AppIcon';
 export interface BaseModalAction {
   label: string;
   onClick: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'outline';
   isLoading?: boolean;
   isDisabled?: boolean;
   loadingText?: string;
@@ -33,29 +33,29 @@ export interface BaseModalProps extends Omit<ModalContentProps, 'children'> {
   isOpen: boolean;
   onClose: () => void;
   onCloseComplete?: () => void;
-  
+
   // Header customization
   headerIcon?: string;
   headerIconColor?: string;
-  
+
   // Content
   children: React.ReactNode;
-  
+
   // Form handling
   onSubmit?: (event: React.FormEvent<HTMLFormElement>) => void;
-  
+
   // Actions
   primaryAction?: BaseModalAction;
   secondaryAction?: BaseModalAction;
   customActions?: BaseModalAction[];
-  
+
   // Validation
   validationErrors?: FieldError[];
   showValidationErrors?: boolean;
-  
+
   // Error boundary context
   errorBoundaryContext?: string;
-  
+
   // UI Options
   showCloseButton?: boolean;
 }
@@ -137,7 +137,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
         >
           {finalSecondaryAction.label}
         </Button>
-        
+
         {primaryAction && (
           <Button
             size="sm"
@@ -157,13 +157,13 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    
+
     if (onSubmit) {
       // Blur any focused element to trigger validation and save changes
       if (document.activeElement && document.activeElement instanceof HTMLElement) {
         document.activeElement.blur();
       }
-      
+
       // Small delay to allow onBlur handlers to complete
       setTimeout(() => {
         onSubmit(event);
@@ -172,9 +172,9 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
   };
 
   const content = (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
       onCloseComplete={onCloseComplete}
     >
       <ModalOverlay />
@@ -197,7 +197,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
           )}
         </ModalHeader>
         {showCloseButton && <ModalCloseButton />}
-        
+
         <ModalBody pb={6}>
           {children}
         </ModalBody>
@@ -205,9 +205,9 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
         <ModalFooter>
           {renderActions()}
         </ModalFooter>
-        
+
         {/* Validation Errors */}
-        <ValidationErrors 
+        <ValidationErrors
           errors={validationErrors}
           show={showValidationErrors}
         />
@@ -247,8 +247,8 @@ const areModalPropsEqual = (prevProps: BaseModalProps, nextProps: BaseModalProps
   }
   for (let i = 0; i < prevErrors.length; i++) {
     if (prevErrors[i].field !== nextErrors[i].field ||
-        prevErrors[i].message !== nextErrors[i].message ||
-        prevErrors[i].code !== nextErrors[i].code) {
+      prevErrors[i].message !== nextErrors[i].message ||
+      prevErrors[i].code !== nextErrors[i].code) {
       return false;
     }
   }
@@ -261,10 +261,10 @@ const areModalPropsEqual = (prevProps: BaseModalProps, nextProps: BaseModalProps
   }
   if (prevPrimary && nextPrimary) {
     if (prevPrimary.label !== nextPrimary.label ||
-        prevPrimary.variant !== nextPrimary.variant ||
-        prevPrimary.isLoading !== nextPrimary.isLoading ||
-        prevPrimary.isDisabled !== nextPrimary.isDisabled ||
-        prevPrimary.loadingText !== nextPrimary.loadingText) {
+      prevPrimary.variant !== nextPrimary.variant ||
+      prevPrimary.isLoading !== nextPrimary.isLoading ||
+      prevPrimary.isDisabled !== nextPrimary.isDisabled ||
+      prevPrimary.loadingText !== nextPrimary.loadingText) {
       return false;
     }
   }
@@ -277,10 +277,10 @@ const areModalPropsEqual = (prevProps: BaseModalProps, nextProps: BaseModalProps
   }
   if (prevSecondary && nextSecondary) {
     if (prevSecondary.label !== nextSecondary.label ||
-        prevSecondary.variant !== nextSecondary.variant ||
-        prevSecondary.isLoading !== nextSecondary.isLoading ||
-        prevSecondary.isDisabled !== nextSecondary.isDisabled ||
-        prevSecondary.loadingText !== nextSecondary.loadingText) {
+      prevSecondary.variant !== nextSecondary.variant ||
+      prevSecondary.isLoading !== nextSecondary.isLoading ||
+      prevSecondary.isDisabled !== nextSecondary.isDisabled ||
+      prevSecondary.loadingText !== nextSecondary.loadingText) {
       return false;
     }
   }
@@ -293,10 +293,10 @@ const areModalPropsEqual = (prevProps: BaseModalProps, nextProps: BaseModalProps
   }
   for (let i = 0; i < prevCustom.length; i++) {
     if (prevCustom[i].label !== nextCustom[i].label ||
-        prevCustom[i].variant !== nextCustom[i].variant ||
-        prevCustom[i].isLoading !== nextCustom[i].isLoading ||
-        prevCustom[i].isDisabled !== nextCustom[i].isDisabled ||
-        prevCustom[i].loadingText !== nextCustom[i].loadingText) {
+      prevCustom[i].variant !== nextCustom[i].variant ||
+      prevCustom[i].isLoading !== nextCustom[i].isLoading ||
+      prevCustom[i].isDisabled !== nextCustom[i].isDisabled ||
+      prevCustom[i].loadingText !== nextCustom[i].loadingText) {
       return false;
     }
   }

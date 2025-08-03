@@ -15,7 +15,7 @@ export function useElementActions(
       if (autoSort) {
         // Find correct insertion point in chronological order
         for (let i = 0; i < elements.length; i++) {
-          if (elements[i].timeOffsetMs > cleanData.timeOffsetMs) {
+          if (elements[i].time_offset_ms > cleanData.time_offset_ms) {
             insertIndex = i;
             break;
           }
@@ -24,7 +24,7 @@ export function useElementActions(
 
       applyLocalChange({
         type: "CREATE_ELEMENT",
-        elementId: cleanData.elementID,
+        elementId: cleanData.element_id,
         elementData: cleanData,
         insertIndex: insertIndex === elements.length ? undefined : insertIndex,
       } as any);

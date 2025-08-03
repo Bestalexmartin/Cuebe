@@ -1,4 +1,4 @@
-// frontend/src/features/script/types/tool-button.ts
+// frontend/src/features/script/types/toolButton.ts
 
 export interface ToolButton {
     id: string;

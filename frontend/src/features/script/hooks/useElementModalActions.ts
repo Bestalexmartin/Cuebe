@@ -54,7 +54,7 @@ export const useElementModalActions = ({
         }
 
         try {
-            const elementData = editQueueElements.find(el => el.elementID === selectedElementId);
+            const elementData = editQueueElements.find(el => el.element_id === selectedElementId);
             
             if (!elementData) {
                 showError('Selected element not found');
@@ -62,7 +62,7 @@ export const useElementModalActions = ({
             }
 
             setSelectedElementName(elementData.description || 'Unknown Element');
-            setSelectedElementTimeOffset(elementData.timeOffsetMs || 0);
+            setSelectedElementTimeOffset(elementData.time_offset_ms || 0);
             modalState.openModal(modalNames.DUPLICATE_ELEMENT);
 
         } catch (error) {
@@ -71,14 +71,14 @@ export const useElementModalActions = ({
         }
     }, [selectedElementId, editQueueElements, modalState, modalNames.DUPLICATE_ELEMENT, showError]);
 
-    const handleConfirmDuplicate = useCallback(async (description: string, timeOffsetMs: number) => {
+    const handleConfirmDuplicate = useCallback(async (description: string, time_offset_ms: number) => {
         if (!selectedElementId || !scriptId) {
             return;
         }
 
         setIsDuplicatingElement(true);
         try {
-            const originalElement = editQueueElements.find(el => el.elementID === selectedElementId);
+            const originalElement = editQueueElements.find(el => el.element_id === selectedElementId);
             if (!originalElement) {
                 throw new Error('Original element not found');
             }
@@ -86,8 +86,8 @@ export const useElementModalActions = ({
             const duplicateData = {
                 ...originalElement,
                 description,
-                timeOffsetMs,
-                elementID: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+                time_offset_ms,
+                element_id: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
                 created_at: undefined,
                 updated_at: undefined,
                 is_deleted: undefined
@@ -114,7 +114,7 @@ export const useElementModalActions = ({
         try {
             applyLocalChange({
                 type: 'UPDATE_ELEMENT',
-                elementId: selectedElement.elementID,
+                elementId: selectedElement.element_id,
                 changes: changes,
                 description: `Updated element "${selectedElement.description}"`
             } as UpdateElementOperation);
@@ -135,7 +135,7 @@ export const useElementModalActions = ({
             return;
         }
         
-        const elementToEdit = editQueueElements.find(el => el.elementID === selectedElementId);
+        const elementToEdit = editQueueElements.find(el => el.element_id === selectedElementId);
         if (!elementToEdit) {
             showError('Selected element not found');
             return;
@@ -151,7 +151,7 @@ export const useElementModalActions = ({
             return;
         }
 
-        const elementToDelete = editQueueElements.find(el => el.elementID === selectedElementId);
+        const elementToDelete = editQueueElements.find(el => el.element_id === selectedElementId);
         if (!elementToDelete) {
             showError('Selected element not found in current script');
             return;
@@ -168,7 +168,7 @@ export const useElementModalActions = ({
 
         setIsDeletingCue(true);
         try {
-            const elementToDelete = editQueueElements.find(el => el.elementID === selectedElementId);
+            const elementToDelete = editQueueElements.find(el => el.element_id === selectedElementId);
             if (!elementToDelete) {
                 throw new Error('Element to delete not found');
             }

@@ -276,7 +276,7 @@ def prepare_pytest(
             pass
 
         try:
-            import pytest  # type: ignore
+            import pytest
             result["pytest_available"] = True
             result["method_used"] = "available as Python module"
             logger.info("pytest available as Python module")

@@ -17,10 +17,10 @@ import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
 
 // TypeScript interfaces
 interface CrewFormData {
-    emailAddress: string;
-    fullnameFirst: string;
-    fullnameLast: string;
-    userRole: string;
+    email_address: string;
+    fullname_first: string;
+    fullname_last: string;
+    user_role: string;
 }
 
 interface CreateCrewModalProps {
@@ -36,25 +36,25 @@ interface RoleOption {
 
 interface ExistingUser {
     ID: string;
-    fullnameFirst: string;
-    fullnameLast: string;
+    fullname_first: string;
+    fullname_last: string;
 }
 
 const INITIAL_FORM_STATE: CrewFormData = {
-    emailAddress: '',
-    fullnameFirst: '',
-    fullnameLast: '',
-    userRole: 'crew',
+    email_address: '',
+    fullname_first: '',
+    fullname_last: '',
+    user_role: 'crew',
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
-    emailAddress: {
+    email_address: {
         required: false, // Handle required validation manually for button state
         rules: [
             ValidationRules.email('Please enter a valid email address')
         ]
     },
-    fullnameFirst: {
+    fullname_first: {
         required: false, // Handle required validation manually for button state
         rules: [
             {
@@ -70,7 +70,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
             ValidationRules.maxLength(50, 'First name must be no more than 50 characters')
         ]
     },
-    fullnameLast: {
+    fullname_last: {
         required: false, // Handle required validation manually for button state
         rules: [
             {
@@ -117,7 +117,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
         event.preventDefault();
 
         try {
-            const checkEmailResponse = await fetch(`/api/users/check-email?email=${encodeURIComponent(form.formData.emailAddress)}`, {
+            const checkEmailResponse = await fetch(`/api/users/check-email?email=${encodeURIComponent(form.formData.email_address)}`, {
                 headers: {
                     'Authorization': `Bearer ${await getToken()}`
                 }
@@ -134,21 +134,21 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
                     await form.submitForm(
                         '/api/crew-relationships/',
                         'POST',
-                        `"${existingUser.fullnameFirst} ${existingUser.fullnameLast}" has been added to your crew`,
+                        `"${existingUser.fullname_first} ${existingUser.fullname_last}" has been added to your crew`,
                         relationshipData
                     );
                 } else {
                     const userData = {
-                        emailAddress: form.formData.emailAddress,
-                        fullnameFirst: form.formData.fullnameFirst,
-                        fullnameLast: form.formData.fullnameLast,
-                        userRole: form.formData.userRole,
+                        email_address: form.formData.email_address,
+                        fullname_first: form.formData.fullname_first,
+                        fullname_last: form.formData.fullname_last,
+                        user_role: form.formData.user_role,
                     };
 
                     await form.submitForm(
                         '/api/users/create-guest-with-relationship',
                         'POST',
-                        `"${form.formData.fullnameFirst} ${form.formData.fullnameLast}" has been added as a guest user`,
+                        `"${form.formData.fullname_first} ${form.formData.fullname_last}" has been added as a guest user`,
                         userData
                     );
                 }
@@ -169,7 +169,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
         onClose();
     };
 
-    const { canSubmit } = useStandardFormValidation(form, ['emailAddress', 'fullnameFirst', 'fullnameLast']);
+    const { canSubmit } = useStandardFormValidation(form, ['email_address', 'fullname_first', 'fullname_last']);
 
     return (
         <BaseModal
@@ -193,7 +193,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
                 <HStack spacing={4}>
                     <FormInput
                         form={form}
-                        name="fullnameFirst"
+                        name="fullname_first"
                         label="First Name"
                         placeholder="Enter first name"
                         isRequired
@@ -201,7 +201,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
 
                     <FormInput
                         form={form}
-                        name="fullnameLast"
+                        name="fullname_last"
                         label="Last Name"
                         placeholder="Enter last name"
                         isRequired
@@ -210,7 +210,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
 
                 <FormInput
                     form={form}
-                    name="emailAddress"
+                    name="email_address"
                     label="Email Address"
                     type="email"
                     placeholder="crew@example.com"
@@ -220,8 +220,8 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
                 <FormControl isRequired>
                     <FormLabel>Role</FormLabel>
                     <Select
-                        value={form.formData.userRole}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => form.updateField('userRole', e.target.value)}
+                        value={form.formData.user_role}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => form.updateField('user_role', e.target.value)}
                     >
                         {ROLE_OPTIONS.map((role) => (
                             <option key={role.value} value={role.value}>

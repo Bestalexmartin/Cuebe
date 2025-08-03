@@ -14,23 +14,23 @@ import { formatDateTimeLocal } from '../../../utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface Venue {
-    venueID: string;
-    venueName: string;
-    venueType?: string;
+    venue_id: string;
+    venue_name: string;
+    venue_type?: string;
     capacity?: number;
     address?: string;
-    contactName?: string;
-    contactEmail?: string;
-    contactPhone?: string;
-    stageWidth?: number;
-    stageDepth?: number;
-    flyHeight?: number;
+    contact_name?: string;
+    contact_email?: string;
+    contact_phone?: string;
+    stage_width?: number;
+    stage_depth?: number;
+    fly_height?: number;
     equipment?: string[];
     notes?: string;
-    rentalRate?: number;
-    minimumRental?: number;
-    dateCreated: string;
-    dateUpdated: string;
+    rental_rate?: number;
+    minimum_rental?: number;
+    date_created: string;
+    date_updated: string;
 }
 
 interface VenueCardProps {
@@ -63,7 +63,7 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
             onSaveNavigationState();
         }
 
-        onEdit(venue.venueID);
+        onEdit(venue.venue_id);
     };
 
     const formatCapacity = (capacity?: number): string => {
@@ -89,9 +89,9 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
     const quickInfo = (
         <VStack align="stretch" spacing="1" color="cardText" fontSize="sm">
             <HStack justify="space-between">
-                {venue.venueType && (
+                {venue.venue_type && (
                     <Badge variant="outline" colorScheme="green">
-                        {venue.venueType}
+                        {venue.venue_type}
                     </Badge>
                 )}
             </HStack>
@@ -104,7 +104,7 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
                     <Box />
                 )}
                 <Text fontSize="xs">
-                    Created: {formatDateTimeLocal(venue.dateCreated || venue.dateUpdated)}
+                    Created: {formatDateTimeLocal(venue.date_created || venue.date_updated)}
                 </Text>
             </HStack>
             <HStack justify="space-between">
@@ -116,7 +116,7 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
                     <Box />
                 )}
                 <Text fontSize="xs">
-                    Updated: {formatDateTimeLocal(venue.dateUpdated || venue.dateCreated)}
+                    Updated: {formatDateTimeLocal(venue.date_updated || venue.date_created)}
                 </Text>
             </HStack>
         </VStack>
@@ -125,25 +125,25 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
     const expandedContent = (
         <>
             {/* Contact Information */}
-            {(venue.contactName || venue.contactEmail || venue.contactPhone) && (
+            {(venue.contact_name || venue.contact_email || venue.contact_phone) && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Contact Information</Text>
                     <VStack align="stretch" spacing="1" fontSize="sm" color="cardText">
-                        {venue.contactName && <Text>Contact: {venue.contactName}</Text>}
-                        {venue.contactEmail && <Text>Email: {venue.contactEmail}</Text>}
-                        {venue.contactPhone && <Text>Phone: {venue.contactPhone}</Text>}
+                        {venue.contact_name && <Text>Contact: {venue.contact_name}</Text>}
+                        {venue.contact_email && <Text>Email: {venue.contact_email}</Text>}
+                        {venue.contact_phone && <Text>Phone: {venue.contact_phone}</Text>}
                     </VStack>
                 </Box>
             )}
 
             {/* Technical Specifications */}
-            {(venue.stageWidth || venue.stageDepth || venue.flyHeight) && (
+            {(venue.stage_width || venue.stage_depth || venue.fly_height) && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Technical Specifications</Text>
                     <HStack spacing="4" fontSize="sm" color="cardText">
-                        {venue.stageWidth && <Text>Width: {venue.stageWidth} ft</Text>}
-                        {venue.stageDepth && <Text>Depth: {venue.stageDepth} ft</Text>}
-                        {venue.flyHeight && <Text>Fly Height: {venue.flyHeight} ft</Text>}
+                        {venue.stage_width && <Text>Width: {venue.stage_width} ft</Text>}
+                        {venue.stage_depth && <Text>Depth: {venue.stage_depth} ft</Text>}
+                        {venue.fly_height && <Text>Fly Height: {venue.fly_height} ft</Text>}
                     </HStack>
                 </Box>
             )}
@@ -163,22 +163,22 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
             )}
 
             {/* Rental Information */}
-            {(venue.rentalRate || venue.minimumRental) && (
+            {(venue.rental_rate || venue.minimum_rental) && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Rental Information</Text>
                     <HStack spacing="4" fontSize="sm" color="cardText">
-                        {venue.rentalRate && <Text>Daily Rate: ${venue.rentalRate}</Text>}
-                        {venue.minimumRental && <Text>Minimum: ${venue.minimumRental}</Text>}
+                        {venue.rental_rate && <Text>Daily Rate: ${venue.rental_rate}</Text>}
+                        {venue.minimum_rental && <Text>Minimum: ${venue.minimum_rental}</Text>}
                     </HStack>
                 </Box>
             )}
 
             {/* Notes */}
-            {venue.venueNotes && (
+            {venue.venue_notes && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Notes</Text>
                     <Text fontSize="sm" color="cardText">
-                        {venue.venueNotes}
+                        {venue.venue_notes}
                     </Text>
                 </Box>
             )}
@@ -187,11 +187,11 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
 
     return (
         <BaseCard
-            title={venue.venueName}
-            cardId={venue.venueID}
+            title={venue.venue_name}
+            cardId={venue.venue_id}
             isSelected={isSelected}
             isHovered={isHovered}
-            onCardClick={() => onVenueClick(venue.venueID)}
+            onCardClick={() => onVenueClick(venue.venue_id)}
             onHover={onHover}
             headerBadges={headerBadges}
             headerActions={headerActions}

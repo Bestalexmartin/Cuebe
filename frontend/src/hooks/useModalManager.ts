@@ -5,11 +5,11 @@ import { useState, useMemo } from 'react';
 
 // Modal type constants
 export const MODAL_TYPES = {
-    CREATE_SHOW: 'CREATE_SHOW',
-    CREATE_SCRIPT: 'CREATE_SCRIPT',
-    CREATE_VENUE: 'CREATE_VENUE',
-    CREATE_DEPARTMENT: 'CREATE_DEPARTMENT',
-    CREATE_CREW: 'CREATE_CREW',
+    createShow: 'createShow',
+    createScript: 'createScript',
+    createVenue: 'createVenue',
+    createDepartment: 'createDepartment',
+    createCrew: 'createCrew',
 } as const;
 
 // TypeScript interfaces
