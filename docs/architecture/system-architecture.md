@@ -1,5 +1,9 @@
 # System Architecture
 
+**Date:** August 2025  
+**Status:** Current  
+**Category:** Architecture & Infrastructure
+
 ## Overview
 
 CallMaster is built on a containerized microservices architecture using Docker Compose, designed for scalability, maintainability, and deployment flexibility. This document covers the infrastructure layer that supports the application components.

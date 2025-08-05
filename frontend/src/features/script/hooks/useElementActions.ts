@@ -24,8 +24,8 @@ export function useElementActions(
 
       applyLocalChange({
         type: "CREATE_ELEMENT",
-        elementId: cleanData.element_id,
-        elementData: cleanData,
+        element_id: cleanData.element_id,
+        element_data: cleanData,
         insertIndex: insertIndex === elements.length ? undefined : insertIndex,
       } as any);
     },

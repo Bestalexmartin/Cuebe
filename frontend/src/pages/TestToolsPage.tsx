@@ -25,6 +25,7 @@ import { ApiTest } from '../components/test-tools/ApiTest';
 import { AuthenticationTest } from '../components/test-tools/AuthenticationTest';
 import { PerformanceTest } from '../components/test-tools/PerformanceTest';
 import { EnvironmentTest } from '../components/test-tools/EnvironmentTest';
+import { PytestTest } from '../components/test-tools/PytestTest';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BaseUtilityPage } from '../components/base/BaseUtilityPage';
 import { useEnhancedToast } from '../utils/toastUtils';
@@ -359,6 +360,8 @@ export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenu
         );
       case 'authentication':
         return cardWrapper(<AuthenticationTest />);
+      case 'pytest':
+        return cardWrapper(<PytestTest />);
       case 'error-boundary':
         return cardWrapper(<ErrorBoundaryTest />);
       case 'toast':
@@ -375,7 +378,7 @@ export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenu
     }
   };
 
-  // QuickAccess items ordered as requested: Environment first as starting point, then by priority
+  // QuickAccess items ordered as requested: ENVIRONMENT | PERFORMANCE | AUTHENTICATION | API TESTING | PYTEST TESTS | NOTIFICATIONS | ERROR BOUNDARY | FORM VALIDATION
   // Using badge titles and colors from the actual test components
   const quickAccessItems = [
     {
@@ -395,14 +398,6 @@ export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenu
       onClick: () => handleTestSelection('performance')
     },
     {
-      id: 'api',
-      title: 'API Testing',
-      description: 'Test API endpoints and connectivity',
-      badgeTitle: 'API TESTING',
-      badgeColorScheme: 'cyan',
-      onClick: () => handleTestSelection('api')
-    },
-    {
       id: 'authentication',
       title: 'Authentication',
       description: 'Test login and session management',
@@ -411,12 +406,20 @@ export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenu
       onClick: () => handleTestSelection('authentication')
     },
     {
-      id: 'error-boundary',
-      title: 'Error Boundary',
-      description: 'Test error handling and recovery',
-      badgeTitle: 'ERROR BOUNDARY',
-      badgeColorScheme: 'red',
-      onClick: () => handleTestSelection('error-boundary')
+      id: 'api',
+      title: 'API Testing',
+      description: 'Test API endpoints and connectivity',
+      badgeTitle: 'API TESTING',
+      badgeColorScheme: 'cyan',
+      onClick: () => handleTestSelection('api')
+    },
+    {
+      id: 'pytest',
+      title: 'Pytest Tests',
+      description: 'Run pytest test suites and manage test fixtures',
+      badgeTitle: 'PYTEST TESTS',
+      badgeColorScheme: 'green',
+      onClick: () => handleTestSelection('pytest')
     },
     {
       id: 'toast',
@@ -427,11 +430,19 @@ export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenu
       onClick: () => handleTestSelection('toast')
     },
     {
+      id: 'error-boundary',
+      title: 'Error Boundary',
+      description: 'Test error handling and recovery',
+      badgeTitle: 'ERROR BOUNDARY',
+      badgeColorScheme: 'red',
+      onClick: () => handleTestSelection('error-boundary')
+    },
+    {
       id: 'form-validation',
       title: 'Form Validation',
       description: 'Test form validation and input handling',
       badgeTitle: 'FORM VALIDATION',
-      badgeColorScheme: 'blue',
+      badgeColorScheme: 'teal',
       onClick: () => handleTestSelection('form-validation')
     }
   ];

@@ -61,11 +61,11 @@ def client(db_session):
 def mock_user_data():
     """Generate realistic test user data"""
     return {
-        "emailAddress": fake.email(),
-        "fullnameFirst": fake.first_name(),
-        "fullnameLast": fake.last_name(),
+        "email_address": fake.email(),
+        "fullname_first": fake.first_name(),
+        "fullname_last": fake.last_name(),
         "clerk_user_id": fake.uuid4(),
-        "userStatus": "verified"
+        "user_status": "verified"
     }
 
 @pytest.fixture
@@ -88,11 +88,11 @@ def create_test_user(db_session):
     def _create_user(user_data=None):
         if user_data is None:
             user_data = {
-                "emailAddress": fake.email(),
-                "fullnameFirst": fake.first_name(),
-                "fullnameLast": fake.last_name(),
+                "email_address": fake.email(),
+                "fullname_first": fake.first_name(),
+                "fullname_last": fake.last_name(),
                 "clerk_user_id": fake.uuid4(),
-                "userStatus": "verified"
+                "user_status": "verified"
             }
         
         user = User(**user_data)

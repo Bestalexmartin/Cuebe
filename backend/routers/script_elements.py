@@ -136,11 +136,7 @@ def get_script_element(
     
     element = db.query(models.ScriptElement).options(
         joinedload(models.ScriptElement.script).joinedload(models.Script.show),
-        joinedload(models.ScriptElement.department),
-        joinedload(models.ScriptElement.equipment),
-        joinedload(models.ScriptElement.crew_assignments),
-        joinedload(models.ScriptElement.performer_assignments),
-        joinedload(models.ScriptElement.conditional_rules)
+        joinedload(models.ScriptElement.department)
     ).filter(models.ScriptElement.element_id == element_id).first()
     
     if not element:
@@ -256,7 +252,7 @@ def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, 
     """Process a single edit queue operation."""
     
     operation_type = operation_data.get("type")
-    element_id = operation_data.get("elementId")
+    element_id = operation_data.get("element_id")
     
     if operation_type == "REORDER":
         return _process_reorder_operation(db, script_id, operation_data, user)
@@ -291,8 +287,8 @@ def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, 
 def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process a single element reorder operation."""
     
-    element_id = operation_data.get("elementId")
-    new_sequence = operation_data.get("newSequence")
+    element_id = operation_data.get("element_id")
+    new_sequence = operation_data.get("new_sequence")
     
     element = db.query(models.ScriptElement).filter(
         and_(
@@ -315,7 +311,7 @@ def _process_update_field_operation(db: Session, element_id: str, operation_data
     """Process a field update operation."""
     
     field = operation_data.get("field")
-    new_value = operation_data.get("newValue")
+    new_value = operation_data.get("new_value")
     
     element = db.query(models.ScriptElement).filter(
         models.ScriptElement.element_id == UUID(element_id)
@@ -364,7 +360,7 @@ def _process_update_element_operation(db: Session, element_id: str, operation_da
     
     # Apply each field change
     for field, change_data in changes.items():
-        new_value = change_data.get("newValue")
+        new_value = change_data.get("new_value")
         
         if hasattr(element, field):
             # Handle special cases for enum fields (convert to uppercase)
@@ -412,7 +408,7 @@ def _process_update_time_offset_operation(db: Session, element_id: str, operatio
 def _process_create_element_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process an element creation operation."""
     
-    element_data = operation_data.get("elementData", {})
+    element_data = operation_data.get("element_data", {})
     
     # Get the next elementOrder value
     max_order = db.query(models.ScriptElement.element_order).filter(
@@ -482,12 +478,12 @@ def _process_delete_element_operation(db: Session, element_id: str, user: models
 def _process_bulk_reorder_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process a bulk reorder operation."""
     
-    element_changes = operation_data.get("elementChanges", [])
+    element_changes = operation_data.get("element_changes", [])
     updated_count = 0
     
     for change in element_changes:
-        element_id = change.get("elementId")
-        new_sequence = change.get("newSequence")
+        element_id = change.get("element_id")
+        new_sequence = change.get("new_sequence")
         
         element = db.query(models.ScriptElement).filter(
             and_(
@@ -528,7 +524,7 @@ def _process_update_script_info_operation(db: Session, script_id: UUID, operatio
     
     # Apply each field change
     for field, change_data in changes.items():
-        new_value = change_data.get("newValue")
+        new_value = change_data.get("new_value")
         
         if field == "script_name":
             script.script_name = new_value

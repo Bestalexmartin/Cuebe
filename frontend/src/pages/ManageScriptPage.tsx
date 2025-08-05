@@ -67,6 +67,7 @@ const MODAL_NAMES = {
     CLEAR_HISTORY: 'clear_history',
     FINAL_CLEAR_HISTORY: 'final_clear_history',
     SAVE_CONFIRMATION: 'save_confirmation',
+    FINAL_SAVE_CONFIRMATION: 'final_save_confirmation',
     SAVE_PROCESSING: 'save_processing'
 } as const;
 
@@ -271,7 +272,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         modalNames: MODAL_NAMES,
         activeMode,
         hasInfoChanges: hasChanges,
-        captureInfoChanges
+        captureInfoChanges,
+        onSaveSuccess: () => setActiveMode('view')
     });
 
     // Element modal actions hook
@@ -754,17 +756,20 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onConfirmDuplicate={elementActions.handleConfirmDuplicate}
                 onUnsavedChangesCancel={modalHandlers.handleUnsavedChangesCancel}
                 onInitialUnsavedConfirm={modalHandlers.handleInitialUnsavedConfirm}
+                onAbandonChangesConfirm={modalHandlers.handleAbandonChangesConfirm}
                 onSaveScriptChanges={modalHandlers.handleSaveScriptChanges}
+                onInitialSaveConfirm={modalHandlers.handleInitialSaveConfirm}
+                onFinalSaveConfirm={modalHandlers.handleFinalSaveConfirm}
+                onSaveCancel={modalHandlers.handleSaveCancel}
                 onElementEdit={elementActions.handleElementEditSave}
             />
 
             {/* Save Confirmation Modal */}
             <SaveConfirmationModal
                 isOpen={modalState.isOpen(MODAL_NAMES.SAVE_CONFIRMATION)}
-                onClose={() => modalState.closeModal(MODAL_NAMES.SAVE_CONFIRMATION)}
-                onConfirm={modalHandlers.handleSaveScriptChanges}
+                onClose={modalHandlers.handleSaveCancel}
+                onConfirm={modalHandlers.handleInitialSaveConfirm}
                 changesCount={totalChangesCount}
-                isSaving={false}
             />
 
             {/* Save Processing Modal */}

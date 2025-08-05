@@ -12,6 +12,7 @@ import {
 import { useUser } from '@clerk/clerk-react';
 import { BaseCard, BaseCardAction } from '../../../components/base/BaseCard';
 import { formatDateTimeLocal } from '../../../utils/dateTimeUtils';
+import { formatRole } from '../../../constants/userRoles';
 
 // TypeScript interfaces
 interface CrewMember {
@@ -64,12 +65,6 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
         onEdit(crewMember.user_id);
     };
 
-    const formatRole = (role?: string): string => {
-        if (!role) return 'Crew';
-        return role.split('_').map(word =>
-            word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' ');
-    };
 
     const getFullName = (): string => {
         const firstName = crewMember.fullname_first || '';

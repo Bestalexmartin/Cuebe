@@ -188,6 +188,63 @@ def delete_show(
 
 
 # =============================================================================
+# CREW ASSIGNMENT ENDPOINTS
+# =============================================================================
+
+@router.put("/shows/{show_id}/crew-assignments", response_model=list[schemas.CrewAssignment])
+def update_show_crew_assignments(
+    show_id: UUID,
+    crew_data: schemas.CrewAssignmentBulkRequest,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Replace all crew assignments for a show with the provided assignments."""
+    # Verify show exists and user has permission
+    show = db.query(models.Show).filter(models.Show.show_id == show_id).first()
+    if not show:
+        raise HTTPException(status_code=404, detail="Show not found")
+    
+    # Security check
+    if show.owner_id != user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this show")
+    
+    try:
+        # Delete all existing assignments for this show
+        db.query(models.CrewAssignment).filter(
+            models.CrewAssignment.show_id == show_id
+        ).delete()
+        
+        # Create new assignments
+        new_assignments = []
+        for assignment_data in crew_data.assignments:
+            new_assignment = models.CrewAssignment(
+                show_id=show_id,
+                user_id=assignment_data.user_id,
+                department_id=assignment_data.department_id,
+                show_role=assignment_data.show_role,
+                is_active=assignment_data.is_active
+            )
+            db.add(new_assignment)
+            new_assignments.append(new_assignment)
+        
+        db.commit()
+        
+        # Refresh all new assignments to get auto-generated fields
+        for assignment in new_assignments:
+            db.refresh(assignment)
+        
+        return new_assignments
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to update crew assignments for show {show_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update crew assignments: {str(e)}"
+        )
+
+
+# =============================================================================
 # SCRIPT ENDPOINTS
 # =============================================================================
 
@@ -331,70 +388,7 @@ def duplicate_script(
         # Store mapping for relationship updates
         element_id_mapping[original_element.element_id] = new_element.element_id
 
-    # Duplicate all related data separately to avoid complex joins
-    # Duplicate equipment relationships
-    original_equipment = db.query(models.ScriptElementEquipment).join(
-        models.ScriptElement
-    ).filter(models.ScriptElement.script_id == script_id).all()
-    
-    for equipment in original_equipment:
-        if equipment.element_id in element_id_mapping:
-            new_equipment = models.ScriptElementEquipment(
-                element_id=element_id_mapping[equipment.element_id],
-                equipment_name=equipment.equipment_name,
-                is_required=equipment.is_required,
-                notes=equipment.notes
-            )
-            db.add(new_equipment)
-
-    # Duplicate crew assignments
-    original_crew_assignments = db.query(models.ScriptElementCrewAssignment).join(
-        models.ScriptElement
-    ).filter(models.ScriptElement.script_id == script_id).all()
-    
-    for crew_assignment in original_crew_assignments:
-        if crew_assignment.element_id in element_id_mapping:
-            new_crew_assignment = models.ScriptElementCrewAssignment(
-                element_id=element_id_mapping[crew_assignment.element_id],
-                crew_id=crew_assignment.crew_id,
-                assignment_role=crew_assignment.assignment_role,
-                is_lead=crew_assignment.is_lead
-            )
-            db.add(new_crew_assignment)
-
-    # Duplicate performer assignments
-    original_performer_assignments = db.query(models.ScriptElementPerformerAssignment).join(
-        models.ScriptElement
-    ).filter(models.ScriptElement.script_id == script_id).all()
-    
-    for performer_assignment in original_performer_assignments:
-        if performer_assignment.element_id in element_id_mapping:
-            new_performer_assignment = models.ScriptElementPerformerAssignment(
-                element_id=element_id_mapping[performer_assignment.element_id],
-                performer_id=performer_assignment.performer_id,
-                character_name=performer_assignment.character_name,
-                notes=performer_assignment.notes
-            )
-            db.add(new_performer_assignment)
-
-    # Duplicate conditional rules
-    original_conditional_rules = db.query(models.ScriptElementConditionalRule).join(
-        models.ScriptElement
-    ).filter(models.ScriptElement.script_id == script_id).all()
-    
-    for conditional_rule in original_conditional_rules:
-        if conditional_rule.element_id in element_id_mapping:
-            new_conditional_rule = models.ScriptElementConditionalRule(
-                element_id=element_id_mapping[conditional_rule.element_id],
-                condition_type=conditional_rule.condition_type,
-                operator=conditional_rule.operator,
-                condition_value=conditional_rule.condition_value,
-                description=conditional_rule.description,
-                is_active=conditional_rule.is_active
-            )
-            db.add(new_conditional_rule)
-
-    # Second pass: Update parent relationships and group relationships
+    # Update parent element relationships (if any exist)
     for original_element in original_elements:
         new_element_id = element_id_mapping[original_element.element_id]
         
@@ -405,19 +399,12 @@ def duplicate_script(
                 models.ScriptElement.element_id == new_element_id
             ).update({"parent_element_id": new_parent_id})
 
-    # Duplicate group relationships
-    original_group_relationships = db.query(models.ScriptElementGroup).join(
-        models.ScriptElement, models.ScriptElementGroup.group_id == models.ScriptElement.element_id
-    ).filter(models.ScriptElement.script_id == script_id).all()
-    
-    for group_rel in original_group_relationships:
-        if group_rel.group_id in element_id_mapping and group_rel.child_element_id in element_id_mapping:
-            new_group_rel = models.ScriptElementGroup(
-                group_id=element_id_mapping[group_rel.group_id],
-                child_element_id=element_id_mapping[group_rel.child_element_id],
-                order_in_group=group_rel.order_in_group
-            )
-            db.add(new_group_rel)
+    # Note: Removed duplication of unused supporting tables:
+    # - ScriptElementEquipment
+    # - ScriptElementCrewAssignment 
+    # - ScriptElementPerformerAssignment
+    # - ScriptElementConditionalRule
+    # - ScriptElementGroup
 
     db.commit()
     return new_script

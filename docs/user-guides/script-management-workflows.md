@@ -1,5 +1,9 @@
 # Script Management Workflows
 
+**Date:** July 2025  
+**Status:** Current  
+**Category:** User Documentation & Workflows
+
 ## Overview
 
 This guide provides step-by-step workflows for common script management tasks in CallMaster. These workflows are designed to help users efficiently create, edit, and manage theatrical scripts using the ManageScriptPage interface.

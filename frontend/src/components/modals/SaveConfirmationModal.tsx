@@ -7,17 +7,15 @@ import { BaseModal } from '../base/BaseModal';
 interface SaveConfirmationModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: () => Promise<void>;
+    onConfirm: () => void; // Changed from Promise<void> since this just advances to next modal
     changesCount: number;
-    isSaving?: boolean;
 }
 
 export const SaveConfirmationModal: React.FC<SaveConfirmationModalProps> = ({
     isOpen,
     onClose,
     onConfirm,
-    changesCount,
-    isSaving = false
+    changesCount
 }) => {
     return (
         <BaseModal
@@ -27,29 +25,24 @@ export const SaveConfirmationModal: React.FC<SaveConfirmationModalProps> = ({
             isOpen={isOpen}
             onClose={onClose}
             primaryAction={{
-                label: "Save Changes",
+                label: "Continue",
                 onClick: onConfirm,
-                variant: 'primary',
-                isLoading: isSaving,
-                loadingText: "Saving..."
+                variant: 'primary'
             }}
             secondaryAction={{
                 label: "Cancel",
                 onClick: onClose,
-                variant: 'secondary',
-                isDisabled: isSaving
+                variant: 'secondary'
             }}
             size="md"
         >
             <VStack spacing={4} align="stretch">
                 <VStack align="center" spacing="4" width="100%">
                     <Text fontSize="md" textAlign="center">
-                        You have {changesCount} pending change{changesCount !== 1 ? 's' : ''} ready to save.
+                        Are you ready to save {changesCount} pending change{changesCount !== 1 ? 's' : ''}?
                     </Text>
-                    <Text fontSize="md" color="orange.600" fontWeight="bold" textAlign="center" lineHeight="1.4">
-                        This action will save your cumulative script changes and reset this session's edit history.
-                        <br />
-                        This action cannot be undone.
+                    <Text fontSize="md" color="blue.400" fontWeight="bold" textAlign="center" lineHeight="1.4">
+                        This will permanently save your changes to the database and reset your edit history.
                     </Text>
                 </VStack>
             </VStack>

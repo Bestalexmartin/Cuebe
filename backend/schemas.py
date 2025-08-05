@@ -140,6 +140,32 @@ class ShowCreate(BaseModel):
     show_notes: Optional[str] = None
     deadline: Optional[datetime] = None
 
+class CrewAssignment(BaseModel):
+    """Schema for show-level crew assignments"""
+    assignment_id: UUID
+    show_id: UUID
+    user_id: UUID
+    department_id: UUID
+    show_role: Optional[str] = None
+    is_active: bool
+    date_assigned: datetime
+
+    class Config:
+        from_attributes = True
+
+class CrewAssignmentCreate(BaseModel):
+    """Schema for creating crew assignments"""
+    assignment_id: Optional[UUID] = None  # For updates
+    show_id: UUID
+    user_id: UUID
+    department_id: UUID
+    show_role: Optional[str] = None
+    is_active: bool = True
+
+class CrewAssignmentBulkRequest(BaseModel):
+    """Schema for bulk crew assignment updates"""
+    assignments: List[CrewAssignmentCreate]
+
 class Show(BaseModel):
     show_id: UUID
     owner_id: UUID
@@ -154,6 +180,7 @@ class Show(BaseModel):
     
     # Forward reference to Script (defined below)
     scripts: List['Script'] = []
+    crew: List[CrewAssignment] = []
 
     class Config:
         from_attributes = True
@@ -267,35 +294,10 @@ class ScriptElementUpdate(BaseModel):
     department_color: Optional[str] = None
     custom_color: Optional[str] = None
 
-class ScriptElementEquipment(BaseModel):
-    """Schema for script element equipment requirements"""
-    equipment_name: str
-    is_required: bool = True
-    notes: Optional[str] = None
-    
-    class Config:
-        from_attributes = True
-
-class ScriptElementCrewAssignment(BaseModel):
-    """Schema for script element crew assignments"""
-    crew_id: UUID
-    assignment_role: Optional[str] = None
-    is_lead: bool = False
-    
-    class Config:
-        from_attributes = True
-
-class ScriptElementConditionalRule(BaseModel):
-    """Schema for script element conditional rules"""
-    rule_id: UUID
-    condition_type: str  # 'weather', 'cast', 'equipment', 'time', 'custom'
-    operator: str  # 'equals', 'not_equals', 'contains', 'greater_than', 'less_than'
-    condition_value: str
-    description: str
-    is_active: bool = True
-    
-    class Config:
-        from_attributes = True
+# Removed unused schemas:
+# - ScriptElementEquipment
+# - ScriptElementCrewAssignment (different from show-level CrewAssignment)
+# - ScriptElementConditionalRule
 
 class ScriptElementEnhanced(BaseModel):
     """Enhanced schema for script elements with all new fields"""
@@ -348,10 +350,7 @@ class ScriptElementEnhanced(BaseModel):
     date_created: datetime
     date_updated: datetime
     
-    # Relationships
-    equipment: List[ScriptElementEquipment] = []
-    crew_assignments: List[ScriptElementCrewAssignment] = []
-    conditional_rules: List[ScriptElementConditionalRule] = []
+    # Relationships (removed unused features)
     
     class Config:
         from_attributes = True

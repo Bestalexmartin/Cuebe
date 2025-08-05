@@ -1,8 +1,8 @@
 # CallMaster Backend: Synchronous/Asynchronous Architecture Decisions
 
-**Date:** January 2025  
+**Date:** July 2025  
 **Status:** Implemented  
-**Decision:** Convert FastAPI endpoints from async to synchronous operations
+**Category:** Architecture & Backend Design
 
 ## Overview
 

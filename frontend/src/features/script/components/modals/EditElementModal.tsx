@@ -352,8 +352,6 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                                 width="100%"
                                 textAlign="left"
                                 isDisabled={departmentsLoading}
-                                bg="white"
-                                _dark={{ bg: "gray.800" }}
                                 height="40px"
                             >
                                 {formData.department_id ? (

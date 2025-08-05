@@ -19,6 +19,7 @@ import { useEnhancedToast } from '../../../utils/toastUtils';
 import { formatDateTimeLocal } from '../../../utils/dateTimeUtils';
 import { useChangeDetection } from '../../../hooks/useChangeDetection';
 import { ErrorBoundary } from '../../../components/ErrorBoundary';
+import { USER_ROLE_OPTIONS, formatRole } from '../../../constants/userRoles';
 
 // TypeScript interfaces
 interface CrewFormData {
@@ -30,10 +31,6 @@ interface CrewFormData {
     notes: string;
 }
 
-interface UserRoleOption {
-    value: string;
-    label: string;
-}
 
 const INITIAL_FORM_STATE: CrewFormData = {
     fullname_first: '',
@@ -97,29 +94,6 @@ const VALIDATION_CONFIG: FormValidationConfig = {
     }
 };
 
-// User role options based on typical theatre crew roles
-const USER_ROLE_OPTIONS: UserRoleOption[] = [
-    { value: 'crew', label: 'Crew' },
-    { value: 'assistant_director', label: 'Assistant Director' },
-    { value: 'stage_manager', label: 'Stage Manager' },
-    { value: 'assistant_stage_manager', label: 'Assistant Stage Manager' },
-    { value: 'technical_director', label: 'Technical Director' },
-    { value: 'lighting_designer', label: 'Lighting Designer' },
-    { value: 'sound_designer', label: 'Sound Designer' },
-    { value: 'costume_designer', label: 'Costume Designer' },
-    { value: 'set_designer', label: 'Set Designer' },
-    { value: 'props_master', label: 'Props Master' },
-    { value: 'electrician', label: 'Electrician' },
-    { value: 'sound_technician', label: 'Sound Technician' },
-    { value: 'wardrobe', label: 'Wardrobe' },
-    { value: 'makeup_artist', label: 'Makeup Artist' },
-    { value: 'hair_stylist', label: 'Hair Stylist' },
-    { value: 'choreographer', label: 'Choreographer' },
-    { value: 'music_director', label: 'Music Director' },
-    { value: 'producer', label: 'Producer' },
-    { value: 'director', label: 'Director' },
-    { value: 'other', label: 'Other' }
-];
 
 export const EditCrewPage: React.FC = () => {
     const { crewId } = useParams<{ crewId: string }>();
@@ -323,12 +297,6 @@ export const EditCrewPage: React.FC = () => {
         }
     ];
 
-    const formatRole = (role: string): string => {
-        if (!role) return 'Crew';
-        return role.split('_').map(word =>
-            word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' ');
-    };
 
     const getUserStatusBadge = () => {
         if (!crew) return null;

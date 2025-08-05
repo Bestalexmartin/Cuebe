@@ -1,7 +1,7 @@
 // frontend/src/features/shows/hooks/useShows.ts
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useAuth } from "@clerk/clerk-react";
 
 // TypeScript interfaces
 interface Venue {
@@ -18,7 +18,7 @@ interface Script {
   start_time: string;
   date_created: string;
   date_updated: string;
-  lastUsed?: string;
+  last_used?: string;
 }
 
 interface Show {
@@ -53,16 +53,17 @@ export const useShows = (): UseShowsReturn => {
         setIsLoading(false);
         return;
       }
-      const response = await fetch('/api/me/shows', {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const response = await fetch("/api/me/shows", {
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) {
-        throw new Error('Something went wrong fetching your shows.');
+        throw new Error("Something went wrong fetching your shows.");
       }
       const data: Show[] = await response.json();
       setShows(data);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load shows';
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load shows";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -73,5 +74,8 @@ export const useShows = (): UseShowsReturn => {
     fetchShows();
   }, [fetchShows]);
 
-  return useMemo(() => ({ shows, isLoading, error, refetchShows: fetchShows }), [shows, isLoading, error, fetchShows]);
+  return useMemo(
+    () => ({ shows, isLoading, error, refetchShows: fetchShows }),
+    [shows, isLoading, error, fetchShows],
+  );
 };

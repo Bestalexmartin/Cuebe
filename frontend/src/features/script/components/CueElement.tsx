@@ -192,10 +192,10 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
 
-        const timeString = hours > 0 
+        const timeString = hours > 0
             ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
             : `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        
+
         return isNegative ? `-${timeString}` : timeString;
     }, [element.time_offset_ms, showClockTimes, scriptStartTime]);
 
@@ -493,7 +493,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                                 )`}
                                 borderRadius="sm"
                             />
-                            
+
                             {/* Solid background layer for text */}
                             <Box
                                 position="absolute"
@@ -504,7 +504,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                                 background={backgroundColor}
                                 borderRadius="sm"
                             />
-                            
+
                             {/* Text layer */}
                             <Text
                                 fontSize="sm"

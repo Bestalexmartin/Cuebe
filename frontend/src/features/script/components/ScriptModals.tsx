@@ -3,6 +3,8 @@
 import React from 'react';
 import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfirmationModal';
 import { FinalDeleteConfirmationModal } from '../../../components/modals/FinalDeleteConfirmationModal';
+import { FinalSaveConfirmationModal } from '../../../components/modals/FinalSaveConfirmationModal';
+import { AbandonChangesModal } from '../../../components/modals/AbandonChangesModal';
 import { DuplicateScriptModal } from './modals/DuplicateScriptModal';
 import { ProcessingModal } from './modals/ProcessingModal';
 import { OptionsModal } from './modals/OptionsModal';
@@ -58,7 +60,11 @@ interface ScriptModalsProps {
     onConfirmDuplicate: (description: string, time_offset_ms: number) => void;
     onUnsavedChangesCancel: () => void;
     onInitialUnsavedConfirm: () => void;
+    onAbandonChangesConfirm: () => void;
     onSaveScriptChanges: () => void;
+    onInitialSaveConfirm: () => void;
+    onFinalSaveConfirm: () => void;
+    onSaveCancel: () => void;
     onElementEdit: (changes: Record<string, { oldValue: any; newValue: any }>) => void;
 }
 
@@ -104,7 +110,11 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     onConfirmDuplicate,
     onUnsavedChangesCancel,
     onInitialUnsavedConfirm,
+    onAbandonChangesConfirm,
     onSaveScriptChanges,
+    onInitialSaveConfirm,
+    onFinalSaveConfirm,
+    onSaveCancel,
     onElementEdit
 }) => {
     return (
@@ -149,14 +159,14 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 entityName={`${pendingOperations.length} unsaved changes`}
             />
 
-            <FinalDeleteConfirmationModal
+            <AbandonChangesModal
                 isOpen={modalState.isOpen(modalNames.FINAL_CLEAR_HISTORY)}
                 onClose={onClearHistoryCancel}
                 onConfirm={onFinalClearHistoryConfirm}
                 isLoading={false}
-                entityType="Edit History"
-                entityName="All unsaved changes"
-                warningMessage="This will permanently discard all your unsaved changes and restore the script to its original loaded state. This action cannot be undone."
+                changesCount={pendingOperations.length}
+                customMainText="All unsaved changes will be permanently discarded."
+                warningMessage="This will restore the script to its original loaded state and cannot be undone."
             />
 
             {/* Add Script Element Modal */}
@@ -228,16 +238,23 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 customWarning={`${pendingOperations.length} unsaved change${pendingOperations.length !== 1 ? 's' : ''} will be permanently removed.\nThis action cannot be undone.`}
             />
 
-            <FinalDeleteConfirmationModal
+            <AbandonChangesModal
                 isOpen={modalState.isOpen(modalNames.FINAL_UNSAVED_CHANGES)}
                 onClose={onUnsavedChangesCancel}
-                onConfirm={onSaveScriptChanges}
-                isLoading={isSavingChanges}
-                entityType="Changes"
-                entityName=""
-                actionWord="Abandon"
-                customMainText={`${pendingOperations.length} change${pendingOperations.length !== 1 ? 's' : ''} will be permanently deleted.`}
+                onConfirm={onAbandonChangesConfirm}
+                isLoading={false}
+                changesCount={pendingOperations.length}
                 warningMessage="Leaving without saving will permanently discard all your unsaved changes and cannot be undone."
+            />
+
+            {/* Final Save Confirmation Modal */}
+            <FinalSaveConfirmationModal
+                isOpen={modalState.isOpen(modalNames.FINAL_SAVE_CONFIRMATION)}
+                onClose={onSaveCancel}
+                onConfirm={onFinalSaveConfirm}
+                isLoading={false}
+                changesCount={pendingOperations.length}
+                warningMessage="This will permanently apply all changes to the database and reset your edit history."
             />
         </>
     );

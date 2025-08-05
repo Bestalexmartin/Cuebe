@@ -108,9 +108,9 @@ def get_user_options(
     """Get user's preference options."""
     # Return user options or defaults if null
     default_options = {
-        "colorizeDepNames": True,
-        "autoSortCues": True,
-        "showClockTimes": False
+        "colorize_dep_names": True,
+        "auto_sort_cues": True,
+        "show_clock_times": False
     }
     
     return user.user_prefs_json or default_options
@@ -126,7 +126,7 @@ def update_user_options(
 ):
     """Update user's preference options."""
     # Validate that only known options are provided
-    valid_options = {"colorizeDepNames", "autoSortCues", "showClockTimes"}
+    valid_options = {"colorize_dep_names", "auto_sort_cues", "show_clock_times"}
     
     # Filter to only include valid options and ensure they're boolean values
     filtered_options = {}
@@ -149,9 +149,9 @@ def update_user_options(
     
     # Get current options or defaults
     current_options = user.user_prefs_json or {
-        "colorizeDepNames": True,
-        "autoSortCues": True,
-        "showClockTimes": False
+        "colorize_dep_names": True,
+        "auto_sort_cues": True,
+        "show_clock_times": False
     }
     
     # Update with new values

@@ -38,7 +38,7 @@ export interface ScriptElementBase {
   sequence: number;                    // Order in script (auto-incrementing)
   time_offset_ms: number;                // Milliseconds from script start
   trigger_type: TriggerType;
-  follows_cue_id?: string;               // If triggerType is 'follow'
+  follows_cue_id?: string;               // If trigger_type is 'follow'
   
   // Content and identification
   cue_id?: string;                      // LX5, SND12, etc.

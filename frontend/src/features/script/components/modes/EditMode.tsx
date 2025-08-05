@@ -142,14 +142,12 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
 
-
         if (!over || active.id === over.id) {
             return;
         }
 
         const oldIndex = localElements.findIndex(el => el.element_id === active.id);
         const newIndex = localElements.findIndex(el => el.element_id === over.id);
-
 
         if (oldIndex === -1 || newIndex === -1) {
             return;
@@ -203,6 +201,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         
         if (allHaveSameTimeOffset || !autoSortCues) {
             const reason = allHaveSameTimeOffset ? 'All elements have same time offset' : 'Auto-sort is disabled';
+            
             // Set the dragged element so applyReorder can access it
             setDraggedElement(draggedEl);
             await applyReorderDirect(pendingReorderData, draggedEl);
@@ -273,11 +272,11 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             // Create reorder operation for edit queue
             const reorderOperation = {
                 type: 'REORDER',
-                elementId: draggedElement?.element_id,
-                oldIndex: pendingReorderData.oldIndex,
-                newIndex: pendingReorderData.newIndex,
-                oldSequence: pendingReorderData.oldIndex + 1,
-                newSequence: pendingReorderData.newIndex + 1
+                element_id: draggedElement?.element_id,
+                old_index: pendingReorderData.oldIndex,
+                new_index: pendingReorderData.newIndex,
+                old_sequence: pendingReorderData.oldIndex + 1,
+                new_sequence: pendingReorderData.newIndex + 1
             };
             
             onApplyLocalChange(reorderOperation);
@@ -300,11 +299,11 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             // Create reorder operation for edit queue
             const reorderOperation = {
                 type: 'REORDER',
-                elementId: draggedElement?.element_id,
-                oldIndex: pendingReorder.oldIndex,
-                newIndex: pendingReorder.newIndex,
-                oldSequence: pendingReorder.oldIndex + 1,
-                newSequence: pendingReorder.newIndex + 1
+                element_id: draggedElement?.element_id,
+                old_index: pendingReorder.oldIndex,
+                new_index: pendingReorder.newIndex,
+                old_sequence: pendingReorder.oldIndex + 1,
+                new_sequence: pendingReorder.newIndex + 1
             };
             
             onApplyLocalChange(reorderOperation);
@@ -333,9 +332,9 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         if (onApplyLocalChange) {
             const timeOffsetOperation = {
                 type: 'UPDATE_TIME_OFFSET',
-                elementId: elementId,
-                oldTimeOffsetMs: oldTimeOffsetMs,
-                newTimeOffsetMs: newTimeOffsetMs
+                element_id: elementId,
+                old_time_offset_ms: oldTimeOffsetMs,
+                new_time_offset_ms: newTimeOffsetMs
             };
             
             onApplyLocalChange(timeOffsetOperation);
@@ -363,19 +362,19 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 // Special handling for time offset changes
                 const timeOffsetOperation = {
                     type: 'UPDATE_TIME_OFFSET',
-                    elementId: elementToEdit.element_id,
-                    oldTimeOffsetMs: oldValue,
-                    newTimeOffsetMs: newValue
+                    element_id: elementToEdit.element_id,
+                    old_time_offset_ms: oldValue,
+                    new_time_offset_ms: newValue
                 };
                 onApplyLocalChange(timeOffsetOperation);
             } else {
                 // Regular field update operation
                 const fieldUpdateOperation = {
                     type: 'UPDATE_FIELD',
-                    elementId: elementToEdit.element_id,
+                    element_id: elementToEdit.element_id,
                     field: field,
-                    oldValue: oldValue,
-                    newValue: newValue
+                    old_value: oldValue,
+                    new_value: newValue
                 };
                 onApplyLocalChange(fieldUpdateOperation);
             }

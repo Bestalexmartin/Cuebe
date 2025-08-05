@@ -1,5 +1,9 @@
 # Script Elements Database Schema & API Design
 
+**Date:** August 2025  
+**Status:** Current  
+**Category:** Data Architecture & Database Schema
+
 ## Database Schema Updates
 
 ### New Tables Required
@@ -45,7 +49,7 @@ CREATE TABLE script_elements (
     priority ENUM('critical', 'high', 'normal', 'low', 'optional') DEFAULT 'normal',
     execution_status ENUM('pending', 'ready', 'executing', 'completed', 'skipped', 'failed') DEFAULT 'pending',
     
-    -- Relationships and grouping
+    -- Relationships and grouping (basic parent-child support)
     parent_element_id VARCHAR(36) NULL,
     group_level INTEGER DEFAULT 0,
     is_collapsed BOOLEAN DEFAULT false,
@@ -79,76 +83,15 @@ CREATE TABLE script_elements (
 );
 ```
 
-#### 2. `script_element_equipment` Table (Many-to-Many)
-```sql
-CREATE TABLE script_element_equipment (
-    element_id VARCHAR(36) NOT NULL,
-    equipment_name VARCHAR(100) NOT NULL,
-    is_required BOOLEAN DEFAULT true,
-    notes TEXT NULL,
-    
-    PRIMARY KEY (element_id, equipment_name),
-    FOREIGN KEY (element_id) REFERENCES script_elements(element_id) ON DELETE CASCADE
-);
-```
+#### Note: Supporting Tables Removed
+The following tables were originally planned but have been removed as unused features:
+- `script_element_equipment` - Equipment requirements per element
+- `script_element_crew_assignments` - Script-level crew assignments  
+- `script_element_performer_assignments` - Performer assignments per element
+- `script_element_conditional_rules` - Conditional execution rules
+- `script_element_groups` - Advanced group relationships
 
-#### 3. `script_element_crew_assignments` Table (Many-to-Many)
-```sql
-CREATE TABLE script_element_crew_assignments (
-    element_id VARCHAR(36) NOT NULL,
-    crew_id VARCHAR(36) NOT NULL,
-    assignment_role VARCHAR(100) NULL,
-    is_lead BOOLEAN DEFAULT false,
-    
-    PRIMARY KEY (element_id, crew_id),
-    FOREIGN KEY (element_id) REFERENCES script_elements(element_id) ON DELETE CASCADE,
-    FOREIGN KEY (crew_id) REFERENCES crew(crew_id) ON DELETE CASCADE
-);
-```
-
-#### 4. `script_element_performer_assignments` Table (Many-to-Many)
-```sql
-CREATE TABLE script_element_performer_assignments (
-    element_id VARCHAR(36) NOT NULL,
-    performer_id VARCHAR(36) NOT NULL,
-    character_name VARCHAR(100) NULL,
-    notes TEXT NULL,
-    
-    PRIMARY KEY (element_id, performer_id),
-    FOREIGN KEY (element_id) REFERENCES script_elements(element_id) ON DELETE CASCADE
-    -- Note: performer_id references would depend on cast management system
-);
-```
-
-#### 5. `script_element_conditional_rules` Table
-```sql
-CREATE TABLE script_element_conditional_rules (
-    rule_id VARCHAR(36) PRIMARY KEY,
-    element_id VARCHAR(36) NOT NULL,
-    condition_type ENUM('weather', 'cast', 'equipment', 'time', 'custom') NOT NULL,
-    operator ENUM('equals', 'not_equals', 'contains', 'greater_than', 'less_than') NOT NULL,
-    condition_value TEXT NOT NULL,
-    description TEXT NOT NULL,
-    is_active BOOLEAN DEFAULT true,
-    
-    FOREIGN KEY (element_id) REFERENCES script_elements(element_id) ON DELETE CASCADE,
-    INDEX idx_element_conditions (element_id)
-);
-```
-
-#### 6. `script_element_groups` Table (For Group Relationships)
-```sql
-CREATE TABLE script_element_groups (
-    group_id VARCHAR(36) NOT NULL,
-    child_element_id VARCHAR(36) NOT NULL,
-    order_in_group INTEGER NOT NULL,
-    
-    PRIMARY KEY (group_id, child_element_id),
-    FOREIGN KEY (group_id) REFERENCES script_elements(element_id) ON DELETE CASCADE,
-    FOREIGN KEY (child_element_id) REFERENCES script_elements(element_id) ON DELETE CASCADE,
-    INDEX idx_group_order (group_id, order_in_group)
-);
-```
+Show-level crew assignments are handled through the `crewAssignmentsTable` instead.
 
 ### Updates to Existing Tables
 
@@ -405,6 +348,7 @@ DELETE /api/departments/{department_id}
 ---
 
 *API Implementation completed July 2025*  
+*Database cleanup completed August 2025*  
 *All core CRUD operations are production-ready*
 
 #### 10. Playback and Execution
@@ -468,5 +412,5 @@ PATCH /api/scripts/{script_id}/elements/{element_id}/execute
 
 ---
 
-*Last Updated: July 2025*  
-*Documentation Version: 1.0*
+*Last Updated: August 2025*  
+*Documentation Version: 1.1*

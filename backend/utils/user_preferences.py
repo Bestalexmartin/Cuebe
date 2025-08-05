@@ -4,16 +4,16 @@ from typing import Dict, Any
 
 # User preference bit positions
 USER_PREFERENCE_BITS = {
-    'darkMode': 0,              # bit position 0 (0=light, 1=dark)
-    'colorizeDepNames': 1,      # bit position 1
-    'autoSortCues': 2,          # bit position 2
-    'showClockTimes': 3,        # bit position 3
+    'dark_mode': 0,              # bit position 0 (0=light, 1=dark)
+    'colorize_dep_names': 1,      # bit position 1
+    'auto_sort_cues': 2,          # bit position 2
+    'show_clock_times': 3,        # bit position 3
     'compactView': 4,           # bit position 4 (future)
     # etc.
 }
 
-# Default preferences (darkMode=False, colorizeDepNames=True, autoSortCues=True, showClockTimes=False)
-DEFAULT_PREFERENCES_BITMAP = 6  # 0b0110 = darkMode(0) + colorizeDepNames(1) + autoSortCues(1) + showClockTimes(0)
+# Default preferences (dark_mode=False, colorize_dep_names=True, auto_sort_cues=True, show_clock_times=False)
+DEFAULT_PREFERENCES_BITMAP = 6  # 0b0110 = dark_mode(0) + colorize_dep_names(1) + auto_sort_cues(1) + show_clock_times(0)
 
 
 def set_bit(bitmap: int, bit_position: int, value: bool) -> int:

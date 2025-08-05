@@ -114,7 +114,7 @@ export const useElementModalActions = ({
         try {
             applyLocalChange({
                 type: 'UPDATE_ELEMENT',
-                elementId: selectedElement.element_id,
+                element_id: selectedElement.element_id,
                 changes: changes,
                 description: `Updated element "${selectedElement.description}"`
             } as UpdateElementOperation);
@@ -175,8 +175,8 @@ export const useElementModalActions = ({
 
             applyLocalChange({
                 type: 'DELETE_ELEMENT',
-                elementId: selectedElementId,
-                elementData: elementToDelete
+                element_id: selectedElementId,
+                element_data: elementToDelete
             } as any);
 
             showSuccess('Script Element Deleted', 'Script element has been deleted. Save to apply changes.');

@@ -9,6 +9,7 @@ interface Department {
     department_name: string;
     department_description?: string;
     department_color?: string;
+    department_initials?: string;
     date_created: string;
     date_updated: string;
 }

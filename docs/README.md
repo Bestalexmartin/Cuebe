@@ -1,5 +1,9 @@
 # CallMaster Documentation
 
+**Date:** August 2025  
+**Status:** Current  
+**Category:** Documentation Index & Navigation
+
 Welcome to the CallMaster documentation! This comprehensive guide covers all aspects of the theater management application, from architecture to testing.
 
 ## Quick Navigation
@@ -34,6 +38,7 @@ Welcome to the CallMaster documentation! This comprehensive guide covers all asp
 ### `/architecture` - System Design & Technical Specifications
 
 - **[Performance Optimizations](./architecture/performance-optimizations.md)** - **🔥 Updated!** React render loop optimization, memoization strategies, and performance monitoring  
+- **[Application Lifecycle](./architecture/application-lifecycle.md)** - **🔥 New!** Startup process, data loading sequences, and script saving workflow
 - **[Async/Sync Architecture](./architecture/async-sync-architecture.md)** - **🔥 New!** Backend architecture decisions, database operations, and async/sync trade-offs
 - **[Component Architecture](./architecture/component-architecture.md)** - BaseCard/BaseModal patterns and composition principles
 - **[System Architecture](./architecture/system-architecture.md)** - Overall technology stack and design decisions
@@ -86,9 +91,10 @@ Welcome to the CallMaster documentation! This comprehensive guide covers all asp
 
 ### 🏗️ **For System Architecture**
 
-1. **[Component Architecture](./architecture/component-architecture.md)** - Base component patterns and composition
-2. **[System Architecture](./architecture/system-architecture.md)** - Overall design and technology decisions
-3. **[Script Elements Data Model](./architecture/script-elements-data-model.md)** - Core data structures and relationships
+1. **[Application Lifecycle](./architecture/application-lifecycle.md)** - **🔥 New!** Startup process, data loading, and workflow processes
+2. **[Component Architecture](./architecture/component-architecture.md)** - Base component patterns and composition
+3. **[System Architecture](./architecture/system-architecture.md)** - Overall design and technology decisions
+4. **[Script Elements Data Model](./architecture/script-elements-data-model.md)** - Core data structures and relationships
 
 ### 📊 **For Project Managers & Stakeholders**
 
@@ -275,5 +281,5 @@ CallMaster is built with modern technologies focused on performance, maintainabi
 
 ---
 
-_Last Updated: July 2025_  
+_Last Updated: August 2025_  
 _Documentation Version: 2.0 - Major Performance & Organization Update_

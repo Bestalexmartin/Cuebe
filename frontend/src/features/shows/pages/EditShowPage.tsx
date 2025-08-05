@@ -19,6 +19,8 @@ import { useEnhancedToast } from '../../../utils/toastUtils';
 import { convertUTCToLocal, convertLocalToUTC } from '../../../utils/dateTimeUtils';
 import { useChangeDetection } from '../../../hooks/useChangeDetection';
 import { ErrorBoundary } from '../../../components/ErrorBoundary';
+import { CrewAssignmentSection } from '../components/CrewAssignmentSection';
+import { CrewAssignmentRow } from '../types/crewAssignments';
 
 // TypeScript interfaces
 interface ShowFormData {
@@ -28,6 +30,7 @@ interface ShowFormData {
     show_duration: string;  // End Time of show
     deadline: string;
     venue_id: string;
+    crew_assignments: CrewAssignmentRow[];
 }
 
 interface Venue {
@@ -41,7 +44,8 @@ const INITIAL_FORM_STATE: ShowFormData = {
     show_date: '',
     show_duration: '',  // End Time of show
     deadline: '',
-    venue_id: ''
+    venue_id: '',
+    crew_assignments: []
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
@@ -81,6 +85,8 @@ export const EditShowPage: React.FC = () => {
     const [isFinalDeleteModalOpen, setIsFinalDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Remove separate crew assignments state - now part of form data
+
     // Fetch the initial show data
     const { show, isLoading: isLoadingShow, error: showLoadError } = useShow(showId);
 
@@ -101,13 +107,24 @@ export const EditShowPage: React.FC = () => {
     // Populate form when show data loads
     useEffect(() => {
         if (show) {
+            // Convert show crew assignments to CrewAssignmentRow format
+            const crewAssignmentRows: CrewAssignmentRow[] = show.crew?.map(assignment => ({
+                id: assignment.assignment_id,
+                department_id: assignment.department_id,
+                crew_member_ids: [assignment.user_id],
+                role: assignment.show_role || '',
+                isNew: false,
+                isSelected: false
+            })) || [];
+
             form.setFormData({
                 show_name: show.show_name || '',
                 show_notes: show.show_notes || '',
                 show_date: convertUTCToLocal(show.show_date),
                 show_duration: convertUTCToLocal(show.show_duration),
                 deadline: convertUTCToLocal(show.deadline),
-                venue_id: show.venue?.venue_id || ''
+                venue_id: show.venue?.venue_id || '',
+                crew_assignments: crewAssignmentRows
             });
         }
     }, [show, form.setFormData]);
@@ -119,7 +136,15 @@ export const EditShowPage: React.FC = () => {
         show_date: convertUTCToLocal(show.show_date),
         show_duration: convertUTCToLocal(show.show_duration),
         deadline: convertUTCToLocal(show.deadline),
-        venue_id: show.venue?.venue_id || ''
+        venue_id: show.venue?.venue_id || '',
+        crew_assignments: show.crew?.map(assignment => ({
+            id: assignment.assignment_id,
+            department_id: assignment.department_id,
+            crew_member_ids: [assignment.user_id],
+            role: assignment.show_role || '',
+            isNew: false,
+            isSelected: false
+        })) || []
     } : null;
 
     const { hasChanges, updateOriginalData } = useChangeDetection(
@@ -131,6 +156,11 @@ export const EditShowPage: React.FC = () => {
     // Handle form field changes
     const handleChange = (field: keyof ShowFormData, value: string) => {
         form.updateField(field, value);
+    };
+
+    // Handle crew assignment changes
+    const handleCrewAssignmentsChange = (assignments: CrewAssignmentRow[]) => {
+        form.updateField('crew_assignments', assignments);
     };
     
     // Handle paste events specifically
@@ -148,22 +178,50 @@ export const EditShowPage: React.FC = () => {
         if (!showId) return;
 
         try {
-            // Prepare data for API (convert venueID to integer if provided)
-            const updateData = {
-                ...form.formData,
-                venue_id: form.formData.venue_id || null,
+            // Prepare show data for API (exclude crew_assignments)
+            const showUpdateData = {
+                show_name: form.formData.show_name,
+                show_notes: form.formData.show_notes || null,
                 show_date: convertLocalToUTC(form.formData.show_date),
                 show_duration: convertLocalToUTC(form.formData.show_duration),
                 deadline: convertLocalToUTC(form.formData.deadline),
-                show_notes: form.formData.show_notes || null,
+                venue_id: form.formData.venue_id || null,
             };
 
+            // Prepare crew assignments for API
+            const crewAssignmentsData = form.formData.crew_assignments.map(assignment => ({
+                assignment_id: assignment.isNew ? undefined : assignment.id,
+                show_id: showId,
+                user_id: assignment.crew_member_ids[0],
+                department_id: assignment.department_id,
+                show_role: assignment.role || null,
+                is_active: true
+            }));
+
+            // Save show data
             await form.submitForm(
                 `/api/shows/${showId}`,
                 'PATCH',
                 `"${form.formData.show_name}" has been updated successfully`,
-                updateData
+                showUpdateData
             );
+
+            // Save crew assignments separately
+            if (crewAssignmentsData.length > 0) {
+                const token = await getToken();
+                const response = await fetch(`/api/shows/${showId}/crew-assignments`, {
+                    method: 'PUT', // Use PUT to replace all assignments
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ assignments: crewAssignmentsData })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to save crew assignments');
+                }
+            }
 
             // Update original data to reflect the new saved state
             updateOriginalData(form.formData);
@@ -305,31 +363,34 @@ export const EditShowPage: React.FC = () => {
                 {/* Form Content */}
                 {!isLoading && show && (
                     <VStack spacing={4} align="stretch">
-                        <FormControl isRequired>
-                            <FormLabel>Show Name</FormLabel>
-                            <Input
-                                value={form.formData.show_name}
-                                onChange={(e) => handleChange('show_name', e.target.value)}
-                                onPaste={() => handlePaste('show_name')}
-                                placeholder="Enter show title"
-                            />
-                        </FormControl>
+                        {/* Show Name and Venue on same line */}
+                        <HStack spacing={4}>
+                            <FormControl isRequired>
+                                <FormLabel>Show Name</FormLabel>
+                                <Input
+                                    value={form.formData.show_name}
+                                    onChange={(e) => handleChange('show_name', e.target.value)}
+                                    onPaste={() => handlePaste('show_name')}
+                                    placeholder="Enter show title"
+                                />
+                            </FormControl>
 
-                        <FormControl>
-                            <FormLabel>Venue</FormLabel>
-                            <Select
-                                value={form.formData.venue_id}
-                                onChange={(e) => handleChange('venue_id', e.target.value)}
-                                placeholder={isLoadingVenues ? "Loading venues..." : "Select venue"}
-                                disabled={isLoadingVenues}
-                            >
-                                {venues?.map(venue => (
-                                    <option key={venue.venue_id} value={venue.venue_id}>
-                                        {venue.venue_name}
-                                    </option>
-                                ))}
-                            </Select>
-                        </FormControl>
+                            <FormControl>
+                                <FormLabel>Venue</FormLabel>
+                                <Select
+                                    value={form.formData.venue_id}
+                                    onChange={(e) => handleChange('venue_id', e.target.value)}
+                                    placeholder={isLoadingVenues ? "Loading venues..." : "Select venue"}
+                                    disabled={isLoadingVenues}
+                                >
+                                    {venues?.map(venue => (
+                                        <option key={venue.venue_id} value={venue.venue_id}>
+                                            {venue.venue_name}
+                                        </option>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </HStack>
 
                         {/* Date fields side-by-side */}
                         <HStack spacing={4}>
@@ -359,7 +420,7 @@ export const EditShowPage: React.FC = () => {
                             </FormControl>
                         </HStack>
 
-                        {/* Expandable notes textarea */}
+                        {/* Notes textarea - 3 rows high */}
                         <FormControl>
                             <FormLabel>Notes</FormLabel>
                             <Textarea
@@ -367,10 +428,19 @@ export const EditShowPage: React.FC = () => {
                                 onChange={(e) => handleChange('show_notes', e.target.value)}
                                 onBlur={() => form.validateField('show_notes')}
                                 placeholder="Additional show information, special requirements, etc."
-                                minHeight="120px"
+                                rows={3}
                                 resize="vertical"
                             />
                         </FormControl>
+
+                        {/* Crew Assignments Section */}
+                        <Box mt={6}>
+                            <CrewAssignmentSection
+                                showId={showId || ''}
+                                assignments={form.formData.crew_assignments}
+                                onAssignmentsChange={handleCrewAssignmentsChange}
+                            />
+                        </Box>
                     </VStack>
                 )}
                 
