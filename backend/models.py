@@ -46,6 +46,29 @@ class PriorityLevel(enum.Enum):
     LOW = "LOW"
     OPTIONAL = "OPTIONAL"
 
+class UserRole(enum.Enum):
+    """User roles for crew members"""
+    CREW = "crew"
+    ASSISTANT_DIRECTOR = "assistant_director"
+    STAGE_MANAGER = "stage_manager"
+    ASSISTANT_STAGE_MANAGER = "assistant_stage_manager"
+    TECHNICAL_DIRECTOR = "technical_director"
+    LIGHTING_DESIGNER = "lighting_designer"
+    SOUND_DESIGNER = "sound_designer"
+    COSTUME_DESIGNER = "costume_designer"
+    SET_DESIGNER = "set_designer"
+    PROPS_MASTER = "props_master"
+    ELECTRICIAN = "electrician"
+    SOUND_TECHNICIAN = "sound_technician"
+    WARDROBE = "wardrobe"
+    MAKEUP_ARTIST = "makeup_artist"
+    HAIR_STYLIST = "hair_stylist"
+    CHOREOGRAPHER = "choreographer"
+    MUSIC_DIRECTOR = "music_director"
+    PRODUCER = "producer"
+    DIRECTOR = "director"
+    OTHER = "other"
+
 class LocationArea(enum.Enum):
     """Theater location areas"""
     STAGE_LEFT = "stage_left"
@@ -70,21 +93,7 @@ class LocationArea(enum.Enum):
     DRESSING_ROOM = "dressing_room"
     OTHER = "other"
 
-class ConditionType(enum.Enum):
-    """Types of conditional rules"""
-    WEATHER = "weather"
-    CAST = "cast"
-    EQUIPMENT = "equipment"
-    TIME = "time"
-    CUSTOM = "custom"
-
-class OperatorType(enum.Enum):
-    """Operators for conditional rules"""
-    EQUALS = "equals"
-    NOT_EQUALS = "not_equals"
-    CONTAINS = "contains"
-    GREATER_THAN = "greater_than"
-    LESS_THAN = "less_than"
+# Removed unused enums: ConditionType, OperatorType
 
 class UserStatus(enum.Enum):
     """User authentication status"""
@@ -426,100 +435,15 @@ class ScriptElement(Base):
     created_by_user = relationship("User", foreign_keys=[created_by])
     updated_by_user = relationship("User", foreign_keys=[updated_by])
     
-    # Supporting table relationships
-    equipment = relationship("ScriptElementEquipment", back_populates="element", cascade="all, delete-orphan")
-    crew_assignments = relationship("ScriptElementCrewAssignment", back_populates="element", cascade="all, delete-orphan")
-    performer_assignments = relationship("ScriptElementPerformerAssignment", back_populates="element", cascade="all, delete-orphan")
-    conditional_rules = relationship("ScriptElementConditionalRule", back_populates="element", cascade="all, delete-orphan")
-    group_relationships = relationship("ScriptElementGroup", foreign_keys="ScriptElementGroup.group_id", back_populates="group_element", cascade="all, delete-orphan")
+    # Supporting table relationships (removed - unused features)
 
 # =============================================================================
-# SCRIPT ELEMENT SUPPORTING MODELS
+# SCRIPT ELEMENT SUPPORTING MODELS (REMOVED - UNUSED FEATURES)
 # =============================================================================
-
-class ScriptElementEquipment(Base):
-    """Equipment requirements for script elements"""
-    __tablename__ = "scriptElementEquipment"
-    
-    # Composite primary key
-    element_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id", ondelete="CASCADE"), primary_key=True)
-    equipment_name = Column(String(100), primary_key=True)
-    
-    # Equipment details
-    is_required = Column(Boolean, nullable=False, server_default='true')
-    notes = Column(Text, nullable=True)
-    
-    # Relationships
-    element = relationship("ScriptElement", back_populates="equipment")
-
-class ScriptElementCrewAssignment(Base):
-    """Crew assignments for script elements"""
-    __tablename__ = "scriptElementCrewAssignments"
-    
-    # Composite primary key
-    element_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id", ondelete="CASCADE"), primary_key=True)
-    crew_id = Column(UUID(as_uuid=True), primary_key=True)  # Will link to User table when crew management is implemented
-    
-    # Assignment details
-    assignment_role = Column(String(100), nullable=True)
-    is_lead = Column(Boolean, nullable=False, server_default='false')
-    
-    # Relationships
-    element = relationship("ScriptElement", back_populates="crew_assignments")
-
-class ScriptElementPerformerAssignment(Base):
-    """Performer assignments for script elements"""
-    __tablename__ = "scriptElementPerformerAssignments"
-    
-    # Composite primary key
-    element_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id", ondelete="CASCADE"), primary_key=True)
-    performer_id = Column(UUID(as_uuid=True), primary_key=True)  # Will link to User/Performer table when implemented
-    
-    # Assignment details
-    character_name = Column(String(100), nullable=True)
-    notes = Column(Text, nullable=True)
-    
-    # Relationships
-    element = relationship("ScriptElement", back_populates="performer_assignments")
-
-class ScriptElementConditionalRule(Base):
-    """Conditional rules for script elements"""
-    __tablename__ = "scriptElementConditionalRules"
-    __table_args__ = (
-        Index('idx_element_conditions', 'element_id'),
-    )
-    
-    # Primary key
-    rule_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    
-    # Foreign key
-    element_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id", ondelete="CASCADE"), nullable=False)
-    
-    # Rule definition
-    condition_type = Column(Enum(ConditionType), nullable=False)
-    operator = Column(Enum(OperatorType), nullable=False)
-    condition_value = Column(Text, nullable=False)
-    description = Column(Text, nullable=False)
-    is_active = Column(Boolean, nullable=False, server_default='true')
-    
-    # Relationships
-    element = relationship("ScriptElement", back_populates="conditional_rules")
-
-class ScriptElementGroup(Base):
-    """Group relationships for script elements"""
-    __tablename__ = "scriptElementGroups"
-    __table_args__ = (
-        Index('idx_group_order', 'group_id', 'order_in_group'),
-    )
-    
-    # Composite primary key
-    group_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id", ondelete="CASCADE"), primary_key=True)
-    child_element_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id", ondelete="CASCADE"), primary_key=True)
-    
-    # Group details
-    order_in_group = Column(Integer, nullable=False)
-    
-    # Relationships
-    group_element = relationship("ScriptElement", foreign_keys=[group_id], back_populates="group_relationships")
-    child_element = relationship("ScriptElement", foreign_keys=[child_element_id])
+# These models were removed as they were unused features:
+# - ScriptElementEquipment
+# - ScriptElementCrewAssignment  
+# - ScriptElementPerformerAssignment
+# - ScriptElementConditionalRule
+# - ScriptElementGroup
 

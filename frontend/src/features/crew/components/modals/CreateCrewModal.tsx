@@ -14,6 +14,7 @@ import { ValidationRules, FormValidationConfig } from '../../../../types/validat
 import { FormInput } from '../../../../components/form/FormField';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
+import { USER_ROLE_OPTIONS } from '../../../../constants/userRoles';
 
 // TypeScript interfaces
 interface CrewFormData {
@@ -29,10 +30,6 @@ interface CreateCrewModalProps {
     onCrewCreated: () => void;
 }
 
-interface RoleOption {
-    value: string;
-    label: string;
-}
 
 interface ExistingUser {
     ID: string;
@@ -88,17 +85,6 @@ const VALIDATION_CONFIG: FormValidationConfig = {
     }
 };
 
-const ROLE_OPTIONS: RoleOption[] = [
-    { value: 'crew', label: 'Crew Member' },
-    { value: 'department_head', label: 'Department Head' },
-    { value: 'stage_manager', label: 'Stage Manager' },
-    { value: 'assistant_stage_manager', label: 'Assistant Stage Manager' },
-    { value: 'director', label: 'Director' },
-    { value: 'producer', label: 'Producer' },
-    { value: 'designer', label: 'Designer' },
-    { value: 'technician', label: 'Technician' },
-    { value: 'admin', label: 'Administrator' },
-];
 
 export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
     isOpen,
@@ -223,7 +209,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
                         value={form.formData.user_role}
                         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => form.updateField('user_role', e.target.value)}
                     >
-                        {ROLE_OPTIONS.map((role) => (
+                        {USER_ROLE_OPTIONS.map((role) => (
                             <option key={role.value} value={role.value}>
                                 {role.label}
                             </option>

@@ -60,9 +60,6 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
                     h="32px"
                     borderRadius="full"
                     bg={department.department_color}
-                    border="2px solid"
-                    borderColor="gray.300"
-                    _dark={{ borderColor: "gray.600" }}
                     flexShrink="0"
                     display="flex"
                     alignItems="center"
@@ -121,9 +118,6 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
                             h="40px"
                             borderRadius="md"
                             bg={department.department_color}
-                            border="2px solid"
-                            borderColor="gray.300"
-                            _dark={{ borderColor: "gray.600" }}
                         />
                         <VStack align="start" spacing="0">
                             <Text fontSize="sm" fontWeight="medium">

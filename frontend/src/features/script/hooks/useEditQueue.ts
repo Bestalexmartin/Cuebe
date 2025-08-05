@@ -198,15 +198,15 @@ export const useEditQueue = (): UseEditQueueReturn => {
             const batchOperation: EditOperation = {
                 id: generateOperationId(),
                 timestamp: Date.now(),
-                elementId: 'batch',
+                element_id: 'batch',
                 description: description || `Batch operation (${operations.length} changes)`,
                 type: 'BULK_REORDER', // This would need to be expanded for different batch types
-                elementChanges: operations.map(op => ({
-                    elementId: op.elementId,
-                    oldIndex: 0, // These would need to be populated based on operation type
-                    newIndex: 0,
-                    oldSequence: 0,
-                    newSequence: 0
+                element_changes: operations.map(op => ({
+                    element_id: op.element_id,
+                    old_index: 0, // These would need to be populated based on operation type
+                    new_index: 0,
+                    old_sequence: 0,
+                    new_sequence: 0
                 }))
             } as any;
             

@@ -99,30 +99,30 @@ export const useScriptFormSync = ({
 
         const formChanges = {
             script_name: {
-                oldValue: changeDetectionBaseData.script_name,
-                newValue: form.formData.script_name
+                old_value: changeDetectionBaseData.script_name,
+                new_value: form.formData.script_name
             },
             script_status: {
-                oldValue: changeDetectionBaseData.script_status,
-                newValue: form.formData.script_status
+                old_value: changeDetectionBaseData.script_status,
+                new_value: form.formData.script_status
             },
             start_time: {
-                oldValue: changeDetectionBaseData.start_time,
-                newValue: convertLocalToUTC(form.formData.start_time)
+                old_value: changeDetectionBaseData.start_time,
+                new_value: convertLocalToUTC(form.formData.start_time)
             },
             end_time: {
-                oldValue: changeDetectionBaseData.end_time,
-                newValue: convertLocalToUTC(form.formData.end_time)
+                old_value: changeDetectionBaseData.end_time,
+                new_value: convertLocalToUTC(form.formData.end_time)
             },
             script_notes: {
-                oldValue: changeDetectionBaseData.script_notes,
-                newValue: form.formData.script_notes
+                old_value: changeDetectionBaseData.script_notes,
+                new_value: form.formData.script_notes
             }
         };
 
         const actualChanges: any = {};
         for (const [field, values] of Object.entries(formChanges)) {
-            if (values.oldValue !== values.newValue) {
+            if (values.old_value !== values.new_value) {
                 actualChanges[field] = values;
             }
         }
@@ -130,7 +130,7 @@ export const useScriptFormSync = ({
         if (Object.keys(actualChanges).length > 0) {
             const infoFormOperation = {
                 type: 'UPDATE_SCRIPT_INFO' as const,
-                elementId: 'script-info',
+                element_id: 'script-info',
                 changes: actualChanges
             };
 

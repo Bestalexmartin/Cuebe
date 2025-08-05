@@ -21,6 +21,16 @@ interface Script {
   lastUsed?: string;
 }
 
+interface CrewAssignment {
+  assignment_id: string;
+  show_id: string;
+  user_id: string;
+  department_id: string;
+  show_role?: string;
+  is_active: boolean;
+  date_assigned: string;
+}
+
 interface Show {
   show_id: string;
   show_name: string;
@@ -31,6 +41,7 @@ interface Show {
   date_updated: string;
   venue?: Venue;
   scripts: Script[];
+  crew?: CrewAssignment[];
 }
 
 interface UseShowReturn {

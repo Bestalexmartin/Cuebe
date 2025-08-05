@@ -1,5 +1,9 @@
 # Script Elements Data Model
 
+**Date:** August 2025  
+**Status:** Current  
+**Category:** Data Architecture & Schema
+
 ## Overview
 
 The script elements data model defines the structure for all script content in CallMaster. This includes cues, notes, and organizational groups that make up a theater production script.
@@ -15,10 +19,8 @@ All script elements inherit from `ScriptElementBase` which provides:
 - **Department association**: Visual organization and color coding
 - **Location tracking**: Physical theater locations
 - **Execution management**: Timing, fades, status tracking
-- **Hierarchy support**: Parent/child relationships for grouping
-- **Resource assignment**: Equipment, crew, and performer requirements
+- **Hierarchy support**: Basic parent/child relationships for grouping
 - **Safety protocols**: Critical cue identification and safety notes
-- **Conditional execution**: Rules for dynamic cue execution
 - **Audit trail**: Creation, modification, and version tracking
 
 ### Element Types
@@ -135,40 +137,15 @@ Organizational containers for related elements.
 - `isSafetyCritical`: Boolean flag for critical cues
 - `safetyNotes`: Specific safety instructions
 - Priority levels including "critical" designation
-- Equipment and crew requirement tracking
 
-### Resource Management
-- **Equipment Required**: Array of required equipment
-- **Crew Assignments**: Assigned crew member IDs
-- **Performer Assignments**: Involved actor IDs
-
-## Conditional Execution
-
-### Conditional Rules
-Rules that determine whether a cue should execute based on:
-- **Weather conditions**: Outdoor performance variables
-- **Cast availability**: Understudy or cast changes
-- **Equipment status**: Backup cue activation
-- **Time constraints**: Schedule-dependent execution
-- **Custom conditions**: Production-specific rules
-
-### Rule Structure
-- **Condition type**: Category of condition
-- **Operator**: Comparison method (equals, contains, etc.)
-- **Value**: Comparison value
-- **Description**: Human-readable explanation
-
-## Hierarchical Organization
+## Basic Hierarchical Organization
 
 ### Parent-Child Relationships
-- `parentElementID`: Reference to parent element
+- `parentElementID`: Reference to parent element for simple grouping
 - `groupLevel`: Depth in hierarchy (0 = root level)
-- Supports nested groups and complex organization
+- Support for basic parent/child relationships
 
-### Group Management
-- Collapsible groups for UI organization
-- Child element arrays for group contents
-- Automatic sequencing within groups
+**Note**: Advanced group management features (complex nested groups, group-specific operations) have been removed in favor of show-level crew assignments and simpler organization.
 
 ## Version Control and Audit Trail
 
@@ -266,5 +243,5 @@ The TypeScript interfaces align with the backend database schema for:
 
 ---
 
-*Last Updated: July 2025*  
-*Documentation Version: 1.1*
+*Last Updated: August 2025*  
+*Documentation Version: 1.2*

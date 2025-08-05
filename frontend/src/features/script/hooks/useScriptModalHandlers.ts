@@ -24,12 +24,14 @@ interface UseScriptModalHandlersParams {
         CLEAR_HISTORY: string;
         FINAL_CLEAR_HISTORY: string;
         SAVE_CONFIRMATION: string;
+        FINAL_SAVE_CONFIRMATION: string;
         SAVE_PROCESSING: string;
     };
     // New parameters for Info mode
     activeMode: string;
     hasInfoChanges: boolean;
     captureInfoChanges: () => void;
+    onSaveSuccess?: () => void; // Callback for when save completes successfully
 }
 
 export const useScriptModalHandlers = ({
@@ -42,7 +44,8 @@ export const useScriptModalHandlers = ({
     modalNames,
     activeMode,
     hasInfoChanges,
-    captureInfoChanges
+    captureInfoChanges,
+    onSaveSuccess
 }: UseScriptModalHandlersParams) => {
     const navigate = useNavigate();
     const { getToken } = useAuth();
@@ -65,6 +68,64 @@ export const useScriptModalHandlers = ({
         modalState.openModal(modalNames.FINAL_UNSAVED_CHANGES);
     }, [modalState, modalNames]);
 
+    const handleAbandonChangesConfirm = useCallback(() => {
+        discardChanges();
+        modalState.closeModal(modalNames.FINAL_UNSAVED_CHANGES);
+        showSuccess('Changes Abandoned', 'All unsaved changes have been discarded.');
+        
+        if (pendingNavigation) {
+            if (pendingNavigation === '/dashboard') {
+                navigateWithCurrentContext(script, scriptId);
+            } else {
+                navigate(pendingNavigation);
+            }
+            setPendingNavigation(null);
+        }
+    }, [discardChanges, modalState, modalNames, showSuccess, pendingNavigation, navigateWithCurrentContext, script, scriptId, navigate]);
+
+    const handleFinalSaveConfirm = useCallback(async () => {
+        modalState.closeModal(modalNames.FINAL_SAVE_CONFIRMATION);
+        modalState.openModal(modalNames.SAVE_PROCESSING);
+        
+        try {
+            // Capture Info mode changes if we're in Info mode and have changes
+            if (activeMode === 'info' && hasInfoChanges) {
+                captureInfoChanges();
+            }
+            
+            const success = await saveChanges();
+            
+            if (success) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                modalState.closeModal(modalNames.SAVE_PROCESSING);
+                showSuccess('Changes Saved', 'All pending changes have been saved successfully.');
+                
+                // For regular saves, stay in the current page and go to View mode
+                // Only navigate if there was pending navigation (abandon flow)
+                if (pendingNavigation) {
+                    if (pendingNavigation === '/dashboard') {
+                        navigateWithCurrentContext(script, scriptId);
+                    } else {
+                        navigate(pendingNavigation);
+                    }
+                    setPendingNavigation(null);
+                } else {
+                    // Regular save - call success callback to change to View mode
+                    onSaveSuccess?.();
+                }
+            } else {
+                modalState.closeModal(modalNames.SAVE_PROCESSING);
+                showError('Failed to save changes. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error saving changes:', error);
+            modalState.closeModal(modalNames.SAVE_PROCESSING);
+            showError('An error occurred while saving changes.');
+        }
+    }, [modalState, modalNames, saveChanges, showSuccess, showError, pendingNavigation, navigateWithCurrentContext, script, scriptId, navigate, activeMode, hasInfoChanges, captureInfoChanges]);
+
+    // Legacy handler for unsaved changes flow that needs to save before navigation
     const handleSaveScriptChanges = useCallback(async () => {
         modalState.closeModal(modalNames.SAVE_CONFIRMATION);
         modalState.closeModal(modalNames.FINAL_UNSAVED_CHANGES);
@@ -98,13 +159,23 @@ export const useScriptModalHandlers = ({
             }
         } catch (error) {
             console.error('Error saving changes:', error);
-            modalState.closeModal(modalNames.saveProcessing);
+            modalState.closeModal(modalNames.SAVE_PROCESSING);
             showError('An error occurred while saving changes.');
         }
     }, [modalState, modalNames, saveChanges, showSuccess, showError, pendingNavigation, navigateWithCurrentContext, script, scriptId, navigate, activeMode, hasInfoChanges, captureInfoChanges]);
 
     const handleShowSaveConfirmation = useCallback(() => {
         modalState.openModal(modalNames.SAVE_CONFIRMATION);
+    }, [modalState, modalNames]);
+
+    const handleInitialSaveConfirm = useCallback(() => {
+        modalState.closeModal(modalNames.SAVE_CONFIRMATION);
+        modalState.openModal(modalNames.FINAL_SAVE_CONFIRMATION);
+    }, [modalState, modalNames]);
+
+    const handleSaveCancel = useCallback(() => {
+        modalState.closeModal(modalNames.SAVE_CONFIRMATION);
+        modalState.closeModal(modalNames.FINAL_SAVE_CONFIRMATION);
     }, [modalState, modalNames]);
 
     // Clear history functionality
@@ -192,8 +263,12 @@ export const useScriptModalHandlers = ({
         // Handlers
         handleUnsavedChangesCancel,
         handleInitialUnsavedConfirm,
+        handleAbandonChangesConfirm,
         handleSaveScriptChanges,
         handleShowSaveConfirmation,
+        handleInitialSaveConfirm,
+        handleFinalSaveConfirm,
+        handleSaveCancel,
         handleClearHistory,
         handleInitialClearHistoryConfirm,
         handleFinalClearHistoryConfirm,

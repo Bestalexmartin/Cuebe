@@ -1,18 +1,23 @@
 # CallMaster Development Roadmap
 
+**Date:** July 2025  
+**Status:** Current  
+**Category:** Project Planning & Strategy
+
 ## Overview
 
-This roadmap outlines the development plan for CallMaster's script editing and management system, designed to provide professional-grade theater production tools with real-time collaboration capabilities.
+This roadmap outlines the development plan for CallMaster's script editing and management system, designed to provide professional-grade theater production tools with crew assignment and sharing capabilities.
 
 ## Vision
 
 Transform CallMaster into a comprehensive theater production platform that supports:
 
-- **Professional script editing** with high data density and efficient workflows
-- **Real-time collaboration** between production teams using WebSocket technology
-- **Department-level sharing** with automated crew notifications and remote playback
+- **Professional script editing** with high data density and efficient workflows (owner-only editing)
+- **Crew role assignment** with department-specific crew management
+- **Script sharing** with department-filtered views and permission controls
+- **Note visibility controls** for author-only vs crew-visible notes
 - **Document import capabilities** for existing scripts and production materials
-- **Advanced playback features** for live performance support
+- **Playback features** for live performance support
 
 ## Development Timeline
 
@@ -47,6 +52,7 @@ interface ScriptElement {
     timing?: string;
     notes?: string;
   };
+  visibility: "crew" | "author_only"; // New field for note visibility
 }
 
 interface DepartmentAssignment {
@@ -113,28 +119,30 @@ interface ShowDepartment {
 
 ---
 
-### Phase 3: Department/Crew Management (Week 2-3, Parallel)
+### Phase 3: Crew Role Assignment System (Week 2-3)
 
-**Priority: High** | **Dependencies: Phase 1** | **Blocks: Advanced assignment features**
+**Priority: High** | **Dependencies: Phase 1** | **Blocks: Script sharing features**
 
-#### 3.1 Show-Level Assignment System
+#### 3.1 Show-Level Crew Management
 
-- **Department creation/management** per show
-- **Crew assignment to departments** within show context
+- **Department assignment interface** for shows
+- **Crew-to-department assignment** within show context
+- **Role definition system** (Lead, Assistant, etc.)
 - **Assignment persistence** across all show scripts
 - **Conflict detection** for overlapping assignments
 
-#### 3.2 Assignment Interface Components
+#### 3.2 Crew Assignment Interface Components
 
 - **Department selector dropdown** with color coding
 - **Multi-select crew assignment** within departments
+- **Role assignment interface** for crew members
 - **Visual assignment indicators** in script view
 - **Assignment conflict warnings**
 
 #### 3.3 Data Relationship Management
 
 - **Show-department associations**
-- **Crew-department assignments**
+- **Crew-department-role assignments**
 - **Cross-script assignment sharing**
 - **Assignment history tracking**
 
@@ -142,21 +150,23 @@ interface ShowDepartment {
 
 - Assignment operations complete in <100ms
 - No assignment conflicts go undetected
-- Crew can be assigned to multiple non-conflicting elements
+- Crew can be assigned to multiple non-conflicting roles
+- Assignment interface is intuitive and efficient
 
 ---
 
-### Phase 4: Advanced Editing System (Week 3-4)
+### Phase 4: Owner-Only Editing System (Week 3-4)
 
 **Priority: High** | **Dependencies: Phases 1, 2**
 
-#### 4.1 EDIT Mode Functionality
+#### 4.1 EDIT Mode Functionality (Owner Only)
 
 - **Element creation tools** with type selection
 - **Drag-and-drop reordering** with visual feedback
 - **In-line content editing** with auto-save
 - **Department assignment interface** embedded in editor
 - **Undo/redo system** (20-step history)
+- **Note visibility controls** (crew visible vs author only)
 
 #### 4.2 INFO Mode Enhancement
 
@@ -172,7 +182,6 @@ interface ShowDepartment {
 - **History browser interface** for reviewing past versions
 - **Diff visualization** comparing versions side-by-side
 - **Restore capability** to revert to previous versions
-- **Change notifications** for collaborative editing awareness
 
 #### 4.4 Keyboard Shortcuts System
 
@@ -186,99 +195,56 @@ interface ShowDepartment {
 - Element creation completes in <50ms
 - Auto-save triggers within 2 seconds of changes
 - Undo/redo operations are instantaneous
+- Owner-only editing is enforced and secure
 
 ---
 
-### Phase 5: Real-Time Collaboration (Week 4-5)
+### Phase 5: Script Sharing & Playback (Week 4-5)
 
-**Priority: Medium** | **Dependencies: Phases 1-4**
+**Priority: High** | **Dependencies: Phases 1-4**
 
-#### 5.1 WebSocket Playback System
+#### 5.1 SHARE Mode Implementation
 
-- **Real-time script playback** across multiple clients
-- **Current element highlighting** synchronized across all viewers
-- **Playback controls** (play/pause/jump to cue)
-- **Connection management** with auto-reconnection
+- **Department-specific script views** with filtered content
+- **Permission-based access controls** (view-only for crew)
+- **Secure sharing links** with expiration and permissions
+- **Note visibility filtering** (hide author-only notes from crew)
 
 #### 5.2 PLAY Mode Implementation
 
 - **Performance-focused display** with larger text
-- **Auto-scroll following** current playback position
 - **Department-specific filtering** for focused viewing
 - **Timer/stopwatch integration** for performance tracking
+- **Auto-scroll capabilities** for hands-free operation
 
-#### 5.3 WebSocket Infrastructure
-
-```typescript
-interface PlaybackState {
-  scriptId: string;
-  currentElementId: string;
-  isPlaying: boolean;
-  playbackSpeed: number;
-  timestamp: number;
-}
-
-interface WebSocketMessage {
-  type: "playback_update" | "cue_highlight" | "user_join" | "user_leave";
-  payload: PlaybackState | any;
-  userId: string;
-  timestamp: number;
-}
-```
-
-**Success Metrics:**
-
-- WebSocket latency <100ms
-- 99.9% message delivery success rate
-- Supports 50+ concurrent viewers per script
-
----
-
-### Phase 6: Department-Level Sharing (Week 5-6)
-
-**Priority: Medium** | **Dependencies: Phase 5**
-
-#### 6.1 SHARE Mode Advanced Features
-
-- **Department-specific script views** with filtered content
-- **Email invitation system** for crew members
-- **Secure sharing links** with expiration and permissions
-- **Remote playback initiation** by production managers
-
-#### 6.2 Email Integration & Notifications
+#### 5.3 Email Integration & Notifications
 
 - **Automated crew invitations** with personalized script links
 - **Role-specific script views** showing only relevant cues
-- **Notification system** for playback events and script updates
-- **Permission management** for view/edit access
-
-#### 6.3 Collaborative Features
-
-- **Real-time presence indicators** showing who's viewing
-- **Department-specific chat** for cue-level discussions
-- **Version control** with branching for different productions
-- **Audit trail** for all script modifications
+- **Notification system** for script updates
+- **Permission management** for view access
 
 **Success Metrics:**
 
-- Email delivery rate >98%
 - Department-filtered views load in <1 second
 - Permission changes take effect immediately
+- Email delivery rate >98%
+- Script sharing is secure and reliable
 
 ---
 
-### Phase 7: Document Import System (Week 6-7)
+### Phase 6: Document Import System (Week 5-6)
 
-**Priority: Low** | **Dependencies: Phase 4**
+**Priority: Medium** | **Dependencies: Phase 4**
 
-#### 7.1 File Format Support
+#### 6.1 File Format Support
 
 - **Text file import** (.txt, .rtf, .doc, .docx)
 - **Spreadsheet import** (.csv, .xlsx) for cue sheets
 - **PDF parsing** for existing script documents
 - **Script format detection** (standard theater formats)
 
-#### 7.2 AI Integration for Document Parsing
+#### 6.2 AI Integration for Document Parsing
 
 - **Intelligent content recognition** using AI/ML models
 - **Character dialogue detection** and separation
@@ -286,7 +252,7 @@ interface WebSocketMessage {
 - **Cue extraction** from technical documents
 - **Format standardization** to CallMaster schema
 
-#### 7.3 Import Processing Pipeline
+#### 6.3 Import Processing Pipeline
 
 ```typescript
 interface ImportTask {
@@ -307,18 +273,18 @@ interface ImportTask {
 
 ---
 
-### Phase 8: Management Interface (Week 7-8)
+### Phase 7: Management Interface (Week 6-7)
 
-**Priority: Low** | **Dependencies: Phase 3**
+**Priority: Medium** | **Dependencies: Phase 3**
 
-#### 8.1 Department/Crew Management Dashboard
+#### 7.1 Department/Crew Management Dashboard
 
 - **Show-wide department overview** with assignment matrix
 - **Crew assignment visualization** across all scripts
-- **Conflict resolution tools** for scheduling issues
+- **Role management tools** for different crew positions
 - **Assignment analytics** and reporting
 
-#### 8.2 Advanced Management Features
+#### 7.2 Advanced Management Features
 
 - **Bulk assignment operations** for efficiency
 - **Template systems** for recurring production types
@@ -333,6 +299,16 @@ interface ImportTask {
 
 ---
 
+## Removed Features (Not in Current Version)
+
+### ~~Real-Time Collaborative Editing~~
+- ~~WebSocket-based multi-user editing~~
+- ~~Real-time presence indicators~~
+- ~~Concurrent editing conflict resolution~~
+- ~~Live change synchronization~~
+
+**Rationale:** This version focuses on owner-only editing with sharing for viewing. Real-time collaborative editing adds significant complexity and is not required for the current use case.
+
 ## Technical Implementation Strategy
 
 ### Performance Requirements
@@ -340,22 +316,23 @@ interface ImportTask {
 - **Load Time**: <2 seconds for scripts with 1000+ elements
 - **Edit Responsiveness**: <100ms for element creation/modification
 - **Auto-Save Reliability**: 99.9% success rate
-- **WebSocket Latency**: <100ms for real-time features
-- **Concurrent Users**: Support 50+ users per script
+- **Sharing Response Time**: <1 second for department-filtered views
+- **Assignment Operations**: <100ms for crew assignments
 
 ### Technology Stack Enhancements
 
-- **Frontend**: Enhanced React components with WebSocket integration
-- **Backend**: FastAPI with WebSocket endpoints and background task processing
-- **Real-Time**: Redis for WebSocket message brokering
-- **AI Integration**: OpenAI API or similar for document parsing
+- **Frontend**: Enhanced React components with role-based rendering
+- **Backend**: FastAPI with role-based access control
 - **Email System**: SendGrid or AWS SES for crew notifications
+- **AI Integration**: OpenAI API or similar for document parsing
+- **Authentication**: Extended Clerk integration for role management
 
 ### Security & Performance
 
 - **Role-based access control** for script sharing
+- **Owner-only editing** enforcement
 - **Rate limiting** for API endpoints
-- **Connection pooling** for WebSocket scalability
+- **Connection pooling** for database scalability
 - **Caching strategies** for frequently accessed scripts
 - **Background processing** for import operations
 
@@ -387,14 +364,14 @@ interface ImportTask {
 ### Technical Performance Metrics
 
 - **System uptime**: 99.9%
-- **WebSocket connection stability**: 99.5%
 - **Auto-save success rate**: 99.9%
 - **Email delivery rate**: 98%+
+- **Sharing link success rate**: 99.5%
 
 ### Business Impact Metrics
 
 - **Production efficiency improvement**: 25% reduction in script preparation time
-- **Collaboration enhancement**: 50% reduction in communication delays
+- **Communication enhancement**: 50% reduction in communication delays
 - **Error reduction**: 40% fewer missed cues due to better script management
 
 ## Iterative Development Approach
@@ -402,31 +379,33 @@ interface ImportTask {
 ### Sprint Structure (2-week sprints)
 
 - **Sprint 1-2**: Foundation & Core Display (Phases 1-2)
-- **Sprint 3-4**: Department Management & Editing (Phases 3-4)
-- **Sprint 5-6**: Real-Time Features & Sharing (Phases 5-6)
-- **Sprint 7-8**: Advanced Features & Management (Phases 7-8)
+- **Sprint 3**: Crew Role Assignment System (Phase 3)
+- **Sprint 4**: Owner-Only Editing System (Phase 4)
+- **Sprint 5**: Script Sharing & Playback (Phase 5)
+- **Sprint 6-7**: Document Import & Management (Phases 6-7)
 
 ### Quality Gates
 
 - **Code review** for all major features
+- **Security review** for sharing and role assignment features
 - **Performance testing** before each phase completion
 - **User acceptance testing** with theater professionals
-- **Security review** for sharing and collaboration features
 
 ## Theater Industry Impact
 
 This roadmap positions CallMaster as a comprehensive theater production platform that addresses real industry needs:
 
 - **Professional Script Management**: Replaces traditional paper scripts and fragmented digital tools
-- **Enhanced Collaboration**: Enables seamless communication between production departments
-- **Real-Time Performance Support**: Provides live cueing and coordination during performances
+- **Crew Organization**: Streamlines crew assignment and role management
+- **Secure Sharing**: Enables department-specific script access with proper permissions
+- **Performance Support**: Provides live cueing and coordination during performances
 - **Accessibility**: Makes professional theater tools available to community and educational theaters
 - **Standardization**: Creates consistent workflows across different production types
 
 ---
 
-_This roadmap represents a comprehensive vision for CallMaster's script management capabilities. Implementation will be iterative, with regular stakeholder feedback and adaptation based on user needs and technical discoveries._
+_This roadmap represents a focused vision for CallMaster's script management capabilities with owner-only editing and secure sharing. Implementation will be iterative, with regular stakeholder feedback and adaptation based on user needs and technical discoveries._
 
-**Last Updated**: July 2025  
-**Version**: 1.0  
-**Next Review**: August 2025
+**Last Updated**: January 2025  
+**Version**: 2.0 - Focused on owner-only editing with sharing  
+**Next Review**: February 2025

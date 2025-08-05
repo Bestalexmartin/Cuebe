@@ -1,8 +1,8 @@
 # CallMaster Design Insights Archive
 
-*A collection of valuable design decisions, feature rationales, and architectural insights captured during development.*
-
----
+**Date:** July 2025  
+**Status:** Historical Record  
+**Category:** Archive & Design Decisions
 
 ## Overview
 

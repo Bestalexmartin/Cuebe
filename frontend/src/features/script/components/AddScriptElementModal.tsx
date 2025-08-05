@@ -301,8 +301,6 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                             width="100%"
                             textAlign="left"
                             isDisabled={isLoadingDepartments}
-                            bg="white"
-                            _dark={{ bg: "gray.800" }}
                             height="40px"
                         >
                             <Flex align="center" gap={2}>

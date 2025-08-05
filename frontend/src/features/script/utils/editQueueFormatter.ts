@@ -12,36 +12,36 @@ export class EditQueueFormatter {
      * Format a single edit operation into a human-readable string
      */
     static formatOperation(operation: EditOperation, allElements: ScriptElement[]): string {
-        const element = allElements.find(el => el.element_id === operation.elementId);
-        const elementName = element?.description || `Element ${operation.elementId.slice(-6)}`;
+        const element = allElements.find(el => el.element_id === operation.element_id);
+        const elementName = element?.description || `Element ${operation.element_id?.slice(-6) || 'Unknown'}`;
         
         switch (operation.type) {
             case 'REORDER':
-                return `Moved "${elementName}" from position ${operation.oldIndex + 1} to position ${operation.newIndex + 1}`;
+                return `Moved "${elementName}" from position ${operation.old_index + 1} to position ${operation.new_index + 1}`;
             
             case 'UPDATE_FIELD':
                 return this.formatFieldUpdate(operation, elementName);
             
             case 'UPDATE_TIME_OFFSET':
-                const oldTime = this.formatTime(operation.oldTimeOffsetMs);
-                const newTime = this.formatTime(operation.newTimeOffsetMs);
+                const oldTime = this.formatTime(operation.old_time_offset_ms);
+                const newTime = this.formatTime(operation.new_time_offset_ms);
                 return `Updated "${elementName}" time from ${oldTime} to ${newTime}`;
             
             case 'CREATE_ELEMENT':
-                const elementType = operation.elementData.element_type?.toLowerCase() || 'element';
-                const insertText = operation.insertIndex !== undefined ? ` at position ${operation.insertIndex + 1}` : '';
-                return `Created new ${elementType}${insertText}: "${operation.elementData.description || 'Untitled'}"`;
+                const elementType = operation.element_data.element_type?.toLowerCase() || 'element';
+                const insertText = operation.insert_index !== undefined ? ` at position ${operation.insert_index + 1}` : '';
+                return `Created new ${elementType}${insertText}: "${operation.element_data.description || 'Untitled'}"`;
             
             case 'DELETE_ELEMENT':
-                const deletedType = operation.elementData.element_type?.toLowerCase() || 'element';
-                return `Deleted ${deletedType}: "${operation.elementData.description || 'Untitled'}"`;
+                const deletedType = operation.element_data.element_type?.toLowerCase() || 'element';
+                return `Deleted ${deletedType}: "${operation.element_data.description || 'Untitled'}"`;
             
             case 'BULK_REORDER':
-                const count = operation.elementChanges.length;
+                const count = operation.element_changes.length;
                 return `Reordered ${count} element${count > 1 ? 's' : ''}`;
                 
             case 'ENABLE_AUTO_SORT':
-                const moveCount = operation.elementMoves.length;
+                const moveCount = operation.element_moves.length;
                 return `Batch reorder (${moveCount} element${moveCount > 1 ? 's' : ''})`;
             
             case 'DISABLE_AUTO_SORT':
@@ -81,8 +81,8 @@ export class EditQueueFormatter {
             };
             
             const fieldName = fieldDisplayNames[field] || field;
-            const oldValue = this.formatScriptValue(field, change.oldValue);
-            const newValue = this.formatScriptValue(field, change.newValue);
+            const oldValue = this.formatScriptValue(field, change.old_value);
+            const newValue = this.formatScriptValue(field, change.new_value);
             
             return `Updated ${fieldName} from "${oldValue}" to "${newValue}"`;
         }
@@ -135,8 +135,8 @@ export class EditQueueFormatter {
             };
             
             const fieldName = fieldDisplayNames[field] || this.formatFieldName(field);
-            const oldValue = this.formatValue(field, change.oldValue);
-            const newValue = this.formatValue(field, change.newValue);
+            const oldValue = this.formatValue(field, change.old_value);
+            const newValue = this.formatValue(field, change.new_value);
             
             return `Updated "${elementName}" ${fieldName} from "${oldValue}" to "${newValue}"`;
         }

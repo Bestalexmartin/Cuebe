@@ -1,5 +1,9 @@
 # Drag-and-Drop Script Element Reordering System
 
+**Date:** July 2025  
+**Status:** Implemented  
+**Category:** Architecture & User Interaction
+
 ## Overview
 
 The CallMaster application features a comprehensive drag-and-drop system for reordering script elements (cues, notes, groups) in edit mode. This system provides intelligent conflict resolution when time offsets don't match the new element positioning.

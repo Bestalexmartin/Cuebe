@@ -28,7 +28,7 @@ interface Script {
   end_time?: string;
   date_created: string;
   date_updated: string;
-  lastUsed?: string;
+  last_used?: string;
 }
 
 interface Show {
@@ -236,7 +236,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                       {formatDateTimeLocal(script.date_updated)}
                     </Text>
                   </HStack>
-                  {script.lastUsed && (
+                  {script.last_used && (
                     <HStack
                       justify="flex-end"
                       fontSize="xs"
@@ -244,7 +244,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                     >
                       <Text>
                         Last Used:{" "}
-                        {formatDateTimeLocal(script.lastUsed)}
+                        {formatDateTimeLocal(script.last_used)}
                       </Text>
                     </HStack>
                   )}

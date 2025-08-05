@@ -1,8 +1,8 @@
 # Architectural Principles
 
-*Core design philosophies and fundamental principles that guide CallMaster's technical architecture*
-
----
+**Date:** July 2025  
+**Status:** Current  
+**Category:** Architecture & Design Standards
 
 ## Overview
 

@@ -1,5 +1,9 @@
 # CallMaster User Guide
 
+**Date:** July 2025  
+**Status:** Implemented  
+**Category:** User Documentation & Tutorials
+
 ## Overview
 
 This comprehensive guide covers all essential features of CallMaster's theater production management platform. Designed for stage managers, directors, and technical crews, this tutorial provides step-by-step instructions for managing professional theater productions from pre-production through closing night.

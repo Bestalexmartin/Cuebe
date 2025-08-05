@@ -1,5 +1,9 @@
 # Documentation Standards
 
+**Date:** July 2025  
+**Status:** Current  
+**Category:** Documentation Standards & Guidelines
+
 ## File Naming Convention
 
 ### Standard: kebab-case

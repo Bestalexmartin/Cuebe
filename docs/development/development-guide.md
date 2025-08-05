@@ -1,5 +1,9 @@
 # CallMaster Development Guide
 
+**Date:** August 2025  
+**Status:** Current  
+**Category:** Development Documentation
+
 ## Quick Start for Developers
 
 ### Prerequisites

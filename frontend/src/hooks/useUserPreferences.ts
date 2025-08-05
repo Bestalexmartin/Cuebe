@@ -4,6 +4,44 @@ import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useEnhancedToast } from '../utils/toastUtils';
 
+// Field name mapping between frontend (camelCase) and backend (snake_case)
+const FIELD_MAPPING = {
+    darkMode: 'dark_mode',
+    colorizeDepNames: 'colorize_dep_names',
+    autoSortCues: 'auto_sort_cues',
+    showClockTimes: 'show_clock_times'
+} as const;
+
+const REVERSE_FIELD_MAPPING = {
+    dark_mode: 'darkMode',
+    colorize_dep_names: 'colorizeDepNames',
+    auto_sort_cues: 'autoSortCues',
+    show_clock_times: 'showClockTimes'
+} as const;
+
+// Helper functions to convert between frontend and backend field names
+const toBackendFields = (frontendPrefs: Partial<UserPreferences>): Record<string, any> => {
+    const backendPrefs: Record<string, any> = {};
+    for (const [frontendKey, value] of Object.entries(frontendPrefs)) {
+        const backendKey = FIELD_MAPPING[frontendKey as keyof typeof FIELD_MAPPING];
+        if (backendKey) {
+            backendPrefs[backendKey] = value;
+        }
+    }
+    return backendPrefs;
+};
+
+const fromBackendFields = (backendPrefs: Record<string, any>): UserPreferences => {
+    const frontendPrefs: Partial<UserPreferences> = {};
+    for (const [backendKey, value] of Object.entries(backendPrefs)) {
+        const frontendKey = REVERSE_FIELD_MAPPING[backendKey as keyof typeof REVERSE_FIELD_MAPPING];
+        if (frontendKey) {
+            frontendPrefs[frontendKey] = value;
+        }
+    }
+    return frontendPrefs as UserPreferences;
+};
+
 export interface UserPreferences {
     darkMode: boolean;
     colorizeDepNames: boolean;
@@ -79,7 +117,8 @@ export const useUserPreferences = () => {
                 });
 
                 if (response.ok) {
-                    const userPreferences = await response.json();
+                    const backendPreferences = await response.json();
+                    const userPreferences = fromBackendFields(backendPreferences);
                     setPreferences(userPreferences);
                     savePreferencesToStorage(userPreferences);
                 } else {
@@ -140,11 +179,12 @@ export const useUserPreferences = () => {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ [key]: value })
+                body: JSON.stringify(toBackendFields({ [key]: value }))
             });
 
             if (response.ok) {
-                const serverPreferences = await response.json();
+                const backendPreferences = await response.json();
+                const serverPreferences = fromBackendFields(backendPreferences);
                 setPreferences(serverPreferences);
                 savePreferencesToStorage(serverPreferences);
                 return true;
@@ -197,11 +237,12 @@ export const useUserPreferences = () => {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(newPreferences)
+                body: JSON.stringify(toBackendFields(newPreferences))
             });
 
             if (response.ok) {
-                const serverPreferences = await response.json();
+                const backendPreferences = await response.json();
+                const serverPreferences = fromBackendFields(backendPreferences);
                 // Update with server response to ensure consistency
                 setPreferences(serverPreferences);
                 savePreferencesToStorage(serverPreferences);
