@@ -191,7 +191,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
             department_color: selectedDepartment?.department_color || null,
             departmentPrefix: selectedDepartment?.departmentPrefix || null,
             script_id: scriptId,
-            sequence: 1, // Will be handled by edit queue / auto-sort
+            // sequence will be calculated by useElementActions based on insertion position
             is_active: true,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),

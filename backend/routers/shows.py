@@ -293,7 +293,6 @@ def create_script_for_show(
         priority=models.PriorityLevel.CRITICAL,
         custom_color="#EF4444",  # Matches frontend note preset red
         sequence=1,
-        element_order=1,
         is_active=True,
         group_level=0,
         created_by=user.user_id
@@ -371,7 +370,6 @@ def duplicate_script(
             custom_color=original_element.custom_color,
             department_color=original_element.department_color,
             sequence=original_element.sequence,
-            element_order=original_element.element_order,
             location=original_element.location,
             location_details=original_element.location_details,
             is_active=original_element.is_active,

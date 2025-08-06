@@ -2,13 +2,14 @@
 
 import React from "react";
 import { Icon, IconProps } from "@chakra-ui/react";
-import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, CopyIcon, MoonIcon, SunIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, CopyIcon, MoonIcon, SunIcon, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
 import { TiPin } from "react-icons/ti";
 import { IoPeopleSharp } from "react-icons/io5";
 import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
 import { FaMasksTheater, FaMapLocationDot, FaScroll } from "react-icons/fa6";
 import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt, FaAngleDoubleUp, FaAngleDoubleDown, FaHistory } from "react-icons/fa";
+import { LuLayers3 } from "react-icons/lu";
 import { RiDashboard2Fill } from "react-icons/ri";
 import { EditIcon } from "@chakra-ui/icons";
 import { GoSortAsc, GoSortDesc, GoAlertFill } from "react-icons/go";
@@ -60,7 +61,10 @@ export type IconName =
   | 'history'
   | 'exit'
   | 'moon'
-  | 'sun';
+  | 'sun'
+  | 'triangle-down'
+  | 'triangle-up'
+  | 'ungroup';
 
 interface AppIconProps extends Omit<IconProps, 'as'> {
   name: IconName;
@@ -146,6 +150,12 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={MoonIcon} {...props} />;
     case 'sun':
       return <Icon as={SunIcon} {...props} />;
+    case 'triangle-down':
+      return <Icon as={TriangleDownIcon} {...props} />;
+    case 'triangle-up':
+      return <Icon as={TriangleUpIcon} {...props} />;
+    case 'ungroup':
+      return <Icon as={LuLayers3} {...props} />;
     default:
       return null;
   }

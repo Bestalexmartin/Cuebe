@@ -22,10 +22,16 @@ export function useElementActions(
         }
       }
 
+      // Calculate proper sequence based on insertion position
+      const properSequence = insertIndex + 1;
+      
       applyLocalChange({
         type: "CREATE_ELEMENT",
         element_id: cleanData.element_id,
-        element_data: cleanData,
+        element_data: {
+          ...cleanData,
+          sequence: properSequence
+        },
         insertIndex: insertIndex === elements.length ? undefined : insertIndex,
       } as any);
     },

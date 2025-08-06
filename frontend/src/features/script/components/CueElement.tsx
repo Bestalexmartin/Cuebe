@@ -1,11 +1,13 @@
 // frontend/src/features/script/components/CueElement.tsx
 
 import React, { useRef, useCallback, useMemo } from 'react';
-import { Box, HStack, Text } from '@chakra-ui/react';
+import { Box, HStack, Text, IconButton } from '@chakra-ui/react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { BiSolidRightArrow } from "react-icons/bi";
 import { ScriptElement } from '../types/scriptElements';
 import { getTextColorForBackground } from '../../../utils/colorUtils';
+import { AppIcon } from '../../../components/AppIcon';
 
 interface CueElementProps {
     element: ScriptElement;
@@ -17,8 +19,9 @@ interface CueElementProps {
     scriptStartTime?: string;
     scriptEndTime?: string;
     isDragEnabled?: boolean;
-    onSelect?: () => void;
+    onSelect?: (shiftKey?: boolean) => void;
     onEdit?: (element: ScriptElement) => void;
+    onToggleGroupCollapse?: (elementId: string) => void;
 }
 
 export const CueElement: React.FC<CueElementProps> = React.memo(({
@@ -32,12 +35,14 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
     scriptEndTime,
     isDragEnabled = false,
     onSelect,
-    onEdit
+    onEdit,
+    onToggleGroupCollapse
 }) => {
     // Drag functionality
     const dragTimeoutRef = useRef<number | null>(null);
     const isDragStartedRef = useRef(false);
     const mouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
+    const shiftKeyRef = useRef<boolean>(false);
 
     const {
         attributes,
@@ -53,16 +58,25 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
 
     // Handle mouse down - start timer for drag detection
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        // Check if the click is on the collapse button - if so, ignore it
+        const target = e.target as HTMLElement;
+        const isCollapseButton = target.closest('.group-collapse-button');
+        
+        if (isCollapseButton) {
+            return; // Don't trigger parent selection logic for collapse button clicks
+        }
+
         if (!isDragEnabled) {
             // If drag is disabled, just handle click
             if (onSelect) {
-                onSelect();
+                onSelect(e.shiftKey);
             }
             return;
         }
 
         mouseDownPosRef.current = { x: e.clientX, y: e.clientY };
         isDragStartedRef.current = false;
+        shiftKeyRef.current = e.shiftKey;
 
         // Set a timeout to detect if this is a drag intent
         dragTimeoutRef.current = setTimeout(() => {
@@ -71,19 +85,24 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
     }, [isDragEnabled, onSelect]);
 
     // Handle mouse up - if no drag was started, treat as click
-    const handleMouseUp = useCallback(() => {
+    const handleMouseUp = useCallback((e: React.MouseEvent) => {
+        // Check if the click is on the collapse button - if so, ignore it
+        const target = e.target as HTMLElement;
+        const isCollapseButton = target.closest('.group-collapse-button');
+        
         if (dragTimeoutRef.current) {
             clearTimeout(dragTimeoutRef.current);
             dragTimeoutRef.current = null;
         }
 
-        // If drag wasn't started and we have a select handler, call it
-        if (!isDragStartedRef.current && onSelect) {
-            onSelect();
+        // If drag wasn't started and we have a select handler, call it (but not if it's a collapse button)
+        if (!isDragStartedRef.current && onSelect && !isCollapseButton) {
+            onSelect(shiftKeyRef.current);
         }
 
         isDragStartedRef.current = false;
         mouseDownPosRef.current = null;
+        shiftKeyRef.current = false;
     }, [onSelect]);
 
     // Handle mouse move - if significant movement, cancel click and allow drag
@@ -115,6 +134,28 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
     }, [onEdit, element]);
 
     const isNote = (element as any).element_type === 'NOTE';
+    const isGroup = (element as any).element_type === 'GROUP';
+    const isGroupParent = isGroup;
+    const isGroupChild = element.group_level && element.group_level > 0;
+
+    // Get the group parent's background color for group children
+    let groupParentColor: string | null = null;
+    if (isGroupChild && element.parent_element_id) {
+        // Compare both as strings to handle UUID vs string mismatch
+        const groupParent = allElements.find(el => String(el.element_id) === String(element.parent_element_id));
+        groupParentColor = groupParent?.custom_color || '#E2E8F0';
+        
+    }
+
+    // Handle group collapse/expand toggle
+    const handleToggleCollapse = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (onToggleGroupCollapse && isGroupParent) {
+            onToggleGroupCollapse(element.element_id);
+        }
+    }, [onToggleGroupCollapse, isGroupParent, element.element_id]);
 
     const backgroundColor = element.custom_color || "#E2E8F0";
     const hasCustomBackground = !!element.custom_color && element.custom_color !== "#E2E8F0";
@@ -122,7 +163,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
     let fontWeight: string;
     let leftBarColor: string;
 
-    if (isNote) {
+    if (isNote || isGroup) {
         if (hasCustomBackground) {
             textColor = getTextColorForBackground(element.custom_color!);
             fontWeight = "bold";
@@ -259,6 +300,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
         zIndex: isDragging ? 1000 : 'auto',
     };
 
+
     return (
         <Box
             ref={isDragEnabled ? setNodeRef : undefined}
@@ -267,19 +309,40 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
             border="3px solid"
             borderColor={isSelected ? "blue.400" : "transparent"}
             mb="1px"
-            _hover={{
+            position="relative"
+            _hover={isDragEnabled || onSelect || onEdit ? {
                 borderColor: isSelected ? "blue.400" : "orange.400"
-            }}
+            } : undefined}
             transition="all 0s"
             borderRadius="none"
-            overflow="hidden"
+            overflow="visible"
             cursor={isDragEnabled ? "pointer" : "default"}
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-            onMouseMove={handleMouseMove}
-            onDoubleClick={handleDoubleClick}
+            pointerEvents={isDragEnabled || onSelect || onEdit ? "auto" : "none"}
+            sx={isDragEnabled || onSelect || onEdit ? {} : {
+                '&:hover': {
+                    borderColor: 'transparent !important',
+                    backgroundColor: backgroundColor + ' !important'
+                }
+            }}
+            onMouseDown={isDragEnabled || onSelect ? handleMouseDown : undefined}
+            onMouseUp={isDragEnabled || onSelect ? handleMouseUp : undefined}
+            onMouseMove={isDragEnabled ? handleMouseMove : undefined}
+            onDoubleClick={onEdit ? handleDoubleClick : undefined}
             {...(isDragEnabled ? { ...attributes, ...listeners } : {})}
         >
+            {/* Extended color overlay for group children - positioned relative to entire row */}
+            {isGroupChild && groupParentColor ? (
+                <Box
+                    position="absolute"
+                    w="16px"
+                    h="34px"
+                    bg={groupParentColor}
+                    left="-3px"
+                    top="-3px"
+                    zIndex={10}
+                />
+            ) : null}
+
             <HStack spacing={0} align="center" h="28px">
                 <Box
                     w="10px"
@@ -288,11 +351,40 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                     flexShrink={0}
                     mt="1px"
                     mb="1px"
-                />
+                    position="relative"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                >
+
+                    {/* Collapse/Expand button for group parents */}
+                    {isGroupParent && (
+                        <IconButton
+                            aria-label={element.is_collapsed ? "Expand group" : "Collapse group"}
+                            icon={element.is_collapsed ? <BiSolidRightArrow /> : <AppIcon name="triangle-down" />}
+                            size="sm"
+                            variant="unstyled"
+                            color="white"
+                            minW="12px"
+                            h="28px"
+                            onMouseDown={handleToggleCollapse}
+                            className="group-collapse-button"
+                            _hover={{ color: "orange.400", bg: "transparent" }}
+                            bg="transparent"
+                            _active={{ bg: "transparent", color: "orange.400" }}
+                            _focus={{ bg: "transparent", boxShadow: "none", outline: "none" }}
+                            _focusVisible={{ bg: "transparent", boxShadow: "none", outline: "none" }}
+                            position="absolute"
+                            left="4px"
+                            zIndex={10}
+                            pointerEvents="auto"
+                        />
+                    )}
+                </Box>
 
                 {/* Time Offset */}
-                <Box w="120px" pl={5} pr={4} position="relative">
-                    <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight} marginTop="-1px">
+                <Box w="120px" pl={5} pr={4} py={.5} borderColor="gray.500" position="relative">
+                    <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight}>
                         {timeDisplay}
                     </Text>
                     <Box
@@ -306,20 +398,16 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                 </Box>
 
                 {/* Duration */}
-                <Box
-                    w="100px"
-                    px={3}
-                    position="relative"
-                >
-                    <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight} marginTop="-1px">
+                <Box w="100px" px={3} position="relative" py={.5} borderColor="gray.500">
+                    <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight}>
                         {durationDisplay}
                     </Text>
-                    {!(colorizeDepNames && (element as any).element_type !== 'NOTE') && (
+                    {!(colorizeDepNames && (element as any).element_type !== 'NOTE' && (element as any).element_type !== 'GROUP') && (
                         <Box
                             position="absolute"
                             right="0"
-                            top="-4px"
-                            height="31px"
+                            top="-3px"
+                            height="29px"
                             width="1px"
                             bg="gray.400"
                         />
@@ -327,14 +415,13 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                 </Box>
 
                 {/* Department Name */}
-                <Box
-                    w="100px"
+                <Box w="100px"
                     height="100%"
                     display="flex"
                     alignItems="center"
-                    px={(element as any).element_type === 'NOTE' || !colorizeDepNames ? 3 : 0}
+                    px={(element as any).element_type === 'NOTE' || (element as any).element_type === 'GROUP' || !colorizeDepNames ? 3 : 0}
                 >
-                    {colorizeDepNames && element.department_color && (element as any).element_type !== 'NOTE' ? (
+                    {colorizeDepNames && element.department_color && (element as any).element_type !== 'NOTE' && (element as any).element_type !== 'GROUP' ? (
                         <Box
                             bg={element.department_color}
                             borderRadius="sm"
@@ -352,26 +439,22 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                         </Box>
                     ) : (
                         <Text fontSize="sm" color={textColor} textAlign="center" isTruncated fontWeight={fontWeight} width="100%" marginTop="-1px">
-                            {(element as any).element_type === 'NOTE' ? '' : (element.department_name || '')}
+                            {((element as any).element_type === 'NOTE' || (element as any).element_type === 'GROUP') ? '' : (element.department_name || '')}
                         </Text>
                     )}
                 </Box>
 
                 {/* Cue ID */}
-                <Box
-                    w="80px"
-                    px={3}
-                    position="relative"
-                >
+                <Box w="80px" px={3} position="relative" py={.5} borderColor="gray.500">
                     <Text fontSize="sm" fontWeight={hasCustomBackground ? "bold" : "normal"} color={cueIdColor} textAlign="center" marginTop="-1px">
                         {dynamicCueID || '\u00A0'}
                     </Text>
-                    {!(colorizeDepNames && (element as any).element_type !== 'NOTE') && (
+                    {!(colorizeDepNames && (element as any).element_type !== 'NOTE' && (element as any).element_type !== 'GROUP') && (
                         <Box
                             position="absolute"
                             left="0"
-                            top="-4px"
-                            height="31px"
+                            top="-3px"
+                            height="29px"
                             width="1px"
                             bg="gray.400"
                         />
@@ -387,12 +470,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                 </Box>
 
                 {/* Cue Name/Description */}
-                <Box
-                    w="240px"
-                    pl={6}
-                    pr={3}
-                    position="relative"
-                >
+                <Box w="240px" pl={6} pr={3} position="relative" py={.5} borderColor="gray.500">
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
                         {element.description}
                     </Text>
@@ -407,12 +485,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                 </Box>
 
                 {/* Cue Notes */}
-                <Box
-                    flex={1}
-                    pl={6}
-                    pr={3}
-                    position="relative"
-                >
+                <Box flex={1} pl={6} pr={3} position="relative" py={.5} borderColor="gray.500">
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
                         {(element as any).cue_notes || '\u00A0'}
                     </Text>
@@ -435,12 +508,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                 </Box>
 
                 {/* Location */}
-                <Box
-                    w="180px"
-                    pl={6}
-                    pr={3}
-                    position="relative"
-                >
+                <Box w="180px" pl={6} pr={3} position="relative" py={.5} borderColor="gray.500">
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
                         {element.location_details || '\u00A0'}
                     </Text>
@@ -448,8 +516,8 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                         <Box
                             position="absolute"
                             right="0"
-                            top="-4px"
-                            height="31px"
+                            top="-3px"
+                            height="29px"
                             width="1px"
                             bg="gray.400"
                         />
@@ -465,7 +533,12 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                     justifyContent="center"
                     px={element.priority === 'SAFETY' ? 0 : 3}
                 >
-                    {element.priority === 'SAFETY' ? (
+                    {isGroup ? (
+                        // Groups don't have priorities - show empty space
+                        <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight} marginTop="-1px">
+                            {'\u00A0'}
+                        </Text>
+                    ) : element.priority === 'SAFETY' ? (
                         <Box
                             position="relative"
                             width="100%"

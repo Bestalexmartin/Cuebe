@@ -56,7 +56,6 @@ field_mappings = {
     'actualStartTime': 'actual_start_time',
     'isPinned': 'is_pinned',
     'elementType': 'element_type',
-    'elementOrder': 'element_order',
     'cueNumber': 'cue_number',
     'cueID': 'cue_id',
     'elementDescription': 'element_description',

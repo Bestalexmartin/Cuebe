@@ -29,12 +29,12 @@ All script elements inherit from `ScriptElementBase` which provides:
 Technical and performance cues with specific department assignments.
 
 **Required Fields:**
-- `cueID`: Department-specific identifier (e.g., "LX5", "SND12", "FLY3")
-- `departmentID`: Must be assigned to a department
+- `cue_id`: Department-specific identifier (e.g., "LX5", "SND12", "FLY3")
+- `department_id`: Must be assigned to a department
 - `description`: What the cue accomplishes
 
 **Dynamic Cue ID Generation:**
-When no explicit `cueID` is provided, the system automatically generates IDs using the pattern:
+When no explicit `cue_id` is provided, the system automatically generates IDs using the pattern:
 - Format: `[DEPT_PREFIX]-[##]` (e.g., `FL-01`, `SM-03`, `LX-12`)
 - Department prefix: First 2 characters of department name, uppercased
 - Sequential numbering: Zero-padded 2-digit counter per department
@@ -52,8 +52,8 @@ When no explicit `cueID` is provided, the system automatically generates IDs usi
 Informational content and reminders without department assignment.
 
 **Key Features:**
-- `departmentID`: Optional - can be general notes
-- `customColor`: Required for visual distinction
+- `department_id`: Optional - can be general notes
+- `custom_color`: Required for visual distinction
 - Flexible content for any type of notation
 
 **Common Use Cases:**
@@ -67,9 +67,9 @@ Informational content and reminders without department assignment.
 Organizational containers for related elements.
 
 **Key Features:**
-- `childElementIDs`: Array of contained element IDs
-- `isCollapsed`: UI display state
-- `groupColor`: Visual grouping identifier
+- `child_element_ids`: Array of contained element IDs
+- `is_collapsed`: UI display state
+- `group_color`: Visual grouping identifier
 
 **Common Use Cases:**
 - Scene groupings
@@ -97,12 +97,12 @@ Organizational containers for related elements.
 - **Failed**: Execution encountered error
 
 ### Timing Controls
-- **timeOffsetMs**: Milliseconds from script start (high precision timing)
+- **time_offset_ms**: Milliseconds from script start (high precision timing)
 - **duration**: Runtime for timed elements
-- **fadeIn/fadeOut**: Transition timing in milliseconds
+- **fade_in/fade_out**: Transition timing in milliseconds
 - **sequence**: Auto-incrementing order number
 
-> **Note**: The legacy `timeOffset` field has been removed in favor of `timeOffsetMs` for better precision and consistency. All time calculations now use millisecond precision throughout the system.
+> **Note**: The legacy `timeOffset` field has been removed in favor of `time_offset_ms` for better precision and consistency. All time calculations now use millisecond precision throughout the system.
 
 ## Location System
 
@@ -115,14 +115,14 @@ Organizational containers for related elements.
 
 ### Location Details
 - `location`: Predefined location enum
-- `locationDetails`: Specific location description
+- `location_details`: Specific location description
 
 ## Department Integration
 
 ### Department Properties
-- **departmentID**: Unique identifier
+- **department_id**: Unique identifier
 - **name**: Full department name
-- **shortName**: Abbreviation for cue IDs (LX, SND, FLY)
+- **short_name**: Abbreviation for cue IDs (LX, SND, FLY)
 - **color**: Hex color code for visual identification
 - **description**: Department role and responsibilities
 
@@ -134,15 +134,15 @@ Organizational containers for related elements.
 ## Safety and Critical Operations
 
 ### Safety Features
-- `isSafetyCritical`: Boolean flag for critical cues
-- `safetyNotes`: Specific safety instructions
+- `is_safety_critical`: Boolean flag for critical cues
+- `safety_notes`: Specific safety instructions
 - Priority levels including "critical" designation
 
 ## Basic Hierarchical Organization
 
 ### Parent-Child Relationships
-- `parentElementID`: Reference to parent element for simple grouping
-- `groupLevel`: Depth in hierarchy (0 = root level)
+- `parent_element_id`: Reference to parent element for simple grouping
+- `group_level`: Depth in hierarchy (0 = root level)
 - Support for basic parent/child relationships
 
 **Note**: Advanced group management features (complex nested groups, group-specific operations) have been removed in favor of show-level crew assignments and simpler organization.
@@ -150,8 +150,8 @@ Organizational containers for related elements.
 ## Version Control and Audit Trail
 
 ### Metadata Tracking
-- **createdBy/updatedBy**: User ID references
-- **dateCreated/dateUpdated**: ISO timestamp strings
+- **created_by/updated_by**: User ID references
+- **date_created/date_updated**: ISO timestamp strings
 - **version**: Incremental version number
 
 ### Change Management
@@ -173,7 +173,7 @@ Organizational containers for related elements.
 
 #### Department Colorization Feature
 When enabled through the Options modal:
-- Department names display with colored backgrounds using `departmentColor`
+- Department names display with colored backgrounds using `department_color`
 - Text changes to bold white for better contrast
 - Vertical borders are conditionally hidden for seamless colored backgrounds
 - NOTE elements maintain normal styling (no colorization, borders always visible)
@@ -208,9 +208,9 @@ When enabled through the Options modal:
 ## Form Validation
 
 ### Required Fields by Type
-- **Cues**: cueID, departmentID, description
-- **Notes**: description, customColor
-- **Groups**: description, childElementIDs
+- **Cues**: cue_id, department_id, description
+- **Notes**: description, custom_color
+- **Groups**: description, child_element_ids
 
 ### Validation Rules
 - **Cue ID Format**: Department-specific patterns

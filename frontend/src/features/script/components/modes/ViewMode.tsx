@@ -1,6 +1,6 @@
 // frontend/src/features/script/components/modes/ViewMode.tsx
 
-import React, { forwardRef, useImperativeHandle, useRef, useEffect, useState } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef, useEffect, useState, useMemo } from 'react';
 import { VStack, Text, Box, Flex } from '@chakra-ui/react';
 import { useScriptElements } from '../../hooks/useScriptElements';
 import { useScript } from '../../hooks/useScript';
@@ -12,6 +12,7 @@ interface ViewModeProps {
     scriptId: string;
     colorizeDepNames?: boolean;
     showClockTimes?: boolean;
+    autoSortCues?: boolean;
     elements?: ScriptElement[]; // Optional prop to override default fetching
     script?: any; // Optional cached script to prevent refetching
     onScrollStateChange?: (state: {
@@ -19,6 +20,7 @@ interface ViewModeProps {
         isAtBottom: boolean;
         allElementsFitOnScreen: boolean;
     }) => void;
+    onToggleGroupCollapse?: (elementId: string) => void;
 }
 
 export interface ViewModeRef {
@@ -29,9 +31,11 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     scriptId, 
     colorizeDepNames = false, 
     showClockTimes = false,
+    autoSortCues = false,
     elements: providedElements,
     script: providedScript,
-    onScrollStateChange
+    onScrollStateChange,
+    onToggleGroupCollapse
 }, ref) => {
     // Only fetch elements if none are provided
     const shouldFetchElements = !providedElements;
@@ -44,6 +48,21 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     
     // Use provided elements if available, otherwise use fetched elements
     const elements = providedElements || fetchedElements;
+    
+    // Create display elements with auto-sort applied when needed
+    const displayElements = useMemo(() => {
+        if (!autoSortCues || !elements) {
+            return elements;
+        }
+        
+        // Return sorted copy for display
+        return [...elements].sort((a, b) => {
+            const aOffset = a.time_offset_ms || 0;
+            const bOffset = b.time_offset_ms || 0;
+            return aOffset - bOffset;
+        });
+    }, [elements, autoSortCues]);
+    
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     
     // Expose refetch function to parent via ref
@@ -119,7 +138,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                     </Flex>
                 )}
 
-                {(shouldFetchElements ? (!isLoading && !error) : true) && elements.length === 0 && (
+                {(shouldFetchElements ? (!isLoading && !error) : true) && displayElements.length === 0 && (
                     <Flex justify="center" align="center" height="200px" direction="column" spacing={4}>
                         <Text color="gray.500" fontSize="lg">
                             No script elements yet
@@ -130,7 +149,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                     </Flex>
                 )}
 
-                {(shouldFetchElements ? (!isLoading && !error) : true) && elements.length > 0 && (
+                {(shouldFetchElements ? (!isLoading && !error) : true) && displayElements.length > 0 && (
                     <VStack 
                         spacing={0} 
                         align="stretch"
@@ -161,7 +180,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                             }
                         }}
                     >
-                        {elements.map((element, index) => {
+                        {displayElements.map((element, index) => {
                             // Only show clock times if we have the required script start time
                             const shouldShowClockTimes = showClockTimes && !!script?.start_time;
                             return (
@@ -169,11 +188,12 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                                     key={element.element_id}
                                     element={element}
                                     index={index}
-                                    allElements={elements}
+                                    allElements={displayElements}
                                     colorizeDepNames={colorizeDepNames}
                                     showClockTimes={shouldShowClockTimes}
                                     scriptStartTime={script?.start_time}
                                     scriptEndTime={script?.end_time}
+                                    onToggleGroupCollapse={onToggleGroupCollapse}
                                 />
                             );
                         })}
@@ -191,9 +211,10 @@ const areEqual = (prevProps: ViewModeProps, nextProps: ViewModeProps) => {
         prevProps.scriptId === nextProps.scriptId &&
         prevProps.colorizeDepNames === nextProps.colorizeDepNames &&
         prevProps.showClockTimes === nextProps.showClockTimes &&
+        prevProps.autoSortCues === nextProps.autoSortCues &&
         prevProps.elements === nextProps.elements &&
         prevProps.script === nextProps.script
-        // Deliberately ignoring onScrollStateChange
+        // Deliberately ignoring onScrollStateChange and onToggleGroupCollapse
     );
 };
 

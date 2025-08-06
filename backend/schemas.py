@@ -238,7 +238,6 @@ class ScriptElement(BaseModel):
     script_id: UUID  # CHANGED TO UUID
     department_id: Optional[UUID] = None  # CHANGED TO UUID
     element_type: str
-    element_order: int
     cue_number: Optional[str] = None
     element_description: Optional[str] = None
 
@@ -305,7 +304,6 @@ class ScriptElementEnhanced(BaseModel):
     script_id: UUID
     element_type: str
     sequence: Optional[int] = None
-    element_order: int  # Legacy field
     
     # Timing fields
     time_offset_ms: int = 0  # Timing in milliseconds

@@ -12,8 +12,10 @@ export interface ToolbarContext {
     activeMode: string;
     scrollState: ScrollState;
     hasSelection: boolean;
+    hasMultipleSelection: boolean;
     hasUnsavedChanges: boolean;
     pendingOperationsCount: number;
+    selectedElement?: any;
 }
 
 /**
@@ -132,7 +134,13 @@ export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean)
 /**
  * Element management buttons for edit mode
  */
-export const getElementManagementButtons = (hasSelection: boolean): ToolButton[] => {
+export const getElementManagementButtons = (hasSelection: boolean, hasMultipleSelection: boolean = false, selectedGroupElement?: any): ToolButton[] => {
+    const isGroupSelected = selectedGroupElement && (selectedGroupElement as any).element_type === 'GROUP';
+    
+    // When multiple elements are selected, only GROUP should be enabled
+    // When a group parent is selected, only BREAK should be enabled
+    const shouldDisableEditButtons = hasMultipleSelection || isGroupSelected;
+    
     return [
         {
             id: 'add-element',
@@ -140,7 +148,7 @@ export const getElementManagementButtons = (hasSelection: boolean): ToolButton[]
             label: 'ADD',
             description: 'Add Script Element',
             isActive: false,
-            isDisabled: false
+            isDisabled: hasMultipleSelection || isGroupSelected
         },
         {
             id: 'edit-element',
@@ -148,7 +156,7 @@ export const getElementManagementButtons = (hasSelection: boolean): ToolButton[]
             label: 'MODIFY',
             description: 'Edit Selected Element',
             isActive: false,
-            isDisabled: !hasSelection
+            isDisabled: !hasSelection || shouldDisableEditButtons
         },
         {
             id: 'duplicate-element',
@@ -156,15 +164,15 @@ export const getElementManagementButtons = (hasSelection: boolean): ToolButton[]
             label: 'COPY',
             description: 'Duplicate Selected Element',
             isActive: false,
-            isDisabled: !hasSelection
+            isDisabled: !hasSelection || shouldDisableEditButtons
         },
         {
-            id: 'group-elements',
-            icon: 'group',
-            label: 'STACK',
-            description: 'Group Selected Elements',
+            id: isGroupSelected ? 'ungroup-elements' : 'group-elements',
+            icon: isGroupSelected ? 'ungroup' : 'group',
+            label: isGroupSelected ? 'BREAK' : 'GROUP',
+            description: isGroupSelected ? 'Break Selected Group' : 'Group Selected Elements',
             isActive: false,
-            isDisabled: true // Not implemented yet
+            isDisabled: isGroupSelected ? !hasSelection : !hasMultipleSelection
         },
         {
             id: 'delete-element',
@@ -172,7 +180,7 @@ export const getElementManagementButtons = (hasSelection: boolean): ToolButton[]
             label: 'TRASH',
             description: 'Delete Selected Element',
             isActive: false,
-            isDisabled: !hasSelection
+            isDisabled: !hasSelection || shouldDisableEditButtons
         }
     ];
 };
@@ -182,7 +190,7 @@ export const getElementManagementButtons = (hasSelection: boolean): ToolButton[]
  * Generates all toolbar buttons based on current context
  */
 export const getToolbarButtons = (context: ToolbarContext): ToolButton[] => {
-    const { activeMode, scrollState, hasSelection, hasUnsavedChanges, pendingOperationsCount } = context;
+    const { activeMode, scrollState, hasSelection, hasMultipleSelection, hasUnsavedChanges, pendingOperationsCount, selectedElement } = context;
     
     const buttons: ToolButton[] = [];
     
@@ -197,7 +205,7 @@ export const getToolbarButtons = (context: ToolbarContext): ToolButton[] => {
     
     // Element management buttons (only in edit mode)
     if (activeMode === 'edit') {
-        buttons.push(...getElementManagementButtons(hasSelection));
+        buttons.push(...getElementManagementButtons(hasSelection, hasMultipleSelection, selectedElement));
     }
     
     return buttons;
@@ -211,7 +219,7 @@ export const groupToolbarButtons = (buttons: ToolButton[]) => {
         navigation: buttons.filter(btn => ['jump-top', 'jump-bottom'].includes(btn.id)),
         modes: buttons.filter(btn => ['view', 'edit', 'info', 'history'].includes(btn.id)),
         actions: buttons.filter(btn => ['exit', 'play', 'share', 'clear-history'].includes(btn.id)),
-        elements: buttons.filter(btn => ['add-element', 'edit-element', 'duplicate-element', 'group-elements', 'delete-element'].includes(btn.id))
+        elements: buttons.filter(btn => ['add-element', 'edit-element', 'duplicate-element', 'group-elements', 'ungroup-elements', 'delete-element'].includes(btn.id))
     };
     
     return groups;

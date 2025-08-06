@@ -111,10 +111,9 @@ def get_script_elements(
     if department_id:
         query = query.filter(models.ScriptElement.department_id == department_id)
     
-    # Order by sequence, then by time offset
+    # Order by sequence only (user's manual order)
     query = query.order_by(
-        models.ScriptElement.sequence.asc(),
-        models.ScriptElement.time_offset_ms.asc()
+        models.ScriptElement.sequence.asc()
     )
     
     # Apply pagination
@@ -254,6 +253,7 @@ def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, 
     operation_type = operation_data.get("type")
     element_id = operation_data.get("element_id")
     
+    
     if operation_type == "REORDER":
         return _process_reorder_operation(db, script_id, operation_data, user)
     
@@ -277,34 +277,91 @@ def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, 
     elif operation_type == "DISABLE_AUTO_SORT":
         return _process_disable_auto_sort_operation(operation_data)
     
+    elif operation_type == "CREATE_GROUP":
+        return _process_create_group_operation(db, script_id, operation_data, user)
+    
     elif operation_type == "UPDATE_SCRIPT_INFO":
         return _process_update_script_info_operation(db, script_id, operation_data, user)
+    
+    elif operation_type == "TOGGLE_GROUP_COLLAPSE":
+        return _process_toggle_group_collapse_operation(db, element_id, user)
+    
+    elif operation_type == "UNGROUP_ELEMENTS":
+        return _process_ungroup_elements_operation(db, script_id, operation_data, user)
     
     else:
         raise ValueError(f"Unknown operation type: {operation_type}")
 
 
 def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
-    """Process a single element reorder operation."""
+    """Process a single element reorder operation by updating all affected sequences."""
     
     element_id = operation_data.get("element_id")
+    old_sequence = operation_data.get("old_sequence")
     new_sequence = operation_data.get("new_sequence")
     
-    element = db.query(models.ScriptElement).filter(
-        and_(
-            models.ScriptElement.element_id == UUID(element_id),
-            models.ScriptElement.script_id == script_id
-        )
-    ).first()
+    if old_sequence == new_sequence:
+        # No change needed
+        return {"element_id": element_id, "new_sequence": new_sequence, "no_change": True}
     
-    if not element:
+    # Get all elements in the script ordered by sequence
+    all_elements = db.query(models.ScriptElement).filter(
+        and_(
+            models.ScriptElement.script_id == script_id,
+            models.ScriptElement.is_active == True
+        )
+    ).order_by(models.ScriptElement.sequence.asc()).all()
+    
+    # Find the element being moved
+    moved_element = None
+    for element in all_elements:
+        if str(element.element_id) == element_id:
+            moved_element = element
+            break
+    
+    if not moved_element:
         raise ValueError(f"Element {element_id} not found")
     
-    element.sequence = new_sequence
-    element.updated_by = user.user_id
-    element.version = element.version + 1
-    element.date_updated = datetime.now(timezone.utc)
-    return {"element_id": element_id, "new_sequence": new_sequence}
+    # Update sequences for all elements to ensure no duplicates
+    # Create a new sequence mapping based on the move
+    updated_count = 0
+    
+    if old_sequence < new_sequence:
+        # Moving down: elements between old and new positions move up by 1
+        for element in all_elements:
+            if element.element_id == moved_element.element_id:
+                element.sequence = new_sequence
+                updated_count += 1
+            elif element.sequence > old_sequence and element.sequence <= new_sequence:
+                element.sequence = element.sequence - 1
+                updated_count += 1
+            # Other elements keep their sequence
+            
+            element.updated_by = user.user_id
+            element.version = element.version + 1
+            element.date_updated = datetime.now(timezone.utc)
+            
+    else:
+        # Moving up: elements between new and old positions move down by 1
+        for element in all_elements:
+            if element.element_id == moved_element.element_id:
+                element.sequence = new_sequence
+                updated_count += 1
+            elif element.sequence >= new_sequence and element.sequence < old_sequence:
+                element.sequence = element.sequence + 1
+                updated_count += 1
+            # Other elements keep their sequence
+            
+            element.updated_by = user.user_id
+            element.version = element.version + 1
+            element.date_updated = datetime.now(timezone.utc)
+    
+    return {
+        "element_id": element_id, 
+        "old_sequence": old_sequence,
+        "new_sequence": new_sequence, 
+        "updated_count": updated_count
+    }
 
 
 def _process_update_field_operation(db: Session, element_id: str, operation_data: dict, user: models.User):
@@ -360,7 +417,8 @@ def _process_update_element_operation(db: Session, element_id: str, operation_da
     
     # Apply each field change
     for field, change_data in changes.items():
-        new_value = change_data.get("new_value")
+        # Handle both camelCase (from frontend) and snake_case (internal)
+        new_value = change_data.get("newValue") or change_data.get("new_value")
         
         if hasattr(element, field):
             # Handle special cases for enum fields (convert to uppercase)
@@ -389,7 +447,8 @@ def _process_update_element_operation(db: Session, element_id: str, operation_da
 def _process_update_time_offset_operation(db: Session, element_id: str, operation_data: dict, user: models.User):
     """Process a time offset update operation."""
     
-    new_time_offset = operation_data.get("newTimeOffsetMs")
+    # Handle both camelCase (from frontend) and snake_case (internal)
+    new_time_offset = operation_data.get("newTimeOffsetMs") or operation_data.get("new_time_offset_ms")
     
     element = db.query(models.ScriptElement).filter(
         models.ScriptElement.element_id == UUID(element_id)
@@ -405,17 +464,30 @@ def _process_update_time_offset_operation(db: Session, element_id: str, operatio
     return {"element_id": element_id, "new_time_offset": new_time_offset}
 
 
+def _process_toggle_group_collapse_operation(db: Session, element_id: str, user: models.User):
+    """Process a toggle group collapse operation."""
+    
+    element = db.query(models.ScriptElement).filter(
+        models.ScriptElement.element_id == UUID(element_id)
+    ).first()
+    
+    if not element:
+        raise ValueError(f"Element {element_id} not found")
+    
+    # Toggle the collapse state
+    element.is_collapsed = not (element.is_collapsed or False)
+    element.updated_by = user.user_id
+    element.version = element.version + 1
+    element.date_updated = datetime.now(timezone.utc)
+    
+    return {"element_id": element_id, "is_collapsed": element.is_collapsed}
+
+
 def _process_create_element_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process an element creation operation."""
     
     element_data = operation_data.get("element_data", {})
     
-    # Get the next elementOrder value
-    max_order = db.query(models.ScriptElement.element_order).filter(
-        models.ScriptElement.script_id == script_id
-    ).order_by(models.ScriptElement.element_order.desc()).first()
-    
-    next_order = (max_order[0] + 1) if max_order and max_order[0] is not None else 1
     
     # Prepare enum fields with defaults (frontend sends uppercase values)
     trigger_type = models.TriggerType.MANUAL  # Default
@@ -434,13 +506,16 @@ def _process_create_element_operation(db: Session, script_id: UUID, operation_da
     new_element = models.ScriptElement(
         script_id=script_id,
         element_type=element_data.get("element_type", "CUE"),
-        element_order=next_order,
         sequence=element_data.get("sequence", 1),
         time_offset_ms=element_data.get("time_offset_ms", 0),
         description=element_data.get("description", ""),
         cue_notes=element_data.get("cue_notes", ""),
         department_id=UUID(element_data["department_id"]) if element_data.get("department_id") else None,
         custom_color=element_data.get("custom_color"),
+        # Handle group-related fields
+        parent_element_id=element_data.get("parent_element_id"),
+        group_level=element_data.get("group_level", 0),
+        is_collapsed=element_data.get("is_collapsed", False),
         # Handle enum fields properly with explicit values
         trigger_type=trigger_type,
         execution_status=execution_status,
@@ -507,6 +582,147 @@ def _process_disable_auto_sort_operation(operation_data: dict):
     return {"preference_updated": True, "auto_sort_disabled": True}
 
 
+def _process_create_group_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+    """Process a group creation operation."""
+    
+    element_ids = operation_data.get("element_ids", [])
+    group_name = operation_data.get("group_name", "Untitled Group")
+    background_color = operation_data.get("background_color", "#E2E8F0")
+    
+    
+    if len(element_ids) < 2:
+        raise ValueError("At least 2 elements are required to create a group")
+    
+    # Find all elements to be grouped
+    elements_to_group = db.query(models.ScriptElement).filter(
+        models.ScriptElement.script_id == script_id,
+        models.ScriptElement.element_id.in_([UUID(eid) for eid in element_ids])
+    ).all()
+    
+    if len(elements_to_group) != len(element_ids):
+        raise ValueError("Some elements not found")
+    
+    # Find the minimum sequence and time offset for the group parent
+    min_sequence = min(element.sequence for element in elements_to_group)
+    min_time_offset = min(element.time_offset_ms for element in elements_to_group)
+    
+    # Don't generate group summary notes - will be calculated dynamically on frontend
+    
+    # Create the group parent element
+    group_parent = models.ScriptElement(
+        script_id=script_id,
+        element_type='GROUP',
+        sequence=min_sequence,
+        time_offset_ms=min_time_offset,
+        description=group_name,
+        cue_notes=generated_notes,
+        custom_color=background_color,
+        trigger_type=models.TriggerType.MANUAL,
+        execution_status=models.ExecutionStatus.PENDING,
+        priority=models.PriorityLevel.NORMAL,
+        group_level=0,
+        is_collapsed=False,
+        parent_element_id=None,
+        is_active=True,
+        created_by=user.user_id,
+        updated_by=user.user_id
+    )
+    
+    db.add(group_parent)
+    db.flush()  # Get the ID
+    
+    # Update all grouped elements to be children of the group
+    for element in elements_to_group:
+        element.parent_element_id = str(group_parent.element_id)
+        element.group_level = 1
+        element.updated_by = user.user_id
+        element.version = element.version + 1
+        element.date_updated = datetime.now(timezone.utc)
+    
+    # Update sequences to insert the group parent in the correct position
+    # Get all elements for sequence updating
+    all_elements = db.query(models.ScriptElement).filter(
+        models.ScriptElement.script_id == script_id,
+        models.ScriptElement.is_active == True
+    ).order_by(models.ScriptElement.sequence.asc()).all()
+    
+    # Rebuild sequences with group parent inserted
+    sequence = 1
+    group_parent_inserted = False
+    
+    for element in all_elements:
+        if element.element_id == group_parent.element_id:
+            continue  # Skip, we'll insert it manually
+            
+        # Insert group parent before the first grouped element
+        if not group_parent_inserted and str(element.element_id) in element_ids:
+            group_parent.sequence = sequence
+            sequence += 1
+            group_parent_inserted = True
+        
+        element.sequence = sequence
+        sequence += 1
+    
+    # If group parent wasn't inserted yet (shouldn't happen), insert it at the end
+    if not group_parent_inserted:
+        group_parent.sequence = sequence
+    
+    return {
+        "operation": "create_group",
+        "group_parent_id": str(group_parent.element_id),
+        "grouped_element_ids": element_ids,
+        "group_name": group_name
+    }
+
+
+def _process_ungroup_elements_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+    """Process an ungroup elements operation."""
+    
+    group_element_id = operation_data.get("group_element_id")
+    
+    # Find the group parent element
+    group_element = db.query(models.ScriptElement).filter(
+        and_(
+            models.ScriptElement.element_id == UUID(group_element_id),
+            models.ScriptElement.script_id == script_id
+        )
+    ).first()
+    
+    if not group_element:
+        raise ValueError(f"Group element {group_element_id} not found")
+    
+    # Find all child elements of this group
+    child_elements = db.query(models.ScriptElement).filter(
+        and_(
+            models.ScriptElement.parent_element_id == group_element_id,
+            models.ScriptElement.script_id == script_id
+        )
+    ).all()
+    
+    # Clear parent relationships for all children
+    updated_children = 0
+    for child in child_elements:
+        child.parent_element_id = None
+        child.group_level = 0
+        child.updated_by = user.user_id
+        child.version = child.version + 1
+        child.date_updated = datetime.now(timezone.utc)
+        updated_children += 1
+    
+    # Delete the group parent element
+    group_element.is_active = False
+    group_element.updated_by = user.user_id
+    group_element.version = group_element.version + 1
+    group_element.date_updated = datetime.now(timezone.utc)
+    
+    return {
+        "operation": "ungroup_elements",
+        "group_element_id": group_element_id,
+        "updated_children": updated_children,
+        "group_deleted": True
+    }
+
+
 def _process_update_script_info_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process a script info update operation."""
     
@@ -524,7 +740,8 @@ def _process_update_script_info_operation(db: Session, script_id: UUID, operatio
     
     # Apply each field change
     for field, change_data in changes.items():
-        new_value = change_data.get("new_value")
+        # Handle both camelCase (from frontend) and snake_case (internal)
+        new_value = change_data.get("newValue") or change_data.get("new_value")
         
         if field == "script_name":
             script.script_name = new_value

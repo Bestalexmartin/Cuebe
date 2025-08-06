@@ -19,7 +19,12 @@ interface UseElementModalActionsParams {
         EDIT_ELEMENT: string;
         DUPLICATE_ELEMENT: string;
         DELETE_CUE: string;
+        GROUP_ELEMENTS: string;
     };
+    // Selection state from parent (EditMode)
+    selectedElementIds: string[];
+    clearSelection: () => void;
+    setSelectedElementIds: (ids: string[]) => void;
 }
 
 export const useElementModalActions = ({
@@ -28,18 +33,23 @@ export const useElementModalActions = ({
     applyLocalChange,
     insertElement,
     modalState,
-    modalNames
+    modalNames,
+    selectedElementIds,
+    clearSelection,
+    setSelectedElementIds
 }: UseElementModalActionsParams) => {
     const { showSuccess, showError } = useEnhancedToast();
     
-    // State for element operations
-    const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+    // State for element operations (selectedElementIds now comes from parent)
     const [selectedElement, setSelectedElement] = useState<any>(null);
     const [selectedElementName, setSelectedElementName] = useState<string>('');
     const [selectedElementTimeOffset, setSelectedElementTimeOffset] = useState<number>(0);
     const [isDeletingCue, setIsDeletingCue] = useState(false);
     const [isDuplicatingElement, setIsDuplicatingElement] = useState(false);
     const [forceRender, setForceRender] = useState(0);
+    
+    // Helper to get the first selected element (for backwards compatibility)
+    const selectedElementId = selectedElementIds.length > 0 ? selectedElementIds[0] : null;
 
     const handleElementCreated = useCallback(async (elementData: any) => {
         insertElement(elementData);
@@ -54,6 +64,7 @@ export const useElementModalActions = ({
         }
 
         try {
+            // Get the most current version of the element from edit queue
             const elementData = editQueueElements.find(el => el.element_id === selectedElementId);
             
             if (!elementData) {
@@ -78,9 +89,51 @@ export const useElementModalActions = ({
 
         setIsDuplicatingElement(true);
         try {
+            // Get the most current version of the element from edit queue
             const originalElement = editQueueElements.find(el => el.element_id === selectedElementId);
             if (!originalElement) {
                 throw new Error('Original element not found');
+            }
+
+            // If the original element has a parent_element_id, verify it still exists
+            // If not, find the correct group parent (this handles cases where group IDs change)
+            let correctedParentId = originalElement.parent_element_id;
+            if (originalElement.parent_element_id && originalElement.group_level && originalElement.group_level > 0) {
+                const groupParentExists = editQueueElements.find(el => 
+                    String(el.element_id) === String(originalElement.parent_element_id)
+                );
+                
+                if (!groupParentExists) {
+                    // Try to find the correct group parent by looking for other siblings
+                    const siblingWithSameParent = editQueueElements.find(el => 
+                        el.element_id !== originalElement.element_id &&
+                        el.parent_element_id === originalElement.parent_element_id &&
+                        el.group_level && el.group_level > 0
+                    );
+                    
+                    if (siblingWithSameParent) {
+                        // Find the actual group parent this sibling belongs to
+                        const actualGroupParent = editQueueElements.find(el => 
+                            (el as any).element_type === 'GROUP' &&
+                            editQueueElements.some(child => 
+                                child.parent_element_id === String(el.element_id) &&
+                                child.element_id === siblingWithSameParent.element_id
+                            )
+                        );
+                        
+                        if (actualGroupParent) {
+                            correctedParentId = String(actualGroupParent.element_id);
+                        }
+                    } else {
+                        // No siblings found, try to find any group this element should belong to
+                        // based on proximity or time offset
+                        const nearbyGroups = editQueueElements.filter(el => (el as any).element_type === 'GROUP');
+                        if (nearbyGroups.length === 1) {
+                            // If there's only one group, assume it belongs there
+                            correctedParentId = String(nearbyGroups[0].element_id);
+                        }
+                    }
+                }
             }
 
             const duplicateData = {
@@ -88,10 +141,12 @@ export const useElementModalActions = ({
                 description,
                 time_offset_ms,
                 element_id: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+                parent_element_id: correctedParentId,
                 created_at: undefined,
                 updated_at: undefined,
                 is_deleted: undefined
             };
+
 
             insertElement(duplicateData);
 
@@ -181,7 +236,7 @@ export const useElementModalActions = ({
 
             showSuccess('Script Element Deleted', 'Script element has been deleted. Save to apply changes.');
 
-            setSelectedElementId(null);
+            setSelectedElementIds([]);
             modalState.closeModal(modalNames.DELETE_CUE);
 
         } catch (error) {
@@ -193,16 +248,88 @@ export const useElementModalActions = ({
     }, [selectedElementId, editQueueElements, applyLocalChange, modalState, modalNames.DELETE_CUE, showSuccess, showError]);
 
     const handleElementGroup = useCallback(() => {
-        showError('Element grouping feature is under development');
-    }, [showError]);
+        if (selectedElementIds.length < 2) {
+            showError('Please select at least 2 elements to create a group');
+            return;
+        }
+        
+        // Check if any selected elements are already in groups
+        const selectedElements = editQueueElements.filter(el => selectedElementIds.includes(el.element_id));
+        const alreadyGrouped = selectedElements.filter(el => 
+            (el as any).element_type === 'GROUP' || 
+            (el.parent_element_id && el.group_level && el.group_level > 0)
+        );
+        
+        if (alreadyGrouped.length > 0) {
+            const groupedNames = alreadyGrouped.map(el => el.description || 'Unnamed').join(', ');
+            showError(`Cannot group elements that are already in groups: ${groupedNames}`);
+            return;
+        }
+        
+        modalState.openModal(modalNames.GROUP_ELEMENTS);
+    }, [selectedElementIds, editQueueElements, modalState, modalNames.GROUP_ELEMENTS, showError]);
 
-    const handleSelectionChange = useCallback((id: string | null) => {
-        setSelectedElementId(id);
-    }, []);
+    const handleConfirmGroupElements = useCallback((groupName: string, backgroundColor: string) => {
+        if (selectedElementIds.length < 2) {
+            showError('Please select at least 2 elements to create a group');
+            return;
+        }
+
+        try {
+            const groupOperation = {
+                type: 'CREATE_GROUP',
+                element_ids: selectedElementIds,
+                group_name: groupName,
+                background_color: backgroundColor
+            };
+
+            applyLocalChange(groupOperation);
+            
+            showSuccess('Elements Grouped', `${selectedElementIds.length} elements have been grouped as "${groupName}". Save to apply changes.`);
+            modalState.closeModal(modalNames.GROUP_ELEMENTS);
+            
+            // Clear selection after grouping
+            clearSelection();
+        } catch (error) {
+            console.error('Error creating group:', error);
+            showError('Failed to create element group. Please try again.');
+        }
+    }, [selectedElementIds, applyLocalChange, modalState, modalNames.GROUP_ELEMENTS, showSuccess, showError, clearSelection]);
+
+    const handleElementUngroup = useCallback(() => {
+        if (!selectedElementId) {
+            showError('Please select a group element to ungroup');
+            return;
+        }
+
+        const groupElement = editQueueElements.find(el => el.element_id === selectedElementId);
+        if (!groupElement || groupElement.element_type !== 'GROUP') {
+            showError('Selected element is not a group');
+            return;
+        }
+
+        try {
+            const ungroupOperation = {
+                type: 'UNGROUP_ELEMENTS',
+                group_element_id: selectedElementId
+            };
+
+            applyLocalChange(ungroupOperation);
+            
+            showSuccess('Group Ungrouped', 'Group has been dissolved and elements restored. Save to apply changes.');
+            clearSelection();
+        } catch (error) {
+            console.error('Error ungrouping elements:', error);
+            showError('Failed to ungroup elements. Please try again.');
+        }
+    }, [selectedElementId, editQueueElements, applyLocalChange, showSuccess, showError, clearSelection]);
+
+    // Selection is now managed by parent component
 
     return {
-        // State
-        selectedElementId,
+        // State (selection now managed by parent)
+        selectedElementId, // Backwards compatibility - first selected element
+        selectedElementIds, // Passed from parent
         selectedElement,
         selectedElementName,
         selectedElementTimeOffset,
@@ -219,10 +346,11 @@ export const useElementModalActions = ({
         handleElementDelete,
         handleConfirmDeleteCue,
         handleElementGroup,
-        handleSelectionChange,
+        handleConfirmGroupElements,
+        handleElementUngroup,
         
         // Setters for external use
-        setSelectedElementId,
-        setSelectedElement
+        setSelectedElement,
+        setSelectedElementIds
     };
 };

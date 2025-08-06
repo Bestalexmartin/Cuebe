@@ -18,6 +18,7 @@ class ElementType(enum.Enum):
     """Types of script elements"""
     CUE = "CUE"
     NOTE = "NOTE"
+    GROUP = "GROUP"
 
 class TriggerType(enum.Enum):
     """How script elements are triggered"""
@@ -367,7 +368,6 @@ class ScriptElement(Base):
     """Individual elements (cues, notes, etc.) within a script"""
     __tablename__ = "scriptElementsTable"
     __table_args__ = (
-        Index('idx_scriptelement_script_order', 'script_id', 'element_order'),
         Index('idx_script_sequence', 'script_id', 'sequence'),
         Index('idx_script_time_ms', 'script_id', 'time_offset_ms'),
         Index('idx_department_elements', 'department_id'),
@@ -388,7 +388,6 @@ class ScriptElement(Base):
     
     # Element information
     element_type = Column(Enum(ElementType), nullable=False)
-    element_order = Column(Integer, nullable=True)  # Legacy field - made nullable for migration compatibility
     sequence = Column(Integer, nullable=True)  # New sequence field
     cue_number = Column(String, nullable=True)  # Legacy field
     cue_id = Column(String(50), nullable=True)  # New cue ID field

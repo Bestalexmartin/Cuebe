@@ -41,17 +41,32 @@ export class EditQueueFormatter {
                 return `Reordered ${count} element${count > 1 ? 's' : ''}`;
                 
             case 'ENABLE_AUTO_SORT':
-                const moveCount = operation.element_moves.length;
-                return `Batch reorder (${moveCount} element${moveCount > 1 ? 's' : ''})`;
+                const moveCount = operation.element_changes?.length || 0;
+                return `Auto-sort enabled (${moveCount} element${moveCount > 1 ? 's' : ''})`;
             
             case 'DISABLE_AUTO_SORT':
-                return `Disabled batch reorder`;
+                return `Auto-sort disabled`;
             
             case 'UPDATE_SCRIPT_INFO':
                 return this.formatScriptInfoUpdate(operation);
             
             case 'UPDATE_ELEMENT':
                 return this.formatElementUpdate(operation, elementName);
+            
+            case 'CREATE_GROUP':
+                const groupName = operation.group_name || 'Untitled Group';
+                const elementCount = operation.element_ids?.length || 0;
+                return `Created group "${groupName}" with ${elementCount} element${elementCount !== 1 ? 's' : ''}`;
+            
+            case 'UNGROUP_ELEMENTS':
+                const ungroupElement = allElements.find(el => el.element_id === operation.group_element_id);
+                const ungroupName = ungroupElement?.description || 'Unknown Group';
+                return `Ungrouped elements from "${ungroupName}"`;
+            
+            case 'TOGGLE_GROUP_COLLAPSE':
+                const isCollapsed = operation.is_collapsed || false;
+                const action = isCollapsed ? 'Collapsed' : 'Expanded';
+                return `${action} group "${elementName}"`;
             
             default:
                 return `Unknown operation on "${elementName}"`;
@@ -378,7 +393,10 @@ export class EditQueueFormatter {
             'BULK_REORDER': 'bulk moves',
             'ENABLE_AUTO_SORT': 'batch reorders',
             'DISABLE_AUTO_SORT': 'preference changes',
-            'UPDATE_SCRIPT_INFO': 'script info updates'
+            'UPDATE_SCRIPT_INFO': 'script info updates',
+            'CREATE_GROUP': 'group creations',
+            'UNGROUP_ELEMENTS': 'group dissolutions',
+            'TOGGLE_GROUP_COLLAPSE': 'group toggles'
         };
         
         const parts = Object.entries(types).map(([type, count]) => {
