@@ -86,12 +86,6 @@ export const UtilitiesMenu: React.FC<UtilitiesMenuProps> = ({ onSaveNavigationSt
         >
           Documentation
         </MenuItem>
-        <MenuDivider />
-        <MenuItem isDisabled>
-          <HStack spacing={2}>
-            <Text fontSize="sm" color="gray.400">More utilities coming soon...</Text>
-          </HStack>
-        </MenuItem>
       </MenuList>
     </Menu>
   );

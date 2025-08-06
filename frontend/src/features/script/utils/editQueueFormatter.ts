@@ -64,8 +64,17 @@ export class EditQueueFormatter {
                 return `Ungrouped elements from "${ungroupName}"`;
             
             case 'TOGGLE_GROUP_COLLAPSE':
-                const isCollapsed = operation.is_collapsed || false;
-                const action = isCollapsed ? 'Collapsed' : 'Expanded';
+                // Use the target state stored in the operation if available
+                const targetCollapsed = (operation as any).target_collapsed_state;
+                if (targetCollapsed !== undefined) {
+                    const action = targetCollapsed ? 'Collapsed' : 'Expanded';
+                    return `${action} group "${elementName}"`;
+                }
+                
+                // Fallback to checking current element state if target state not stored
+                const currentElement = allElements.find(el => el.element_id === operation.element_id);
+                const currentlyCollapsed = currentElement?.is_collapsed || false;
+                const action = currentlyCollapsed ? 'Collapsed' : 'Expanded';
                 return `${action} group "${elementName}"`;
             
             default:
@@ -150,8 +159,9 @@ export class EditQueueFormatter {
             };
             
             const fieldName = fieldDisplayNames[field] || this.formatFieldName(field);
-            const oldValue = this.formatValue(field, change.old_value);
-            const newValue = this.formatValue(field, change.new_value);
+            // Handle both oldValue/newValue and old_value/new_value formats
+            const oldValue = this.formatValue(field, change.oldValue ?? change.old_value);
+            const newValue = this.formatValue(field, change.newValue ?? change.new_value);
             
             return `Updated "${elementName}" ${fieldName} from "${oldValue}" to "${newValue}"`;
         }
@@ -277,10 +287,18 @@ export class EditQueueFormatter {
         
         switch (field) {
             case 'time_offset_ms':
-                return this.formatTime(value);
+                // Handle numeric time values, including 0
+                if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                    return this.formatTime(Number(value));
+                }
+                return '(empty)';
             
             case 'duration':
-                return this.formatDuration(value);
+                // Handle numeric duration values, including 0  
+                if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
+                    return this.formatDuration(Number(value));
+                }
+                return '(empty)';
             
             case 'custom_color':
                 return value === '#E2E8F0' ? 'default' : value;
@@ -289,9 +307,13 @@ export class EditQueueFormatter {
                 return value || '(none)';
             
             default:
-                return String(value).length > 30 
-                    ? String(value).substring(0, 30) + '...'
-                    : String(value);
+                const stringValue = String(value);
+                if (stringValue === '' || stringValue === 'undefined' || stringValue === 'null') {
+                    return '(empty)';
+                }
+                return stringValue.length > 30 
+                    ? stringValue.substring(0, 30) + '...'
+                    : stringValue;
         }
     }
     
@@ -299,16 +321,22 @@ export class EditQueueFormatter {
      * Format time in milliseconds to readable format
      */
     private static formatTime(timeMs: number): string {
-        const totalSeconds = Math.round(timeMs / 1000);
+        // Handle negative times and edge cases
+        const isNegative = timeMs < 0;
+        const absTimeMs = Math.abs(timeMs);
+        const totalSeconds = Math.round(absTimeMs / 1000);
         const hours = Math.floor(totalSeconds / 3600);
         const minutes = Math.floor((totalSeconds % 3600) / 60);
         const seconds = totalSeconds % 60;
         
+        let timeString;
         if (hours > 0) {
-            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timeString = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         } else {
-            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
         }
+        
+        return isNegative ? `-${timeString}` : timeString;
     }
     
     /**
