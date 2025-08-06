@@ -39,6 +39,7 @@ interface EditModeProps {
     onToggleGroupCollapse?: (elementId: string) => void;
     // Edit queue props
     elements?: any[];
+    allElements?: any[]; // All elements including collapsed children for group calculations
     script?: any; // Optional cached script to prevent refetching
     onApplyLocalChange?: (operation: any) => void;
 }
@@ -59,10 +60,10 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     onSelectionChange,
     onToggleGroupCollapse,
     elements: externalElements,
+    allElements: externalAllElements,
     script: providedScript,
     onApplyLocalChange
 }, ref) => {
-    // console.log(`📝 EditMode: Component rendering - scriptId: ${scriptId}, elements: ${externalElements?.length || 0}, script: ${providedScript ? 'provided' : 'will fetch'}`);
     // Use external elements if provided (from edit queue), otherwise fallback to direct hook
     const shouldFetchElements = !externalElements;
     const { elements: serverElements, isLoading, error, refetchElements } = useScriptElements(shouldFetchElements ? scriptId : undefined);
@@ -73,6 +74,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const script = providedScript || scriptFromHook;
 
     const elements = externalElements || serverElements;
+    const allElementsForGroupCalculations = externalAllElements || elements;
     const [localElements, setLocalElements] = useState(elements);
     const [dragModalOpen, setDragModalOpen] = useState(false);
     const [draggedElement, setDraggedElement] = useState<any>(null);
@@ -217,7 +219,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             });
             
         if (elementsChanged) {
-            // console.log(`📊 EditMode: Elements updated - from ${localElements?.length || 0} to ${elements?.length || 0} elements`);
             setLocalElements(elements);
         }
     }, [elements, localElements, dragModalOpen, pendingReorder]);
@@ -611,10 +612,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         });
     }, [localElements, autoSortCues, dragModalOpen, pendingReorder]);
 
-    // Log render completion
-    // useEffect(() => {
-    //     console.log(`🎯 EditMode: Render completed - isLoading: ${isLoading}, error: ${!!error}, elements: ${displayElements.length}`);
-    // });
 
     return (
         <VStack height="100%" spacing={0} align="stretch">
@@ -666,7 +663,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                                                 key={element.element_id}
                                                 element={element}
                                                 index={index}
-                                                allElements={displayElements}
+                                                allElements={allElementsForGroupCalculations}
                                                 colorizeDepNames={colorizeDepNames}
                                                 showClockTimes={shouldShowClockTimes}
                                                 scriptStartTime={script?.start_time instanceof Date ? script.start_time.toISOString() : script?.start_time}

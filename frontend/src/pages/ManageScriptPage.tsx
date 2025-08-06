@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
     Box,
-    VStack,
     HStack,
     Text,
     Spinner,
@@ -23,7 +22,7 @@ import { useValidatedForm } from '../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../types/validation';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { convertLocalToUTC } from '../utils/dateTimeUtils';
-import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
+import { useUserPreferences } from '../hooks/useUserPreferences';
 import { EditHistoryView } from '../components/EditHistoryView';
 import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
@@ -32,7 +31,6 @@ import { useModalState } from '../hooks/useModalState';
 import { SaveConfirmationModal } from '../components/modals/SaveConfirmationModal';
 import { SaveProcessingModal } from '../components/modals/SaveProcessingModal';
 
-// Import script-specific components
 import { ScriptToolbar } from '../features/script/components/ScriptToolbar';
 import { InfoMode } from '../features/script/components/modes/InfoMode';
 import { ViewMode, ViewModeRef } from '../features/script/components/modes/ViewMode';
@@ -45,14 +43,12 @@ import { ScriptModals } from '../features/script/components/ScriptModals';
 import { MobileScriptDrawer } from '../features/script/components/MobileScriptDrawer';
 import { getToolbarButtons, ToolbarContext } from '../features/script/utils/toolbarConfig';
 
-// New custom hooks
 import { useElementModalActions } from '../features/script/hooks/useElementModalActions';
 import { useScriptModalHandlers } from '../features/script/hooks/useScriptModalHandlers';
 import { useScriptNavigation } from '../hooks/useScriptNavigation';
 import { useScriptFormSync } from '../features/script/hooks/useScriptFormSync';
 import { createActionMenuConfig } from '../features/script/config/actionMenuConfig';
 
-// Modal names for type safety and consistency
 const MODAL_NAMES = {
     DELETE: 'delete',
     FINAL_DELETE: 'final_delete',
@@ -78,7 +74,6 @@ interface ManageScriptPageProps {
     onMenuClose: () => void;
 }
 
-// TypeScript interfaces for script metadata form
 interface ScriptFormData {
     script_name: string;
     script_status: string;
@@ -125,14 +120,11 @@ const VALIDATION_CONFIG: FormValidationConfig = {
 export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, onMenuClose }) => {
     const { scriptId } = useParams<{ scriptId: string }>();
 
-    // Refs for mode components
     const viewModeRef = useRef<ViewModeRef>(null);
     const editModeRef = useRef<EditModeRef>(null);
 
-    // Responsive breakpoint for mobile layout
     const isMobile = useBreakpointValue({ base: true, lg: false });
 
-    // Form management for INFO mode
     const formConfig = {
         validationConfig: VALIDATION_CONFIG,
         validateOnChange: true,
@@ -141,17 +133,15 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     };
     const form = useValidatedForm<ScriptFormData>(INITIAL_FORM_STATE, formConfig);
 
-    // Modal state management
     const modalState = useModalState(Object.values(MODAL_NAMES));
 
-    // Fetch the script and show data
     const { script, isLoading: isLoadingScript, error: scriptError } = useScript(scriptId);
     const { show } = useShow(script?.show_id);
 
-    // Edit queue for tracking changes
     const editQueueHook = useScriptElementsWithEditQueue(scriptId);
     const {
         elements: editQueueElements,
+        allElements: allEditQueueElements,
         pendingOperations,
         hasUnsavedChanges,
         revertToPoint,
@@ -161,7 +151,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         toggleGroupCollapse
     } = editQueueHook;
 
-    // User preferences management
     const [previewPreferences, setPreviewPreferences] = useState<UserPreferences | null>(null);
     const {
         preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues },
@@ -187,14 +176,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState }
         , [modalState, previewPreferences, darkMode, colorizeDepNames, showClockTimes, currentAutoSortState]);
 
-    // Element actions hook
     const { insertElement } = useElementActions(
         editQueueElements,
         activePreferences.autoSortCues,
         applyLocalChange
     );
 
-    // Active mode state
     const { activeMode, setActiveMode } = useScriptModes('view');
 
     // Script form synchronization hook
@@ -555,7 +542,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     // Calculate total changes count including Info mode changes
     const totalChangesCount = useMemo(() => {
         let count = pendingOperations.length;
-        // Add 1 if we're in Info mode with unsaved changes that aren't yet in the queue
         if (activeMode === 'info' && hasChanges) {
             count += 1;
         }
@@ -675,7 +661,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
                                 {activeMode === 'view' && (
-                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} script={script} onToggleGroupCollapse={toggleGroupCollapse} />
+                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} allElements={allEditQueueElements} script={script} onToggleGroupCollapse={toggleGroupCollapse} />
                                 )}
                                 {activeMode === 'edit' && (
                                     <EditMode
@@ -689,13 +675,14 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                         onSelectionChange={setCurrentSelectedElementIds}
                                         onToggleGroupCollapse={toggleGroupCollapse}
                                         elements={editQueueElements}
+                                        allElements={allEditQueueElements}
                                         script={currentScript}
                                         onApplyLocalChange={applyLocalChange}
                                     />
                                 )}
                                 {activeMode === 'play' && <PlayMode />}
                                 {activeMode === 'share' && <ShareMode />}
-                                {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={editQueueElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} onRevertSuccess={() => setActiveMode('edit')} />}
+                                {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={allEditQueueElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} onRevertSuccess={() => setActiveMode('edit')} />}
                             </Box>
                         )}
                     </Box>
@@ -783,7 +770,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onFinalClearHistoryConfirm={modalHandlers.handleFinalClearHistoryConfirm}
                 onDuplicateClose={() => modalState.closeModal(MODAL_NAMES.DUPLICATE)}
                 onDuplicateConfirm={(script_name: string, showId: string) => {
-                    console.log('Script duplication:', script_name, showId);
                     modalState.closeModal(MODAL_NAMES.DUPLICATE);
                 }}
                 onElementCreated={elementActions.handleElementCreated}

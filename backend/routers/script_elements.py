@@ -615,7 +615,7 @@ def _process_create_group_operation(db: Session, script_id: UUID, operation_data
         sequence=min_sequence,
         time_offset_ms=min_time_offset,
         description=group_name,
-        cue_notes=generated_notes,
+        cue_notes="",  # Leave empty - will be calculated dynamically on frontend
         custom_color=background_color,
         trigger_type=models.TriggerType.MANUAL,
         execution_status=models.ExecutionStatus.PENDING,

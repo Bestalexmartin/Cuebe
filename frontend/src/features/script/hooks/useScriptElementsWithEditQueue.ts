@@ -9,6 +9,7 @@ import { useEditQueue } from './useEditQueue';
 interface UseScriptElementsWithEditQueueReturn {
     // Current view state (server + local changes)
     elements: ScriptElement[];
+    allElements: ScriptElement[]; // All elements including collapsed children
     serverElements: ScriptElement[];
     
     // Loading and error states
@@ -72,10 +73,13 @@ export const useScriptElementsWithEditQueue = (
     const lastComputedElementsRef = useRef<ScriptElement[]>([]);
     
     // Apply edit operations to server elements to get current view
-    const elements = useMemo(() => {
+    const { elements, allElements } = useMemo(() => {
         // If we're saving, return the last computed state to prevent flicker
         if (isSaving && lastComputedElementsRef.current.length > 0) {
-            return lastComputedElementsRef.current;
+            return {
+                elements: lastComputedElementsRef.current,
+                allElements: lastComputedElementsRef.current // This isn't ideal but prevents crashes during save
+            };
         }
         
         let currentElements = [...serverElements];
@@ -89,7 +93,7 @@ export const useScriptElementsWithEditQueue = (
         // This ensures durations are accurate after any reordering, time changes, or group membership changes
         currentElements = recalculateGroupDurations(currentElements);
         
-        // Filter out collapsed child elements
+        // Filter out collapsed child elements for display
         const visibleElements = currentElements.filter(element => {
             // Always show parent elements (group_level === 0 or no parent)
             if (!element.parent_element_id) {
@@ -106,7 +110,10 @@ export const useScriptElementsWithEditQueue = (
         // Store the computed elements for potential use during save
         lastComputedElementsRef.current = visibleElements;
         
-        return visibleElements;
+        return {
+            elements: visibleElements,
+            allElements: currentElements // Include all elements for group summary calculations
+        };
     }, [serverElements, operations, isSaving]);
     
     const fetchElements = useCallback(async () => {
@@ -115,7 +122,6 @@ export const useScriptElementsWithEditQueue = (
             return;
         }
 
-        // console.log(`🔍 useScriptElementsWithEditQueue: Fetching elements for script ${scriptId}...`);
         setIsLoading(true);
         setError(null);
 
@@ -228,11 +234,17 @@ export const useScriptElementsWithEditQueue = (
     }, []);
     
     const toggleGroupCollapse = useCallback((elementId: string) => {
+        // Find the current element to determine what state we're toggling TO
+        const currentElement = allElements.find(el => el.element_id === elementId);
+        const currentlyCollapsed = currentElement?.is_collapsed || false;
+        const targetState = !currentlyCollapsed;
+        
         applyLocalChange({
             type: 'TOGGLE_GROUP_COLLAPSE',
-            element_id: elementId
+            element_id: elementId,
+            target_collapsed_state: targetState
         });
-    }, [applyLocalChange]);
+    }, [applyLocalChange, allElements]);
     
     useEffect(() => {
         fetchElements();
@@ -241,6 +253,7 @@ export const useScriptElementsWithEditQueue = (
     return useMemo(() => ({
         // Current view state
         elements,
+        allElements,
         serverElements,
         
         // Loading and error states
@@ -272,6 +285,7 @@ export const useScriptElementsWithEditQueue = (
         revertToPoint: editQueueRef.current.revertToPoint
     }), [
         elements,
+        allElements,
         serverElements,
         isLoading,
         error,
@@ -328,6 +342,38 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             const elementToMove = elements.find(el => el.element_id === operation.element_id);
             if (!elementToMove) return elements;
             
+            // Check if we're moving a group parent - if so, move the entire group
+            const isGroupParent = (elementToMove as any).element_type === 'GROUP';
+            
+            if (isGroupParent) {
+                // When moving a group parent, move all children with it
+                const groupChildren = elements.filter(el => 
+                    el.parent_element_id === elementToMove.element_id
+                );
+                
+                // For group parent moves, just reposition the elements
+                // Time offset changes will be handled by the subsequent UPDATE_ELEMENT operation from the modal
+                const newIndex = reorderOp.new_index;
+                const elementsWithoutGroup = elements.filter(el => 
+                    !([elementToMove, ...groupChildren].some(moveEl => moveEl.element_id === el.element_id))
+                );
+                
+                
+                // Insert the entire group at the new position without changing times
+                const result = [...elementsWithoutGroup];
+                result.splice(newIndex, 0, elementToMove);
+                groupChildren.forEach((child, childIndex) => {
+                    result.splice(newIndex + 1 + childIndex, 0, child);
+                });
+                
+                // Update sequences for all elements
+                return result.map((el, index) => ({
+                    ...el,
+                    sequence: index + 1
+                }));
+            }
+            
+            // Regular element move (not a group parent)
             const filtered = elements.filter(el => el.element_id !== operation.element_id);
             const result = [...filtered];
             
@@ -488,12 +534,12 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             }
 
             // Check if we're deleting a group parent or child
-            const isGroupParent = (elementToDelete as any).element_type === 'GROUP';
-            const isGroupChild = elementToDelete.group_level && elementToDelete.group_level > 0;
+            const isDeletingGroupParent = (elementToDelete as any).element_type === 'GROUP';
+            const isDeletingGroupChild = elementToDelete.group_level && elementToDelete.group_level > 0;
 
             let updatedElements = elements.filter(el => el.element_id !== operation.element_id);
 
-            if (isGroupParent) {
+            if (isDeletingGroupParent) {
                 // Deleting a group parent - ungroup all children
                 updatedElements = updatedElements.map(el => {
                     if (el.parent_element_id === operation.element_id) {
@@ -505,7 +551,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                     }
                     return el;
                 });
-            } else if (isGroupChild && elementToDelete.parent_element_id) {
+            } else if (isDeletingGroupChild && elementToDelete.parent_element_id) {
                 // Deleting a group child - check if group becomes empty
                 const remainingChildren = updatedElements.filter(el => 
                     el.parent_element_id === elementToDelete.parent_element_id &&
@@ -691,6 +737,38 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             
         case 'UPDATE_ELEMENT':
             const updateElementOp = operation as any;
+            const targetElement = elements.find(el => el.element_id === operation.element_id);
+            const isUpdatingGroupParent = targetElement && (targetElement as any).element_type === 'GROUP';
+            const timeOffsetChange = updateElementOp.changes.time_offset_ms;
+            
+            // Handle group parent time offset changes specially
+            if (isUpdatingGroupParent && timeOffsetChange) {
+                const oldTime = timeOffsetChange.oldValue;
+                const newTime = timeOffsetChange.newValue;
+                const timeDelta = newTime - oldTime;
+                
+                
+                // Apply the same delta to all children
+                return elements.map(el => {
+                    if (el.element_id === operation.element_id) {
+                        // Update the group parent
+                        const updatedElement = { ...el };
+                        Object.entries(updateElementOp.changes).forEach(([field, change]: [string, any]) => {
+                            (updatedElement as any)[field] = change.newValue || change.new_value;
+                        });
+                        return updatedElement;
+                    } else if (el.parent_element_id === operation.element_id) {
+                        // Update child elements with same delta
+                        return {
+                            ...el,
+                            time_offset_ms: el.time_offset_ms + timeDelta
+                        };
+                    }
+                    return el;
+                });
+            }
+            
+            // Regular element update (not a group parent)
             const elementUpdates = elements.map(el => {
                 if (el.element_id === operation.element_id) {
                     const updatedElement = { ...el };

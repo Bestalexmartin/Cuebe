@@ -22,24 +22,22 @@ if (!rootElement) {
 }
 
 ReactDOM.createRoot(rootElement).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-        <ChakraProvider
-          theme={chakraTheme}
-          toastOptions={{
-            defaultOptions: {
-              status: 'info',
-              duration: 3000,
-              isClosable: true,
-              position: 'bottom',
-              variant: 'left-accent',
-            },
-          }}
-        >
-          <App />
-        </ChakraProvider>
-      </ClerkProvider>
-    </BrowserRouter>
-  </React.StrictMode>
+  <BrowserRouter>
+    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+      <ChakraProvider
+        theme={chakraTheme}
+        toastOptions={{
+          defaultOptions: {
+            status: 'info',
+            duration: 3000,
+            isClosable: true,
+            position: 'bottom',
+            variant: 'left-accent',
+          },
+        }}
+      >
+        <App />
+      </ChakraProvider>
+    </ClerkProvider>
+  </BrowserRouter>
 );

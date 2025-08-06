@@ -14,6 +14,7 @@ interface ViewModeProps {
     showClockTimes?: boolean;
     autoSortCues?: boolean;
     elements?: ScriptElement[]; // Optional prop to override default fetching
+    allElements?: ScriptElement[]; // All elements including collapsed children for group calculations
     script?: any; // Optional cached script to prevent refetching
     onScrollStateChange?: (state: {
         isAtTop: boolean;
@@ -33,6 +34,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     showClockTimes = false,
     autoSortCues = false,
     elements: providedElements,
+    allElements: providedAllElements,
     script: providedScript,
     onScrollStateChange,
     onToggleGroupCollapse
@@ -48,6 +50,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     
     // Use provided elements if available, otherwise use fetched elements
     const elements = providedElements || fetchedElements;
+    const allElementsForGroupCalculations = providedAllElements || elements;
     
     // Create display elements with auto-sort applied when needed
     const displayElements = useMemo(() => {
@@ -188,7 +191,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                                     key={element.element_id}
                                     element={element}
                                     index={index}
-                                    allElements={displayElements}
+                                    allElements={allElementsForGroupCalculations}
                                     colorizeDepNames={colorizeDepNames}
                                     showClockTimes={shouldShowClockTimes}
                                     scriptStartTime={script?.start_time}
@@ -213,6 +216,7 @@ const areEqual = (prevProps: ViewModeProps, nextProps: ViewModeProps) => {
         prevProps.showClockTimes === nextProps.showClockTimes &&
         prevProps.autoSortCues === nextProps.autoSortCues &&
         prevProps.elements === nextProps.elements &&
+        prevProps.allElements === nextProps.allElements &&
         prevProps.script === nextProps.script
         // Deliberately ignoring onScrollStateChange and onToggleGroupCollapse
     );
