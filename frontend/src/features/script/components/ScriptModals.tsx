@@ -12,6 +12,7 @@ import { DeleteCueModal } from './modals/DeleteCueModal';
 import { DuplicateElementModal } from './modals/DuplicateElementModal';
 import { EditElementModal } from './modals/EditElementModal';
 import { AddScriptElementModal } from './AddScriptElementModal';
+import { GroupElementsModal } from './modals/GroupElementsModal';
 import { ModalStateReturn } from '../../../hooks/useModalState';
 import { UserPreferences } from '../../../hooks/useUserPreferences';
 
@@ -24,6 +25,7 @@ interface ScriptModalsProps {
     script?: any;
     scriptId: string;
     selectedElement: any;
+    selectedElementIds: string[];
     selectedElementName: string;
     selectedElementTimeOffset: number;
     pendingOperations: any[];
@@ -58,6 +60,7 @@ interface ScriptModalsProps {
     onClockTimesChange: (enabled: boolean) => void;
     onConfirmDeleteCue: () => void;
     onConfirmDuplicate: (description: string, time_offset_ms: number) => void;
+    onConfirmGroupElements: (groupName: string, backgroundColor: string) => void;
     onUnsavedChangesCancel: () => void;
     onInitialUnsavedConfirm: () => void;
     onAbandonChangesConfirm: () => void;
@@ -80,6 +83,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     script,
     scriptId,
     selectedElement,
+    selectedElementIds,
     selectedElementName,
     selectedElementTimeOffset,
     pendingOperations,
@@ -108,6 +112,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     onClockTimesChange,
     onConfirmDeleteCue,
     onConfirmDuplicate,
+    onConfirmGroupElements,
     onUnsavedChangesCancel,
     onInitialUnsavedConfirm,
     onAbandonChangesConfirm,
@@ -224,6 +229,14 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 originalElementName={selectedElementName}
                 originalTimeOffset={selectedElementTimeOffset}
                 isProcessing={isDuplicatingElement}
+            />
+
+            {/* Group Elements Modal */}
+            <GroupElementsModal
+                isOpen={modalState.isOpen(modalNames.GROUP_ELEMENTS)}
+                onClose={() => modalState.closeModal(modalNames.GROUP_ELEMENTS)}
+                selectedElementIds={selectedElementIds}
+                onConfirm={onConfirmGroupElements}
             />
 
             {/* Unsaved Changes Confirmation Modals (Two-tier pattern) */}

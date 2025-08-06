@@ -89,17 +89,40 @@ button:focus-visible {
   scrollbar-width: none;
 }
 
-/* FOCUS REMOVAL */
+/* GLOBAL FOCUS REMOVAL */
 
-button:focus,
-button:focus-visible {
+/* Remove focus outlines and box shadows from all interactive elements */
+*:focus,
+*:focus-visible,
+*:focus-within {
   outline: none !important;
   box-shadow: none !important;
 }
 
-/* Also target Chakra UI button classes if needed */
+/* Specifically target common interactive elements */
+button:focus,
+button:focus-visible,
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+select:focus,
+select:focus-visible,
+a:focus,
+a:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Target Chakra UI components */
 .chakra-button:focus,
-.chakra-button:focus-visible {
+.chakra-button:focus-visible,
+.chakra-input:focus,
+.chakra-input:focus-visible,
+.chakra-textarea:focus,
+.chakra-textarea:focus-visible,
+.chakra-select:focus,
+.chakra-select:focus-visible {
   outline: none !important;
   box-shadow: none !important;
 }

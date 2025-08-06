@@ -27,6 +27,7 @@ import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences
 import { EditHistoryView } from '../components/EditHistoryView';
 import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
+import { EnableAutoSortOperation } from '../features/script/types/editQueue';
 import { useModalState } from '../hooks/useModalState';
 import { SaveConfirmationModal } from '../components/modals/SaveConfirmationModal';
 import { SaveProcessingModal } from '../components/modals/SaveProcessingModal';
@@ -62,6 +63,7 @@ const MODAL_NAMES = {
     OPTIONS: 'options',
     DELETE_CUE: 'delete_cue',
     DUPLICATE_ELEMENT: 'duplicate_element',
+    GROUP_ELEMENTS: 'group_elements',
     UNSAVED_CHANGES: 'unsaved_changes',
     FINAL_UNSAVED_CHANGES: 'final_unsaved_changes',
     CLEAR_HISTORY: 'clear_history',
@@ -155,7 +157,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         revertToPoint,
         applyLocalChange,
         discardChanges,
-        saveChanges
+        saveChanges,
+        toggleGroupCollapse
     } = editQueueHook;
 
     // User preferences management
@@ -171,7 +174,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         let currentState = autoSortCues;
         for (const operation of pendingOperations) {
             if (operation.type === 'ENABLE_AUTO_SORT' || operation.type === 'DISABLE_AUTO_SORT') {
-                currentState = (operation as any).newPreferenceValue;
+                currentState = (operation as any).new_preference_value;
             }
         }
         return currentState;
@@ -276,6 +279,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         onSaveSuccess: () => setActiveMode('view')
     });
 
+    // Track EditMode's selection state reactively
+    const [currentSelectedElementIds, setCurrentSelectedElementIds] = useState<string[]>([]);
+
     // Element modal actions hook
     const elementActions = useElementModalActions({
         scriptId,
@@ -283,7 +289,23 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         applyLocalChange,
         insertElement,
         modalState,
-        modalNames: MODAL_NAMES
+        modalNames: MODAL_NAMES,
+        selectedElementIds: currentSelectedElementIds,
+        clearSelection: () => {
+            editModeRef.current?.clearSelection();
+            setCurrentSelectedElementIds([]);
+        },
+        setSelectedElementIds: (ids: string[]) => {
+            // Delegate to EditMode's selection management
+            if (editModeRef.current) {
+                editModeRef.current.clearSelection();
+                setCurrentSelectedElementIds([]);
+                // If setting non-empty selection, would need EditMode method for that
+                if (ids.length > 0) {
+                    console.warn('Setting non-empty selection not implemented yet');
+                }
+            }
+        }
     });
 
     // Scroll state for jump button ghosting
@@ -306,23 +328,33 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         setScrollState(newScrollState);
     }, []);
 
+    // Get the selected element for toolbar context
+    const selectedElement = useMemo(() => {
+        if (elementActions.selectedElementIds.length === 1) {
+            return editQueueElements.find(el => el.element_id === elementActions.selectedElementIds[0]);
+        }
+        return undefined;
+    }, [editQueueElements, elementActions.selectedElementIds]);
+
     // Tool buttons configuration using extracted utility
-    const toolbarContext: ToolbarContext = {
+    const toolbarContext = useMemo((): ToolbarContext => ({
         activeMode,
         scrollState,
-        hasSelection: !!elementActions.selectedElementId,
+        hasSelection: elementActions.selectedElementIds.length > 0,
+        hasMultipleSelection: elementActions.selectedElementIds.length > 1,
         hasUnsavedChanges,
-        pendingOperationsCount: pendingOperations.length
-    };
+        pendingOperationsCount: pendingOperations.length,
+        selectedElement
+    }), [activeMode, scrollState, elementActions.selectedElementIds.length, hasUnsavedChanges, pendingOperations.length, selectedElement]);
 
-    const toolButtons = getToolbarButtons(toolbarContext);
+    const toolButtons = useMemo(() => getToolbarButtons(toolbarContext), [toolbarContext]);
 
     // Clear selection when exiting edit mode
     useEffect(() => {
         if (activeMode !== 'edit') {
-            elementActions.setSelectedElementId(null);
+            elementActions.setSelectedElementIds([]);
         }
-    }, [activeMode, elementActions]);
+    }, [activeMode]); // Removed elementActions from dependencies to prevent infinite loop
 
     // Main mode change handler
     const handleModeChange = (modeId: string) => {
@@ -395,6 +427,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 case 'group-elements':
                     elementActions.handleElementGroup();
                     return;
+                case 'ungroup-elements':
+                    elementActions.handleElementUngroup();
+                    return;
                 case 'delete-element':
                     elementActions.handleElementDelete();
                     return;
@@ -454,26 +489,28 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
                 if (oldIndex !== newIndex) {
                     elementChanges.push({
-                        elementId: element.element_id,
-                        oldIndex: oldIndex,
-                        newIndex: newIndex,
-                        oldSequence: oldIndex + 1,
-                        newSequence: newIndex + 1
+                        element_id: element.element_id,
+                        old_index: oldIndex,
+                        new_index: newIndex,
+                        old_sequence: oldIndex + 1,
+                        new_sequence: newIndex + 1
                     });
                 }
             }
 
+            // Create the auto-sort operation with element changes for the initial sort
             applyLocalChange({
                 type: 'ENABLE_AUTO_SORT',
                 elementId: 'auto-sort-preference',
-                oldPreferenceValue: false,
-                newPreferenceValue: true,
-                elementMoves: elementChanges
-            } as any);
-            showSuccess('Elements Auto-Sorted', `Reordered ${elementChanges.length} elements by time offset. Save to apply changes.`);
+                old_preference_value: false,
+                new_preference_value: true,
+                element_changes: elementChanges
+            } as EnableAutoSortOperation);
+            
+            showSuccess('Elements Auto-Sorted', `Reordered ${elementChanges.length} elements by time offset. New elements will be automatically sorted.`);
         } catch (error) {
-            console.error('Error auto-sorting elements:', error);
-            showError(error instanceof Error ? error.message : 'Failed to auto-sort elements');
+            console.error('Error enabling auto-sort:', error);
+            showError(error instanceof Error ? error.message : 'Failed to enable auto-sort');
         }
     }, [scriptId, editQueueElements, applyLocalChange, showSuccess, showError]);
 
@@ -482,24 +519,25 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             if (value && !activePreferences.autoSortCues && scriptId) {
                 handleAutoSortElements();
             } else if (!value && activePreferences.autoSortCues) {
+                // Capture current element order to freeze it when disabling auto-sort
+                const currentOrder = editQueueElements.map(el => el.element_id);
                 const disableOperation = {
                     type: 'DISABLE_AUTO_SORT' as const,
                     elementId: 'auto-sort-preference',
                     oldPreferenceValue: true,
-                    newPreferenceValue: false
+                    newPreferenceValue: false,
+                    frozenOrder: currentOrder
                 };
                 applyLocalChange(disableOperation);
             }
             await updatePreference('autoSortCues', value);
         },
-        [updatePreference, scriptId, activePreferences.autoSortCues, handleAutoSortElements, applyLocalChange]
+        [updatePreference, scriptId, activePreferences.autoSortCues, handleAutoSortElements, applyLocalChange, editQueueElements]
     );
 
     const handleAutoSortCheckboxChange = async (newAutoSortValue: boolean) => {
-        await updatePreference('autoSortCues', newAutoSortValue);
-        if (newAutoSortValue && !autoSortCues && scriptId) {
-            handleAutoSortElements();
-        }
+        // Use the same logic as handleAutoSortToggle
+        await handleAutoSortToggle(newAutoSortValue);
     };
 
     const handleOptionsModalSave = async (newPreferences: any) => {
@@ -637,7 +675,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
                                 {activeMode === 'view' && (
-                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} script={script} />
+                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} script={script} onToggleGroupCollapse={toggleGroupCollapse} />
                                 )}
                                 {activeMode === 'edit' && (
                                     <EditMode
@@ -648,7 +686,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                         autoSortCues={activePreferences.autoSortCues}
                                         onAutoSortChange={handleAutoSortToggle}
                                         onScrollStateChange={handleScrollStateChange}
-                                        onSelectionChange={elementActions.handleSelectionChange}
+                                        onSelectionChange={setCurrentSelectedElementIds}
+                                        onToggleGroupCollapse={toggleGroupCollapse}
                                         elements={editQueueElements}
                                         script={currentScript}
                                         onApplyLocalChange={applyLocalChange}
@@ -723,6 +762,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 script={script}
                 scriptId={scriptId || ''}
                 selectedElement={elementActions.selectedElement}
+                selectedElementIds={elementActions.selectedElementIds}
                 selectedElementName={elementActions.selectedElementName}
                 selectedElementTimeOffset={elementActions.selectedElementTimeOffset}
                 pendingOperations={pendingOperations}
@@ -754,6 +794,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onClockTimesChange={async (value: boolean) => await updatePreference('showClockTimes', value)}
                 onConfirmDeleteCue={elementActions.handleConfirmDeleteCue}
                 onConfirmDuplicate={elementActions.handleConfirmDuplicate}
+                onConfirmGroupElements={elementActions.handleConfirmGroupElements}
                 onUnsavedChangesCancel={modalHandlers.handleUnsavedChangesCancel}
                 onInitialUnsavedConfirm={modalHandlers.handleInitialUnsavedConfirm}
                 onAbandonChangesConfirm={modalHandlers.handleAbandonChangesConfirm}

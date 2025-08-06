@@ -1,7 +1,7 @@
 // frontend/src/features/script/types/scriptElements.ts
 
 // Base types and enums
-export type ScriptElementType = 'CUE' | 'NOTE';
+export type ScriptElementType = 'CUE' | 'NOTE' | 'GROUP';
 
 export type TriggerType = 
   | 'MANUAL'        // Operator triggered

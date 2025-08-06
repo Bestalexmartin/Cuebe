@@ -29,9 +29,9 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
             );
             return [...navigationButtons, ...modeButtons];
         } else if (activeMode === 'edit') {
-            // Edit mode: Head, Tail, Add, Modify, Copy, Stack, Trash
+            // Edit mode: Head, Tail, Add, Modify, Copy, Stack/Unstack, Trash
             const modeButtons = toolButtons.filter(tool => 
-                ['add-element', 'edit-element', 'duplicate-element', 'group-elements', 'delete-element'].includes(tool.id)
+                ['add-element', 'edit-element', 'duplicate-element', 'group-elements', 'ungroup-elements', 'delete-element'].includes(tool.id)
             );
             return [...navigationButtons, ...modeButtons];
         } else if (activeMode === 'info') {

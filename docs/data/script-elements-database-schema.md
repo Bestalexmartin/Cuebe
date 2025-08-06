@@ -157,16 +157,16 @@ POST /api/scripts/{script_id}/elements
 **Request Body:** Uses `ScriptElementCreate` schema
 ```json
 {
-  "elementType": "cue|note|group",
-  "cueID": "string?",
+  "element_type": "cue|note|group",
+  "cue_id": "string?",
   "description": "string",
-  "departmentID": "UUID?",
-  "timeOffsetMs": number,
-  "triggerType": "manual|time|auto|follow|go|standby",
+  "department_id": "UUID?",
+  "time_offset_ms": number,
+  "trigger_type": "manual|time|auto|follow|go|standby",
   "duration": number?,
   "location": "LocationArea?",
   "priority": "critical|high|normal|low|optional",
-  "isSafetyCritical": boolean,
+  "is_safety_critical": boolean,
   "sequence": number? // Auto-calculated if not provided
 }
 ```
@@ -188,7 +188,7 @@ PATCH /api/elements/{element_id}
 **Request Body:** Uses `ScriptElementUpdate` schema (partial updates)
 **Features:**
 - Version tracking (auto-incrementing)
-- User attribution (updatedBy field)
+- User attribution (updated_by field)
 - Enum validation
 - Legacy field synchronization
 - Timestamp updating
@@ -205,7 +205,7 @@ DELETE /api/elements/{element_id}
 - `soft_delete` (boolean, default: true): Soft delete vs hard delete
 
 **Features:**
-- Soft delete by default (sets isActive=False)
+- Soft delete by default (sets is_active=False)
 - Hard delete option for permanent removal
 - Cascade handling for relationships
 
@@ -218,7 +218,7 @@ POST /api/elements/{element_id}/restore
 **Implementation Status:** ✅ **COMPLETE** - Restore soft-deleted elements
 
 **Features:**
-- Restores isActive flag
+- Restores is_active flag
 - Updates version and timestamp
 - User attribution for restore action
 
@@ -236,7 +236,7 @@ PATCH /api/scripts/{script_id}/elements/reorder
 ```json
 {
   "elements": [
-    {"elementID": "UUID", "sequence": number}
+    {"element_id": "UUID", "sequence": number}
   ]
 }
 ```

@@ -484,6 +484,21 @@ export const ViewMode = React.memo(ViewModeComponent, areEqual);
 - **Advanced export options** in Share mode
 - **Version control integration** in History mode
 
+---
+
+## Recent Feature Additions
+
+### Script Element Grouping (August 2025)
+- **Status**: In Development
+- **Description**: Multi-selection and grouping functionality for organizing related script elements
+- **Key Features**: 
+  - Shift-click selection of adjacent elements
+  - Custom group names with color coding
+  - Visual hierarchy with indentation
+  - Drag-and-drop group operations
+- **Documentation**: [Script Element Grouping](./script-element-grouping.md)
+- **Current Issue**: Infinite loop in selection state management under investigation
+
 ## Related Documentation
 
 - [ManageScriptPage Component Guide](../components/manage-script-page.md)
