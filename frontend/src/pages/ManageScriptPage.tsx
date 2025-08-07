@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
     Box,
+    VStack,
     HStack,
     Text,
     Spinner,
@@ -681,7 +682,13 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                     />
                                 )}
                                 {activeMode === 'play' && <PlayMode />}
-                                {activeMode === 'share' && <ShareMode />}
+                                {activeMode === 'share' && (
+                                    <ShareMode 
+                                        scriptId={scriptId || ''} 
+                                        scriptName={currentScript?.script_name || 'Script'}
+                                        showId={currentScript?.show_id || ''}
+                                    />
+                                )}
                                 {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={allEditQueueElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} onRevertSuccess={() => setActiveMode('edit')} />}
                             </Box>
                         )}

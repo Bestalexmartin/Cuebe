@@ -16,7 +16,7 @@ from models import Base, User, Venue, Department, Show, Script, CrewRelationship
 # Set test environment variables
 os.environ["POSTGRES_USER"] = "test_user"
 os.environ["POSTGRES_PASSWORD"] = "test_password"
-os.environ["POSTGRES_DB"] = "test_callmaster"
+os.environ["POSTGRES_DB"] = "test_Cuebe"
 
 # Use SQLite for tests to avoid PostgreSQL setup complexity
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"

@@ -363,6 +363,7 @@ class Script(Base):
     owner = relationship("User", foreign_keys=[owner_id])
     show = relationship("Show", back_populates="scripts")
     elements = relationship("ScriptElement", back_populates="script", order_by="ScriptElement.sequence", cascade="all, delete-orphan")
+    shares = relationship("ScriptShare", back_populates="script", cascade="all, delete-orphan")
 
 class ScriptElement(Base):
     """Individual elements (cues, notes, etc.) within a script"""
@@ -435,6 +436,54 @@ class ScriptElement(Base):
     updated_by_user = relationship("User", foreign_keys=[updated_by])
     
     # Supporting table relationships (removed - unused features)
+
+# =============================================================================
+# SCRIPT SHARING MODELS
+# =============================================================================
+
+class ScriptShare(Base):
+    """
+    Script sharing tokens for secure crew access to read-only script views
+    Each share is for a specific crew member assigned to the show
+    """
+    __tablename__ = "script_shares"
+    
+    # Primary key
+    share_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    
+    # Foreign keys
+    script_id = Column(UUID(as_uuid=True), ForeignKey("scriptsTable.script_id"), nullable=False, index=True)
+    created_by = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)
+    shared_with_user_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False, index=True)
+    
+    # Sharing token and access
+    share_token = Column(String(255), unique=True, nullable=False, index=True)
+    
+    # Permissions
+    permissions = Column(JSON, nullable=True, default=lambda: {"view": True, "download": False})
+    
+    # Expiration and status
+    expires_at = Column(DateTime(timezone=True), nullable=True)  # null = never expires
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    # Usage tracking
+    access_count = Column(Integer, default=0, nullable=False)
+    last_accessed_at = Column(DateTime(timezone=True), nullable=True)
+    last_accessed_by_ip = Column(String(45), nullable=True)  # IPv6 support
+    
+    # Metadata
+    share_name = Column(String(255), nullable=True)  # Optional name for management
+    notes = Column(Text, nullable=True)  # Internal notes about this share
+    
+    # Timestamps
+    date_created = Column(DateTime(timezone=True), server_default=func.now())
+    date_updated = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    
+    # Relationships
+    script = relationship("Script", back_populates="shares")
+    created_by_user = relationship("User", foreign_keys=[created_by])
+    shared_with_user = relationship("User", foreign_keys=[shared_with_user_id])
+
 
 # =============================================================================
 # SCRIPT ELEMENT SUPPORTING MODELS (REMOVED - UNUSED FEATURES)

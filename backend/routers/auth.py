@@ -2,7 +2,7 @@
 
 import os
 import time
-from typing import Dict
+from typing import Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -61,3 +61,27 @@ def get_current_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+    db: Session = Depends(get_db)
+) -> Optional[models.User]:
+    """
+    Optional authentication for public endpoints that benefit from user context
+    Returns None if no valid authentication is provided
+    """
+    if not credentials:
+        return None
+    
+    try:
+        claims = get_current_user_claims(credentials)
+        clerk_user_id = claims.get("sub")
+        if not clerk_user_id:
+            return None
+        
+        user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
+        return user
+    except Exception:
+        # If authentication fails, return None instead of raising error
+        return None
