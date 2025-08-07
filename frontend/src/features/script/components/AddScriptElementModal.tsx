@@ -28,7 +28,7 @@ import { useResource } from '../../../hooks/useResource';
 import { ValidationRules, FormValidationConfig } from '../../../types/validation';
 import { ScriptElementCreate, ElementType, TriggerType, PriorityLevel, LocationArea } from '../types/scriptElements';
 import { getTextColorForBackground } from '../../../utils/colorUtils';
-import { msToDurationString, durationStringToMs } from '../../../utils/timeUtils';
+import { formatTimeOffset, parseTimeToMs } from '../../../utils/timeUtils';
 
 // TypeScript interfaces
 interface Department {
@@ -271,8 +271,8 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                             }}
                             onBlur={(e) => {
                                 // Auto-format, update form data, and validate on blur
-                                const ms = durationStringToMs(e.target.value);
-                                const formatted = msToDurationString(ms);
+                                const ms = parseTimeToMs(e.target.value);
+                                const formatted = formatTimeOffset(ms);
                                 setTimeInputValue(formatted);
                                 form.updateField('time_offset_ms', ms);
                                 form.validateField('time_offset_ms');

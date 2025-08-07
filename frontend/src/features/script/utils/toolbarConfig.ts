@@ -115,7 +115,7 @@ export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean)
             label: 'SHARE',
             description: 'Share Script',
             isActive: false,
-            isDisabled: true // Not implemented yet
+            isDisabled: false
         });
     } else if (activeMode === 'history') {
         buttons.push({

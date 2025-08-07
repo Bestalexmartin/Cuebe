@@ -2,13 +2,13 @@
 
 import React from "react";
 import { Icon, IconProps } from "@chakra-ui/react";
-import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, CopyIcon, MoonIcon, SunIcon, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, CopyIcon, MoonIcon, SunIcon, TriangleDownIcon, TriangleUpIcon, CalendarIcon, TimeIcon, SearchIcon, ExternalLinkIcon } from '@chakra-ui/icons';
 import { TiPin } from "react-icons/ti";
 import { IoPeopleSharp } from "react-icons/io5";
 import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
 import { FaMasksTheater, FaMapLocationDot, FaScroll } from "react-icons/fa6";
-import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt, FaAngleDoubleUp, FaAngleDoubleDown, FaHistory } from "react-icons/fa";
+import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt, FaAngleDoubleUp, FaAngleDoubleDown, FaHistory, FaEllipsisV, FaRedo } from "react-icons/fa";
 import { LuLayers3 } from "react-icons/lu";
 import { RiDashboard2Fill } from "react-icons/ri";
 import { EditIcon } from "@chakra-ui/icons";
@@ -64,7 +64,13 @@ export type IconName =
   | 'sun'
   | 'triangle-down'
   | 'triangle-up'
-  | 'ungroup';
+  | 'ungroup'
+  | 'calendar'
+  | 'time'
+  | 'search'
+  | 'external-link'
+  | 'more-vertical'
+  | 'refresh';
 
 interface AppIconProps extends Omit<IconProps, 'as'> {
   name: IconName;
@@ -156,6 +162,18 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={TriangleUpIcon} {...props} />;
     case 'ungroup':
       return <Icon as={LuLayers3} {...props} />;
+    case 'calendar':
+      return <Icon as={CalendarIcon} {...props} />;
+    case 'time':
+      return <Icon as={TimeIcon} {...props} />;
+    case 'search':
+      return <Icon as={SearchIcon} {...props} />;
+    case 'external-link':
+      return <Icon as={ExternalLinkIcon} {...props} />;
+    case 'more-vertical':
+      return <Icon as={FaEllipsisV} {...props} />;
+    case 'refresh':
+      return <Icon as={FaRedo} {...props} />;
     default:
       return null;
   }

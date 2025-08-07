@@ -12,7 +12,7 @@ import { BaseModal } from '../../../../components/base/BaseModal';
 import { FormInput } from '../../../../components/form/FormField';
 import { useValidatedForm } from '../../../../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../../../../types/validation';
-import { msToMMSS, mmssToMs } from '../../../../utils/timeUtils';
+import { formatTimeOffset, parseTimeToMs } from '../../../../utils/timeUtils';
 
 interface DuplicateElementFormData {
     description: string;
@@ -64,7 +64,7 @@ export const DuplicateElementModal: React.FC<DuplicateElementModalProps> = ({
     const form = useValidatedForm<DuplicateElementFormData>(
         {
             description: `${originalElementName} (Copy)`,
-            timeOffsetInput: msToMMSS(originalTimeOffset)
+            timeOffsetInput: formatTimeOffset(originalTimeOffset) || ''
         },
         {
             validationConfig: VALIDATION_CONFIG,
@@ -79,14 +79,14 @@ export const DuplicateElementModal: React.FC<DuplicateElementModalProps> = ({
         if (isOpen) {
             form.setFormData({
                 description: `${originalElementName} (Copy)`,
-                timeOffsetInput: msToMMSS(originalTimeOffset)
+                timeOffsetInput: formatTimeOffset(originalTimeOffset) || ''
             });
         }
     }, [isOpen, originalElementName, originalTimeOffset, form.setFormData]);
 
     const handleSubmit = () => {
         if (form.isValid && !isProcessing) {
-            const timeOffsetMs = mmssToMs(form.formData.timeOffsetInput);
+            const timeOffsetMs = parseTimeToMs(form.formData.timeOffsetInput);
             onConfirm(form.formData.description, timeOffsetMs);
         }
     };

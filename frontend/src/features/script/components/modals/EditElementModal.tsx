@@ -27,7 +27,7 @@ import { BaseModal } from '../../../../components/base/BaseModal';
 import { ScriptElement } from '../../types/scriptElements';
 import { useDepartments } from '../../../departments/hooks/useDepartments';
 import { FieldError } from '../../../../types/validation';
-import { msToDurationString, durationStringToMs } from '../../../../utils/timeUtils';
+import { formatTimeOffset, parseTimeToMs } from '../../../../utils/timeUtils';
 
 // Preset colors for note backgrounds - consistent with Show Start and semantic tokens
 const NOTE_PRESET_COLORS = [
@@ -249,7 +249,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
             ms = parts[0] * 1000;
         } else if (parts.length === 2) {
             // MM:SS format - use existing utility (but clean string without negative)
-            ms = durationStringToMs(cleanTimeString);
+            ms = parseTimeToMs(cleanTimeString);
         } else if (parts.length === 3) {
             // HH:MM:SS format
             ms = (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000;

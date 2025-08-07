@@ -203,33 +203,114 @@ interface ShowDepartment {
 
 **Priority: High** | **Dependencies: Phases 1-4**
 
-#### 5.1 SHARE Mode Implementation
+#### 5.1 Script Sharing Architecture & Token System
 
-- **Department-specific script views** with filtered content
-- **Permission-based access controls** (view-only for crew)
-- **Secure sharing links** with expiration and permissions
-- **Note visibility filtering** (hide author-only notes from crew)
+**Core Infrastructure:**
+- **Database Schema Extensions**: New `script_shares` table for managing shared access
+  - Token generation, expiration dates, department filtering, permissions
+  - Support for time-based expiration and manual revocation
+  - Link sharing tokens to specific script versions for consistency
+- **JWT-based Sharing Tokens**: Separate from auth tokens, containing:
+  - script_id, department_filter, permissions, expiration timestamp
+  - Secure token generation using cryptographically secure random values
+  - Token validation middleware for shared script access
+- **Token Management API Endpoints**:
+  - `POST /api/scripts/{id}/share` - Generate sharing URL with permissions
+  - `GET /api/shared-scripts/{token}` - Access shared script (public endpoint)
+  - `DELETE /api/scripts/{id}/shares/{token}` - Revoke specific share access
+  - `GET /api/scripts/{id}/shares` - List all active shares for management
 
-#### 5.2 PLAY Mode Implementation
+**Security & Access Control:**
+- **Guest User Handling**: Automatic guest user creation for unregistered crew
+- **Registered User Recognition**: Existing auth system integration for signed-in crew
+- **Department-based Filtering**: Show only relevant cues/notes based on crew assignments
+- **Read-only Enforcement**: Complete prevention of editing on shared views
+- **Audit Logging**: Track all shared script access and usage patterns
 
-- **Performance-focused display** with larger text
-- **Department-specific filtering** for focused viewing
-- **Timer/stopwatch integration** for performance tracking
-- **Auto-scroll capabilities** for hands-free operation
+#### 5.2 SHARE Mode Implementation (Owner Interface)
 
-#### 5.3 Email Integration & Notifications
+**Share Management Dashboard:**
+- **Active Shares Overview**: List all current sharing links with status
+- **Department-Specific Sharing**: Select which departments can access the script
+- **Expiration Controls**: Set time-based or permanent sharing permissions
+- **URL Generation Interface**: One-click copy-to-clipboard sharing URLs
+- **Bulk Operations**: Share with multiple departments simultaneously
+- **Revocation Management**: Individual or bulk share removal capabilities
 
-- **Automated crew invitations** with personalized script links
-- **Role-specific script views** showing only relevant cues
-- **Notification system** for script updates
-- **Permission management** for view access
+**Share Creation Workflow:**
+```
+Owner clicks SHARE → Select Departments → Set Expiration → 
+Generate Links → Copy URLs → Send to Crew (manual or email)
+```
+
+**Share Modal Components:**
+- Department selection with color-coded checkboxes
+- Date/time picker for expiration settings
+- Generated URL display with copy functionality
+- Preview of crew-filtered view before sharing
+
+#### 5.3 Public Script View System (Crew Interface)
+
+**Token-based Routing & Access:**
+- **Public URLs**: `/shared/{token}` accessible without login
+- **Token Validation**: Server-side verification before script access
+- **Department Filtering**: Show only elements assigned to crew's departments
+- **Mobile-Optimized Interface**: Responsive design for on-the-go crew access
+
+**Crew-Focused Script Display:**
+- **Simplified Interface**: Clean, distraction-free script viewing
+- **Department Highlighting**: Visual emphasis on crew's assigned elements
+- **Note Visibility Control**: Hide author-only notes, show crew-visible content
+- **Search & Navigation**: Quick access to specific cues or sections
+- **Offline Capability**: Cache script content for rehearsal/performance use
+
+**Real-Time Updates:**
+- **WebSocket Integration**: Live script changes propagated to shared views
+- **Connection Status Indicators**: Show when updates are being received
+- **Version Synchronization**: Ensure shared views reflect latest script changes
+- **Graceful Degradation**: Fallback to polling if WebSocket unavailable
+
+#### 5.4 PLAY Mode Implementation
+
+**Performance-Focused Interface:**
+- **Large Text Display**: Enhanced readability for performance conditions
+- **Department-Specific Filtering**: Focus on relevant cues only
+- **Auto-Scroll Capabilities**: Hands-free operation during performances
+- **Timer Integration**: Performance tracking and cue timing
+
+**Performance Features:**
+- **Cue Highlighting**: Visual emphasis on current/upcoming cues
+- **Countdown Timers**: Time-to-cue indicators for precision timing
+- **Quick Navigation**: Jump to specific acts, scenes, or cue sequences
+- **Emergency Controls**: Rapid access to critical information
+
+#### 5.5 Email Integration & Automation (Future Phase)
+
+**Third-Party Email Service Integration:**
+- **Service Evaluation**: SendGrid, Mailgun, Amazon SES, Postmark, or Resend
+- **Transactional Email Templates**: Professional script sharing notifications
+- **Delivery Tracking**: Monitor email open rates and link clicks
+- **Unsubscribe Handling**: Crew opt-out capabilities
+
+**Automated Crew Notifications:**
+```
+Script Shared → Identify Crew Emails → Generate Personalized URLs → 
+Send Department-Specific Emails → Track Delivery → Monitor Access
+```
+
+**Email Workflow Features:**
+- **Personalized Links**: Each crew member gets department-filtered URLs
+- **Batch Sending**: Efficient delivery to multiple crew members
+- **Update Notifications**: Automatic alerts when scripts are modified
+- **Reminder System**: Follow-up emails for unaccessed shared scripts
 
 **Success Metrics:**
 
-- Department-filtered views load in <1 second
-- Permission changes take effect immediately
-- Email delivery rate >98%
-- Script sharing is secure and reliable
+- **Performance**: Department-filtered views load in <1 second
+- **Security**: Token validation and permission changes take effect immediately  
+- **Reliability**: Sharing link success rate >99.5%
+- **User Experience**: Script access workflow completes in <30 seconds
+- **Email Integration (Future)**: Delivery rate >98%, open rate >70%
 
 ---
 
@@ -323,7 +404,7 @@ interface ImportTask {
 
 - **Frontend**: Enhanced React components with role-based rendering
 - **Backend**: FastAPI with role-based access control
-- **Email System**: SendGrid or AWS SES for crew notifications
+- **Email System**: Third-party integration (SendGrid, Mailgun, Amazon SES, Postmark, or Resend) for automated crew notifications
 - **AI Integration**: OpenAI API or similar for document parsing
 - **Authentication**: Extended Clerk integration for role management
 

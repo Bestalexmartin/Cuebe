@@ -181,7 +181,7 @@ export const TutorialPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuCl
         <Box>
           <AlertTitle>Coming Soon!</AlertTitle>
           <AlertDescription>
-            We're currently developing comprehensive tutorials to help you get the most out of Call•Master.
+            We're currently developing comprehensive tutorials to help you get the most out of Cuebe.
             Check back soon for step-by-step guides and video tutorials.
           </AlertDescription>
         </Box>

@@ -244,6 +244,55 @@ def update_show_crew_assignments(
         )
 
 
+@router.get("/shows/{show_id}/crew", response_model=list[schemas.CrewMemberWithDetails])
+def get_show_crew(
+    show_id: UUID,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get all crew members assigned to a show with their details."""
+    # Verify show exists and user has permission
+    show = db.query(models.Show).filter(models.Show.show_id == show_id).first()
+    if not show:
+        raise HTTPException(status_code=404, detail="Show not found")
+    
+    # Security check
+    if show.owner_id != user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this show's crew")
+    
+    # Query crew assignments with user and department details
+    crew_assignments = db.query(models.CrewAssignment).options(
+        joinedload(models.CrewAssignment.user),
+        joinedload(models.CrewAssignment.department)
+    ).filter(
+        models.CrewAssignment.show_id == show_id,
+        models.CrewAssignment.is_active == True
+    ).all()
+    
+    # Format the response to match the expected structure
+    crew_members = []
+    for assignment in crew_assignments:
+        crew_members.append({
+            "assignment_id": assignment.assignment_id,
+            "user_id": assignment.user_id,
+            "department_id": assignment.department_id,
+            "show_role": assignment.show_role,
+            "is_active": assignment.is_active,
+            "date_assigned": assignment.date_assigned,
+            # User info
+            "fullname_first": assignment.user.fullname_first,
+            "fullname_last": assignment.user.fullname_last,
+            "email_address": assignment.user.email_address,
+            "user_status": assignment.user.user_status,
+            # Department info
+            "department_name": assignment.department.department_name,
+            "department_color": assignment.department.department_color,
+            "department_initials": assignment.department.department_initials
+        })
+    
+    return crew_members
+
+
 # =============================================================================
 # SCRIPT ENDPOINTS
 # =============================================================================

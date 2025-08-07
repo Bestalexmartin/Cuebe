@@ -1,6 +1,6 @@
 # readme.txt
 
-CallMaster is a theater production management application designed around a modern
+Cuebe is a theater production management application designed around a modern
 container‑based architecture. The project uses React 19 with TypeScript and Chakra UI
 on the frontend, while the backend is powered by FastAPI and SQLAlchemy with PostgreSQL
 storage. Authentication is handled through Clerk, and the environment supports a full
@@ -27,7 +27,7 @@ Architecture Diagram
 │  ./docs/     ◄─── Volume Mount ───► /docs                       │
 └─────────────────────────────────────────────────────────────────┘
 
-CallMaster is built with:
+Cuebe is built with:
 
 **Frontend**: React 19.1.0 + TypeScript + Chakra UI
 **Backend**: Python FastAPI + SQLAlchemy + PostgreSQL
@@ -43,7 +43,7 @@ Script Elements Data Model
 Overview
 
 The script elements data model defines the structure for all script content in
-CallMaster. This includes cues, notes, and organizational groups that make up a theater
+Cuebe. This includes cues, notes, and organizational groups that make up a theater
 production script.
 
 Core Element Types
@@ -58,7 +58,7 @@ Drag-and-Drop Script Element Reordering System
 
 Overview
 
-The CallMaster application features a comprehensive drag-and-drop system for
+The Cuebe application features a comprehensive drag-and-drop system for
 reordering script elements (cues, notes, groups) in edit mode. This system provides
 intelligent conflict resolution when time offsets don't match the new element
 positioning.

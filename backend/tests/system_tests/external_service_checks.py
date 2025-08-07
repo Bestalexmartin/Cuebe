@@ -13,7 +13,7 @@ def test_external_services(
     request: Request,
     current_user: models.User = Depends(get_current_user)
 ):
-    """Test connectivity to external services required by CallMaster"""
+    """Test connectivity to external services required by Cuebe"""
     import requests
 
     results = []

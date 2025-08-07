@@ -14,7 +14,7 @@ def test_filesystem_permissions(
     request: Request,
     current_user: models.User = Depends(get_current_user)
 ):
-    """Test filesystem permissions for paths critical to CallMaster operation"""
+    """Test filesystem permissions for paths critical to Cuebe operation"""
     results = []
     paths_to_test = [
         {"path": "/app", "description": "Application root directory", "required": ["read"]},

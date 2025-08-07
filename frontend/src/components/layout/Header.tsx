@@ -2,7 +2,7 @@
 
 import React from "react";
 import { SignedIn, UserButton } from "@clerk/clerk-react";
-import { Flex, Heading, Image, IconButton } from "@chakra-ui/react";
+import { Flex, Text, Heading, Image, IconButton } from "@chakra-ui/react";
 import { AppIcon } from '../AppIcon';
 import { useIntegratedColorMode } from '../../hooks/useIntegratedColorMode';
 
@@ -13,7 +13,7 @@ interface HeaderProps {
   isMenuOpen: boolean;
 }
 
-const DarkModeSwitch: React.FC<DarkModeSwitchProps> = () => {
+const DarkModeSwitch: React.FC = () => {
   const { colorMode, toggleColorMode } = useIntegratedColorMode();
 
   const handleToggle = (): void => {
@@ -46,15 +46,20 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
       justify="space-between"
       borderBottom="0px"
       borderColor="ui.border"
-      paddingX="4"
+      paddingX="6"
       paddingY="0"
       paddingTop="2"
       boxSizing="border-box"
     >
-      <Flex align="center" gap="3">
-        <Image boxSize="50px" src="/callmaster.svg" alt="CallMaster Logo" />
+      <Flex align="center">
+        <Image boxSize="50px" src="/cuebe.svg" alt="Cuebe Logo" />
         <Heading as="h1" size="lg">
-          Call•Master
+          <Text as="span" color="orange.400">
+            Cue
+          </Text>
+          <Text as="span" color="blue.400">
+            be
+          </Text>
         </Heading>
       </Flex>
 

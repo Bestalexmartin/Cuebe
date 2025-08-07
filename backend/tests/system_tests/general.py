@@ -66,7 +66,7 @@ def test_database_connectivity(
         "status": "unknown",
         "responseTime": 0,
         "error": None,
-        "details": {"host": "db", "port": 5432, "database": "callmaster", "ssl": False},
+        "details": {"host": "db", "port": 5432, "database": "Cuebe", "ssl": False},
     }
 
     try:

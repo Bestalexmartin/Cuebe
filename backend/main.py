@@ -19,7 +19,7 @@ except ImportError:
     RATE_LIMITING_ENABLED = False
 
 # Import routers
-from routers import users, crews, venues, departments, shows, webhooks, development, system_tests, script_elements
+from routers import users, crews, venues, departments, shows, webhooks, development, system_tests, script_elements, script_sharing
 from routers.auth import get_current_user
 import models
 
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 app = FastAPI(
-    title="CallMaster API",
+    title="Cuebe API",
     description="Theater production management system",
     version="1.0.0",
     docs_url=None,  # Disable default docs
@@ -70,6 +70,7 @@ app.include_router(venues.router)       # Venue management at /api/me/venues, /a
 app.include_router(departments.router)  # Department management at /api/me/departments, /api/departments/*
 app.include_router(shows.router)        # Show and script management at /api/shows/*, /api/scripts/*
 app.include_router(script_elements.router)  # Script elements CRUD at /api/scripts/*/elements, /api/elements/*
+app.include_router(script_sharing.router)   # Script sharing endpoints at /api/scripts/*/share, /api/shared-scripts/*
 app.include_router(system_tests.router) # System testing endpoints at /api/system-tests/*
 
 # =============================================================================
@@ -315,7 +316,7 @@ async def get_documentation(
         logger.error(f"Error serving documentation file {file_path}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-logger.info("CallMaster API initialized with organized routers and light mode documentation")
+logger.info("Cuebe API initialized with organized routers and light mode documentation")
 
 # =============================================================================
 # SERVER STARTUP
