@@ -276,10 +276,7 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
 
   // Color mode values for documentation cards
   const cardBg = useColorModeValue('white', 'gray.800');
-  const itemBg = useColorModeValue('gray.50', 'gray.700');
-  const itemHoverBg = useColorModeValue('gray.100', 'gray.600');
   const textColor = useColorModeValue('gray.900', 'white');
-  const secondaryTextColor = useColorModeValue('gray.600', 'whiteAlpha.800');
   const iconColor = useColorModeValue('gray.600', 'white');
 
   const { getToken } = useAuth();

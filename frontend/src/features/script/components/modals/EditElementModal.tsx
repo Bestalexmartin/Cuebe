@@ -8,13 +8,10 @@ import {
     Input,
     Textarea,
     Select,
-    NumberInput,
-    NumberInputField,
     FormControl,
     FormLabel,
     FormErrorMessage,
     Box,
-    Divider,
     Flex,
     Menu,
     MenuButton,
@@ -27,7 +24,7 @@ import { BaseModal } from '../../../../components/base/BaseModal';
 import { ScriptElement } from '../../types/scriptElements';
 import { useDepartments } from '../../../departments/hooks/useDepartments';
 import { FieldError } from '../../../../types/validation';
-import { formatTimeOffset, parseTimeToMs } from '../../../../utils/timeUtils';
+import { parseTimeToMs } from '../../../../utils/timeUtils';
 
 // Preset colors for note backgrounds - consistent with Show Start and semantic tokens
 const NOTE_PRESET_COLORS = [
@@ -249,7 +246,8 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
             ms = parts[0] * 1000;
         } else if (parts.length === 2) {
             // MM:SS format - use existing utility (but clean string without negative)
-            ms = parseTimeToMs(cleanTimeString);
+            const parsedMs = parseTimeToMs(cleanTimeString);
+            ms = parsedMs !== null ? parsedMs : 0;
         } else if (parts.length === 3) {
             // HH:MM:SS format
             ms = (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000;
@@ -284,9 +282,6 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         setFormData(prev => ({ ...prev, duration: durationSeconds }));
     };
 
-    const handleNumberChange = (field: keyof FormData, value: number) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
 
     const handleInputChange = (field: keyof FormData, value: string | boolean) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -316,7 +311,6 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
             }}
             validationErrors={validationErrors}
             errorBoundaryContext="EditElementModal"
-            showCloseButton={false}
         >
             <VStack spacing={4} align="stretch">
                 {/* Row 1: Time and Duration */}

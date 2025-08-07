@@ -20,9 +20,7 @@ export const SaveProcessingModal: React.FC<SaveProcessingModalProps> = ({
             headerIconColor="blue.500"
             isOpen={isOpen}
             onClose={() => {}} // No close functionality during save
-            showCloseButton={false}
             customActions={[]} // No action buttons for processing modal
-            size="md"
         >
             <VStack spacing={6} align="center">
                 <VStack spacing={2} align="center">

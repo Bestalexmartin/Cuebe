@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { ScriptElement } from '../types/scriptElements';
-import { EditOperation } from '../types/editQueue';
+import { EditOperation, ToggleGroupCollapseOperation } from '../types/editQueue';
 import { useEditQueue } from './useEditQueue';
 
 interface UseScriptElementsWithEditQueueReturn {
@@ -243,7 +243,7 @@ export const useScriptElementsWithEditQueue = (
             type: 'TOGGLE_GROUP_COLLAPSE',
             element_id: elementId,
             target_collapsed_state: targetState
-        });
+        } as Omit<ToggleGroupCollapseOperation, 'id' | 'timestamp' | 'description'>);
     }, [applyLocalChange, allElements]);
     
     useEffect(() => {
@@ -691,7 +691,8 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             const groupParent = {
                 element_id: groupParentId,
                 script_id: elements[0]?.script_id || '',
-                element_type: 'GROUP' as const,
+                type: 'GROUP' as const,
+                trigger_type: 'TIME' as const,
                 sequence: Math.min(...elements.filter(el => elementIds.includes(el.element_id)).map(el => el.sequence)),
                 time_offset_ms: minTimeOffset,
                 duration: Math.round(groupDurationMs / 1000),
@@ -815,9 +816,10 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             return elementUpdates;
             
         case 'TOGGLE_GROUP_COLLAPSE':
+            const toggleOp = operation as any;
             return elements.map(el => 
                 el.element_id === operation.element_id 
-                    ? { ...el, is_collapsed: !el.is_collapsed }
+                    ? { ...el, is_collapsed: toggleOp.target_collapsed_state }
                     : el
             );
             

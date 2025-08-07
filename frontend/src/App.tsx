@@ -18,7 +18,6 @@ import { TutorialPage } from './pages/TutorialPage';
 import { TestToolsPage } from './pages/TestToolsPage';
 import { ApiDocsPage } from './pages/ApiDocsPage';
 import { DocumentationPage } from './pages/DocumentationPage';
-import { SharedScriptPage } from './pages/SharedScriptPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 // TypeScript interfaces
@@ -40,10 +39,7 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary context="Application Root">
       <Routes>
-        {/* Shared Script Route - No Header Layout */}
-        <Route path="/shared/:token" element={<SharedScriptPage />} />
-        
-        {/* All other routes with Header Layout */}
+        {/* All routes with Header Layout */}
         <Route path="*" element={
           <Box
             display="grid"

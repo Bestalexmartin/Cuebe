@@ -81,7 +81,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
         // Set a timeout to detect if this is a drag intent
         dragTimeoutRef.current = setTimeout(() => {
             isDragStartedRef.current = true;
-        }, 150); // 150ms delay before considering it a drag
+        }, 150) as unknown as number; // 150ms delay before considering it a drag
     }, [isDragEnabled, onSelect]);
 
     // Handle mouse up - if no drag was started, treat as click
@@ -167,7 +167,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
     let groupParentColor: string | null = null;
     if (isGroupChild && element.parent_element_id) {
         // Compare both as strings to handle UUID vs string mismatch
-        const groupParent = allElements.find(el => String(el.element_id) === String(element.parent_element_id));
+        const groupParent = allElements.find(el => el && String(el.element_id) === String(element.parent_element_id));
         groupParentColor = groupParent?.custom_color || '#E2E8F0';
         
     }
@@ -219,7 +219,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
         let departmentCueCount = 0;
         for (let i = 0; i <= index; i++) {
             const currentElement = allElements[i];
-            if ((currentElement as any).element_type === 'CUE' &&
+            if (currentElement && (currentElement as any).element_type === 'CUE' &&
                 currentElement.department_id === element.department_id) {
                 departmentCueCount++;
             }

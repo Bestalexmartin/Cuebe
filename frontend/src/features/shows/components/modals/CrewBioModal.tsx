@@ -52,14 +52,11 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
       title="Crew Member"
       isOpen={isOpen}
       onClose={onClose}
-      size="md"
-      secondaryActions={[
-        {
-          label: "Close",
-          variant: "outline",
-          onClick: onClose
-        }
-      ]}
+      secondaryAction={{
+        label: "Close",
+        variant: "outline",
+        onClick: onClose
+      }}
     >
       <VStack spacing={6} align="stretch">
         {/* Main Profile Section */}
@@ -77,7 +74,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
             
             <HStack spacing={2}>
               <Badge variant="outline" colorScheme="blue" size="md">
-                {formatRole(crewMember.user_role)}
+                {formatRole(crewMember.user_role || '')}
               </Badge>
               {getUserStatusBadge()}
               {!crewMember.is_active && (

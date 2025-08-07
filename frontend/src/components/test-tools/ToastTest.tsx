@@ -6,9 +6,7 @@ import {
   Button,
   VStack,
   HStack,
-  Heading,
   Text,
-  Divider,
   Badge
 } from '@chakra-ui/react';
 import { useEnhancedToast } from '../../utils/toastUtils';

@@ -13,6 +13,7 @@ import { DuplicateElementModal } from './modals/DuplicateElementModal';
 import { EditElementModal } from './modals/EditElementModal';
 import { AddScriptElementModal } from './AddScriptElementModal';
 import { GroupElementsModal } from './modals/GroupElementsModal';
+import { ShareConfirmationModal } from './modals/ShareConfirmationModal';
 import { ModalStateReturn } from '../../../hooks/useModalState';
 import { UserPreferences } from '../../../hooks/useUserPreferences';
 
@@ -34,10 +35,8 @@ interface ScriptModalsProps {
     isDeleting: boolean;
     isDeletingCue: boolean;
     isDuplicatingElement: boolean;
-    isSavingChanges: boolean;
 
     // Preferences
-    previewPreferences: UserPreferences | null;
     darkMode: boolean;
     colorizeDepNames: boolean;
     showClockTimes: boolean;
@@ -51,7 +50,7 @@ interface ScriptModalsProps {
     onInitialClearHistoryConfirm: () => void;
     onFinalClearHistoryConfirm: () => void;
     onDuplicateClose: () => void;
-    onDuplicateConfirm: (script_name: string, showId: string) => void;
+    onDuplicateConfirm: () => void;
     onElementCreated: (element: any) => void;
     onOptionsPreview: (preferences: UserPreferences) => void;
     onOptionsSave: (preferences: UserPreferences) => void;
@@ -61,11 +60,21 @@ interface ScriptModalsProps {
     onConfirmDeleteCue: () => void;
     onConfirmDuplicate: (description: string, time_offset_ms: number) => void;
     onConfirmGroupElements: (groupName: string, backgroundColor: string) => void;
+    
+    // Script sharing
+    scriptName: string;
+    crewCount: number;
+    shareCount: number;
+    isSharing: boolean;
+    isHiding: boolean;
+    onShareConfirm: () => void;
+    onInitialHideConfirm: () => void;
+    onFinalHideConfirm: () => void;
+    onHideCancel: () => void;
+    
     onUnsavedChangesCancel: () => void;
     onInitialUnsavedConfirm: () => void;
     onAbandonChangesConfirm: () => void;
-    onSaveScriptChanges: () => void;
-    onInitialSaveConfirm: () => void;
     onFinalSaveConfirm: () => void;
     onSaveCancel: () => void;
     onElementEdit: (changes: Record<string, { oldValue: any; newValue: any }>) => void;
@@ -90,12 +99,19 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     isDeleting,
     isDeletingCue,
     isDuplicatingElement,
-    isSavingChanges,
-    previewPreferences,
     darkMode,
     colorizeDepNames,
     showClockTimes,
     autoSortCues,
+    scriptName,
+    crewCount,
+    shareCount,
+    isSharing,
+    isHiding,
+    onShareConfirm,
+    onInitialHideConfirm,
+    onFinalHideConfirm,
+    onHideCancel,
     onDeleteCancel,
     onInitialDeleteConfirm,
     onFinalDeleteConfirm,
@@ -116,8 +132,6 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     onUnsavedChangesCancel,
     onInitialUnsavedConfirm,
     onAbandonChangesConfirm,
-    onSaveScriptChanges,
-    onInitialSaveConfirm,
     onFinalSaveConfirm,
     onSaveCancel,
     onElementEdit
@@ -128,9 +142,14 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
             <DuplicateScriptModal
                 isOpen={modalState.isOpen(modalNames.DUPLICATE)}
                 onClose={onDuplicateClose}
-                onConfirm={onDuplicateConfirm}
-                scriptName={script?.script_name || ''}
                 showId={script?.show_id || ''}
+                scriptId={scriptId}
+                originalScriptName={script?.script_name || ''}
+                onScriptDuplicated={() => {
+                    // Handle the duplicated script - could navigate or call onDuplicateConfirm
+                    onDuplicateConfirm();
+                }}
+                onProcessingStart={() => modalState.openModal(modalNames.PROCESSING)}
             />
 
             {/* Processing Modal */}
@@ -206,10 +225,10 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                     showClockTimes
                 }}
                 onPreview={onOptionsPreview}
-                onSave={onOptionsSave}
-                onAutoSortChange={onAutoSortChange}
-                onColorizeChange={onColorizeChange}
-                onClockTimesChange={onClockTimesChange}
+                onSave={async (preferences) => { onOptionsSave(preferences); }}
+                onAutoSortChange={async (value) => { onAutoSortChange(value); }}
+                onColorizeChange={async (value) => { onColorizeChange(value); }}
+                onClockTimesChange={async (value) => { onClockTimesChange(value); }}
             />
 
             {/* Delete Cue Confirmation Modal */}
@@ -268,6 +287,42 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 isLoading={false}
                 changesCount={pendingOperations.length}
                 warningMessage="This will permanently apply all changes to the database and reset your edit history."
+            />
+
+            {/* Share Confirmation Modal */}
+            <ShareConfirmationModal
+                isOpen={modalState.isOpen(modalNames.SHARE_CONFIRMATION)}
+                onClose={() => modalState.closeModal(modalNames.SHARE_CONFIRMATION)}
+                onConfirm={onShareConfirm}
+                crewCount={crewCount}
+                isLoading={isSharing}
+            />
+
+            {/* Stop Sharing Script Confirmation Modals (Two-tier pattern) */}
+            <DeleteConfirmationModal
+                isOpen={modalState.isOpen(modalNames.HIDE_SCRIPT)}
+                onClose={onHideCancel}
+                onConfirm={onInitialHideConfirm}
+                entityType=""
+                entityName={scriptName}
+                actionWord="Stop Sharing"
+                customQuestion={`Are you sure you want to stop sharing "${scriptName}" with all crew members?`}
+                customWarning={`All links will be deactivated immediately. Crew members will lose access to this script.`}
+            />
+
+            <AbandonChangesModal
+                isOpen={modalState.isOpen(modalNames.FINAL_HIDE_SCRIPT)}
+                onClose={onHideCancel}
+                onConfirm={onFinalHideConfirm}
+                isLoading={isHiding}
+                changesCount={shareCount}
+                customHeader="Stop Sharing"
+                customMainText={`"${scriptName}" will no longer be shared.`}
+                customConfirmText="Stop Sharing"
+                customCancelText="Cancel"
+                customLoadingText="Stopping..."
+                customBottomWarning="All sharing links will be deactivated immediately."
+                hideMiddleWarning={true}
             />
         </>
     );

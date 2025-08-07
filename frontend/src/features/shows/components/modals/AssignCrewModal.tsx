@@ -110,7 +110,6 @@ export const AssignCrewModal: React.FC<AssignCrewModalProps> = ({
       title="Assign Crew to Department"
       isOpen={isOpen}
       onClose={handleModalClose}
-      size="lg"
       primaryAction={{
         label: "Assign Crew",
         onClick: handleAssign,

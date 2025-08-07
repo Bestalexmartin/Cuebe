@@ -4,12 +4,10 @@ import React, { useState } from 'react';
 import {
     VStack,
     HStack,
-    Text,
     Input,
     FormControl,
     FormLabel,
     FormErrorMessage,
-    Box,
     Button
 } from '@chakra-ui/react';
 import { BaseModal } from '../../../../components/base/BaseModal';
@@ -34,7 +32,7 @@ interface GroupElementsModalProps {
 export const GroupElementsModal: React.FC<GroupElementsModalProps> = ({
     isOpen,
     onClose,
-    selectedElementIds,
+    selectedElementIds: _,
     onConfirm
 }) => {
     const [groupName, setGroupName] = useState('');
@@ -76,8 +74,8 @@ export const GroupElementsModal: React.FC<GroupElementsModalProps> = ({
             onSubmit={handleSubmit}
             primaryAction={{
                 label: "Create Group",
+                onClick: () => handleSubmit({} as React.FormEvent),
                 variant: "primary",
-                type: "submit",
                 isLoading: false,
                 isDisabled: !canSubmit
             }}
@@ -88,7 +86,6 @@ export const GroupElementsModal: React.FC<GroupElementsModalProps> = ({
             }}
             validationErrors={Object.keys(errors).length > 0 ? [{ field: 'groupName', message: errors.groupName || '', code: 'REQUIRED' }] : []}
             showValidationErrors={Object.keys(errors).length > 0}
-            showCloseButton={false}
         >
             <VStack spacing={4} align="stretch">
                 <FormControl isRequired isInvalid={!!errors.groupName}>

@@ -7,7 +7,6 @@ import {
   ModalContent,
   ModalHeader,
   ModalBody,
-  ModalCloseButton,
   VStack,
   HStack,
   Text,
@@ -89,7 +88,6 @@ export const CrewMemberSelectionModal: React.FC<CrewMemberSelectionModalProps> =
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Select Crew Member</ModalHeader>
-        <ModalCloseButton />
         <ModalBody pb={6}>
           {/* Search Input */}
           <InputGroup mb={4}>

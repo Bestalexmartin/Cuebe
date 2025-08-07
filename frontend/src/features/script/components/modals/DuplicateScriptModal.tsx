@@ -54,7 +54,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
 export const DuplicateScriptModal: React.FC<DuplicateScriptModalProps> = ({
     isOpen,
     onClose,
-    showId,
+    showId: _,
     scriptId,
     originalScriptName,
     onScriptDuplicated,

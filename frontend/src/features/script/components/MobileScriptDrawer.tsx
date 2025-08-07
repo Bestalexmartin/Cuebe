@@ -9,9 +9,7 @@ import {
     DrawerContent,
     DrawerCloseButton,
     VStack,
-    HStack,
     Button,
-    Text,
     Divider
 } from '@chakra-ui/react';
 import { AppIcon } from '../../../components/AppIcon';
@@ -94,7 +92,7 @@ export const MobileScriptDrawer: React.FC<MobileScriptDrawerProps> = ({
             border="1px solid"
             borderColor={tool.isActive && !tool.isDisabled ? "blue.400" : "container.border"}
             isDisabled={tool.isDisabled}
-            onClick={() => handleToolClick(tool.id, tool.isDisabled)}
+            onClick={() => handleToolClick(tool.id, tool.isDisabled || false)}
             justifyContent="flex-start"
             width="100%"
             _hover={tool.isDisabled ? {} : {

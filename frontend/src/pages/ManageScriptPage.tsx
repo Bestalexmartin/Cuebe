@@ -23,31 +23,33 @@ import { useValidatedForm } from '../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../types/validation';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { convertLocalToUTC } from '../utils/dateTimeUtils';
-import { useUserPreferences } from '../hooks/useUserPreferences';
-import { EditHistoryView } from '../components/EditHistoryView';
+import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
 import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
 import { EnableAutoSortOperation } from '../features/script/types/editQueue';
 import { useModalState } from '../hooks/useModalState';
 import { SaveConfirmationModal } from '../components/modals/SaveConfirmationModal';
 import { SaveProcessingModal } from '../components/modals/SaveProcessingModal';
+import { ScriptSharingService } from '../services/scriptSharingService';
+import { useAuth } from '@clerk/clerk-react';
 
 import { ScriptToolbar } from '../features/script/components/ScriptToolbar';
-import { InfoMode } from '../features/script/components/modes/InfoMode';
 import { ViewMode, ViewModeRef } from '../features/script/components/modes/ViewMode';
 import { EditMode, EditModeRef } from '../features/script/components/modes/EditMode';
-import { PlayMode } from '../features/script/components/modes/PlayMode';
-import { ShareMode } from '../features/script/components/modes/ShareMode';
 import { useScriptModes, ScriptMode } from '../features/script/hooks/useScriptModes';
 import { useElementActions } from '../features/script/hooks/useElementActions';
 import { ScriptModals } from '../features/script/components/ScriptModals';
 import { MobileScriptDrawer } from '../features/script/components/MobileScriptDrawer';
 import { getToolbarButtons, ToolbarContext } from '../features/script/utils/toolbarConfig';
+import { InfoMode } from '../features/script/components/modes/InfoMode';
+import { PlayMode } from '../features/script/components/modes/PlayMode';
+import { EditHistoryView } from '../components/EditHistoryView';
 
 import { useElementModalActions } from '../features/script/hooks/useElementModalActions';
 import { useScriptModalHandlers } from '../features/script/hooks/useScriptModalHandlers';
 import { useScriptNavigation } from '../hooks/useScriptNavigation';
 import { useScriptFormSync } from '../features/script/hooks/useScriptFormSync';
+import { useShowCrew } from '../features/shows/hooks/useShowCrew';
 import { createActionMenuConfig } from '../features/script/config/actionMenuConfig';
 
 const MODAL_NAMES = {
@@ -67,7 +69,10 @@ const MODAL_NAMES = {
     FINAL_CLEAR_HISTORY: 'final_clear_history',
     SAVE_CONFIRMATION: 'save_confirmation',
     FINAL_SAVE_CONFIRMATION: 'final_save_confirmation',
-    SAVE_PROCESSING: 'save_processing'
+    SAVE_PROCESSING: 'save_processing',
+    SHARE_CONFIRMATION: 'share_confirmation',
+    HIDE_SCRIPT: 'hide_script',
+    FINAL_HIDE_SCRIPT: 'final_hide_script'
 } as const;
 
 interface ManageScriptPageProps {
@@ -120,6 +125,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
 
 export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, onMenuClose }) => {
     const { scriptId } = useParams<{ scriptId: string }>();
+    const { getToken } = useAuth();
 
     const viewModeRef = useRef<ViewModeRef>(null);
     const editModeRef = useRef<EditModeRef>(null);
@@ -195,6 +201,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         setActiveMode
     });
 
+    // Crew data for sharing
+    const { crewMembers } = useShowCrew(currentScript?.show_id || '');
+
     // Function to capture Info mode changes without changing mode
     const captureInfoChanges = useCallback(() => {
         if (activeMode === 'info' && hasChanges && currentScript) {
@@ -232,7 +241,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             if (Object.keys(actualChanges).length > 0) {
                 const infoFormOperation = {
                     type: 'UPDATE_SCRIPT_INFO' as const,
-                    elementId: 'script-info',
+                    element_id: 'script-info',
                     changes: actualChanges
                 };
 
@@ -270,6 +279,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     // Track EditMode's selection state reactively
     const [currentSelectedElementIds, setCurrentSelectedElementIds] = useState<string[]>([]);
 
+    // Sharing state
+    const [isSharing, setIsSharing] = useState(false);
+    const [isHiding, setIsHiding] = useState(false);
+    const [isScriptShared, setIsScriptShared] = useState(false);
+    const [shareCount, setShareCount] = useState(0);
+
     // Element modal actions hook
     const elementActions = useElementModalActions({
         scriptId,
@@ -283,15 +298,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             editModeRef.current?.clearSelection();
             setCurrentSelectedElementIds([]);
         },
-        setSelectedElementIds: (ids: string[]) => {
+        setSelectedElementIds: () => {
             // Delegate to EditMode's selection management
             if (editModeRef.current) {
                 editModeRef.current.clearSelection();
                 setCurrentSelectedElementIds([]);
                 // If setting non-empty selection, would need EditMode method for that
-                if (ids.length > 0) {
-                    console.warn('Setting non-empty selection not implemented yet');
-                }
             }
         }
     });
@@ -332,8 +344,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         hasMultipleSelection: elementActions.selectedElementIds.length > 1,
         hasUnsavedChanges,
         pendingOperationsCount: pendingOperations.length,
-        selectedElement
-    }), [activeMode, scrollState, elementActions.selectedElementIds.length, hasUnsavedChanges, pendingOperations.length, selectedElement]);
+        selectedElement,
+        isScriptShared
+    }), [activeMode, scrollState, elementActions.selectedElementIds.length, hasUnsavedChanges, pendingOperations.length, selectedElement, isScriptShared]);
+
 
     const toolButtons = useMemo(() => getToolbarButtons(toolbarContext), [toolbarContext]);
 
@@ -349,6 +363,18 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         // Handle EXIT button
         if (modeId === 'exit') {
             navigation.handleCancel();
+            return;
+        }
+
+        // Handle SHARE button
+        if (modeId === 'share') {
+            modalState.openModal(MODAL_NAMES.SHARE_CONFIRMATION);
+            return;
+        }
+
+        // Handle HIDE button
+        if (modeId === 'hide') {
+            modalState.openModal(MODAL_NAMES.HIDE_SCRIPT);
             return;
         }
 
@@ -489,15 +515,14 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             // Create the auto-sort operation with element changes for the initial sort
             applyLocalChange({
                 type: 'ENABLE_AUTO_SORT',
-                elementId: 'auto-sort-preference',
+                element_id: 'auto-sort-preference',
                 old_preference_value: false,
                 new_preference_value: true,
-                element_changes: elementChanges
-            } as EnableAutoSortOperation);
+                element_moves: elementChanges
+            } as Omit<EnableAutoSortOperation, 'id' | 'timestamp' | 'description'>);
             
             showSuccess('Elements Auto-Sorted', `Reordered ${elementChanges.length} elements by time offset. New elements will be automatically sorted.`);
         } catch (error) {
-            console.error('Error enabling auto-sort:', error);
             showError(error instanceof Error ? error.message : 'Failed to enable auto-sort');
         }
     }, [scriptId, editQueueElements, applyLocalChange, showSuccess, showError]);
@@ -507,14 +532,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             if (value && !activePreferences.autoSortCues && scriptId) {
                 handleAutoSortElements();
             } else if (!value && activePreferences.autoSortCues) {
-                // Capture current element order to freeze it when disabling auto-sort
-                const currentOrder = editQueueElements.map(el => el.element_id);
+                // Disable auto-sort
                 const disableOperation = {
                     type: 'DISABLE_AUTO_SORT' as const,
-                    elementId: 'auto-sort-preference',
-                    oldPreferenceValue: true,
-                    newPreferenceValue: false,
-                    frozenOrder: currentOrder
+                    element_id: 'auto-sort-preference',
+                    old_preference_value: true,
+                    new_preference_value: false
                 };
                 applyLocalChange(disableOperation);
             }
@@ -528,10 +551,86 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         await handleAutoSortToggle(newAutoSortValue);
     };
 
-    const handleOptionsModalSave = async (newPreferences: any) => {
+    const handleOptionsModalSave = async (newPreferences: UserPreferences) => {
         await updatePreferences(newPreferences);
         setPreviewPreferences(null);
     };
+
+    // Load initial sharing status
+    useEffect(() => {
+        const loadSharingStatus = async () => {
+            if (!scriptId) return;
+            
+            try {
+                const token = await getToken();
+                if (!token) return;
+                
+                const status = await ScriptSharingService.getSharingStatus(scriptId, token);
+                setIsScriptShared(status.isShared);
+                setShareCount(status.shareCount);
+            } catch (error) {
+                // Silently handle sharing status errors
+            }
+        };
+        
+        loadSharingStatus();
+    }, [scriptId, getToken]);
+
+    // Sharing handlers
+    const handleShareConfirm = async () => {
+        if (!scriptId) return;
+        
+        setIsSharing(true);
+        try {
+            const token = await getToken();
+            if (!token) throw new Error('Authentication required');
+            
+            await ScriptSharingService.shareWithAllCrew(scriptId, token);
+            modalState.closeModal(MODAL_NAMES.SHARE_CONFIRMATION);
+            setIsScriptShared(true);
+            setActiveMode('view' as ScriptMode); // Return to view mode to show HIDE button
+            showSuccess('Script Shared', 'Script has been shared with all crew members');
+        } catch (error) {
+            showError('Failed to enable script sharing', {
+                description: error instanceof Error ? error.message : 'Unknown error'
+            });
+        } finally {
+            setIsSharing(false);
+        }
+    };
+
+    const handleInitialHideConfirm = useCallback(() => {
+        modalState.closeModal(MODAL_NAMES.HIDE_SCRIPT);
+        modalState.openModal(MODAL_NAMES.FINAL_HIDE_SCRIPT);
+    }, [modalState]);
+
+    const handleFinalHideConfirm = useCallback(async () => {
+        if (!scriptId) return;
+        
+        setIsHiding(true);
+        try {
+            const token = await getToken();
+            if (!token) throw new Error('Authentication required');
+            
+            await ScriptSharingService.hideFromAllCrew(scriptId, token);
+            modalState.closeModal(MODAL_NAMES.FINAL_HIDE_SCRIPT);
+            setIsScriptShared(false);
+            setShareCount(0);
+            setActiveMode('view' as ScriptMode); // Return to view mode to show SHARE button
+            showSuccess('Script Hidden', 'Script has been hidden from all crew members');
+        } catch (error) {
+            showError('Failed to disable script sharing', {
+                description: error instanceof Error ? error.message : 'Unknown error'
+            });
+        } finally {
+            setIsHiding(false);
+        }
+    }, [scriptId, getToken, modalState, setActiveMode, showSuccess, showError]);
+
+    const handleHideCancel = useCallback(() => {
+        modalState.closeModal(MODAL_NAMES.HIDE_SCRIPT);
+        modalState.closeModal(MODAL_NAMES.FINAL_HIDE_SCRIPT);
+    }, [modalState]);
 
     // Configure actions menu using extracted config
     const actions = createActionMenuConfig({
@@ -682,13 +781,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                     />
                                 )}
                                 {activeMode === 'play' && <PlayMode />}
-                                {activeMode === 'share' && (
-                                    <ShareMode 
-                                        scriptId={scriptId || ''} 
-                                        scriptName={currentScript?.script_name || 'Script'}
-                                        showId={currentScript?.show_id || ''}
-                                    />
-                                )}
                                 {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={allEditQueueElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} onRevertSuccess={() => setActiveMode('edit')} />}
                             </Box>
                         )}
@@ -763,8 +855,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 isDeleting={modalHandlers.isDeleting}
                 isDeletingCue={elementActions.isDeletingCue}
                 isDuplicatingElement={elementActions.isDuplicatingElement}
-                isSavingChanges={false}
-                previewPreferences={previewPreferences}
                 darkMode={activePreferences.darkMode}
                 colorizeDepNames={activePreferences.colorizeDepNames}
                 showClockTimes={activePreferences.showClockTimes}
@@ -776,7 +866,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onInitialClearHistoryConfirm={modalHandlers.handleInitialClearHistoryConfirm}
                 onFinalClearHistoryConfirm={modalHandlers.handleFinalClearHistoryConfirm}
                 onDuplicateClose={() => modalState.closeModal(MODAL_NAMES.DUPLICATE)}
-                onDuplicateConfirm={(script_name: string, showId: string) => {
+                onDuplicateConfirm={() => {
                     modalState.closeModal(MODAL_NAMES.DUPLICATE);
                 }}
                 onElementCreated={elementActions.handleElementCreated}
@@ -791,11 +881,18 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onUnsavedChangesCancel={modalHandlers.handleUnsavedChangesCancel}
                 onInitialUnsavedConfirm={modalHandlers.handleInitialUnsavedConfirm}
                 onAbandonChangesConfirm={modalHandlers.handleAbandonChangesConfirm}
-                onSaveScriptChanges={modalHandlers.handleSaveScriptChanges}
-                onInitialSaveConfirm={modalHandlers.handleInitialSaveConfirm}
                 onFinalSaveConfirm={modalHandlers.handleFinalSaveConfirm}
                 onSaveCancel={modalHandlers.handleSaveCancel}
                 onElementEdit={elementActions.handleElementEditSave}
+                scriptName={currentScript?.script_name || 'Script'}
+                crewCount={Array.from(new Map(crewMembers.map(member => [member.user_id, member])).values()).length}
+                shareCount={shareCount}
+                isSharing={isSharing}
+                isHiding={isHiding}
+                onShareConfirm={handleShareConfirm}
+                onInitialHideConfirm={handleInitialHideConfirm}
+                onFinalHideConfirm={handleFinalHideConfirm}
+                onHideCancel={handleHideCancel}
             />
 
             {/* Save Confirmation Modal */}

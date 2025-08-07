@@ -9,12 +9,9 @@ import {
     Textarea,
     VStack,
     HStack,
-    Box,
-    Text,
 } from '@chakra-ui/react';
 import { useValidatedForm } from '../../../../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../../../../types/validation';
-import { FormInput } from '../../../../components/form/FormField';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
 

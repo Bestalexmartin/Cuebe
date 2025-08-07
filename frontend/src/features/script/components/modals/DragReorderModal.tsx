@@ -43,7 +43,7 @@ const formatTimeOffset = (time_offset_ms: number): string => {
 
 export const DragReorderModal: React.FC<DragReorderModalProps> = ({
     isOpen,
-    onClose,
+    onClose: _,
     draggedElement,
     elementAbove,
     elementBelow,

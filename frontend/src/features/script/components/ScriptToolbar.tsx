@@ -1,7 +1,7 @@
 // frontend/src/features/script/components/ScriptToolbar.tsx
 
 import React from 'react';
-import { HStack, VStack, Button, Text, Divider, Box } from '@chakra-ui/react';
+import { HStack, VStack, Button, Text, Box } from '@chakra-ui/react';
 import { AppIcon } from '../../../components/AppIcon';
 import { ToolButton } from '../types/toolButton';
 
@@ -23,9 +23,9 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
         );
 
         if (activeMode === 'view') {
-            // View mode: Head, Tail, Play, Share
+            // View mode: Head, Tail, Play, Share/Hide
             const modeButtons = toolButtons.filter(tool => 
-                ['play', 'share'].includes(tool.id)
+                ['play', 'share', 'hide'].includes(tool.id)
             );
             return [...navigationButtons, ...modeButtons];
         } else if (activeMode === 'edit') {
@@ -85,6 +85,7 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
             <AppIcon
                 name={tool.icon}
                 boxSize="16px"
+                transform={tool.id === 'hide' ? 'scaleX(-1)' : undefined}
             />
             <Text 
                 fontSize="8px" 

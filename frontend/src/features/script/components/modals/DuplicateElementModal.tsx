@@ -87,7 +87,9 @@ export const DuplicateElementModal: React.FC<DuplicateElementModalProps> = ({
     const handleSubmit = () => {
         if (form.isValid && !isProcessing) {
             const timeOffsetMs = parseTimeToMs(form.formData.timeOffsetInput);
-            onConfirm(form.formData.description, timeOffsetMs);
+            if (timeOffsetMs !== null) {
+                onConfirm(form.formData.description, timeOffsetMs);
+            }
         }
     };
 
@@ -131,7 +133,6 @@ export const DuplicateElementModal: React.FC<DuplicateElementModalProps> = ({
                             form={form}
                             name="timeOffsetInput"
                             placeholder="MM:SS"
-                            width="100px"
                             isRequired
                         />
                         <Text fontSize="sm" color="gray.500" ml={2}>

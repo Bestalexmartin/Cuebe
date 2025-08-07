@@ -37,7 +37,7 @@ interface UseScriptModalHandlersParams {
 export const useScriptModalHandlers = ({
     scriptId,
     script,
-    hasUnsavedChanges,
+    // hasUnsavedChanges, // Currently unused
     saveChanges,
     discardChanges,
     modalState,

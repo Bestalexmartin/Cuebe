@@ -17,7 +17,7 @@ import {
 import { ErrorBoundary } from '../ErrorBoundary';
 import { ValidationErrors } from './ValidationErrors';
 import { FieldError } from '../../types/validation';
-import { AppIcon } from '../AppIcon';
+import { AppIcon, IconName } from '../AppIcon';
 
 export interface BaseModalAction {
   label: string;
@@ -35,7 +35,7 @@ export interface BaseModalProps extends Omit<ModalContentProps, 'children'> {
   onCloseComplete?: () => void;
 
   // Header customization
-  headerIcon?: string;
+  headerIcon?: IconName;
   headerIconColor?: string;
 
   // Content
@@ -75,7 +75,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
   validationErrors = [],
   showValidationErrors = true,
   errorBoundaryContext,
-  showCloseButton = true,
+  showCloseButton = false,
   ...modalContentProps
 }) => {
   const getButtonVariant = (variant: BaseModalAction['variant'] = 'secondary') => {

@@ -18,16 +18,14 @@ import {
     MenuButton,
     MenuList,
     MenuItem,
-    Flex,
-    Icon
+    Flex
 } from '@chakra-ui/react';
 import { AppIcon } from '../../../components/AppIcon';
 import { BaseModal } from '../../../components/base/BaseModal';
 import { useValidatedForm } from '../../../hooks/useValidatedForm';
 import { useResource } from '../../../hooks/useResource';
 import { ValidationRules, FormValidationConfig } from '../../../types/validation';
-import { ScriptElementCreate, ElementType, TriggerType, PriorityLevel, LocationArea } from '../types/scriptElements';
-import { getTextColorForBackground } from '../../../utils/colorUtils';
+import { ScriptElementCreate, ElementType, PriorityLevel } from '../types/scriptElements';
 import { formatTimeOffset, parseTimeToMs } from '../../../utils/timeUtils';
 
 // TypeScript interfaces
@@ -90,14 +88,6 @@ const ELEMENT_TYPE_OPTIONS: { value: ElementType; label: string; description: st
     { value: 'NOTE', label: 'Note', description: 'Informational note or reminder' }
 ];
 
-const TRIGGER_TYPE_OPTIONS: { value: TriggerType; label: string }[] = [
-    { value: 'MANUAL', label: 'Manual' },
-    { value: 'TIME', label: 'Time-based' },
-    { value: 'AUTO', label: 'Auto-follow' },
-    { value: 'FOLLOW', label: 'Follow Cue' },
-    { value: 'GO', label: 'GO Command' },
-    { value: 'STANDBY', label: 'Standby' }
-];
 
 const PRIORITY_OPTIONS: { value: PriorityLevel; label: string }[] = [
     { value: 'SAFETY', label: 'Safety' },
@@ -108,20 +98,6 @@ const PRIORITY_OPTIONS: { value: PriorityLevel; label: string }[] = [
     { value: 'OPTIONAL', label: 'Optional' }
 ];
 
-const LOCATION_OPTIONS: { value: LocationArea; label: string }[] = [
-    { value: 'center_stage', label: 'Center Stage' },
-    { value: 'stage_left', label: 'Stage Left' },
-    { value: 'stage_right', label: 'Stage Right' },
-    { value: 'upstage', label: 'Upstage' },
-    { value: 'downstage', label: 'Downstage' },
-    { value: 'booth', label: 'Booth' },
-    { value: 'fly_gallery', label: 'Fly Gallery' },
-    { value: 'backstage', label: 'Backstage' },
-    { value: 'wings_left', label: 'Wings Left' },
-    { value: 'wings_right', label: 'Wings Right' },
-    { value: 'house', label: 'House' },
-    { value: 'other', label: 'Other' }
-];
 
 // Preset colors for note backgrounds - consistent with Show Start and semantic tokens
 const NOTE_PRESET_COLORS = [
@@ -189,7 +165,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
             // Include department information
             department_name: selectedDepartment?.department_name || null,
             department_color: selectedDepartment?.department_color || null,
-            departmentPrefix: selectedDepartment?.departmentPrefix || null,
+            departmentPrefix: selectedDepartment?.department_name || null,
             script_id: scriptId,
             // sequence will be calculated by useElementActions based on insertion position
             is_active: true,
@@ -208,7 +184,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
 
     const canSubmit = form.formData.description.trim().length >= 3 && 
                      // Department only required for cues, not notes
-                     (form.formData.element_type === 'NOTE' || form.formData.department_id.trim().length > 0) &&
+                     (form.formData.element_type === 'NOTE' || (form.formData.department_id && form.formData.department_id.trim().length > 0)) &&
                      Number.isFinite(form.formData.time_offset_ms) &&
                      form.fieldErrors.length === 0;
 
@@ -220,8 +196,8 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
             onSubmit={handleSubmit}
             primaryAction={{
                 label: "Create Element",
+                onClick: () => handleSubmit({} as React.FormEvent),
                 variant: "primary",
-                type: "submit",
                 isLoading: false,
                 isDisabled: !canSubmit
             }}
@@ -232,7 +208,6 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
             }}
             validationErrors={form.fieldErrors}
             showValidationErrors={form.fieldErrors.length > 0}
-            showCloseButton={false}
         >
             <VStack spacing={4} align="stretch">
                 {/* Element Type Selection - Cue or Note */}
@@ -273,7 +248,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                                 // Auto-format, update form data, and validate on blur
                                 const ms = parseTimeToMs(e.target.value);
                                 const formatted = formatTimeOffset(ms);
-                                setTimeInputValue(formatted);
+                                setTimeInputValue(formatted || "0:00");
                                 form.updateField('time_offset_ms', ms);
                                 form.validateField('time_offset_ms');
                             }}

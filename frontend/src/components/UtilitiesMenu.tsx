@@ -1,7 +1,7 @@
 // frontend/src/components/UtilitiesMenu.tsx
 
 import React from 'react';
-import { Button, VStack, Text, HStack, Menu, MenuButton, MenuList, MenuItem, MenuDivider } from '@chakra-ui/react';
+import { Button, Menu, MenuButton, MenuList, MenuItem, MenuDivider } from '@chakra-ui/react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AppIcon } from './AppIcon';
 

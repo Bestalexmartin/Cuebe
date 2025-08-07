@@ -1,18 +1,15 @@
 // frontend/src/components/layout/QuickAccessPanel.tsx
 
 import React from "react";
-import { Flex, Box, VStack, Heading, Button, Text, HStack } from "@chakra-ui/react";
-import { AppIcon } from '../AppIcon';
+import { Flex, Box, VStack, Heading, Text, HStack } from "@chakra-ui/react";
+import { AppIcon, IconName } from '../AppIcon';
 import { UtilitiesMenu } from '../UtilitiesMenu';
-
-// TypeScript interfaces
-type IconName = 'openmenu' | 'hamburger' | 'edit' | 'delete' | 'warning' | 'pinned' | 'show' | 'venue' | 'department' | 'crew' | 'asc' | 'desc';
 
 interface NavigationItemProps {
   icon: IconName;
   title: string;
   description: string;
-  is_active: boolean;
+  isActive: boolean; // Frontend computed state - camelCase
   onClick: () => void;
 }
 

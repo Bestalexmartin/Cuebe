@@ -274,8 +274,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         const newIndex = reorderedElements.findIndex(el => el.element_id === active.id);
         
         // Calculate elementAbove and elementBelow based on the POST-reorder state
-        let elementAbove = null;
-        let elementBelow = null;
+        let elementAbove: typeof reorderedElements[0] | null = null;
+        let elementBelow: typeof reorderedElements[0] | null = null;
         
         // Use the reordered elements to find neighbors
         elementAbove = newIndex > 0 ? reorderedElements[newIndex - 1] : null;
@@ -306,8 +306,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         // Check if auto-sort is currently enabled
         
         if (allHaveSameTimeOffset || !autoSortCues) {
-            const reason = allHaveSameTimeOffset ? 'All elements have same time offset' : 'Auto-sort is disabled';
-            
             // Set the dragged element so applyReorder can access it
             setDraggedElement(draggedEl);
             await applyReorderDirect(pendingReorderData, draggedEl);
@@ -486,37 +484,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         console.error('Edit queue not available for reorder operation');
     };
 
-    const updateElementTimeOffset = async (elementId: string, newTimeOffsetMs: number) => {
-        
-        // Find the element to get old value
-        const element = localElements.find(el => el.element_id === elementId);
-        const oldTimeOffsetMs = element?.time_offset_ms || 0;
-        
-        // Update local elements immediately for UI feedback
-        const updatedElements = localElements.map(el => 
-            el.element_id === elementId 
-                ? { ...el, time_offset_ms: newTimeOffsetMs }
-                : el
-        );
-        setLocalElements(updatedElements);
-        
-        // If we have edit queue functionality, use it
-        if (onApplyLocalChange) {
-            const timeOffsetOperation = {
-                type: 'UPDATE_TIME_OFFSET',
-                element_id: elementId,
-                old_time_offset_ms: oldTimeOffsetMs,
-                new_time_offset_ms: newTimeOffsetMs
-            };
-            
-            onApplyLocalChange(timeOffsetOperation);
-            return;
-        }
-
-        // This should not happen - edit queue is always available
-        console.error('Edit queue not available for time offset update operation');
-        
-    };
 
     // Handle element edit
     const handleEditElement = (element: any) => {
@@ -633,7 +600,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 )}
 
                 {!isLoading && !error && localElements.length === 0 && (
-                    <Flex justify="center" align="center" height="200px" direction="column" spacing={4}>
+                    <Flex justify="center" align="center" height="200px" direction="column" gap={4}>
                         <Text color="gray.500" fontSize="lg">
                             No script elements yet
                         </Text>

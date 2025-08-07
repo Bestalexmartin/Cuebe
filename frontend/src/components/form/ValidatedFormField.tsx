@@ -13,7 +13,6 @@ import {
   NumberInputField,
   Switch,
   Checkbox,
-  Radio,
   RadioGroup,
   Stack,
   InputProps,
@@ -194,7 +193,7 @@ export const ValidatedNumberInput: React.FC<ValidatedNumberInputProps> = ({
       {label && <FormLabel>{label}</FormLabel>}
       <NumberInput
         value={value ?? ''}
-        onChange={(valueString, valueNumber) => {
+        onChange={(_, valueNumber) => {
           onChange(isNaN(valueNumber) ? undefined : valueNumber);
         }}
         onBlur={onBlur}

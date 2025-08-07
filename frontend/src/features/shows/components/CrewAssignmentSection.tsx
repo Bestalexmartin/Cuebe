@@ -1,20 +1,18 @@
 // frontend/src/features/shows/components/CrewAssignmentSection.tsx
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   VStack,
   HStack,
   Text,
   Button,
-  useToast,
   Spinner,
   Flex,
   FormLabel,
   Avatar,
   Badge
 } from '@chakra-ui/react';
-import { AppIcon } from '../../../components/AppIcon';
 import { useDepartments } from '../../departments/hooks/useDepartments';
 import { useCrews } from '../../crew/hooks/useCrews';
 import { CrewAssignmentRow, Department, CrewMember } from '../types/crewAssignments';
@@ -31,7 +29,6 @@ interface CrewAssignmentSectionProps {
 }
 
 export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
-  showId,
   assignments,
   onAssignmentsChange
 }) => {
@@ -73,14 +70,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       `${crewMember.fullname_first} ${crewMember.fullname_last} assigned to ${department.department_name}`
     );
   }, [assignments, onAssignmentsChange, generateId, showSuccess]);
-
-  // Update assignment field
-  const updateAssignment = useCallback((id: string, field: keyof CrewAssignmentRow, value: any) => {
-    const updatedAssignments = assignments.map(assignment =>
-      assignment.id === id ? { ...assignment, [field]: value } : assignment
-    );
-    onAssignmentsChange(updatedAssignments);
-  }, [assignments, onAssignmentsChange]);
 
   // Handle row selection (single select only)
   const handleRowSelect = useCallback((id: string) => {
