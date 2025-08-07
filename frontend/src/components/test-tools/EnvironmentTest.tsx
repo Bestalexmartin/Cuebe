@@ -139,15 +139,6 @@ const CombinedSystemResultsDisplay: React.FC<{ results: CombinedSystemResults; o
     }
   };
 
-  const getTestTypeName = () => {
-    switch (results.testType) {
-      case 'filesystem': return 'Filesystem Permissions';
-      case 'environment': return 'Environment Reset';
-      case 'external-services': return 'External Services';
-      case 'memory-audit': return 'Memory Audit';
-      default: return 'System';
-    }
-  };
 
   return (
     <Box ref={resultsRef} mt={4} p={4} border="1px solid" borderColor="gray.300" borderRadius="md" bg="white" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>

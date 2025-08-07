@@ -85,6 +85,23 @@ export interface UpdateElementOperation extends BaseEditOperation {
     }>;
 }
 
+export interface ToggleGroupCollapseOperation extends BaseEditOperation {
+    type: 'TOGGLE_GROUP_COLLAPSE';
+    target_collapsed_state: boolean;
+}
+
+export interface CreateGroupOperation extends BaseEditOperation {
+    type: 'CREATE_GROUP';
+    group_name: string;
+    background_color?: string;
+    element_ids: string[];
+}
+
+export interface UngroupElementsOperation extends BaseEditOperation {
+    type: 'UNGROUP_ELEMENTS';
+    group_element_id: string;
+}
+
 export type EditOperation = 
     | ReorderOperation 
     | UpdateFieldOperation 
@@ -95,7 +112,10 @@ export type EditOperation =
     | EnableAutoSortOperation
     | DisableAutoSortOperation
     | UpdateScriptInfoOperation
-    | UpdateElementOperation;
+    | UpdateElementOperation
+    | ToggleGroupCollapseOperation
+    | CreateGroupOperation
+    | UngroupElementsOperation;
 
 export interface EditQueue {
     operations: EditOperation[];

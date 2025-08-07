@@ -117,7 +117,7 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
         <VStack align="stretch" spacing="1" fontSize="sm" color="cardText">
             <HStack spacing="2" align="center">
                 <Badge variant="outline" colorScheme="blue" size="sm">
-                    {formatRole(crewMember.user_role)}
+                    {formatRole(crewMember.user_role || '')}
                 </Badge>
                 {getUserStatusBadge()}
                 {!crewMember.is_active && (

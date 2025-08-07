@@ -2,13 +2,13 @@
 
 import React from "react";
 import { Icon, IconProps } from "@chakra-ui/react";
-import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, CopyIcon, MoonIcon, SunIcon, TriangleDownIcon, TriangleUpIcon, CalendarIcon, TimeIcon, SearchIcon, ExternalLinkIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, CopyIcon, MoonIcon, SunIcon, TriangleDownIcon, TriangleUpIcon, CalendarIcon, TimeIcon, SearchIcon, ExternalLinkIcon, CloseIcon, CheckIcon, MinusIcon, QuestionIcon } from '@chakra-ui/icons';
 import { TiPin } from "react-icons/ti";
 import { IoPeopleSharp } from "react-icons/io5";
 import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
 import { FaMasksTheater, FaMapLocationDot, FaScroll } from "react-icons/fa6";
-import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt, FaAngleDoubleUp, FaAngleDoubleDown, FaHistory, FaEllipsisV, FaRedo } from "react-icons/fa";
+import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt, FaAngleDoubleUp, FaAngleDoubleDown, FaHistory, FaEllipsisV, FaRedo, FaSave } from "react-icons/fa";
 import { LuLayers3 } from "react-icons/lu";
 import { RiDashboard2Fill } from "react-icons/ri";
 import { EditIcon } from "@chakra-ui/icons";
@@ -70,7 +70,12 @@ export type IconName =
   | 'search'
   | 'external-link'
   | 'more-vertical'
-  | 'refresh';
+  | 'refresh'
+  | 'save'
+  | 'close'
+  | 'check'
+  | 'minus'
+  | 'question';
 
 interface AppIconProps extends Omit<IconProps, 'as'> {
   name: IconName;
@@ -174,6 +179,16 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={FaEllipsisV} {...props} />;
     case 'refresh':
       return <Icon as={FaRedo} {...props} />;
+    case 'save':
+      return <Icon as={FaSave} {...props} />;
+    case 'close':
+      return <Icon as={CloseIcon} {...props} />;
+    case 'check':
+      return <Icon as={CheckIcon} {...props} />;
+    case 'minus':
+      return <Icon as={MinusIcon} {...props} />;
+    case 'question':
+      return <Icon as={QuestionIcon} {...props} />;
     default:
       return null;
   }

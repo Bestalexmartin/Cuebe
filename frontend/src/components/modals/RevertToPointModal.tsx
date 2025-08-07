@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { FinalDeleteConfirmationModal } from './FinalDeleteConfirmationModal';
 import { EditOperation } from '../../features/script/types/editQueue';
-import { EditQueueFormatter } from '../../features/script/utils/editQueueFormatter';
 
 interface RevertToPointModalProps {
     isOpen: boolean;
@@ -58,7 +57,7 @@ export const RevertToPointModal: React.FC<RevertToPointModalProps> = ({
                 additionalInfo={[]}
                 actionWord="Revert"
                 customQuestion={`Are you sure you want to revert to Edit ${editNumber}?`}
-                customWarning={<>All edits after this point will be deleted.<br />This action cannot be undone.</>}
+                customWarning="All edits after this point will be deleted. This action cannot be undone."
             />
 
             {/* Final confirmation modal */}

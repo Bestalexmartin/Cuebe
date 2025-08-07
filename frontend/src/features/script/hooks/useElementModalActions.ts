@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from 'react';
 import { ScriptElement } from '../types/scriptElements';
-import { UpdateElementOperation } from '../types/editQueue';
 import { useEnhancedToast } from '../../../utils/toastUtils';
 
 interface UseElementModalActionsParams {
@@ -167,12 +166,21 @@ export const useElementModalActions = ({
         }
 
         try {
+            // Transform changes object to match database convention (old_value/new_value)
+            const transformedChanges: Record<string, { old_value: any; new_value: any }> = {};
+            for (const [key, value] of Object.entries(changes)) {
+                transformedChanges[key] = {
+                    old_value: value.oldValue,
+                    new_value: value.newValue
+                };
+            }
+
             applyLocalChange({
                 type: 'UPDATE_ELEMENT',
                 element_id: selectedElement.element_id,
-                changes: changes,
+                changes: transformedChanges,
                 description: `Updated element "${selectedElement.description}"`
-            } as UpdateElementOperation);
+            });
 
             setForceRender(prev => prev + 1);
 
@@ -303,7 +311,7 @@ export const useElementModalActions = ({
         }
 
         const groupElement = editQueueElements.find(el => el.element_id === selectedElementId);
-        if (!groupElement || groupElement.element_type !== 'GROUP') {
+        if (!groupElement || groupElement.type !== 'GROUP') {
             showError('Selected element is not a group');
             return;
         }
@@ -311,7 +319,8 @@ export const useElementModalActions = ({
         try {
             const ungroupOperation = {
                 type: 'UNGROUP_ELEMENTS',
-                group_element_id: selectedElementId
+                group_element_id: selectedElementId,
+                group_name: groupElement.description || 'Untitled Group'
             };
 
             applyLocalChange(ungroupOperation);

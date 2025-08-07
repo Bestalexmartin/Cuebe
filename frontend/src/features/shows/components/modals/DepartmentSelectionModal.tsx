@@ -7,7 +7,6 @@ import {
   ModalContent,
   ModalHeader,
   ModalBody,
-  ModalCloseButton,
   VStack,
   HStack,
   Text,
@@ -48,7 +47,6 @@ export const DepartmentSelectionModal: React.FC<DepartmentSelectionModalProps> =
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Select Department</ModalHeader>
-        <ModalCloseButton />
         <ModalBody pb={6}>
           {isLoading ? (
             <Flex justify="center" align="center" height="200px">

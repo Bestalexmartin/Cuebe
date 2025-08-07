@@ -24,6 +24,13 @@ interface AbandonChangesModalProps {
     changesCount: number;
     customMainText?: string; // Custom main text, overrides default
     warningMessage?: string; // Additional warning text
+    customHeader?: string; // Custom header text, defaults to "Abandon Changes"
+    customConfirmText?: string; // Custom confirm button text, defaults to "Abandon Changes"
+    customCancelText?: string; // Custom cancel button text, defaults to "Keep Changes"
+    customLoadingText?: string; // Custom loading text, defaults to "Abandoning..."
+    hideBottomWarning?: boolean; // Hide the "This action cannot be undone" text
+    customBottomWarning?: string; // Custom bottom warning text, overrides default
+    hideMiddleWarning?: boolean; // Hide the middle warning text entirely
 }
 
 export const AbandonChangesModal: React.FC<AbandonChangesModalProps> = ({
@@ -33,7 +40,14 @@ export const AbandonChangesModal: React.FC<AbandonChangesModalProps> = ({
     isLoading = false,
     changesCount,
     customMainText,
-    warningMessage
+    warningMessage,
+    customHeader = "Abandon Changes",
+    customConfirmText = "Abandon Changes",
+    customCancelText = "Keep Changes",
+    customLoadingText = "Abandoning...",
+    hideBottomWarning = false,
+    customBottomWarning,
+    hideMiddleWarning = false
 }) => {
     const defaultMainText = `${changesCount} unsaved change${changesCount !== 1 ? 's' : ''} will be permanently discarded.`;
     const defaultWarning = "You can recreate these changes later, but any unsaved work will be lost.";
@@ -50,7 +64,7 @@ export const AbandonChangesModal: React.FC<AbandonChangesModalProps> = ({
                 <ModalHeader>
                     <HStack spacing="3">
                         <AppIcon name="warning" boxSize="24px" color="orange.300" />
-                        <Text>Abandon Changes</Text>
+                        <Text>{customHeader}</Text>
                     </HStack>
                 </ModalHeader>
 
@@ -59,12 +73,16 @@ export const AbandonChangesModal: React.FC<AbandonChangesModalProps> = ({
                         <Text fontSize="lg" textAlign="center" fontWeight="bold">
                             {customMainText || defaultMainText}
                         </Text>
-                        <Text fontSize="md" textAlign="center" color="orange.200" lineHeight="1.6">
-                            {warningMessage || defaultWarning}
-                        </Text>
-                        <Text fontSize="lg" textAlign="center" color="orange.300" fontWeight="bold">
-                            This action cannot be undone.
-                        </Text>
+                        {!hideMiddleWarning && (
+                            <Text fontSize="md" textAlign="center" color="orange.200" lineHeight="1.6">
+                                {warningMessage || defaultWarning}
+                            </Text>
+                        )}
+                        {!hideBottomWarning && (
+                            <Text fontSize="lg" textAlign="center" color="orange.300" fontWeight="bold">
+                                {customBottomWarning || "This action cannot be undone."}
+                            </Text>
+                        )}
                     </VStack>
                 </ModalBody>
 
@@ -76,12 +94,12 @@ export const AbandonChangesModal: React.FC<AbandonChangesModalProps> = ({
                             onClick={onConfirm}
                             size="sm"
                             isLoading={isLoading}
-                            loadingText="Abandoning..."
+                            loadingText={customLoadingText}
                             _hover={{ bg: 'orange.500' }}
                             _focus={{ boxShadow: 'none' }}
                             fontWeight="bold"
                         >
-                            Abandon Changes
+                            {customConfirmText}
                         </Button>
                         <Button
                             bg="gray.600"
@@ -93,7 +111,7 @@ export const AbandonChangesModal: React.FC<AbandonChangesModalProps> = ({
                             _focus={{ boxShadow: 'none' }}
                             minWidth="120px"
                         >
-                            Keep Changes
+                            {customCancelText}
                         </Button>
                     </HStack>
                 </ModalFooter>

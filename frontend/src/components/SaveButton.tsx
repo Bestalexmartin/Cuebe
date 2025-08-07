@@ -1,7 +1,7 @@
 // frontend/src/components/SaveButton.tsx
 
 import React from 'react';
-import { Button, Tooltip, HStack, Text, Spinner } from '@chakra-ui/react';
+import { Button, Tooltip, HStack, Spinner } from '@chakra-ui/react';
 import { AppIcon } from './AppIcon';
 
 interface SaveButtonProps {

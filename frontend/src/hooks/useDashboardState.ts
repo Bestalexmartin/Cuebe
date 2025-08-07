@@ -171,26 +171,6 @@ export const useDashboardState = (
     [],
   );
 
-  // Enhanced navigation memory functions
-  const saveNavigationState = useCallback(
-    (view: string) => {
-      if (isRestoring || !hasInitialized) return;
-
-      const navigationState: NavigationState = {
-        view,
-        selectedState,
-        sortState,
-        timestamp: Date.now(),
-      };
-
-      sessionStorage.setItem(
-        "dashboardNavigationState",
-        JSON.stringify(navigationState),
-      );
-      setCurrentView(view);
-    },
-    [isRestoring, hasInitialized, selectedState, sortState],
-  );
 
   // Function to save current state immediately (for navigation)
   const saveCurrentNavigationState = useCallback(() => {
@@ -286,17 +266,6 @@ export const useDashboardState = (
     }
   }, []);
 
-  const clearNavigationState = useCallback(() => {
-    sessionStorage.removeItem("dashboardNavigationState");
-    // Also clear all current selections
-    setSelectedState({
-      shows: { selectedShowId: null, selectedScriptId: null },
-      venues: { selectedVenueId: null },
-      departments: { selectedDepartmentId: null },
-      crew: { selectedCrewId: null },
-    });
-    setHasInitialized(true);
-  }, []);
 
   // Function to restore only selections without scrolling side effects
   const restoreSelectionsOnly = useCallback(() => {

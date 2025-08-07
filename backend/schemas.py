@@ -227,6 +227,7 @@ class Script(BaseModel):
     end_time: Optional[datetime] = None  # Planned end time
     show_id: UUID  # ALREADY UUID
     owner_id: UUID  # Missing field needed for authorization
+    is_shared: bool = False
     date_created: datetime
     date_updated: datetime
     
@@ -242,6 +243,7 @@ class ScriptUpdate(BaseModel):
     script_status: Optional[str] = None
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None  # Planned end time
+    is_shared: Optional[bool] = None
 
 # =============================================================================
 # SCRIPT ELEMENT SCHEMAS

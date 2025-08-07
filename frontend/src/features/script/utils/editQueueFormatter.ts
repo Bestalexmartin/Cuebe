@@ -41,7 +41,7 @@ export class EditQueueFormatter {
                 return `Reordered ${count} element${count > 1 ? 's' : ''}`;
                 
             case 'ENABLE_AUTO_SORT':
-                const moveCount = operation.element_changes?.length || 0;
+                const moveCount = (operation as any).element_moves?.length || 0;
                 return `Auto-sort enabled (${moveCount} element${moveCount > 1 ? 's' : ''})`;
             
             case 'DISABLE_AUTO_SORT':
@@ -59,8 +59,7 @@ export class EditQueueFormatter {
                 return `Created group "${groupName}" with ${elementCount} element${elementCount !== 1 ? 's' : ''}`;
             
             case 'UNGROUP_ELEMENTS':
-                const ungroupElement = allElements.find(el => el.element_id === operation.group_element_id);
-                const ungroupName = ungroupElement?.description || 'Unknown Group';
+                const ungroupName = (operation as any).group_name || 'Unknown Group';
                 return `Ungrouped elements from "${ungroupName}"`;
             
             case 'TOGGLE_GROUP_COLLAPSE':

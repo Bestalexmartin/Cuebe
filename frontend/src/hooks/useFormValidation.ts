@@ -26,8 +26,7 @@ export const useFormValidation = <T extends FormData>(
 ): UseFormValidationReturn => {
   const { 
     requiredFields, 
-    customValidation, 
-    allowEmptyOptionalFields = true 
+    customValidation
   } = options;
 
   const validationResult = useMemo(() => {
@@ -89,7 +88,7 @@ export const useVenueFormValidation = <T extends FormData & { venue_name: string
 ) => {
   return useFormValidation(form, {
     requiredFields: ['venue_name'],
-    customValidation: (formData) => {
+    customValidation: () => {
       // If adding new venue, ensure newVenueName is provided
       if (isAddingNewVenue) {
         return newVenueName.trim() !== '';

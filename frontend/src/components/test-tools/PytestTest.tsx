@@ -80,7 +80,7 @@ export const PytestTest: React.FC = () => {
   const [isCreatingTestData, setIsCreatingTestData] = useState(false);
   const [currentTestSuite, setCurrentTestSuite] = useState<string>('');
   const { getToken } = useAuth();
-  const { showSuccess, showError, showWarning, showInfo } = useEnhancedToast();
+  const { showSuccess, showError, showWarning } = useEnhancedToast();
   const { hasCopied, onCopy } = useClipboard(testResults?.output || '');
   const { isOpen: isOutputOpen, onToggle: onToggleOutput } = useDisclosure();
 
@@ -128,15 +128,12 @@ export const PytestTest: React.FC = () => {
           `${results.passed}/${results.total_tests} tests passed in ${(results.duration / 1000).toFixed(2)}s`
         );
       } else {
-        showError(
-          'Test Suite Failed',
-          `${results.failed} tests failed, ${results.passed} passed`
-        );
+        showError(`Test Suite Failed: ${results.failed} tests failed, ${results.passed} passed`);
       }
 
     } catch (error) {
       console.error('Test execution failed:', error);
-      showError('Test Execution Failed', error instanceof Error ? error.message : 'Unknown error occurred');
+      showError(`Test Execution Failed: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
     } finally {
       setIsRunningTest(false);
       setCurrentTestSuite('');
@@ -179,7 +176,7 @@ export const PytestTest: React.FC = () => {
 
     } catch (error) {
       console.error('Fixture check failed:', error);
-      showError('Fixture Check Failed', error instanceof Error ? error.message : 'Unknown error occurred');
+      showError(`Fixture Check Failed: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
     } finally {
       setIsCheckingFixtures(false);
     }
@@ -217,12 +214,12 @@ export const PytestTest: React.FC = () => {
       if (data.success) {
         showSuccess('Test Data Created', `Generated ${dataType} test data successfully`);
       } else {
-        showError('Test Data Creation Failed', data.error || 'Unknown error occurred');
+        showError(`Test Data Creation Failed: ${data.error || 'Unknown error occurred'}`);
       }
 
     } catch (error) {
       console.error('Test data creation failed:', error);
-      showError('Test Data Creation Failed', error instanceof Error ? error.message : 'Unknown error occurred');
+      showError(`Test Data Creation Failed: ${error instanceof Error ? error.message : 'Unknown error occurred'}`);
     } finally {
       setIsCreatingTestData(false);
     }

@@ -117,8 +117,15 @@ export interface NoteElement extends ScriptElementBase {
   custom_color: string;                 // Required for visual distinction
 }
 
+export interface GroupElement extends ScriptElementBase {
+  type: 'GROUP';
+  trigger_type: 'TIME';                 // Groups are time-based by default
+  custom_color?: string;                // Optional group color
+  // Groups don't require cue_id or department
+}
+
 // Union type for all elements
-export type ScriptElement = CueElement | NoteElement;
+export type ScriptElement = CueElement | NoteElement | GroupElement;
 
 // Department information for display
 export interface Department {
@@ -301,11 +308,15 @@ export interface ScriptElementConditionalRule {
   is_active: boolean;
 }
 
-// Extended base interface with all relationships
-export interface ScriptElementFull extends ScriptElementBase {
+// Extended base interface with all relationships populated
+export interface ScriptElementFull extends Omit<ScriptElementBase, 'crewAssignments' | 'conditionalRules'> {
   equipment?: ScriptElementEquipment[];
-  crewAssignments?: ScriptElementCrewAssignment[];
-  conditionalRules?: ScriptElementConditionalRule[];
+  crewAssignments?: ScriptElementCrewAssignment[]; // Populated crew data
+  conditionalRules?: ScriptElementConditionalRule[]; // Populated conditional rules
+  // Keep the original crew IDs field from base
+  crew_assignment_ids?: string[];
+  // Keep the original conditional rule IDs from base  
+  conditional_rule_ids?: string[];
 }
 
 // Type aliases for backward compatibility

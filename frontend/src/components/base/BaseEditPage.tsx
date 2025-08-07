@@ -4,7 +4,6 @@ import React from 'react';
 import {
   Flex,
   Box,
-  VStack,
   Heading,
   HStack,
   Button,

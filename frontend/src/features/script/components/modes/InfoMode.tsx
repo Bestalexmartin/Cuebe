@@ -30,7 +30,7 @@ export const InfoMode: React.FC<InfoModeProps> = ({ form }) => {
                     placeholder="Enter script name"
                 />
                 <FormErrorMessage>
-                    {form.getFieldError('script_name')?.message}
+                    {form.getFieldError('script_name')}
                 </FormErrorMessage>
             </FormControl>
 
@@ -81,7 +81,7 @@ export const InfoMode: React.FC<InfoModeProps> = ({ form }) => {
                     resize="vertical"
                 />
                 <FormErrorMessage>
-                    {form.getFieldError('script_notes')?.message}
+                    {form.getFieldError('script_notes')}
                 </FormErrorMessage>
             </FormControl>
         </VStack>

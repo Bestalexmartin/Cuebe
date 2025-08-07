@@ -22,7 +22,7 @@ import { UtilitiesMenu } from '../UtilitiesMenu';
 interface QuickAccessItemProps {
   title: string;
   description: string;
-  is_active?: boolean;
+  isActive?: boolean; // Frontend computed state - camelCase
   onClick?: () => void;
   isDisabled?: boolean;
   badgeTitle?: string;

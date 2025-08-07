@@ -1,6 +1,6 @@
 // frontend/src/features/script/components/modes/ViewMode.tsx
 
-import React, { forwardRef, useImperativeHandle, useRef, useEffect, useState, useMemo } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef, useEffect, useMemo } from 'react';
 import { VStack, Text, Box, Flex } from '@chakra-ui/react';
 import { useScriptElements } from '../../hooks/useScriptElements';
 import { useScript } from '../../hooks/useScript';
@@ -142,7 +142,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                 )}
 
                 {(shouldFetchElements ? (!isLoading && !error) : true) && displayElements.length === 0 && (
-                    <Flex justify="center" align="center" height="200px" direction="column" spacing={4}>
+                    <Flex justify="center" align="center" height="200px" direction="column" gap={4}>
                         <Text color="gray.500" fontSize="lg">
                             No script elements yet
                         </Text>
@@ -158,27 +158,27 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                         align="stretch"
                         css={{
                             '& > *': {
-                                userSelect: 'none !important',
-                                WebkitUserSelect: 'none !important',
-                                MozUserSelect: 'none !important',
-                                msUserSelect: 'none !important',
-                                pointerEvents: 'none !important',
-                                cursor: 'default !important',
+                                userSelect: 'none',
+                                WebkitUserSelect: 'none',
+                                MozUserSelect: 'none',
+                                msUserSelect: 'none',
+                                pointerEvents: 'none',
+                                cursor: 'default',
                                 '&:hover': {
-                                    backgroundColor: 'inherit !important',
-                                    borderColor: 'inherit !important',
-                                    color: 'inherit !important',
-                                    transform: 'none !important'
+                                    backgroundColor: 'inherit',
+                                    borderColor: 'inherit',
+                                    color: 'inherit',
+                                    transform: 'none'
                                 },
                                 '&:active': {
-                                    backgroundColor: 'inherit !important',
-                                    borderColor: 'inherit !important',
-                                    color: 'inherit !important',
-                                    transform: 'none !important'
+                                    backgroundColor: 'inherit',
+                                    borderColor: 'inherit',
+                                    color: 'inherit',
+                                    transform: 'none'
                                 },
                                 '&:focus': {
-                                    outline: 'none !important',
-                                    boxShadow: 'none !important'
+                                    outline: 'none',
+                                    boxShadow: 'none'
                                 }
                             }
                         }}

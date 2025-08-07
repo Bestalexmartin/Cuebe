@@ -108,20 +108,20 @@ export const EditShowPage: React.FC = () => {
     useEffect(() => {
         if (show) {
             // Convert show crew assignments to CrewAssignmentRow format
-            const crewAssignmentRows: CrewAssignmentRow[] = show.crew?.map(assignment => ({
+            const crewAssignmentRows = show.crew?.map(assignment => ({
                 id: assignment.assignment_id,
                 department_id: assignment.department_id,
                 crew_member_ids: [assignment.user_id],
                 role: assignment.show_role || '',
-                isNew: false,
-                isSelected: false
+                isNew: false as boolean,
+                isSelected: false as boolean
             })) || [];
 
             form.setFormData({
                 show_name: show.show_name || '',
                 show_notes: show.show_notes || '',
                 show_date: convertUTCToLocal(show.show_date),
-                show_duration: convertUTCToLocal(show.show_duration),
+                show_duration: '',
                 deadline: convertUTCToLocal(show.deadline),
                 venue_id: show.venue?.venue_id || '',
                 crew_assignments: crewAssignmentRows
@@ -134,7 +134,7 @@ export const EditShowPage: React.FC = () => {
         show_name: show.show_name || '',
         show_notes: show.show_notes || '',
         show_date: convertUTCToLocal(show.show_date),
-        show_duration: convertUTCToLocal(show.show_duration),
+        show_duration: '',
         deadline: convertUTCToLocal(show.deadline),
         venue_id: show.venue?.venue_id || '',
         crew_assignments: show.crew?.map(assignment => ({
@@ -142,14 +142,21 @@ export const EditShowPage: React.FC = () => {
             department_id: assignment.department_id,
             crew_member_ids: [assignment.user_id],
             role: assignment.show_role || '',
-            isNew: false,
-            isSelected: false
+            isNew: false as boolean,
+            isSelected: false as boolean
         })) || []
     } : null;
 
     const { hasChanges, updateOriginalData } = useChangeDetection(
         initialData,
-        form.formData,
+        {
+            ...form.formData,
+            crew_assignments: form.formData.crew_assignments.map(assignment => ({
+                ...assignment,
+                isNew: assignment.isNew || false,
+                isSelected: assignment.isSelected || false
+            }))
+        },
         true // Always active for show editing
     );
 
@@ -221,10 +228,18 @@ export const EditShowPage: React.FC = () => {
                 if (!response.ok) {
                     throw new Error('Failed to save crew assignments');
                 }
+
             }
 
             // Update original data to reflect the new saved state
-            updateOriginalData(form.formData);
+            updateOriginalData({
+                ...form.formData,
+                crew_assignments: form.formData.crew_assignments.map(assignment => ({
+                    ...assignment,
+                    isNew: assignment.isNew || false,
+                    isSelected: assignment.isSelected || false
+                }))
+            });
 
             // Navigate back to dashboard on success
             navigate('/dashboard', {

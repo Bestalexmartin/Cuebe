@@ -347,7 +347,7 @@ class Script(Base):
     actual_start_time = Column(DateTime(timezone=True), nullable=True)
     
     # Status flags
-    is_pinned = Column(Boolean, default=False, nullable=False)
+    is_shared = Column(Boolean, default=False, nullable=False)
     
     # Foreign keys - ALREADY UUID
     show_id = Column(UUID(as_uuid=True), ForeignKey("showsTable.show_id"), nullable=False)
