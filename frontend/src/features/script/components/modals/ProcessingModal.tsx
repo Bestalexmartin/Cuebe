@@ -27,12 +27,17 @@ export const ProcessingModal: React.FC<ProcessingModalProps> = ({
         <Modal
             isOpen={isOpen}
             onClose={() => { }}
-            isCentered
             closeOnOverlayClick={false}
             closeOnEsc={false}
         >
-            <ModalOverlay bg="blackAlpha.600" />
-            <ModalContent maxWidth="400px" mx="4">
+            <ModalOverlay />
+            <ModalContent 
+                maxWidth="400px" 
+                mx="4"
+                bg="page.background"
+                border="2px solid"
+                borderColor="gray.600"
+            >
                 <ModalBody py="8">
                     <VStack spacing={6} align="center">
                         <Box>

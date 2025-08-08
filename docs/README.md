@@ -106,7 +106,7 @@ Welcome to the CallMaster documentation! This comprehensive guide covers all asp
 
 CallMaster is built with modern technologies focused on performance, maintainability, and developer experience:
 
-- **Frontend**: React 19.1.0 + TypeScript + Chakra UI
+- **Frontend**: React 19.1.0 + TypeScript + Chakra UI + QR Code Generation
 - **Backend**: Python FastAPI + SQLAlchemy + PostgreSQL
 - **Authentication**: Clerk
 - **Testing**: 6 comprehensive testing tools for all application layers
@@ -155,6 +155,7 @@ CallMaster is built with modern technologies focused on performance, maintainabi
 - **Edit Queue System**: Comprehensive undo/redo with operation tracking
 - **Note Color Customization**: Visual organization system with smart text contrast
 - **User Preferences**: Efficient bitmap-based preference storage system
+- **QR Code Sharing**: Quick access sharing links for crew members with scannable QR codes
 
 ### 🧪 **Testing Infrastructure**
 

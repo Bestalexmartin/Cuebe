@@ -1,8 +1,16 @@
 // frontend/src/components/modals/SaveProcessingModal.tsx
 
 import React from 'react';
-import { Text, VStack, Spinner } from '@chakra-ui/react';
-import { BaseModal } from '../base/BaseModal';
+import {
+    Modal,
+    ModalOverlay,
+    ModalContent,
+    ModalBody,
+    VStack,
+    Text,
+    Spinner,
+    Box
+} from '@chakra-ui/react';
 
 interface SaveProcessingModalProps {
     isOpen: boolean;
@@ -14,31 +22,51 @@ export const SaveProcessingModal: React.FC<SaveProcessingModalProps> = ({
     changesCount
 }) => {
     return (
-        <BaseModal
-            title="Saving Changes"
-            headerIcon="save"
-            headerIconColor="page.text"
+        <Modal
             isOpen={isOpen}
-            onClose={() => {}} // No close functionality during save
-            customActions={[]} // No action buttons for processing modal
+            onClose={() => { }}
+            closeOnOverlayClick={false}
+            closeOnEsc={false}
         >
-            <VStack spacing={6} align="center">
-                <VStack spacing={2} align="center">
-                    <Text fontWeight="medium" textAlign="center">
-                        Saving {changesCount} change{changesCount !== 1 ? 's' : ''} to the database...
-                    </Text>
-                    
-                    <Text fontSize="sm" textAlign="center">
-                        Please wait while your changes are being saved.
-                    </Text>
-                </VStack>
+            <ModalOverlay />
+            <ModalContent 
+                maxWidth="400px" 
+                mx="4"
+                bg="page.background"
+                border="2px solid"
+                borderColor="gray.600"
+            >
+                <ModalBody py="8">
+                    <VStack spacing={6} align="center">
+                        <Box>
+                            <Spinner
+                                size="xl"
+                                thickness="4px"
+                                speed="0.8s"
+                                color="blue.400"
+                            />
+                        </Box>
 
-                <Spinner size="lg" color="blue.500" thickness="3px" />
-
-                <Text fontSize="md" color="red.500" fontWeight="bold" textAlign="center">
-                    Do not close this window or navigate away.
-                </Text>
-            </VStack>
-        </BaseModal>
+                        <VStack spacing={2} textAlign="center">
+                            <Text
+                                fontSize="lg"
+                                fontWeight="semibold"
+                                color="gray.700"
+                                _dark={{ color: "gray.200" }}
+                            >
+                                Saving Changes
+                            </Text>
+                            <Text
+                                fontSize="sm"
+                                color="gray.600"
+                                _dark={{ color: "gray.400" }}
+                            >
+                                Saving {changesCount} change{changesCount !== 1 ? 's' : ''} to the database...
+                            </Text>
+                        </VStack>
+                    </VStack>
+                </ModalBody>
+            </ModalContent>
+        </Modal>
     );
 };

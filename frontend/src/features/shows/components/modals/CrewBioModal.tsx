@@ -14,6 +14,8 @@ import {
   useClipboard,
   Input
 } from '@chakra-ui/react';
+import { QRCodeSVG } from 'qrcode.react';
+import { MdRefresh } from "react-icons/md";
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { CrewMember } from '../../types/crewAssignments';
 import { formatRole } from '../../../../constants/userRoles';
@@ -66,7 +68,6 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
       title=""
       isOpen={isOpen}
       onClose={onClose}
-      rightAlignActions={true}
       customActions={[
         {
           label: "Close",
@@ -135,73 +136,16 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
           )}
         </VStack>
 
-        {/* Account Information */}
-        <Divider />
-        <VStack spacing={2} align="stretch">
-          <Text fontSize="md" fontWeight="semibold">
-            Account Information
-          </Text>
-          
-          <HStack justify="space-between">
-            <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-              Created:
-            </Text>
-            <Text fontSize="sm">
-              {formatDateTimeLocal(crewMember.date_created)}
-            </Text>
-          </HStack>
-          
-          <HStack justify="space-between">
-            <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
-              Last Updated:
-            </Text>
-            <Text fontSize="sm">
-              {formatDateTimeLocal(crewMember.date_updated)}
-            </Text>
-          </HStack>
-        </VStack>
-
-        {/* Manager Notes (if any) */}
-        {crewMember.relationship_notes && (
-          <>
-            <Divider />
-            <VStack spacing={2} align="stretch">
-              <Text fontSize="md" fontWeight="semibold">
-                Manager Notes
-              </Text>
-              <Text fontSize="sm">
-                {crewMember.relationship_notes}
-              </Text>
-            </VStack>
-          </>
-        )}
-
         {/* Sharing Link */}
         {showId && (
           <>
             <Divider />
             <VStack spacing={2} align="stretch">
-              <Text fontSize="md" fontWeight="semibold">
-                Sharing Link
-              </Text>
-              <Box
-                p={3}
-                bg="app.background"
-                borderRadius="md"
-                border="1px solid"
-                borderColor="gray.200"
-                _dark={{ borderColor: "gray.600" }}
-              >
-                <HStack spacing={2}>
-                  <Input
-                    value={sharingUrl}
-                    isReadOnly
-                    fontSize="sm"
-                    fontFamily="monospace"
-                    variant="unstyled"
-                    p={0}
-                    cursor="text"
-                  />
+              <HStack justify="space-between" align="center">
+                <Text fontSize="md" fontWeight="semibold">
+                  Sharing Link
+                </Text>
+                <HStack spacing={1}>
                   <IconButton
                     aria-label={hasCopied ? "Copied!" : "Copy sharing link"}
                     icon={<AppIcon name="copy" />}
@@ -210,8 +154,81 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
                     variant="ghost"
                     colorScheme={hasCopied ? "green" : "gray"}
                   />
+                  <IconButton
+                    aria-label="Regenerate sharing link"
+                    icon={<MdRefresh size={20} />}
+                    size="sm"
+                    onClick={() => {}} // Placeholder for future implementation
+                    variant="ghost"
+                    colorScheme="gray"
+                  />
                 </HStack>
+              </HStack>
+              <Box
+                p={3}
+                bg="app.background"
+                borderRadius="md"
+                border="1px solid"
+                borderColor="green.400"
+                _dark={{ borderColor: "green.400" }}
+              >
+                <Input
+                  value={sharingUrl}
+                  isReadOnly
+                  fontSize="xs"
+                  fontFamily="monospace"
+                  variant="unstyled"
+                  p={0}
+                  cursor="text"
+                />
               </Box>
+              
+              {sharingUrl && (
+                <Box
+                  alignSelf="center"
+                  mt={5}
+                  p={3}
+                  bg="white"
+                  borderRadius="md"
+                  border="1px solid"
+                  borderColor="green.400"
+                  display="flex"
+                  justifyContent="center"
+                  alignItems="center"
+                  position="relative"
+                >
+                  <QRCodeSVG
+                    value={sharingUrl}
+                    size={160}
+                    bgColor="white"
+                    fgColor="black"
+                    level="M"
+                  />
+                  <Box
+                    position="absolute"
+                    top="50%"
+                    left="50%"
+                    transform="translate(-50%, -50%)"
+                    bg="white"
+                    borderRadius="md"
+                    width="50px"
+                    height="50px"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <img
+                      src="/cuebe-qr.svg"
+                      alt="Cuebe"
+                      style={{
+                        width: '60px',
+                        height: '60px',
+                        display: 'block'
+                      }}
+                    />
+                  </Box>
+                </Box>
+              )}
             </VStack>
           </>
         )}
