@@ -280,7 +280,7 @@ class Show(Base):
     # Core show information
     show_name = Column(String, index=True, nullable=False)
     show_date = Column(DateTime(timezone=True), nullable=True)
-    show_duration = Column(DateTime(timezone=True), nullable=True)  # End time of show
+    show_end = Column(DateTime(timezone=True), nullable=True)  # End time of show
     show_notes = Column(Text, nullable=True)
     deadline = Column(DateTime(timezone=True), nullable=True)
     

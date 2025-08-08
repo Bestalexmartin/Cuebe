@@ -5,7 +5,7 @@ import {
     VStack,
     FormControl,
     FormLabel,
-    Checkbox,
+    Switch,
     HStack
 } from '@chakra-ui/react';
 import { BaseModal } from '../../../../components/base/BaseModal';
@@ -84,6 +84,8 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
     return (
         <BaseModal
             title="Script Display Options"
+            headerIcon="options"
+            headerIconColor="page.text"
             isOpen={isOpen}
             onClose={handleClose}
             secondaryAction={{
@@ -95,20 +97,18 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
         >
             <VStack spacing={3} align="stretch">
                 <FormControl>
-                    <HStack align="center">
-                        <Checkbox
+                    <HStack align="center" spacing={5}>
+                        <Switch
+                            id="colorize-switch"
                             isChecked={localPreferences.colorizeDepNames}
                             onChange={(e) => handleColorizeChange(e.target.checked)}
+                            colorScheme="blue"
+                            size="md"
                         />
                         <FormLabel
                             mb="0"
                             fontSize="md"
-                            fontWeight="semibold"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                handleColorizeChange(!localPreferences.colorizeDepNames);
-                            }}
-                            cursor="pointer"
+                            htmlFor="colorize-switch"
                         >
                             Colorize Department Names
                         </FormLabel>
@@ -116,20 +116,18 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                 </FormControl>
 
                 <FormControl>
-                    <HStack align="center">
-                        <Checkbox
+                    <HStack align="center" spacing={5}>
+                        <Switch
+                            id="autosort-switch"
                             isChecked={localPreferences.autoSortCues}
                             onChange={(e) => handleAutoSortChange(e.target.checked)}
+                            colorScheme="blue"
+                            size="md"
                         />
                         <FormLabel
                             mb="0"
                             fontSize="md"
-                            fontWeight="semibold"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                handleAutoSortChange(!localPreferences.autoSortCues);
-                            }}
-                            cursor="pointer"
+                            htmlFor="autosort-switch"
                         >
                             Auto-Sort Cues
                         </FormLabel>
@@ -137,20 +135,18 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                 </FormControl>
 
                 <FormControl>
-                    <HStack align="center">
-                        <Checkbox
+                    <HStack align="center" spacing={5}>
+                        <Switch
+                            id="clocktimes-switch"
                             isChecked={localPreferences.showClockTimes}
                             onChange={(e) => handleClockTimesChange(e.target.checked)}
+                            colorScheme="blue"
+                            size="md"
                         />
                         <FormLabel
                             mb="0"
                             fontSize="md"
-                            fontWeight="semibold"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                handleClockTimesChange(!localPreferences.showClockTimes);
-                            }}
-                            cursor="pointer"
+                            htmlFor="clocktimes-switch"
                         >
                             Show Clock Times
                         </FormLabel>

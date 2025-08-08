@@ -35,8 +35,8 @@ export const FinalSaveConfirmationModal: React.FC<FinalSaveConfirmationModalProp
     customMainText,
     warningMessage
 }) => {
-    const defaultMainText = `${changesCount} change${changesCount !== 1 ? 's' : ''} will be permanently saved to the database.`;
-    const defaultWarning = "This will apply all pending changes and reset your edit history. This action cannot be undone.";
+    const defaultMainText = `${changesCount} change${changesCount !== 1 ? 's' : ''} will be saved to the database.`;
+    const defaultWarning = "This will apply all active changes and reset your edit history.";
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="md">
@@ -50,7 +50,7 @@ export const FinalSaveConfirmationModal: React.FC<FinalSaveConfirmationModalProp
                 <ModalHeader>
                     <HStack spacing="3">
                         <AppIcon name="save" boxSize="24px" color="white" />
-                        <Text>FINAL CONFIRMATION - Save Changes</Text>
+                        <Text>Final Confirmation</Text>
                     </HStack>
                 </ModalHeader>
 
@@ -61,9 +61,6 @@ export const FinalSaveConfirmationModal: React.FC<FinalSaveConfirmationModalProp
                         </Text>
                         <Text fontSize="md" textAlign="center" color="blue.200" lineHeight="1.6">
                             {warningMessage || defaultWarning}
-                        </Text>
-                        <Text fontSize="md" textAlign="center" color="blue.300" fontWeight="bold">
-                            THIS ACTION CANNOT BE UNDONE!
                         </Text>
                     </VStack>
                 </ModalBody>

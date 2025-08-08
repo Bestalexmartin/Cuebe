@@ -29,13 +29,14 @@ interface Script {
   date_created: string;
   date_updated: string;
   last_used?: string;
+  is_shared: boolean;
 }
 
 interface Show {
   show_id: string;
   show_name: string;
   show_date?: string;
-  show_duration?: string;
+  show_end?: string;
   date_created: string;
   date_updated: string;
   venue?: Venue;
@@ -146,7 +147,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
       </HStack>
       <HStack justify="space-between" fontSize="sm" color="cardText" mt={1}>
         <Text>
-          End Time: {show.show_duration ? formatTimeLocal(show.show_duration) : 'Not set'}
+          End Time: {show.show_end ? formatTimeLocal(show.show_end) : 'Not set'}
         </Text>
         <Text fontSize="xs">
           Updated: {formatDateTimeLocal(show.date_updated)}
@@ -157,7 +158,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
 
   const expandedContent = (
     <Box>
-      <HStack justify="space-between" align="center" flexShrink={0} pt={2} mb={4} pl="4">
+      <HStack justify="space-between" align="center" flexShrink={0} pt={2} mb={4}>
         <Text fontWeight="semibold">
           Scripts
         </Text>
@@ -173,7 +174,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
           Create Script
         </Button>
       </HStack>
-      <Box pl="4">
+      <Box>
         {sortedScripts.length > 0 ? (
           <VStack spacing={2} align="stretch">
             {sortedScripts.map((script) => (
@@ -204,9 +205,16 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                     color="cardText"
                     mt={2}
                   >
-                    <Badge variant="solid" colorScheme="blue">
-                      {script.script_status.toUpperCase()}
-                    </Badge>
+                    <HStack spacing={2}>
+                      <Badge variant="solid" colorScheme="blue">
+                        {script.script_status.toUpperCase()}
+                      </Badge>
+                      {script.is_shared && (
+                        <Badge variant="solid" colorScheme="green">
+                          SHARED
+                        </Badge>
+                      )}
+                    </HStack>
                   </HStack>
                   <HStack
                     justify="space-between"

@@ -25,13 +25,36 @@ export function useChangeDetection<T extends Record<string, any>>(
         }
     }, [initialData, originalData]);
 
+    // Deep comparison function to handle arrays and objects
+    const deepEqual = (a: any, b: any): boolean => {
+        if (a === b) return true;
+        
+        if (a == null || b == null) return a === b;
+        
+        if (Array.isArray(a) && Array.isArray(b)) {
+            if (a.length !== b.length) return false;
+            return a.every((item, index) => deepEqual(item, b[index]));
+        }
+        
+        if (typeof a === 'object' && typeof b === 'object') {
+            const keysA = Object.keys(a);
+            const keysB = Object.keys(b);
+            
+            if (keysA.length !== keysB.length) return false;
+            
+            return keysA.every(key => deepEqual(a[key], b[key]));
+        }
+        
+        return a === b;
+    };
+
     // Deep comparison to detect changes
     const hasChanges = useMemo(() => {
         if (!is_active || !originalData) return false;
 
-        // Compare each field in currentData with originalData
+        // Compare each field in currentData with originalData using deep comparison
         for (const key in currentData) {
-            if (currentData[key] !== originalData[key]) {
+            if (!deepEqual(currentData[key], originalData[key])) {
                 return true;
             }
         }

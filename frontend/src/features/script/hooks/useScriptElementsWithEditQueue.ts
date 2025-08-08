@@ -621,13 +621,16 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             let autoSortResult = [...elements];
             const autoSortOp = operation as any;
             
-            autoSortOp.element_changes.forEach((change: any) => {
-                const elementIndex = autoSortResult.findIndex(el => el.element_id === change.elementId);
-                if (elementIndex !== -1) {
-                    const [element] = autoSortResult.splice(elementIndex, 1);
-                    autoSortResult.splice(change.newIndex, 0, element);
-                }
-            });
+            // Check if element_moves exists before trying to iterate
+            if (autoSortOp.element_moves && Array.isArray(autoSortOp.element_moves)) {
+                autoSortOp.element_moves.forEach((change: any) => {
+                    const elementIndex = autoSortResult.findIndex(el => el.element_id === change.element_id);
+                    if (elementIndex !== -1) {
+                        const [element] = autoSortResult.splice(elementIndex, 1);
+                        autoSortResult.splice(change.new_index, 0, element);
+                    }
+                });
+            }
             
             return autoSortResult.map((el, index) => ({
                 ...el,

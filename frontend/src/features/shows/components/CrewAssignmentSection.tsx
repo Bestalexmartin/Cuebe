@@ -29,6 +29,7 @@ interface CrewAssignmentSectionProps {
 }
 
 export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
+  showId,
   assignments,
   onAssignmentsChange
 }) => {
@@ -213,6 +214,8 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                     spacing={{ base: 1, sm: 2, md: 3 }} 
                     align="center"
                     display={{ base: "none", md: "flex" }}
+                    overflow="hidden"
+                    minWidth={0}
                   >
                     {/* Department Color Chip */}
                     <Box
@@ -287,40 +290,42 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                       {crewName}
                     </Text>
 
-                    {/* Email Address */}
+                    {/* Email Address - Hide on small screens (md+ only) */}
                     <Text 
                       fontSize="sm" 
                       color="gray.700" 
                       _dark={{ color: "gray.300" }} 
                       minWidth={{ md: "140px", lg: "180px" }}
                       maxWidth={{ md: "140px", lg: "180px" }}
+                      display={{ base: "none", md: "block" }}
                       isTruncated
+                      flexShrink={2}
                     >
                       {crewMember?.email_address || ''}
                     </Text>
 
-                    {/* Phone Number */}
+                    {/* Phone Number - Hide on medium screens (lg+ only) */}
                     <Text 
                       fontSize="sm" 
                       color="gray.700" 
                       _dark={{ color: "gray.300" }} 
-                      minWidth={{ md: "110px", lg: "140px" }}
-                      maxWidth={{ md: "110px", lg: "140px" }}
+                      minWidth={{ lg: "110px", xl: "140px" }}
+                      maxWidth={{ lg: "110px", xl: "140px" }}
+                      display={{ base: "none", lg: "block" }}
                       isTruncated
+                      flexShrink={2}
                     >
                       {crewMember?.phone_number || ''}
                     </Text>
 
-                    {/* Spacer for notes positioning - responsive */}
-                    <Box minWidth={{ lg: "20px" }} display={{ base: "none", lg: "block" }} />
-
-                    {/* Notes - only on large screens */}
+                    {/* Notes - Expand to fill remaining space between phone and badge */}
                     <Text 
                       fontSize="sm" 
-                      display={{ base: "none", lg: "block" }}
-                      minWidth="220px"
-                      maxWidth="220px"
+                      display={{ base: "none", xl: "block" }}
+                      flex={1}
                       isTruncated
+                      ml={4}
+                      mr={4}
                     >
                       {crewMember?.relationship_notes ? (
                         <>
@@ -332,17 +337,22 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                       ) : ''}
                     </Text>
 
-                    {/* Spacer to push badge to far right */}
-                    <Box flex={1} />
-
-                    {/* Role Badge - centered in fixed column on far right */}
+                    {/* Role Badge - Aligned to right edge */}
                     <Box 
-                      minWidth={{ md: "120px", lg: "160px" }} 
+                      minWidth={{ base: "80px", md: "100px", lg: "120px" }} 
+                      maxWidth={{ base: "120px", md: "140px", lg: "160px" }}
                       display="flex" 
-                      justifyContent="center"
+                      justifyContent="flex-end"
+                      flexShrink={0}
                     >
                       {assignment.role && (
-                        <Badge colorScheme="blue" variant="outline" size="md">
+                        <Badge 
+                          colorScheme="blue" 
+                          variant="outline" 
+                          size={{ base: "sm", md: "md" }}
+                          maxWidth="100%"
+                          isTruncated
+                        >
                           {formatRole(assignment.role)}
                         </Badge>
                       )}
@@ -469,6 +479,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
         isOpen={isCrewBioModalOpen}
         onClose={handleCrewBioModalClose}
         crewMember={selectedCrewMember}
+        showId={showId}
       />
 
       {/* Delete Confirmation Modal */}

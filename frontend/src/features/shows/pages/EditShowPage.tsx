@@ -27,7 +27,7 @@ interface ShowFormData {
     show_name: string;
     show_notes: string;
     show_date: string;
-    show_duration: string;  // End Time of show
+    show_end: string;  // End Time of show
     deadline: string;
     venue_id: string;
     crew_assignments: CrewAssignmentRow[];
@@ -42,7 +42,7 @@ const INITIAL_FORM_STATE: ShowFormData = {
     show_name: '',
     show_notes: '',
     show_date: '',
-    show_duration: '',  // End Time of show
+    show_end: '',  // End Time of show
     deadline: '',
     venue_id: '',
     crew_assignments: []
@@ -121,7 +121,7 @@ export const EditShowPage: React.FC = () => {
                 show_name: show.show_name || '',
                 show_notes: show.show_notes || '',
                 show_date: convertUTCToLocal(show.show_date),
-                show_duration: '',
+                show_end: convertUTCToLocal(show.show_end) || '',
                 deadline: convertUTCToLocal(show.deadline),
                 venue_id: show.venue?.venue_id || '',
                 crew_assignments: crewAssignmentRows
@@ -134,7 +134,7 @@ export const EditShowPage: React.FC = () => {
         show_name: show.show_name || '',
         show_notes: show.show_notes || '',
         show_date: convertUTCToLocal(show.show_date),
-        show_duration: '',
+        show_end: convertUTCToLocal(show.show_end) || '',
         deadline: convertUTCToLocal(show.deadline),
         venue_id: show.venue?.venue_id || '',
         crew_assignments: show.crew?.map(assignment => ({
@@ -190,7 +190,7 @@ export const EditShowPage: React.FC = () => {
                 show_name: form.formData.show_name,
                 show_notes: form.formData.show_notes || null,
                 show_date: convertLocalToUTC(form.formData.show_date),
-                show_duration: convertLocalToUTC(form.formData.show_duration),
+                show_end: convertLocalToUTC(form.formData.show_end),
                 deadline: convertLocalToUTC(form.formData.deadline),
                 venue_id: form.formData.venue_id || null,
             };
@@ -421,8 +421,8 @@ export const EditShowPage: React.FC = () => {
                                 <FormLabel>End Time</FormLabel>
                                 <Input
                                     type="datetime-local"
-                                    value={form.formData.show_duration}
-                                    onChange={(e) => handleChange('show_duration', e.target.value)}
+                                    value={form.formData.show_end}
+                                    onChange={(e) => handleChange('show_end', e.target.value)}
                                 />
                             </FormControl>
                             <FormControl>

@@ -58,6 +58,7 @@ export interface BaseModalProps extends Omit<ModalContentProps, 'children'> {
 
   // UI Options
   showCloseButton?: boolean;
+  rightAlignActions?: boolean;
 }
 
 const BaseModalComponent: React.FC<BaseModalProps> = ({
@@ -76,6 +77,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
   showValidationErrors = true,
   errorBoundaryContext,
   showCloseButton = false,
+  rightAlignActions = false,
   ...modalContentProps
 }) => {
   const getButtonVariant = (variant: BaseModalAction['variant'] = 'secondary') => {
@@ -202,7 +204,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
           {children}
         </ModalBody>
 
-        <ModalFooter>
+        <ModalFooter justifyContent={rightAlignActions ? "flex-end" : "flex-start"}>
           {renderActions()}
         </ModalFooter>
 
