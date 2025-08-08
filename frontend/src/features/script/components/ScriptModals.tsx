@@ -148,7 +148,8 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 scriptId={scriptId}
                 originalScriptName={script?.script_name || ''}
                 onScriptDuplicated={() => {
-                    // Handle the duplicated script - could navigate or call onDuplicateConfirm
+                    // Close processing modal and handle duplicate completion
+                    modalState.closeModal(modalNames.PROCESSING);
                     onDuplicateConfirm();
                 }}
                 onProcessingStart={() => modalState.openModal(modalNames.PROCESSING)}

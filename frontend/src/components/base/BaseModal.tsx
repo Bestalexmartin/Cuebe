@@ -77,7 +77,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
   showValidationErrors = true,
   errorBoundaryContext,
   showCloseButton = false,
-  rightAlignActions = false,
+  rightAlignActions = true,
   ...modalContentProps
 }) => {
   const getButtonVariant = (variant: BaseModalAction['variant'] = 'secondary') => {
@@ -132,7 +132,6 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
       <>
         <Button
           size="sm"
-          mr={3}
           onClick={finalSecondaryAction.onClick}
           isDisabled={finalSecondaryAction.isDisabled}
           {...getButtonVariant(finalSecondaryAction.variant)}
@@ -143,6 +142,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
         {primaryAction && (
           <Button
             size="sm"
+            ml={3}
             type={onSubmit ? "submit" : "button"}
             onClick={onSubmit ? undefined : primaryAction.onClick}
             isLoading={primaryAction.isLoading}
@@ -204,7 +204,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
           {children}
         </ModalBody>
 
-        <ModalFooter justifyContent={rightAlignActions ? "flex-end" : "flex-start"}>
+        <ModalFooter justifyContent={rightAlignActions === false ? "flex-start" : "flex-end"}>
           {renderActions()}
         </ModalFooter>
 

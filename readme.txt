@@ -29,7 +29,7 @@ Architecture Diagram
 
 Cuebe is built with:
 
-**Frontend**: React 19.1.0 + TypeScript + Chakra UI
+**Frontend**: React 19.1.0 + TypeScript + Chakra UI + QR Code Generation
 **Backend**: Python FastAPI + SQLAlchemy + PostgreSQL
 **Authentication**: Clerk
 **Testing**: Comprehensive test suites for all application layers
