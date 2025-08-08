@@ -30,6 +30,7 @@ interface ScriptModalsProps {
     selectedElementName: string;
     selectedElementTimeOffset: number;
     pendingOperations: any[];
+    totalChangesCount: number;
 
     // Processing states
     isDeleting: boolean;
@@ -96,6 +97,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     selectedElementName,
     selectedElementTimeOffset,
     pendingOperations,
+    totalChangesCount,
     isDeleting,
     isDeletingCue,
     isDuplicatingElement,
@@ -180,7 +182,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 onClose={onClearHistoryCancel}
                 onConfirm={onInitialClearHistoryConfirm}
                 entityType="Edit History"
-                entityName={`${pendingOperations.length} unsaved changes`}
+                entityName={`${totalChangesCount} unsaved changes`}
             />
 
             <AbandonChangesModal
@@ -188,7 +190,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 onClose={onClearHistoryCancel}
                 onConfirm={onFinalClearHistoryConfirm}
                 isLoading={false}
-                changesCount={pendingOperations.length}
+                changesCount={totalChangesCount}
                 customMainText="All unsaved changes will be permanently discarded."
                 warningMessage="This will restore the script to its original loaded state and cannot be undone."
             />
@@ -266,8 +268,8 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 entityType="Changes"
                 entityName=""
                 actionWord="Abandon"
-                customQuestion={`Are you sure you want to abandon the ${pendingOperations.length} change${pendingOperations.length !== 1 ? 's' : ''} made since your last save?`}
-                customWarning={`${pendingOperations.length} unsaved change${pendingOperations.length !== 1 ? 's' : ''} will be permanently removed.\nThis action cannot be undone.`}
+                customQuestion={`Are you sure you want to abandon the ${totalChangesCount} change${totalChangesCount !== 1 ? 's' : ''} made since your last save?`}
+                customWarning={`${totalChangesCount} unsaved change${totalChangesCount !== 1 ? 's' : ''} will be permanently removed.\nThis action cannot be undone.`}
             />
 
             <AbandonChangesModal
@@ -275,7 +277,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 onClose={onUnsavedChangesCancel}
                 onConfirm={onAbandonChangesConfirm}
                 isLoading={false}
-                changesCount={pendingOperations.length}
+                changesCount={totalChangesCount}
                 warningMessage="Leaving without saving will permanently discard all your unsaved changes and cannot be undone."
             />
 
@@ -285,8 +287,8 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 onClose={onSaveCancel}
                 onConfirm={onFinalSaveConfirm}
                 isLoading={false}
-                changesCount={pendingOperations.length}
-                warningMessage="This will permanently apply all changes to the database and reset your edit history."
+                changesCount={totalChangesCount}
+                warningMessage="This will apply all active changes from this editing session and reset your edit history."
             />
 
             {/* Share Confirmation Modal */}

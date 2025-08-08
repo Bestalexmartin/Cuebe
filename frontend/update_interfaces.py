@@ -46,7 +46,7 @@ field_mappings = {
     'departmentInitials': 'department_initials',
     'showName': 'show_name',
     'showDate': 'show_date',
-    'showDuration': 'show_duration',
+    'showDuration': 'show_end',
     'showNotes': 'show_notes',
     'scriptName': 'script_name',
     'scriptNotes': 'script_notes',

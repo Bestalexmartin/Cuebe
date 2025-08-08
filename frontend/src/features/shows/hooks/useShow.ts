@@ -19,6 +19,7 @@ interface Script {
   date_created: string;
   date_updated: string;
   lastUsed?: string;
+  is_shared: boolean;
 }
 
 interface CrewAssignment {
@@ -35,6 +36,7 @@ interface Show {
   show_id: string;
   show_name: string;
   show_date?: string;
+  show_end?: string;
   show_notes?: string;
   deadline?: string;
   date_created: string;

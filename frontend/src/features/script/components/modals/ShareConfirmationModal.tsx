@@ -23,7 +23,7 @@ export const ShareConfirmationModal: React.FC<ShareConfirmationModalProps> = ({
         <BaseModal
             title="Share Script"
             headerIcon="share"
-            headerIconColor="blue.500"
+            headerIconColor="page.text"
             isOpen={isOpen}
             onClose={onClose}
             primaryAction={{

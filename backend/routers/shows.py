@@ -322,7 +322,7 @@ def create_script_for_show(
         script_name=script.script_name or "New Script",
         script_status=models.ScriptStatus(script.script_status) if script.script_status is not None else models.ScriptStatus.DRAFT,
         start_time=show.show_date,
-        end_time=show.show_duration if show.show_duration is not None else None,
+        end_time=show.show_end if show.show_end is not None else None,
         owner_id=user.user_id
     )
     db.add(new_script)

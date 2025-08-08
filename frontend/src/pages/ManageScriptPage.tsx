@@ -11,6 +11,7 @@ import {
     Heading,
     Divider,
     Button,
+    Badge,
     useBreakpointValue
 } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
@@ -142,7 +143,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     const modalState = useModalState(Object.values(MODAL_NAMES));
 
-    const { script, isLoading: isLoadingScript, error: scriptError } = useScript(scriptId);
+    const { script, isLoading: isLoadingScript, error: scriptError, refetchScript } = useScript(scriptId);
     const { show } = useShow(script?.show_id);
 
     const editQueueHook = useScriptElementsWithEditQueue(scriptId);
@@ -192,7 +193,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const { activeMode, setActiveMode } = useScriptModes('view');
 
     // Script form synchronization hook
-    const { currentScript, hasChanges, handleInfoModeExit } = useScriptFormSync({
+    const { currentScript, hasChanges, handleInfoModeExit, clearPendingChanges } = useScriptFormSync({
         script,
         pendingOperations,
         form,
@@ -273,7 +274,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         activeMode,
         hasInfoChanges: hasChanges,
         captureInfoChanges,
-        onSaveSuccess: () => setActiveMode('view')
+        onSaveSuccess: () => {
+            // Clear pending changes in info mode to prevent duplicate operations
+            clearPendingChanges();
+            setActiveMode('view');
+        }
     });
 
     // Track EditMode's selection state reactively
@@ -588,6 +593,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             await ScriptSharingService.shareWithAllCrew(scriptId, token);
             modalState.closeModal(MODAL_NAMES.SHARE_CONFIRMATION);
             setIsScriptShared(true);
+            await refetchScript(); // Refresh script data to update currentScript.is_shared
             setActiveMode('view' as ScriptMode); // Return to view mode to show HIDE button
             showSuccess('Script Shared', 'Script has been shared with all crew members');
         } catch (error) {
@@ -616,6 +622,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             modalState.closeModal(MODAL_NAMES.FINAL_HIDE_SCRIPT);
             setIsScriptShared(false);
             setShareCount(0);
+            await refetchScript(); // Refresh script data to update currentScript.is_shared
             setActiveMode('view' as ScriptMode); // Return to view mode to show SHARE button
             showSuccess('Script Hidden', 'Script has been hidden from all crew members');
         } catch (error) {
@@ -625,7 +632,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         } finally {
             setIsHiding(false);
         }
-    }, [scriptId, getToken, modalState, setActiveMode, showSuccess, showError]);
+    }, [scriptId, getToken, modalState, setActiveMode, showSuccess, showError, refetchScript]);
 
     const handleHideCancel = useCallback(() => {
         modalState.closeModal(MODAL_NAMES.HIDE_SCRIPT);
@@ -639,14 +646,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         onDeleteClick: modalHandlers.handleDeleteClick
     });
 
-    // Calculate total changes count including Info mode changes
+    // Calculate total changes count from actual pending operations
     const totalChangesCount = useMemo(() => {
-        let count = pendingOperations.length;
-        if (activeMode === 'info' && hasChanges) {
-            count += 1;
-        }
-        return count;
-    }, [pendingOperations.length, activeMode, hasChanges]);
+        return pendingOperations.length;
+    }, [pendingOperations.length]);
 
     return (
         <ErrorBoundary context="Script Management Page">
@@ -663,9 +666,20 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     {/* Left: Script Title */}
                     <HStack spacing={2} align="center">
                         <AppIcon name="script" boxSize="20px" color="white" />
-                        <Heading as="h2" size="md">
-                            {show?.show_name && currentScript?.script_name ? `${show.show_name} > ${currentScript.script_name}` : currentScript?.script_name || 'Script'}
-                        </Heading>
+                        <HStack spacing={3} align="center">
+                            {show?.show_name && (
+                                <>
+                                    <Heading as="h2" size="md">{show.show_name}</Heading>
+                                    <AppIcon name="arrow-right" boxSize="16px" color="white" />
+                                </>
+                            )}
+                            <Heading as="h2" size="md">{currentScript?.script_name || 'Script'}</Heading>
+                            {(currentScript?.is_shared || isScriptShared) && (
+                                <Badge variant="solid" colorScheme="green" fontSize="md" ml={1}>
+                                    SHARED
+                                </Badge>
+                            )}
+                        </HStack>
                     </HStack>
 
                     {/* Right: Action Buttons positioned to align with scroll area */}
@@ -701,7 +715,13 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                     size="xs"
                                     bg="blue.400"
                                     color="white"
-                                    onClick={modalHandlers.handleShowSaveConfirmation}
+                                    onClick={() => {
+                                        // Capture info changes first if in info mode
+                                        if (activeMode === 'info' && hasChanges) {
+                                            captureInfoChanges();
+                                        }
+                                        modalHandlers.handleShowSaveConfirmation();
+                                    }}
                                     isDisabled={(!hasChanges && !hasUnsavedChanges) || !form.isValid}
                                     _hover={{ bg: 'orange.400' }}
                                 >
@@ -852,6 +872,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 selectedElementName={elementActions.selectedElementName}
                 selectedElementTimeOffset={elementActions.selectedElementTimeOffset}
                 pendingOperations={pendingOperations}
+                totalChangesCount={totalChangesCount}
                 isDeleting={modalHandlers.isDeleting}
                 isDeletingCue={elementActions.isDeletingCue}
                 isDuplicatingElement={elementActions.isDuplicatingElement}
@@ -906,7 +927,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             {/* Save Processing Modal */}
             <SaveProcessingModal
                 isOpen={modalState.isOpen(MODAL_NAMES.SAVE_PROCESSING)}
-                changesCount={pendingOperations.length}
+                changesCount={totalChangesCount}
             />
 
             {/* Mobile Drawer Menu */}

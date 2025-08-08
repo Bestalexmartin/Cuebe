@@ -17,7 +17,7 @@ export const SaveProcessingModal: React.FC<SaveProcessingModalProps> = ({
         <BaseModal
             title="Saving Changes"
             headerIcon="save"
-            headerIconColor="blue.500"
+            headerIconColor="page.text"
             isOpen={isOpen}
             onClose={() => {}} // No close functionality during save
             customActions={[]} // No action buttons for processing modal

@@ -21,7 +21,7 @@ export const SaveConfirmationModal: React.FC<SaveConfirmationModalProps> = ({
         <BaseModal
             title="Save Changes"
             headerIcon="save"
-            headerIconColor="blue.500"
+            headerIconColor="page.text"
             isOpen={isOpen}
             onClose={onClose}
             primaryAction={{
@@ -37,11 +37,8 @@ export const SaveConfirmationModal: React.FC<SaveConfirmationModalProps> = ({
         >
             <VStack spacing={4} align="stretch">
                 <VStack align="center" spacing="4" width="100%">
-                    <Text fontSize="md" textAlign="center">
-                        Are you ready to save {changesCount} pending change{changesCount !== 1 ? 's' : ''}?
-                    </Text>
                     <Text fontSize="md" color="blue.400" fontWeight="bold" textAlign="center" lineHeight="1.4">
-                        This will permanently save your changes to the database and reset your edit history.
+                        Save {changesCount} pending change{changesCount !== 1 ? 's' : ''} to this script?
                     </Text>
                 </VStack>
             </VStack>

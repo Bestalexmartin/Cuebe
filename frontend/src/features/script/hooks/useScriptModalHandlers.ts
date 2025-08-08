@@ -88,11 +88,6 @@ export const useScriptModalHandlers = ({
         modalState.openModal(modalNames.SAVE_PROCESSING);
         
         try {
-            // Capture Info mode changes if we're in Info mode and have changes
-            if (activeMode === 'info' && hasInfoChanges) {
-                captureInfoChanges();
-            }
-            
             const success = await saveChanges();
             
             if (success) {
@@ -132,11 +127,6 @@ export const useScriptModalHandlers = ({
         modalState.openModal(modalNames.SAVE_PROCESSING);
         
         try {
-            // Capture Info mode changes if we're in Info mode and have changes
-            if (activeMode === 'info' && hasInfoChanges) {
-                captureInfoChanges();
-            }
-            
             const success = await saveChanges();
             
             if (success) {

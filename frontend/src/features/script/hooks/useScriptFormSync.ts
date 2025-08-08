@@ -65,7 +65,7 @@ export const useScriptFormSync = ({
         script_notes: currentScript.script_notes || ''
     } : null;
 
-    const { hasChanges } = useChangeDetection(
+    const { hasChanges, updateOriginalData } = useChangeDetection(
         changeDetectionBaseData,
         {
             script_name: form.formData.script_name,
@@ -89,6 +89,20 @@ export const useScriptFormSync = ({
             });
         }
     }, [currentScript, form.setFormData]);
+
+    // Clear pending changes after successful save
+    const clearPendingChanges = useCallback(() => {
+        if (activeMode === 'info') {
+            // Update the original data to match current form data, clearing the hasChanges flag
+            updateOriginalData({
+                script_name: form.formData.script_name,
+                script_status: form.formData.script_status,
+                start_time: convertLocalToUTC(form.formData.start_time),
+                end_time: convertLocalToUTC(form.formData.end_time),
+                script_notes: form.formData.script_notes
+            });
+        }
+    }, [activeMode, form.formData, updateOriginalData]);
 
     // Handle exiting Info mode with unsaved changes
     const handleInfoModeExit = useCallback((targetModeId: ScriptMode) => {
@@ -143,6 +157,7 @@ export const useScriptFormSync = ({
     return {
         currentScript,
         hasChanges,
-        handleInfoModeExit
+        handleInfoModeExit,
+        clearPendingChanges
     };
 };

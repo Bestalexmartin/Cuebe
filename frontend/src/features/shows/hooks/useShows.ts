@@ -19,6 +19,7 @@ interface Script {
   date_created: string;
   date_updated: string;
   last_used?: string;
+  is_shared: boolean;
 }
 
 interface Show {
