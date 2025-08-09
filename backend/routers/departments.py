@@ -1,7 +1,8 @@
 # backend/routers/departments.py
 
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func, distinct
 from uuid import UUID
 from datetime import datetime
 import logging
@@ -33,14 +34,67 @@ def rate_limit(limit_config):
     return decorator
 
 
-@router.get("/me/departments", response_model=list[schemas.Department])
+@router.get("/me/departments", response_model=list[schemas.DepartmentWithStats])
 def read_departments(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get departments owned by the current user."""
+    """Get departments owned by the current user with statistics."""
     departments = db.query(models.Department).filter(models.Department.owner_id == user.user_id).all()
-    return departments
+    
+    departments_with_stats = []
+    for dept in departments:
+        # Calculate shows assigned count (distinct shows this department is assigned to)
+        shows_assigned_count = db.query(func.count(distinct(models.CrewAssignment.show_id))).filter(
+            models.CrewAssignment.department_id == dept.department_id
+        ).scalar() or 0
+        
+        # Get crew assignments with user and show details
+        crew_assignments = db.query(models.CrewAssignment).filter(
+            models.CrewAssignment.department_id == dept.department_id
+        ).options(
+            joinedload(models.CrewAssignment.user),
+            joinedload(models.CrewAssignment.show)
+        ).all()
+        
+        # Format crew assignments for response
+        assignment_list = []
+        for assignment in crew_assignments:
+            assignment_data = {
+                "assignment_id": assignment.assignment_id,
+                "show_id": assignment.show_id,
+                "show_name": assignment.show.show_name if assignment.show else "Unknown Show",
+                "user_id": assignment.user_id,
+                "fullname_first": assignment.user.fullname_first if assignment.user else None,
+                "fullname_last": assignment.user.fullname_last if assignment.user else None,
+                "email_address": assignment.user.email_address if assignment.user else None,
+                "phone_number": assignment.user.phone_number if assignment.user else None,
+                "profile_img_url": assignment.user.profile_img_url if assignment.user else None,
+                "role": assignment.show_role,
+                "user_role": assignment.user.user_role if assignment.user else None,
+                "user_status": assignment.user.user_status if assignment.user else None,
+                "is_active": assignment.user.is_active if assignment.user else None,
+                "date_created": assignment.user.date_created if assignment.user else None,
+                "date_updated": assignment.user.date_updated if assignment.user else None
+            }
+            assignment_list.append(schemas.DepartmentCrewAssignment(**assignment_data))
+        
+        # Create department with stats
+        dept_dict = {
+            "department_id": dept.department_id,
+            "department_name": dept.department_name,
+            "department_description": dept.department_description,
+            "department_color": dept.department_color,
+            "department_initials": dept.department_initials,
+            "date_created": dept.date_created,
+            "date_updated": dept.date_updated,
+            "shows_assigned_count": shows_assigned_count,
+            "unique_crew_count": 0,  # Not needed but keeping for schema compatibility
+            "crew_assignments": assignment_list
+        }
+        departments_with_stats.append(schemas.DepartmentWithStats(**dept_dict))
+    
+    return departments_with_stats
 
 
 @router.post("/me/departments", response_model=schemas.Department, status_code=status.HTTP_201_CREATED)

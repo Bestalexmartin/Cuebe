@@ -128,3 +128,40 @@ export const convertUTCToLocal = (
   
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
+
+/**
+ * Formats a UTC datetime string for human-readable display with day and time
+ * @param utcDateTime - ISO string from backend or Date object (stored in UTC)
+ * @returns Formatted string like "Sunday, July 2 @ 7:30 PM"
+ */
+export const formatShowDateTime = (
+  utcDateTime: string | Date | null | undefined
+): string => {
+  if (!utcDateTime) return 'TBD';
+  
+  // Handle both string and Date inputs
+  let utcDate: Date;
+  if (utcDateTime instanceof Date) {
+    utcDate = utcDateTime;
+  } else {
+    // Parse as UTC and display in local time
+    utcDate = new Date(utcDateTime + (utcDateTime.includes('Z') ? '' : 'Z'));
+  }
+  
+  const dateOptions: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric'
+  };
+  
+  const timeOptions: Intl.DateTimeFormatOptions = {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  };
+  
+  const datePart = utcDate.toLocaleDateString('en-US', dateOptions);
+  const timePart = utcDate.toLocaleTimeString('en-US', timeOptions);
+  
+  return `${datePart} @ ${timePart}`;
+};

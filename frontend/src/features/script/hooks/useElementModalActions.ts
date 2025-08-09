@@ -311,7 +311,8 @@ export const useElementModalActions = ({
         }
 
         const groupElement = editQueueElements.find(el => el.element_id === selectedElementId);
-        if (!groupElement || groupElement.type !== 'GROUP') {
+        
+        if (!groupElement || (groupElement as any).element_type !== 'GROUP') {
             showError('Selected element is not a group');
             return;
         }

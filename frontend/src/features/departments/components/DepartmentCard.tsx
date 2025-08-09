@@ -11,6 +11,18 @@ import { BaseCard, BaseCardAction } from '../../../components/base/BaseCard';
 import { formatDateTimeLocal } from '../../../utils/dateTimeUtils';
 
 // TypeScript interfaces
+interface DepartmentCrewAssignment {
+    assignment_id: string;
+    show_id: string;
+    show_name: string;
+    user_id: string;
+    fullname_first?: string;
+    fullname_last?: string;
+    email_address?: string;
+    profile_img_url?: string;
+    role?: string;
+}
+
 interface Department {
     department_id: string;
     department_name: string;
@@ -19,6 +31,9 @@ interface Department {
     department_initials?: string;
     date_created: string;
     date_updated: string;
+    shows_assigned_count?: number;
+    unique_crew_count?: number;
+    crew_assignments?: DepartmentCrewAssignment[];
 }
 
 interface DepartmentCardProps {
@@ -92,13 +107,13 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
     const quickInfo = (
         <VStack align="stretch" spacing="1" fontSize="sm" color="cardText">
             <HStack justify="space-between">
-                <Text>0 crew members</Text>
+                <Text>{department.shows_assigned_count || 0} show{(department.shows_assigned_count || 0) !== 1 ? 's' : ''}</Text>
                 <Text fontSize="xs">
                     Created: {formatDateTimeLocal(department.date_created || department.date_updated)}
                 </Text>
             </HStack>
             <HStack justify="space-between">
-                <Text>0 shows assigned</Text>
+                <Text isTruncated>{department.department_description || ''}</Text>
                 <Text fontSize="xs">
                     Updated: {formatDateTimeLocal(department.date_updated || department.date_created)}
                 </Text>
@@ -131,15 +146,6 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
                 </Box>
             )}
 
-            {/* Full Description */}
-            {department.department_description && (
-                <Box>
-                    <Text fontWeight="semibold" mb={2}>Description</Text>
-                    <Text fontSize="sm" color="cardText">
-                        {department.department_description}
-                    </Text>
-                </Box>
-            )}
         </>
     );
 

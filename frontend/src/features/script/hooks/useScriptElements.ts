@@ -14,7 +14,6 @@ interface UseScriptElementsReturn {
 interface UseScriptElementsOptions {
     element_type?: string;
     departmentId?: string;
-    activeOnly?: boolean;
     skip?: number;
     limit?: number;
 }
@@ -47,7 +46,6 @@ export const useScriptElements = (
             const params = new URLSearchParams();
             if (options.element_type) params.append('element_type', options.element_type);
             if (options.departmentId) params.append('department_id', options.departmentId);
-            if (options.activeOnly !== undefined) params.append('active_only', options.activeOnly.toString());
             if (options.skip !== undefined) params.append('skip', options.skip.toString());
             if (options.limit !== undefined) params.append('limit', options.limit.toString());
 

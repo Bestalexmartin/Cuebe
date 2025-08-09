@@ -13,7 +13,6 @@ from .helpers import _auto_populate_show_start_duration
 
 logger = logging.getLogger(__name__)
 
-
 def batch_update_from_edit_queue(
     script_id: UUID,
     batch_request: schemas.EditQueueBatchRequest,
@@ -24,23 +23,10 @@ def batch_update_from_edit_queue(
     
     logger.info(f"Processing batch update for script {script_id} with {len(batch_request.operations)} operations")
     
-    # Verify the script exists and user has access
-    script = db.query(models.Script).options(
-        joinedload(models.Script.show)
-    ).filter(models.Script.script_id == script_id).first()
-    
-    if not script:
-        raise HTTPException(status_code=404, detail="Script not found")
-    
-    # Security check: ensure user owns the show
-    if script.show.owner_id != user.user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to modify this script")
+    operation_results = []
+    processed_operations = 0
     
     try:
-        processed_operations = 0
-        operation_results = []
-        
-        # Process each operation in sequence
         for operation_data in batch_request.operations:
             try:
                 result = _process_edit_operation(db, script_id, operation_data, user)
@@ -61,13 +47,6 @@ def batch_update_from_edit_queue(
         
         # Commit all successful operations
         db.commit()
-        
-        # Refresh script object and update SHOW START duration if needed
-        db.refresh(script)
-        elements = db.query(models.ScriptElement).filter(
-            models.ScriptElement.script_id == script_id
-        ).all()
-        _auto_populate_show_start_duration(db, script, elements)
         
         logger.info(f"Processed {processed_operations} operations for script {script_id}")
         
@@ -90,10 +69,8 @@ def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, 
     operation_type = operation_data.get("type")
     element_id = operation_data.get("element_id")
     
-    
     if operation_type == "REORDER":
         return _process_reorder_operation(db, script_id, operation_data, user)
-    
     elif operation_type == "UPDATE_FIELD":
         return _process_update_field_operation(db, element_id, operation_data, user)    
     elif operation_type == "UPDATE_ELEMENT":
@@ -102,30 +79,22 @@ def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, 
         return _process_update_time_offset_operation(db, element_id, operation_data, user)    
     elif operation_type == "CREATE_ELEMENT":
         return _process_create_element_operation(db, script_id, operation_data, user)
-    
     elif operation_type == "DELETE_ELEMENT":
         return _process_delete_element_operation(db, element_id, user)    
     elif operation_type == "BULK_REORDER":
         return _process_bulk_reorder_operation(db, script_id, operation_data, user)
-    
     elif operation_type == "ENABLE_AUTO_SORT":
         return _process_bulk_reorder_operation(db, script_id, operation_data, user)  # Uses same logic
-    
     elif operation_type == "DISABLE_AUTO_SORT":
         return _process_disable_auto_sort_operation(operation_data)
-    
     elif operation_type == "CREATE_GROUP":
         return _process_create_group_operation(db, script_id, operation_data, user)
-    
     elif operation_type == "UPDATE_SCRIPT_INFO":
         return _process_update_script_info_operation(db, script_id, operation_data, user)
-    
     elif operation_type == "TOGGLE_GROUP_COLLAPSE":
         return _process_toggle_group_collapse_operation(db, element_id, user)
-    
     elif operation_type == "UNGROUP_ELEMENTS":
         return _process_ungroup_elements_operation(db, script_id, operation_data, user)
-    
     else:
         raise ValueError(f"Unknown operation type: {operation_type}")
 
@@ -137,16 +106,15 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
     old_sequence = operation_data.get("old_sequence")
     new_sequence = operation_data.get("new_sequence")
     
+    logger.info(f"DEBUG reorder - element_id: {element_id}, old_sequence: {old_sequence}, new_sequence: {new_sequence}")
+    
     if old_sequence == new_sequence:
         # No change needed
         return {"element_id": element_id, "new_sequence": new_sequence, "no_change": True}
     
     # Get all elements in the script ordered by sequence
     all_elements = db.query(models.ScriptElement).filter(
-        and_(
-            models.ScriptElement.script_id == script_id,
-            models.ScriptElement.is_active == True
-        )
+        models.ScriptElement.script_id == script_id
     ).order_by(models.ScriptElement.sequence.asc()).all()
     
     # Find the element being moved
@@ -157,6 +125,8 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
             break
     
     if not moved_element:
+        logger.error(f"DEBUG reorder - Element {element_id} not found in script {script_id}")
+        logger.error(f"DEBUG reorder - Available elements: {[str(el.element_id) for el in all_elements]}")
         raise ValueError(f"Element {element_id} not found")
     
     # Update sequences for all elements to ensure no duplicates
@@ -175,7 +145,6 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
             # Other elements keep their sequence
             
             element.updated_by = user.user_id
-            element.version = element.version + 1
             element.date_updated = datetime.now(timezone.utc)
             
     else:
@@ -190,7 +159,6 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
             # Other elements keep their sequence
             
             element.updated_by = user.user_id
-            element.version = element.version + 1
             element.date_updated = datetime.now(timezone.utc)
     
     return {
@@ -216,24 +184,17 @@ def _process_update_field_operation(db: Session, element_id: str, operation_data
     
     # Update the specified field
     if hasattr(element, field):
-        # Handle special cases for enum fields (convert to uppercase)
+        # Handle special cases for enum fields
         if field == "priority" and new_value:
             setattr(element, field, models.PriorityLevel(new_value))
-        elif field == "execution_status" and new_value:
-            setattr(element, field, models.ExecutionStatus(new_value))
-        elif field == "trigger_type" and new_value:
-            setattr(element, field, models.TriggerType(new_value))
         elif field == "element_type" and new_value:
             setattr(element, field, models.ElementType(new_value))
-        elif field == "location" and new_value:
-            setattr(element, field, models.LocationArea(new_value))
         else:
             setattr(element, field, new_value)
     else:
         raise ValueError(f"Invalid field: {field}")
     
     element.updated_by = user.user_id
-    element.version = element.version + 1
     element.date_updated = datetime.now(timezone.utc)
     return {"element_id": element_id, "field": field, "new_value": new_value}
 
@@ -258,17 +219,11 @@ def _process_update_element_operation(db: Session, element_id: str, operation_da
         new_value = change_data.get("newValue") or change_data.get("new_value")
         
         if hasattr(element, field):
-            # Handle special cases for enum fields (convert to uppercase)
+            # Handle special cases for enum fields
             if field == "priority" and new_value:
                 setattr(element, field, models.PriorityLevel(new_value))
-            elif field == "execution_status" and new_value:
-                setattr(element, field, models.ExecutionStatus(new_value))
-            elif field == "trigger_type" and new_value:
-                setattr(element, field, models.TriggerType(new_value))
             elif field == "element_type" and new_value:
                 setattr(element, field, models.ElementType(new_value))
-            elif field == "location" and new_value:
-                setattr(element, field, models.LocationArea(new_value))
             else:
                 setattr(element, field, new_value)            
             updated_fields[field] = new_value
@@ -276,7 +231,6 @@ def _process_update_element_operation(db: Session, element_id: str, operation_da
             raise ValueError(f"Invalid field: {field}")
     
     element.updated_by = user.user_id
-    element.version = element.version + 1
     element.date_updated = datetime.now(timezone.utc)
     return {"element_id": element_id, "updated_fields": updated_fields}
 
@@ -296,7 +250,6 @@ def _process_update_time_offset_operation(db: Session, element_id: str, operatio
     
     element.time_offset_ms = new_time_offset
     element.updated_by = user.user_id
-    element.version = element.version + 1
     element.date_updated = datetime.now(timezone.utc)
     return {"element_id": element_id, "new_time_offset": new_time_offset}
 
@@ -314,7 +267,6 @@ def _process_toggle_group_collapse_operation(db: Session, element_id: str, user:
     # Toggle the collapse state
     element.is_collapsed = not (element.is_collapsed or False)
     element.updated_by = user.user_id
-    element.version = element.version + 1
     element.date_updated = datetime.now(timezone.utc)
     
     return {"element_id": element_id, "is_collapsed": element.is_collapsed}
@@ -325,16 +277,7 @@ def _process_create_element_operation(db: Session, script_id: UUID, operation_da
     
     element_data = operation_data.get("element_data", {})
     
-    
-    # Prepare enum fields with defaults (frontend sends uppercase values)
-    trigger_type = models.TriggerType.MANUAL  # Default
-    if element_data.get("trigger_type"):
-        trigger_type = models.TriggerType(element_data["trigger_type"])
-    
-    execution_status = models.ExecutionStatus.PENDING  # Default
-    if element_data.get("execution_status"):
-        execution_status = models.ExecutionStatus(element_data["execution_status"])
-    
+    # Prepare enum fields with defaults
     priority = models.PriorityLevel.NORMAL  # Default
     if element_data.get("priority"):
         priority = models.PriorityLevel(element_data["priority"])
@@ -354,8 +297,6 @@ def _process_create_element_operation(db: Session, script_id: UUID, operation_da
         group_level=element_data.get("group_level", 0),
         is_collapsed=element_data.get("is_collapsed", False),
         # Handle enum fields properly with explicit values
-        trigger_type=trigger_type,
-        execution_status=execution_status,
         priority=priority,
         created_by=user.user_id,
         updated_by=user.user_id,
@@ -379,13 +320,9 @@ def _process_delete_element_operation(db: Session, element_id: str, user: models
     if not element:
         raise ValueError(f"Element {element_id} not found")
     
-    # Soft delete by setting is_active to False
-    element.is_active = False
-    element.updated_by = user.user_id
-    element.version = element.version + 1
-    element.date_updated = datetime.now(timezone.utc)
+    # Hard delete since we don't use soft delete anymore
+    db.delete(element)
     return {"element_id": element_id, "deleted": True}
-
 
 def _process_bulk_reorder_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process a bulk reorder operation."""
@@ -407,17 +344,14 @@ def _process_bulk_reorder_operation(db: Session, script_id: UUID, operation_data
         if element:
             element.sequence = new_sequence
             element.updated_by = user.user_id
-            element.version = element.version + 1
             element.date_updated = datetime.now(timezone.utc)
             updated_count += 1
     
     return {"updated_count": updated_count, "total_changes": len(element_changes)}
 
-
 def _process_disable_auto_sort_operation(operation_data: dict):
     """Process a disable auto-sort operation (preference only, no element changes)."""
     return {"preference_updated": True, "auto_sort_disabled": True}
-
 
 def _process_create_group_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process a group creation operation."""
@@ -425,8 +359,7 @@ def _process_create_group_operation(db: Session, script_id: UUID, operation_data
     element_ids = operation_data.get("element_ids", [])
     group_name = operation_data.get("group_name", "Untitled Group")
     background_color = operation_data.get("background_color", "#E2E8F0")
-    
-    
+
     if len(element_ids) < 2:
         raise ValueError("At least 2 elements are required to create a group")
     
@@ -454,13 +387,12 @@ def _process_create_group_operation(db: Session, script_id: UUID, operation_data
         description=group_name,
         cue_notes="",  # Leave empty - will be calculated dynamically on frontend
         custom_color=background_color,
-        trigger_type=models.TriggerType.MANUAL,
-        execution_status=models.ExecutionStatus.PENDING,
+
         priority=models.PriorityLevel.NORMAL,
         group_level=0,
         is_collapsed=False,
         parent_element_id=None,
-        is_active=True,
+        
         created_by=user.user_id,
         updated_by=user.user_id
     )
@@ -473,14 +405,12 @@ def _process_create_group_operation(db: Session, script_id: UUID, operation_data
         element.parent_element_id = str(group_parent.element_id)
         element.group_level = 1
         element.updated_by = user.user_id
-        element.version = element.version + 1
         element.date_updated = datetime.now(timezone.utc)
     
     # Update sequences to insert the group parent in the correct position
     # Get all elements for sequence updating
     all_elements = db.query(models.ScriptElement).filter(
-        models.ScriptElement.script_id == script_id,
-        models.ScriptElement.is_active == True
+        models.ScriptElement.script_id == script_id
     ).order_by(models.ScriptElement.sequence.asc()).all()
     
     # Rebuild sequences with group parent inserted
@@ -510,7 +440,6 @@ def _process_create_group_operation(db: Session, script_id: UUID, operation_data
         "grouped_element_ids": element_ids,
         "group_name": group_name
     }
-
 
 def _process_ungroup_elements_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process an ungroup elements operation."""
@@ -542,15 +471,11 @@ def _process_ungroup_elements_operation(db: Session, script_id: UUID, operation_
         child.parent_element_id = None
         child.group_level = 0
         child.updated_by = user.user_id
-        child.version = child.version + 1
         child.date_updated = datetime.now(timezone.utc)
         updated_children += 1
     
     # Delete the group parent element
-    group_element.is_active = False
-    group_element.updated_by = user.user_id
-    group_element.version = group_element.version + 1
-    group_element.date_updated = datetime.now(timezone.utc)
+    db.delete(group_element)
     
     return {
         "operation": "ungroup_elements",
@@ -558,7 +483,6 @@ def _process_ungroup_elements_operation(db: Session, script_id: UUID, operation_
         "updated_children": updated_children,
         "group_deleted": True
     }
-
 
 def _process_update_script_info_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process a script info update operation."""

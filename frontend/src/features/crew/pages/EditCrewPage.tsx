@@ -1,6 +1,6 @@
 // frontend/src/features/crew/pages/EditCrewPage.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
     Box, HStack, VStack, Text, Spinner, Flex,
     FormControl, FormLabel, Input, Textarea, Select, Badge, Avatar
@@ -20,6 +20,8 @@ import { formatDateTimeLocal } from '../../../utils/dateTimeUtils';
 import { useChangeDetection } from '../../../hooks/useChangeDetection';
 import { ErrorBoundary } from '../../../components/ErrorBoundary';
 import { USER_ROLE_OPTIONS, formatRole } from '../../../constants/userRoles';
+import { CrewBioModal } from '../../shows/components/modals/CrewBioModal';
+import { formatShowDateTime } from '../../../utils/dateTimeUtils';
 
 // TypeScript interfaces
 interface CrewFormData {
@@ -106,6 +108,10 @@ export const EditCrewPage: React.FC = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isFinalDeleteModalOpen, setIsFinalDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    
+    // Crew bio modal state
+    const [isCrewBioModalOpen, setIsCrewBioModalOpen] = useState(false);
+    const [selectedCrewMember, setSelectedCrewMember] = useState<any>(null);
 
     // Fetch the initial crew data
     const { crew, isLoading: isLoadingCrew, error: crewError } = useCrew(crewId);
@@ -285,6 +291,33 @@ export const EditCrewPage: React.FC = () => {
         setIsDeleteModalOpen(false);
         setIsFinalDeleteModalOpen(false);
     };
+
+    // Handle opening crew bio modal
+    const handleCrewBioClick = useCallback((assignment: any) => {
+        // Convert assignment data to crew member format for the modal
+        const crewMemberData = {
+            user_id: crew?.user_id,
+            fullname_first: crew?.fullname_first,
+            fullname_last: crew?.fullname_last,
+            email_address: crew?.email_address,
+            phone_number: crew?.phone_number,
+            profile_img_url: crew?.profile_img_url,
+            show_id: assignment.show_id, // Include show_id for QR code generation
+            // Use actual user data from the crew
+            user_role: crew?.user_role || 'crew',
+            user_status: crew?.user_status || 'verified',
+            is_active: crew?.is_active ?? true,
+            date_created: crew?.date_created || '',
+            date_updated: crew?.date_updated || ''
+        };
+        setSelectedCrewMember(crewMemberData);
+        setIsCrewBioModalOpen(true);
+    }, [crew]);
+
+    const handleCrewBioModalClose = useCallback(() => {
+        setIsCrewBioModalOpen(false);
+        setSelectedCrewMember(null);
+    }, []);
 
     // Actions menu items
     const actionItems: ActionItem[] = [
@@ -496,6 +529,211 @@ export const EditCrewPage: React.FC = () => {
                                 minHeight="100px"
                             />
                         </FormControl>
+
+                        {/* Department Assignments */}
+                        {crew?.department_assignments && crew.department_assignments.length > 0 && (
+                            <Box>
+                                <HStack justify="space-between" mb={2}>
+                                    <FormLabel mb={0}>Department Assignments</FormLabel>
+                                </HStack>
+
+                                {/* Divider line */}
+                                <Box borderTop="1px solid" borderColor="gray.500" pt={4} mt={2}>
+                                    <VStack spacing={1} align="stretch">
+                                        {crew.department_assignments.map((assignment) => {
+                                            return (
+                                                <Box
+                                                    key={assignment.assignment_id}
+                                                    py={2}
+                                                    px={4}
+                                                    border="2px solid"
+                                                    borderColor="transparent"
+                                                    borderRadius="md"
+                                                    bg="card.background"
+                                                    _hover={{
+                                                        borderColor: "orange.400"
+                                                    }}
+                                                    cursor="pointer"
+                                                    transition="all 0s"
+                                                    onClick={() => handleCrewBioClick(assignment)}
+                                                >
+                                                    {/* Desktop/Tablet Layout - Single Line */}
+                                                    <HStack 
+                                                        spacing={{ base: 1, sm: 2, md: 3 }} 
+                                                        align="center"
+                                                        display={{ base: "none", md: "flex" }}
+                                                        overflow="hidden"
+                                                        minWidth={0}
+                                                    >
+                                                        {/* Department Color Chip */}
+                                                        <Box
+                                                            w="32px"
+                                                            h="32px"
+                                                            borderRadius="full"
+                                                            bg={assignment.department_color || 'gray.400'}
+                                                            flexShrink={0}
+                                                            display="flex"
+                                                            alignItems="center"
+                                                            justifyContent="center"
+                                                        >
+                                                            {assignment.department_initials && (
+                                                                <Text
+                                                                    fontSize="xs"
+                                                                    fontWeight="bold"
+                                                                    color="black"
+                                                                    userSelect="none"
+                                                                >
+                                                                    {assignment.department_initials}
+                                                                </Text>
+                                                            )}
+                                                        </Box>
+
+                                                        {/* Department Name */}
+                                                        <Text 
+                                                            fontSize="sm" 
+                                                            fontWeight="medium" 
+                                                            minWidth={{ md: "90px", lg: "120px" }}
+                                                            maxWidth={{ md: "90px", lg: "120px" }}
+                                                            isTruncated
+                                                        >
+                                                            {assignment.department_name || 'Unknown Dept'}
+                                                        </Text>
+
+                                                        {/* Show Name with Label */}
+                                                        <Text 
+                                                            fontSize="sm" 
+                                                            minWidth={{ md: "120px", lg: "160px" }}
+                                                            maxWidth={{ md: "200px", lg: "240px", xl: "300px" }}
+                                                            isTruncated
+                                                        >
+                                                            <Text as="span" fontWeight="medium">Show:</Text>
+                                                            <Text as="span" color="gray.700" _dark={{ color: "gray.300" }} ml="5px">
+                                                                {assignment.show_name}
+                                                            </Text>
+                                                        </Text>
+
+                                                        {/* Venue Name with City, State */}
+                                                        <Text 
+                                                            fontSize="sm" 
+                                                            color="gray.700" 
+                                                            _dark={{ color: "gray.300" }} 
+                                                            minWidth={{ md: "140px", lg: "180px" }}
+                                                            maxWidth={{ md: "200px", lg: "240px", xl: "280px" }}
+                                                            display={{ base: "none", md: "block" }}
+                                                            isTruncated
+                                                            flexShrink={2}
+                                                            ml={24}
+                                                        >
+                                                            {assignment.venue_name ? (
+                                                                `${assignment.venue_name}${assignment.venue_city && assignment.venue_state ? ` - ${assignment.venue_city}, ${assignment.venue_state}` : ''}`
+                                                            ) : 'No venue'}
+                                                        </Text>
+
+                                                        {/* Show Date & Time - Expanding field */}
+                                                        <Text 
+                                                            fontSize="sm" 
+                                                            color="gray.700" 
+                                                            _dark={{ color: "gray.300" }} 
+                                                            display={{ base: "none", xl: "block" }}
+                                                            flex={1}
+                                                            isTruncated
+                                                            ml={24}
+                                                            mr={4}
+                                                        >
+                                                            {formatShowDateTime(assignment.show_date)}
+                                                        </Text>
+
+                                                        {/* Role Badge - Aligned to right edge */}
+                                                        <Box 
+                                                            minWidth={{ base: "80px", md: "100px", lg: "120px" }} 
+                                                            maxWidth={{ base: "120px", md: "140px", lg: "160px" }}
+                                                            display="flex" 
+                                                            justifyContent="flex-end"
+                                                            flexShrink={0}
+                                                        >
+                                                            {assignment.role && (
+                                                                <Badge 
+                                                                    colorScheme="blue" 
+                                                                    variant="outline" 
+                                                                    size={{ base: "sm", md: "md" }}
+                                                                    maxWidth="100%"
+                                                                    isTruncated
+                                                                >
+                                                                    {formatRole(assignment.role)}
+                                                                </Badge>
+                                                            )}
+                                                        </Box>
+                                                    </HStack>
+
+                                                    {/* Mobile Layout - Two Lines */}
+                                                    <VStack 
+                                                        spacing={2} 
+                                                        align="stretch"
+                                                        display={{ base: "flex", md: "none" }}
+                                                    >
+                                                        {/* First Line: Department Circle, Show Name, Badge */}
+                                                        <HStack spacing={3} align="center">
+                                                            <Box
+                                                                w="24px"
+                                                                h="24px"
+                                                                borderRadius="full"
+                                                                bg={assignment.department_color || 'gray.400'}
+                                                                flexShrink={0}
+                                                                display="flex"
+                                                                alignItems="center"
+                                                                justifyContent="center"
+                                                            >
+                                                                <Text
+                                                                    fontSize="10px"
+                                                                    fontWeight="bold"
+                                                                    color="black"
+                                                                    userSelect="none"
+                                                                >
+                                                                    {assignment.department_initials || assignment.department_name?.substring(0, 2).toUpperCase() || 'DE'}
+                                                                </Text>
+                                                            </Box>
+
+                                                            <Text
+                                                                fontSize="sm"
+                                                                fontWeight="medium"
+                                                                flex={1}
+                                                                isTruncated
+                                                            >
+                                                                {assignment.show_name}
+                                                            </Text>
+
+                                                            {assignment.role && (
+                                                                <Badge colorScheme="blue" variant="outline" size="sm">
+                                                                    {formatRole(assignment.role)}
+                                                                </Badge>
+                                                            )}
+                                                        </HStack>
+
+                                                        {/* Second Line: Department Name, Venue, Show Date */}
+                                                        <HStack spacing={3} align="center" ml="32px">
+                                                            <Text fontSize="xs" color="gray.500" _dark={{ color: "gray.400" }} minWidth="80px">
+                                                                {assignment.department_name || 'Unknown Dept'}
+                                                            </Text>
+                                                            
+                                                            <VStack spacing={0} align="flex-start" flex={1}>
+                                                                <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }}>
+                                                                    {assignment.venue_name ? (
+                                                                        `${assignment.venue_name}${assignment.venue_city && assignment.venue_state ? ` - ${assignment.venue_city}, ${assignment.venue_state}` : ''}`
+                                                                    ) : 'No venue'}
+                                                                </Text>
+                                                                <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }}>
+                                                                    {formatShowDateTime(assignment.show_date)}
+                                                                </Text>
+                                                            </VStack>
+                                                        </HStack>
+                                                    </VStack>
+                                                </Box>
+                                            );
+                                        })}
+                                    </VStack>
+                                </Box>
+                            </Box>
+                        )}
                     </VStack>
                 )}
                 
@@ -546,6 +784,14 @@ export const EditCrewPage: React.FC = () => {
                 entityType="Crew"
                 entityName={getFullName()}
                 warningMessage={`Removing this crew will delete their relationship to your account and remove them from any show assignments.`}
+            />
+
+            {/* Crew Bio Modal */}
+            <CrewBioModal
+                isOpen={isCrewBioModalOpen}
+                onClose={handleCrewBioModalClose}
+                crewMember={selectedCrewMember}
+                showId={selectedCrewMember?.show_id || ''}
             />
         </ErrorBoundary>
     );

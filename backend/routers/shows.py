@@ -334,15 +334,11 @@ def create_script_for_show(
     show_start_cue = models.ScriptElement(
         script_id=new_script.script_id,
         element_type=models.ElementType.NOTE,
-        cue_id=None,  # No cue ID needed for show start
         description="SHOW START",  # All caps title
         time_offset_ms=0,  # Start at 00:00
-        trigger_type=models.TriggerType.MANUAL,
-        execution_status=models.ExecutionStatus.PENDING,
         priority=models.PriorityLevel.CRITICAL,
         custom_color="#EF4444",  # Matches frontend note preset red
         sequence=1,
-        is_active=True,
         group_level=0,
         created_by=user.user_id
         # department_id intentionally left out (None/NULL)
@@ -404,28 +400,16 @@ def duplicate_script(
             element_type=original_element.element_type,
             department_id=original_element.department_id,
             parent_element_id=None,  # Will be updated later for hierarchical elements
-            cue_id=original_element.cue_id,
-            cue_number=original_element.cue_number,
             description=original_element.description,
-            element_description=original_element.element_description,
             time_offset_ms=original_element.time_offset_ms,
             duration=original_element.duration,
-            fade_in=original_element.fade_in,
-            fade_out=original_element.fade_out,
-            trigger_type=original_element.trigger_type,
-            follows_cue_id=original_element.follows_cue_id,
-            execution_status=models.ExecutionStatus.PENDING,  # Reset to pending
             priority=original_element.priority,
             custom_color=original_element.custom_color,
-            department_color=original_element.department_color,
             sequence=original_element.sequence,
-            location=original_element.location,
             location_details=original_element.location_details,
-            is_active=original_element.is_active,
             group_level=original_element.group_level,
             is_collapsed=original_element.is_collapsed,
             cue_notes=original_element.cue_notes,
-            version=1,  # Reset version to 1 for new duplicate
             created_by=user.user_id
         )
         db.add(new_element)

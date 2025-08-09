@@ -318,24 +318,8 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                       {crewMember?.phone_number || ''}
                     </Text>
 
-                    {/* Notes - Expand to fill remaining space between phone and badge */}
-                    <Text 
-                      fontSize="sm" 
-                      display={{ base: "none", xl: "block" }}
-                      flex={1}
-                      isTruncated
-                      ml={4}
-                      mr={4}
-                    >
-                      {crewMember?.relationship_notes ? (
-                        <>
-                          <Text as="span" fontWeight="medium">Notes:</Text>
-                          <Text as="span" color="gray.700" _dark={{ color: "gray.300" }} ml="5px">
-                            {crewMember.relationship_notes}
-                          </Text>
-                        </>
-                      ) : ''}
-                    </Text>
+                    {/* Spacer - Expand to fill remaining space before badge */}
+                    <Box flex={1} />
 
                     {/* Role Badge - Aligned to right edge */}
                     <Box 
