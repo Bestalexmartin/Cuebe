@@ -11,17 +11,17 @@ from typing import Optional
 
 class ScriptElementFromDB(BaseModel):
     """Schema for script elements coming FROM the database"""
-    element_id: UUID  # CHANGED TO UUID
-    script_id: UUID  # CHANGED TO UUID
+    element_id: UUID
+    script_id: UUID
 
     class Config:
         from_attributes = True
 
 class ScriptElement(BaseModel):
     """Schema for script elements going TO the frontend"""
-    element_id: UUID  # CHANGED TO UUID
-    script_id: UUID  # CHANGED TO UUID
-    department_id: Optional[UUID] = None  # CHANGED TO UUID
+    element_id: UUID
+    script_id: UUID
+    department_id: Optional[UUID] = None
     element_type: str
 
     class Config:
@@ -35,12 +35,12 @@ class ScriptElementCreate(BaseModel):
     """Schema for creating new script elements"""
     element_type: str  # 'CUE', 'NOTE'
     sequence: Optional[int] = None  # Auto-calculated if not provided
-    time_offset_ms: Optional[int] = 0  # Time offset in milliseconds
-    description: str = ""
+    offset_ms: Optional[int] = 0  # Time offset in milliseconds
+    element_name: str = ""
     cue_notes: Optional[str] = None
     department_id: Optional[UUID] = None
     location_details: Optional[str] = None
-    duration: Optional[int] = None  # Duration in milliseconds
+    duration_ms: Optional[int] = None  # Duration in milliseconds
     priority: Optional[str] = "NORMAL"  # 'SAFETY', 'CRITICAL', 'HIGH', 'NORMAL', 'LOW', 'OPTIONAL'
     parent_element_id: Optional[UUID] = None  # For grouped elements
     group_level: Optional[int] = 0
@@ -50,22 +50,19 @@ class ScriptElementUpdate(BaseModel):
     """Schema for updating script elements"""
     element_type: Optional[str] = None
     sequence: Optional[int] = None
-    time_offset_ms: Optional[int] = None
-    description: Optional[str] = None
+    offset_ms: Optional[int] = None
+    element_name: Optional[str] = None
     cue_notes: Optional[str] = None
     department_id: Optional[UUID] = None
     location_details: Optional[str] = None
-    duration: Optional[int] = None
+    duration_ms: Optional[int] = None
     priority: Optional[str] = None
     parent_element_id: Optional[UUID] = None
     group_level: Optional[int] = None
     is_collapsed: Optional[bool] = None
     custom_color: Optional[str] = None
 
-# Removed unused schemas:
-# - ScriptElementEquipment
-# - ScriptElementCrewAssignment (different from show-level CrewAssignment)
-# - ScriptElementConditionalRule
+# Note: Some schemas have been removed to simplify the codebase
 
 class ScriptElementEnhanced(BaseModel):
     """Enhanced schema for script elements with all new fields"""
@@ -75,12 +72,12 @@ class ScriptElementEnhanced(BaseModel):
     sequence: Optional[int] = None
     
     # Timing fields
-    time_offset_ms: int = 0  # Timing in milliseconds
-    duration: Optional[int] = None
+    offset_ms: int = 0  # Timing in milliseconds
+    duration_ms: Optional[int] = None
     priority: str = "normal"
     
     # Content
-    description: str = ""
+    element_name: str = ""
     cue_notes: Optional[str] = None
     
     # Location and visual

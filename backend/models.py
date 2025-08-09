@@ -94,7 +94,6 @@ class LocationArea(enum.Enum):
     DRESSING_ROOM = "dressing_room"
     OTHER = "other"
 
-# Removed unused enums: ConditionType, OperatorType
 
 class UserStatus(enum.Enum):
     """User authentication status"""
@@ -117,7 +116,6 @@ class User(Base):
     """Unified user model supporting both guest and verified users"""
     __tablename__ = "userTable"
     
-    # Primary key - CHANGED TO UUID
     user_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
     # Clerk integration (nullable for guest users)
@@ -172,10 +170,8 @@ class CrewRelationship(Base):
         UniqueConstraint('manager_user_id', 'crew_user_id', name='unique_manager_crew'),
     )
     
-    # Primary key - CHANGED TO UUID
     relationship_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    # Foreign keys - CHANGED TO UUID
     manager_user_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)  # The verified user who manages
     crew_user_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)     # The user being managed
     
@@ -197,11 +193,9 @@ class Venue(Base):
     """Theater venue information"""
     __tablename__ = "venuesTable"
     
-    # Primary key - CHANGED TO UUID
     venue_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    venue_name = Column(String, nullable=False)  # Removed unique=True for user-scoped data
+    venue_name = Column(String, nullable=False)
     
-    # Owner - NEW FIELD
     owner_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)
     
     # Location Information
@@ -249,14 +243,12 @@ class Department(Base):
     """Theater departments (Sound, Lighting, etc.)"""
     __tablename__ = "departmentsTable"
     
-    # Primary key - CHANGED TO UUID
     department_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     department_name = Column(String, nullable=False)
     department_description = Column(String, nullable=True)
     department_color = Column(String, nullable=True)  # e.g., "#FF5733"
     department_initials = Column(String(5), nullable=True)  # e.g., "LX", "SND"
     
-    # Owner - NEW FIELD
     owner_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)
     
     # Timestamps
@@ -274,7 +266,6 @@ class Show(Base):
     """Theater production/show"""
     __tablename__ = "showsTable"
 
-    # Primary key - ALREADY UUID
     show_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
 
     # Core show information
@@ -284,7 +275,6 @@ class Show(Base):
     show_notes = Column(Text, nullable=True)
     deadline = Column(DateTime(timezone=True), nullable=True)
     
-    # Foreign keys - CHANGED TO UUID
     venue_id = Column(UUID(as_uuid=True), ForeignKey("venuesTable.venue_id"), nullable=True)
     owner_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)
     
@@ -305,10 +295,8 @@ class CrewAssignment(Base):
         UniqueConstraint('show_id', 'user_id', 'department_id', name='unique_user_show_dept'),
     )
     
-    # Primary key - CHANGED TO UUID
     assignment_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    # Foreign keys - CHANGED TO UUID
     show_id = Column(UUID(as_uuid=True), ForeignKey("showsTable.show_id"), nullable=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)
     department_id = Column(UUID(as_uuid=True), ForeignKey("departmentsTable.department_id"), nullable=False)
@@ -333,13 +321,12 @@ class Script(Base):
     """Call script for a show"""
     __tablename__ = "scriptsTable"
     
-    # Primary key - CHANGED TO UUID
     script_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     
     # Core script information
     script_name = Column(String, nullable=False)
     script_notes = Column(Text, nullable=True)
-    script_status = Column(Enum(ScriptStatus), default=ScriptStatus.DRAFT, nullable=False)  # Updated to use enum with DRAFT default
+    script_status = Column(Enum(ScriptStatus), default=ScriptStatus.DRAFT, nullable=False)
     
     # Timing information
     start_time = Column(DateTime(timezone=True), nullable=True)
@@ -349,10 +336,8 @@ class Script(Base):
     # Status flags
     is_shared = Column(Boolean, default=False, nullable=False)
     
-    # Foreign keys - ALREADY UUID
     show_id = Column(UUID(as_uuid=True), ForeignKey("showsTable.show_id"), nullable=False)
     
-    # Owner - NEW FIELD (explicit ownership even though tied to show)
     owner_id = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=False)
     
     # Timestamps
@@ -370,15 +355,13 @@ class ScriptElement(Base):
     __tablename__ = "scriptElementsTable"
     __table_args__ = (
         Index('idx_script_sequence', 'script_id', 'sequence'),
-        Index('idx_script_time_ms', 'script_id', 'time_offset_ms'),
+        Index('idx_script_time_ms', 'script_id', 'offset_ms'),
         Index('idx_department_elements', 'department_id'),
         Index('idx_parent_element', 'parent_element_id'),
     )
     
-    # Primary key - UUID
     element_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    # Foreign keys - UUID
     script_id = Column(UUID(as_uuid=True), ForeignKey("scriptsTable.script_id"), nullable=False)
     department_id = Column(UUID(as_uuid=True), ForeignKey("departmentsTable.department_id"), nullable=True)  # Nullable for notes
     parent_element_id = Column(UUID(as_uuid=True), ForeignKey("scriptElementsTable.element_id"), nullable=True)
@@ -388,12 +371,12 @@ class ScriptElement(Base):
     # Element information
     element_type = Column(Enum(ElementType), nullable=False)
     sequence = Column(Integer, nullable=True)  # New sequence field
-    description = Column(Text, nullable=False, server_default='')  # New description field
+    element_name = Column(Text, nullable=False, server_default='')  # Element name field
     cue_notes = Column(Text, nullable=True)
     
     # Timing and priority
-    time_offset_ms = Column(Integer, nullable=False, server_default='0')  # Timing in milliseconds
-    duration = Column(Integer, nullable=True)  # Duration in milliseconds
+    offset_ms = Column(Integer, nullable=False, server_default='0')  # Timing in milliseconds
+    duration_ms = Column(Integer, nullable=True)  # Duration in milliseconds
     priority = Column(Enum(PriorityLevel), nullable=False, server_default='NORMAL')
     
     # Location and visual

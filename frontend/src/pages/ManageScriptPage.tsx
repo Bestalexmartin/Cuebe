@@ -490,7 +490,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
         try {
             const currentElements = [...editQueueElements];
-            const sortedElements = [...currentElements].sort((a, b) => a.time_offset_ms - b.time_offset_ms);
+            const sortedElements = [...currentElements].sort((a, b) => a.offset_ms - b.offset_ms);
 
             const needsReordering = currentElements.some((element, index) => {
                 return element.element_id !== sortedElements[index]?.element_id;

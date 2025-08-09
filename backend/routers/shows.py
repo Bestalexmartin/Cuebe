@@ -334,8 +334,8 @@ def create_script_for_show(
     show_start_cue = models.ScriptElement(
         script_id=new_script.script_id,
         element_type=models.ElementType.NOTE,
-        description="SHOW START",  # All caps title
-        time_offset_ms=0,  # Start at 00:00
+        element_name="SHOW START",  # All caps title
+        offset_ms=0,  # Start at 00:00
         priority=models.PriorityLevel.CRITICAL,
         custom_color="#EF4444",  # Matches frontend note preset red
         sequence=1,
@@ -400,9 +400,9 @@ def duplicate_script(
             element_type=original_element.element_type,
             department_id=original_element.department_id,
             parent_element_id=None,  # Will be updated later for hierarchical elements
-            description=original_element.description,
-            time_offset_ms=original_element.time_offset_ms,
-            duration=original_element.duration,
+            element_name=original_element.element_name,
+            offset_ms=original_element.offset_ms,
+            duration_ms=original_element.duration_ms,
             priority=original_element.priority,
             custom_color=original_element.custom_color,
             sequence=original_element.sequence,

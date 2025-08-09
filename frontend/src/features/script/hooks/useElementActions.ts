@@ -15,7 +15,7 @@ export function useElementActions(
       if (autoSort) {
         // Find correct insertion point in chronological order
         for (let i = 0; i < elements.length; i++) {
-          if (elements[i].time_offset_ms > cleanData.time_offset_ms) {
+          if (elements[i].offset_ms > cleanData.offset_ms) {
             insertIndex = i;
             break;
           }

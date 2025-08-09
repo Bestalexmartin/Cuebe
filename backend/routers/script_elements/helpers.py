@@ -12,16 +12,16 @@ def _auto_populate_show_start_duration(db: Session, script: models.Script, eleme
     
     # Calculate duration between script start and end times
     duration_delta = script.end_time - script.start_time
-    duration_seconds = int(duration_delta.total_seconds())
+    duration_ms = int(duration_delta.total_seconds() * 1000)  # Convert to milliseconds
     
-    if duration_seconds <= 0:
+    if duration_ms <= 0:
         return
     
     # Find SHOW START element
     show_start_element = None
     for element in elements:
-        if (element.description is not None and 
-            element.description.upper() == 'SHOW START'):
+        if (element.element_name is not None and 
+            element.element_name.upper() == 'SHOW START'):
             show_start_element = element
             break
     
@@ -29,6 +29,6 @@ def _auto_populate_show_start_duration(db: Session, script: models.Script, eleme
         return
     
     # Update duration if it's different from calculated duration
-    if show_start_element.duration != duration_seconds:
-        show_start_element.duration = duration_seconds
+    if show_start_element.duration_ms != duration_ms:
+        show_start_element.duration_ms = duration_ms
         db.commit()

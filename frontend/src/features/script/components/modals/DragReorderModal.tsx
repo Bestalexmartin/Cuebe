@@ -11,8 +11,8 @@ import { BaseModal } from '../../../../components/base/BaseModal';
 
 interface DraggedElement {
     element_id: string;
-    description: string;
-    time_offset_ms: number;
+    element_name: string;
+    offset_ms: number;
 }
 
 interface DragReorderModalProps {
@@ -28,8 +28,8 @@ interface DragReorderModalProps {
 }
 
 // Helper function to format time offset
-const formatTimeOffset = (time_offset_ms: number): string => {
-    const totalSeconds = Math.round(time_offset_ms / 1000);
+const formatTimeOffset = (offset_ms: number): string => {
+    const totalSeconds = Math.round(offset_ms / 1000);
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
@@ -125,7 +125,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
             <VStack spacing={6} align="stretch">
                 <Box>
                     <Text fontSize="md">
-                        <Text as="span" fontWeight="bold">Moved Cue:</Text> "{draggedElement.description}" at {formatTimeOffset(draggedElement.time_offset_ms)}
+                        <Text as="span" fontWeight="bold">Moved Cue:</Text> "{draggedElement.element_name}" at {formatTimeOffset(draggedElement.offset_ms)}
                     </Text>
                 </Box>
 
@@ -163,7 +163,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
                             <VStack spacing={1}>
                                 <Text fontWeight="semibold">Match Time of Cue Before</Text>
                                 <Text fontSize="xs" color="gray.500">
-                                    Change offset to {formatTimeOffset(elementAbove.time_offset_ms)} ("{elementAbove.description}")
+                                    Change offset to {formatTimeOffset(elementAbove.offset_ms)} ("{elementAbove.element_name}")
                                 </Text>
                             </VStack>
                         </Button>
@@ -183,7 +183,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
                             <VStack spacing={1}>
                                 <Text fontWeight="semibold">Match Time of Cue After</Text>
                                 <Text fontSize="xs" color="gray.500">
-                                    Change offset to {formatTimeOffset(elementBelow.time_offset_ms)} ("{elementBelow.description}")
+                                    Change offset to {formatTimeOffset(elementBelow.offset_ms)} ("{elementBelow.element_name}")
                                 </Text>
                             </VStack>
                         </Button>

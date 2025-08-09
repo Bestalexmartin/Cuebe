@@ -322,16 +322,13 @@ function recalculateGroupDurations(elements: ScriptElement[]): ScriptElement[] {
             
             if (childElements.length > 0) {
                 // Calculate new duration from child time offsets
-                const childTimeOffsets = childElements.map(el => el.time_offset_ms);
+                const childTimeOffsets = childElements.map(el => el.offset_ms);
                 const minTimeOffset = Math.min(...childTimeOffsets);
                 const maxTimeOffset = Math.max(...childTimeOffsets);
                 const groupDurationMs = maxTimeOffset - minTimeOffset;
-                const newDuration = Math.round(groupDurationMs / 1000);
-                
-                
                 return {
                     ...element,
-                    duration: newDuration
+                    duration_ms: groupDurationMs
                 };
             }
         }
@@ -403,7 +400,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             const timeOp = operation as any;
             return elements.map(el => 
                 el.element_id === operation.element_id 
-                    ? { ...el, time_offset_ms: timeOp.new_time_offset_ms }
+                    ? { ...el, offset_ms: timeOp.new_offset_ms }
                     : el
             );
             
@@ -431,20 +428,18 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                 
                 if (groupChildren.length > 0) {
                     // Recalculate group duration from first to last child
-                    const childTimeOffsets = groupChildren.map(el => el.time_offset_ms);
+                    const childTimeOffsets = groupChildren.map(el => el.offset_ms);
                     const minTimeOffset = Math.min(...childTimeOffsets);
                     const maxTimeOffset = Math.max(...childTimeOffsets);
                     const groupDurationMs = maxTimeOffset - minTimeOffset;
-                    const groupDurationSec = Math.round(groupDurationMs / 1000);
-                    
                     
                     // Update the group parent
                     newElements = newElements.map(el => {
                         if (el.element_id === newElement.parent_element_id) {
                             return {
                                 ...el,
-                                duration: groupDurationSec,
-                                time_offset_ms: minTimeOffset
+                                duration_ms: groupDurationMs,
+                                offset_ms: minTimeOffset
                             };
                         }
                         return el;
@@ -508,18 +503,17 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                     }).filter(el => el.element_id !== elementToDelete.parent_element_id);
                 } else {
                     // Multiple children remain - recalculate group duration
-                    const childTimeOffsets = remainingChildren.map(el => el.time_offset_ms);
+                    const childTimeOffsets = remainingChildren.map(el => el.offset_ms);
                     const minTimeOffset = Math.min(...childTimeOffsets);
                     const maxTimeOffset = Math.max(...childTimeOffsets);
                     const newGroupDurationMs = maxTimeOffset - minTimeOffset;
-                    const newGroupDurationSec = Math.round(newGroupDurationMs / 1000);
 
                     updatedElements = updatedElements.map(el => {
                         if (el.element_id === elementToDelete.parent_element_id) {
                             return {
                                 ...el,
-                                duration: newGroupDurationSec,
-                                time_offset_ms: minTimeOffset
+                                duration_ms: newGroupDurationMs,
+                                offset_ms: minTimeOffset
                             };
                         }
                         return el;
@@ -607,7 +601,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             const groupCount = childElements.filter(el => (el as any).element_type === 'GROUP').length;
             
             // Calculate group duration from first to last child element
-            const childTimeOffsets = childElements.map(el => el.time_offset_ms);
+            const childTimeOffsets = childElements.map(el => el.offset_ms);
             const minTimeOffset = Math.min(...childTimeOffsets);
             const maxTimeOffset = Math.max(...childTimeOffsets);
             const groupDurationMs = maxTimeOffset - minTimeOffset;
@@ -627,9 +621,9 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                 script_id: elements[0]?.script_id || '',
                 element_type: 'GROUP' as const,
                 sequence: Math.min(...elements.filter(el => elementIds.includes(el.element_id)).map(el => el.sequence)),
-                time_offset_ms: minTimeOffset,
-                duration: Math.round(groupDurationMs / 1000),
-                description: groupName,
+                offset_ms: minTimeOffset,
+                duration_ms: groupDurationMs,
+                element_name: groupName,
                 cue_notes: generatedNotes,
                 custom_color: groupColor,
                 priority: 'NORMAL' as const,
@@ -670,7 +664,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             const updateElementOp = operation as any;
             const targetElement = elements.find(el => el.element_id === operation.element_id);
             const isUpdatingGroupParent = targetElement && (targetElement as any).element_type === 'GROUP';
-            const timeOffsetChange = updateElementOp.changes.time_offset_ms;
+            const timeOffsetChange = updateElementOp.changes.offset_ms;
             
             // Handle group parent time offset changes specially
             if (isUpdatingGroupParent && timeOffsetChange) {
@@ -692,7 +686,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                         // Update child elements with same delta
                         return {
                             ...el,
-                            time_offset_ms: el.time_offset_ms + timeDelta
+                            offset_ms: el.offset_ms + timeDelta
                         };
                     }
                     return el;
@@ -712,8 +706,8 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                 return el;
             });
             
-            // If time_offset_ms was changed and auto-sort would be enabled, reposition the element
-            const timeOffsetChanged = updateElementOp.changes.time_offset_ms;
+            // If offset_ms was changed and auto-sort would be enabled, reposition the element
+            const timeOffsetChanged = updateElementOp.changes.offset_ms;
             if (timeOffsetChanged && updateElementOp.autoSort) {
                 const elementIndex = elementUpdates.findIndex(el => el.element_id === operation.element_id);
                 if (elementIndex !== -1) {
@@ -723,7 +717,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                     // Find correct insertion point for the updated element
                     let insertIndex = otherElements.length;
                     for (let i = 0; i < otherElements.length; i++) {
-                        if (otherElements[i].time_offset_ms > element.time_offset_ms) {
+                        if (otherElements[i].offset_ms > element.offset_ms) {
                             insertIndex = i;
                             break;
                         }

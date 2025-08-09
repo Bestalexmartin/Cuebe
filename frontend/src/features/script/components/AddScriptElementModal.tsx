@@ -45,19 +45,16 @@ interface AddScriptElementModalProps {
 
 const INITIAL_FORM_STATE: ScriptElementCreate = {
     element_type: 'CUE',
-    description: '',
-    time_offset_ms: 0,
-    trigger_type: 'MANUAL', // Will be set automatically
-    cue_id: '', // Will be auto-generated
+    element_name: '',
+    offset_ms: 0,
     cue_notes: '',
     department_id: '',
-    location: undefined, // Not needed in form
     priority: 'NORMAL',
     custom_color: '' // For note background color
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {
-    description: {
+    element_name: {
         required: true,
         rules: [
             ValidationRules.minLength(3, 'Cue Event must be at least 3 characters'),
@@ -65,7 +62,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
         ]
     },
     // departmentID validation is handled manually in canSubmit logic
-    time_offset_ms: {
+    offset_ms: {
         required: true,
         rules: [
             {
@@ -158,7 +155,6 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
             ...form.formData,
             element_id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Temporary ID
             element_type: form.formData.element_type,
-            trigger_type: form.formData.trigger_type || 'MANUAL',
             priority: form.formData.priority || 'NORMAL',
             // Convert empty departmentID to null for notes
             department_id: form.formData.department_id && form.formData.department_id.trim() ? form.formData.department_id : null,
@@ -182,10 +178,10 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
         onElementCreated(elementData);
     };
 
-    const canSubmit = form.formData.description.trim().length >= 3 && 
+    const canSubmit = form.formData.element_name.trim().length >= 3 && 
                      // Department only required for cues, not notes
                      (form.formData.element_type === 'NOTE' || (form.formData.department_id && form.formData.department_id.trim().length > 0)) &&
-                     Number.isFinite(form.formData.time_offset_ms) &&
+                     Number.isFinite(form.formData.offset_ms) &&
                      form.fieldErrors.length === 0;
 
     return (
@@ -249,8 +245,8 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                                 const ms = parseTimeToMs(e.target.value);
                                 const formatted = formatTimeOffset(ms);
                                 setTimeInputValue(formatted || "0:00");
-                                form.updateField('time_offset_ms', ms);
-                                form.validateField('time_offset_ms');
+                                form.updateField('offset_ms', ms);
+                                form.validateField('offset_ms');
                             }}
                             placeholder="0:00 or 0:00:00"
                         />
@@ -369,9 +365,9 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                 <FormControl isRequired>
                     <FormLabel>Cue</FormLabel>
                     <Input
-                        value={form.formData.description}
-                        onChange={(e) => form.updateField('description', e.target.value)}
-                        onBlur={() => form.validateField('description')}
+                        value={form.formData.element_name}
+                        onChange={(e) => form.updateField('element_name', e.target.value)}
+                        onBlur={() => form.validateField('element_name')}
                         placeholder="Describe what happens during this cue or note..."
                     />
                 </FormControl>
