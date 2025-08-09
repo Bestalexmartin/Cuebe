@@ -10,6 +10,7 @@ import {
     useSensor,
     useSensors,
     DragEndEvent,
+    DragStartEvent,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -85,6 +86,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [elementToEdit, setElementToEdit] = useState<any>(null);
+    const [draggedGroupWasExpanded, setDraggedGroupWasExpanded] = useState(false); // Track original group state
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const lastScrollStateRef = useRef<{isAtTop: boolean; isAtBottom: boolean; allElementsFitOnScreen: boolean} | null>(null);
     
@@ -245,11 +247,39 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         })
     );
 
+    // Handle drag start - collapse groups for visual effect
+    const handleDragStart = (event: DragStartEvent) => {
+        const { active } = event;
+        
+        // Find the dragged element
+        const draggedElement = displayElements.find(el => el.element_id === active.id);
+        const isGroupParent = draggedElement && (draggedElement as any).element_type === 'GROUP';
+        const isExpanded = isGroupParent && !draggedElement.is_collapsed;
+        
+        // Store the original expanded state before we modify it
+        setDraggedGroupWasExpanded(isExpanded || false);
+        
+        // If it's an expanded group, collapse it for visual effect during drag
+        if (isExpanded && onToggleGroupCollapse) {
+            onToggleGroupCollapse(draggedElement.element_id);
+        }
+    };
+
     // Handle drag end
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
 
         if (!over || active.id === over.id) {
+            // If we temporarily collapsed a group for visual effect, restore it even on abort
+            if (draggedGroupWasExpanded && onToggleGroupCollapse) {
+                const draggedEl = displayElements.find(el => el.element_id === active.id);
+                if (draggedEl && (draggedEl as any).element_type === 'GROUP') {
+                    onToggleGroupCollapse(draggedEl.element_id);
+                }
+            }
+            
+            // Reset the tracking state
+            setDraggedGroupWasExpanded(false);
             return;
         }
 
@@ -263,7 +293,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         }
 
         const draggedEl = elementsForDrag[oldIndex];
-        
+
         // Store original elements before making any changes
         setOriginalElementsBeforeDrag([...localElements]);
         
@@ -309,10 +339,18 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             // Set the dragged element so applyReorder can access it
             setDraggedElement(draggedEl);
             await applyReorderDirect(pendingReorderData, draggedEl);
+            
+            // If we temporarily collapsed a group for visual effect, restore it to expanded
+            if (draggedGroupWasExpanded && onToggleGroupCollapse) {
+                // The group is currently collapsed from drag start, so toggle will expand it
+                onToggleGroupCollapse(draggedEl.element_id);
+            }
+            
             // Clear all state like the modal handlers do
             setDraggedElement(null);
             setPendingReorder(null);
             setOriginalElementsBeforeDrag([]);
+            setDraggedGroupWasExpanded(false); // Reset the tracking state
             return;
         }
 
@@ -381,12 +419,18 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     };
 
     const closeDragModal = () => {
+        // Check if we need to restore expanded state for a group that was temporarily collapsed
+        if (draggedGroupWasExpanded && draggedElement && onToggleGroupCollapse) {
+            onToggleGroupCollapse(draggedElement.element_id);
+        }
+        
         setDragModalOpen(false);
         setDraggedElement(null);
         setElementAbove(null);
         setElementBelow(null);
         setPendingReorder(null);
         setOriginalElementsBeforeDrag([]);
+        setDraggedGroupWasExpanded(false); // Reset the tracking state
     };
 
     const handleCancelDrag = () => {
@@ -398,34 +442,45 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     };
 
     const applyReorderDirect = async (pendingReorderData: any, draggedElement: any) => {
-
         // If we have edit queue functionality, use it
         if (onApplyLocalChange) {
-            // Calculate proper sequence values based on elements at those positions
-            const elementsForSequence = displayElements;
-            const draggedElementData = elementsForSequence[pendingReorderData.oldIndex];
-            const oldSequence = draggedElementData?.sequence || (pendingReorderData.oldIndex + 1);
+            // Calculate sequence values based on the reordered positions
+            const reorderedElements = pendingReorderData.reorderedElements;
             
+            // Find the dragged element in the reordered array to get its new position
+            const newIndex = reorderedElements.findIndex((el: any) => el.element_id === draggedElement?.element_id);
+            const oldSequence = draggedElement?.sequence;
             
-            // For new_sequence, we need to calculate what the sequence should be at the target position
+            // Calculate new sequence based on position in reordered array
+            // We want to insert the element at this position, so we need to determine the right sequence
             let newSequence;
-            if (pendingReorderData.newIndex === 0) {
-                // Moving to the beginning - sequence should be 1
-                newSequence = 1;
-            } else if (pendingReorderData.newIndex >= elementsForSequence.length - 1) {
-                // Moving to the end - sequence should be the length of elements
-                newSequence = elementsForSequence.length;
+            
+            if (newIndex === 0) {
+                // Moving to the beginning - get sequence 1 less than the first element
+                const firstOtherElement = reorderedElements.find((el: any, idx: number) => idx === 1);
+                newSequence = firstOtherElement ? Math.max(1, firstOtherElement.sequence - 1) : 1;
+            } else if (newIndex === reorderedElements.length - 1) {
+                // Moving to the end - get sequence 1 more than the last other element
+                const lastOtherElement = reorderedElements[newIndex - 1];
+                newSequence = lastOtherElement ? lastOtherElement.sequence + 1 : reorderedElements.length;
             } else {
-                // Moving to middle - sequence should be based on target position
-                newSequence = pendingReorderData.newIndex + 1;
+                // Moving to middle - get sequence between the elements before and after
+                const elementBefore = reorderedElements[newIndex - 1];
+                const elementAfter = reorderedElements[newIndex + 1];
+                
+                if (elementBefore && elementAfter) {
+                    // Insert between the two elements - use the sequence of the element after
+                    newSequence = elementAfter.sequence;
+                } else {
+                    // Fallback to position-based
+                    newSequence = newIndex + 1;
+                }
             }
             
-            // Create reorder operation for edit queue
+            // Create sequence-based reorder operation for edit queue (no indices needed)
             const reorderOperation = {
                 type: 'REORDER',
                 element_id: draggedElement?.element_id,
-                old_index: pendingReorderData.oldIndex,
-                new_index: pendingReorderData.newIndex,
                 old_sequence: oldSequence,
                 new_sequence: newSequence
             };
@@ -444,34 +499,44 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             return;
         }
 
-
         // If we have edit queue functionality, use it
         if (onApplyLocalChange) {
-            // Calculate proper sequence values based on elements at those positions
-            const elementsForSequence = displayElements;
-            const draggedElementData = elementsForSequence[pendingReorder.oldIndex];
-            const oldSequence = draggedElementData?.sequence || (pendingReorder.oldIndex + 1);
+            // Use the same sequence-based logic as applyReorderDirect
+            const reorderedElements = pendingReorder.reorderedElements;
             
+            // Find the dragged element in the reordered array to get its new position
+            const newIndex = reorderedElements.findIndex((el: any) => el.element_id === draggedElement?.element_id);
+            const oldSequence = draggedElement?.sequence;
             
-            // For new_sequence, we need to calculate what the sequence should be at the target position
+            // Calculate new sequence based on position in reordered array
             let newSequence;
-            if (pendingReorder.newIndex === 0) {
-                // Moving to the beginning - sequence should be 1
-                newSequence = 1;
-            } else if (pendingReorder.newIndex >= elementsForSequence.length - 1) {
-                // Moving to the end - sequence should be the length of elements
-                newSequence = elementsForSequence.length;
+            
+            if (newIndex === 0) {
+                // Moving to the beginning - get sequence 1 less than the first element
+                const firstOtherElement = reorderedElements.find((el: any, idx: number) => idx === 1);
+                newSequence = firstOtherElement ? Math.max(1, firstOtherElement.sequence - 1) : 1;
+            } else if (newIndex === reorderedElements.length - 1) {
+                // Moving to the end - get sequence 1 more than the last other element
+                const lastOtherElement = reorderedElements[newIndex - 1];
+                newSequence = lastOtherElement ? lastOtherElement.sequence + 1 : reorderedElements.length;
             } else {
-                // Moving to middle - sequence should be based on target position
-                newSequence = pendingReorder.newIndex + 1;
+                // Moving to middle - get sequence between the elements before and after
+                const elementBefore = reorderedElements[newIndex - 1];
+                const elementAfter = reorderedElements[newIndex + 1];
+                
+                if (elementBefore && elementAfter) {
+                    // Insert between the two elements - use the sequence of the element after
+                    newSequence = elementAfter.sequence;
+                } else {
+                    // Fallback to position-based
+                    newSequence = newIndex + 1;
+                }
             }
             
-            // Create reorder operation for edit queue
+            // Create sequence-based reorder operation for edit queue (no indices needed)
             const reorderOperation = {
                 type: 'REORDER',
                 element_id: draggedElement?.element_id,
-                old_index: pendingReorder.oldIndex,
-                new_index: pendingReorder.newIndex,
                 old_sequence: oldSequence,
                 new_sequence: newSequence
             };
@@ -566,16 +631,16 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
 
     // Create display elements with auto-sort applied when needed
     const displayElements = useMemo(() => {
+        if (!localElements) return [];
+        
         // Don't apply auto-sort during drag operations - preserve user's drop position
-        if (!autoSortCues || !localElements || dragModalOpen || pendingReorder) {
+        if (!autoSortCues || dragModalOpen || pendingReorder) {
             return localElements;
         }
         
-        // Return sorted copy for display without modifying localElements
+        // Return sorted copy for display
         return [...localElements].sort((a, b) => {
-            const aOffset = a.time_offset_ms || 0;
-            const bOffset = b.time_offset_ms || 0;
-            return aOffset - bOffset;
+            return a.time_offset_ms - b.time_offset_ms;
         });
     }, [localElements, autoSortCues, dragModalOpen, pendingReorder]);
 
@@ -614,6 +679,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
+                        onDragStart={handleDragStart}
                         onDragEnd={handleDragEnd}
                     >
                         <SortableContext

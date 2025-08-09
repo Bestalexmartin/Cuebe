@@ -4,6 +4,18 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 
 // TypeScript interfaces
+interface DepartmentCrewAssignment {
+    assignment_id: string;
+    show_id: string;
+    show_name: string;
+    user_id: string;
+    fullname_first?: string;
+    fullname_last?: string;
+    email_address?: string;
+    profile_img_url?: string;
+    role?: string;
+}
+
 interface Department {
     department_id: string;
     department_name: string;
@@ -12,6 +24,9 @@ interface Department {
     department_initials?: string;
     date_created: string;
     date_updated: string;
+    shows_assigned_count?: number;
+    unique_crew_count?: number;
+    crew_assignments?: DepartmentCrewAssignment[];
 }
 
 interface UseDepartmentsReturn {

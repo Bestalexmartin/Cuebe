@@ -373,8 +373,6 @@ class ScriptElement(Base):
         Index('idx_script_time_ms', 'script_id', 'time_offset_ms'),
         Index('idx_department_elements', 'department_id'),
         Index('idx_parent_element', 'parent_element_id'),
-        Index('idx_cue_id', 'cue_id'),
-        Index('idx_type_active', 'element_type', 'is_active'),
     )
     
     # Primary key - UUID
@@ -390,39 +388,21 @@ class ScriptElement(Base):
     # Element information
     element_type = Column(Enum(ElementType), nullable=False)
     sequence = Column(Integer, nullable=True)  # New sequence field
-    cue_number = Column(String, nullable=True)  # Legacy field
-    cue_id = Column(String(50), nullable=True)  # New cue ID field
-    element_description = Column(Text, nullable=True)  # Legacy field
     description = Column(Text, nullable=False, server_default='')  # New description field
     cue_notes = Column(Text, nullable=True)
     
-    # Trigger and execution
-    trigger_type = Column(Enum(TriggerType), nullable=False, server_default='MANUAL')
-    follows_cue_id = Column(String, nullable=True)
-    execution_status = Column(Enum(ExecutionStatus), nullable=False, server_default='PENDING')
-    priority = Column(Enum(PriorityLevel), nullable=False, server_default='NORMAL')
-    
-    # Timing
+    # Timing and priority
     time_offset_ms = Column(Integer, nullable=False, server_default='0')  # Timing in milliseconds
     duration = Column(Integer, nullable=True)  # Duration in milliseconds
-    fade_in = Column(Integer, nullable=True)  # Fade in time in milliseconds
-    fade_out = Column(Integer, nullable=True)  # Fade out time in milliseconds
+    priority = Column(Enum(PriorityLevel), nullable=False, server_default='NORMAL')
     
     # Location and visual
-    location = Column(Enum(LocationArea), nullable=True)
     location_details = Column(Text, nullable=True)
-    department_color = Column(String(7), nullable=True)  # Hex color override
     custom_color = Column(String(7), nullable=True)  # Custom color for element
     
     # Grouping and hierarchy
     group_level = Column(Integer, nullable=False, server_default='0')
     is_collapsed = Column(Boolean, nullable=False, server_default='false')
-    
-    # Metadata
-    version = Column(Integer, nullable=False, server_default='1')
-    
-    # Status
-    is_active = Column(Boolean, default=True, nullable=False)
     
     # Timestamps
     date_created = Column(DateTime(timezone=True), server_default=func.now())

@@ -61,7 +61,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
         // Check if the click is on the collapse button - if so, ignore it
         const target = e.target as HTMLElement;
         const isCollapseButton = target.closest('.group-collapse-button');
-        
+
         if (isCollapseButton) {
             return; // Don't trigger parent selection logic for collapse button clicks
         }
@@ -89,7 +89,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
         // Check if the click is on the collapse button - if so, ignore it
         const target = e.target as HTMLElement;
         const isCollapseButton = target.closest('.group-collapse-button');
-        
+
         if (dragTimeoutRef.current) {
             clearTimeout(dragTimeoutRef.current);
             dragTimeoutRef.current = null;
@@ -137,29 +137,29 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
     const isGroup = (element as any).element_type === 'GROUP';
     const isGroupParent = isGroup;
     const isGroupChild = element.group_level && element.group_level > 0;
-    
+
     // Calculate group summary notes dynamically for group parents
     const groupSummaryNotes = useMemo(() => {
         if (!isGroupParent) return null;
-        
+
         // Find all child elements of this group
-        const childElements = allElements.filter(el => 
+        const childElements = allElements.filter(el =>
             el.parent_element_id === element.element_id &&
             el.group_level && el.group_level > 0
         );
-        
+
         if (childElements.length === 0) return "";
-        
+
         // Count element types
         const cueCount = childElements.filter(el => (el as any).element_type === 'CUE').length;
         const noteCount = childElements.filter(el => (el as any).element_type === 'NOTE').length;
         const groupCount = childElements.filter(el => (el as any).element_type === 'GROUP').length;
-        
+
         const noteParts: string[] = [];
         if (cueCount > 0) noteParts.push(`${cueCount} cue${cueCount !== 1 ? 's' : ''}`);
         if (noteCount > 0) noteParts.push(`${noteCount} note${noteCount !== 1 ? 's' : ''}`);
         if (groupCount > 0) noteParts.push(`${groupCount} group${groupCount !== 1 ? 's' : ''}`);
-        
+
         return noteParts.length > 0 ? `Includes ${noteParts.join(' and ')}` : "";
     }, [isGroupParent, allElements, element.element_id]);
 
@@ -169,7 +169,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
         // Compare both as strings to handle UUID vs string mismatch
         const groupParent = allElements.find(el => el && String(el.element_id) === String(element.parent_element_id));
         groupParentColor = groupParent?.custom_color || '#E2E8F0';
-        
+
     }
 
     // Handle group collapse/expand toggle
@@ -207,8 +207,6 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
     const cueIdColor = textColor;
 
     const dynamicCueID = (() => {
-        if (element.cue_id) return element.cue_id;
-
         if ((element as any).element_type !== 'CUE' || !element.department_id) {
             return '';
         }
@@ -372,7 +370,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                 <Box
                     w="10px"
                     h="28px"
-                    bg={leftBarColor}
+                    bg={isNote || isGroup ? "transparent" : leftBarColor}
                     flexShrink={0}
                     mt="1px"
                     mb="1px"

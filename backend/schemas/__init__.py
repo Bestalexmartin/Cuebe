@@ -10,6 +10,8 @@ from .user import (
     GuestUserCreate,
     CrewRelationshipCreate,
     CrewMemberWithRelationship,
+    UserDepartmentAssignment,
+    CrewMemberWithAssignments,
 )
 
 # Venue schemas
@@ -23,6 +25,8 @@ from .venue import (
 from .department import (
     DepartmentCreate,
     Department,
+    DepartmentCrewAssignment,
+    DepartmentWithStats,
 )
 
 # Show schemas
@@ -84,6 +88,8 @@ __all__ = [
     "GuestUserCreate",
     "CrewRelationshipCreate",
     "CrewMemberWithRelationship",
+    "UserDepartmentAssignment",
+    "CrewMemberWithAssignments",
     
     # Venue schemas
     "VenueBase",
@@ -93,6 +99,8 @@ __all__ = [
     # Department schemas
     "DepartmentCreate",
     "Department",
+    "DepartmentCrewAssignment",
+    "DepartmentWithStats",
     
     # Show schemas
     "ShowCreate",

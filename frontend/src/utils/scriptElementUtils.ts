@@ -29,26 +29,6 @@ export const getPriorityColor = (priority: string | null): string => {
     }
 };
 
-/**
- * Get the icon for a trigger type
- */
-export const getTriggerTypeIcon = (triggerType: string | null): IconType => {
-    switch (triggerType) {
-        case 'TIME':
-            return FiClock;
-        case 'AUTO':
-            return FiPlayCircle;
-        case 'FOLLOW':
-            return FiArrowRight;
-        case 'GO':
-            return FiTarget;
-        case 'STANDBY':
-            return FiPause;
-        case 'MANUAL':
-        default:
-            return FiSquare;
-    }
-};
 
 /**
  * Format a time offset in milliseconds to a readable string
@@ -100,27 +80,6 @@ export const getElementTypeColor = (elementType: string | null): string => {
     }
 };
 
-/**
- * Get a human-readable display name for trigger type
- */
-export const getTriggerTypeDisplay = (triggerType: string | null): string => {
-    switch (triggerType) {
-        case 'MANUAL':
-            return 'Manual';
-        case 'TIME':
-            return 'Timed';
-        case 'AUTO':
-            return 'Auto';
-        case 'FOLLOW':
-            return 'Follow';
-        case 'GO':
-            return 'Go';
-        case 'STANDBY':
-            return 'Standby';
-        default:
-            return 'Manual';
-    }
-};
 
 /**
  * Get a human-readable display name for priority
@@ -160,17 +119,6 @@ export const getElementTypeDisplay = (elementType: string | null): string => {
     }
 };
 
-/**
- * Get a human-readable display name for location
- */
-export const getLocationDisplay = (location: string | null): string => {
-    if (!location) return '';
-    
-    return location
-        .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-};
 
 /**
  * Check if an element matches a search query
@@ -184,7 +132,6 @@ export const elementMatchesSearch = (
     const query = searchQuery.toLowerCase();
     
     return (
-        (element.cue_id && element.cue_id.toLowerCase().includes(query)) ||
         (element.description && element.description.toLowerCase().includes(query)) ||
         (element.cue_notes && element.cue_notes.toLowerCase().includes(query)) ||
         (element.location_details && element.location_details.toLowerCase().includes(query))

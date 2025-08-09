@@ -4,6 +4,21 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@clerk/clerk-react";
 
 // TypeScript interfaces
+interface UserDepartmentAssignment {
+  assignment_id: string;
+  show_id: string;
+  show_name: string;
+  department_id: string;
+  department_name: string;
+  department_color?: string;
+  department_initials?: string;
+  venue_name?: string;
+  venue_city?: string;
+  venue_state?: string;
+  show_date?: string;
+  role?: string;
+}
+
 interface Crew {
   user_id: string;
   clerk_user_id?: string;
@@ -20,6 +35,7 @@ interface Crew {
   date_created: string;
   date_updated: string;
   relationship_notes?: string; // Notes from the relationship, not user notes
+  department_assignments?: UserDepartmentAssignment[];
 }
 
 interface UseCrewReturn {
@@ -45,7 +61,7 @@ export const useCrew = (crewId: string | undefined): UseCrewReturn => {
         return;
       }
 
-      const response = await fetch(`/api/crew/${crewId}`, {
+      const response = await fetch(`/api/crew/${crewId}/assignments`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

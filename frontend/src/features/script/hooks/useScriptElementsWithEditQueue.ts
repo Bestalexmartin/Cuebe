@@ -44,7 +44,6 @@ interface UseScriptElementsWithEditQueueReturn {
 interface UseScriptElementsOptions {
     element_type?: string;
     departmentId?: string;
-    activeOnly?: boolean;
     skip?: number;
     limit?: number;
 }
@@ -135,7 +134,6 @@ export const useScriptElementsWithEditQueue = (
             const params = new URLSearchParams();
             if (options.element_type) params.append('element_type', options.element_type);
             if (options.departmentId) params.append('department_id', options.departmentId);
-            if (options.activeOnly !== undefined) params.append('active_only', options.activeOnly.toString());
             if (options.skip !== undefined) params.append('skip', options.skip.toString());
             if (options.limit !== undefined) params.append('limit', options.limit.toString());
 
@@ -197,9 +195,18 @@ export const useScriptElementsWithEditQueue = (
             if (!response.ok) {
                 let errorData;
                 try {
-                    errorData = await response.json();
+                    const text = await response.text();
+                    if (text) {
+                        try {
+                            errorData = JSON.parse(text);
+                        } catch {
+                            errorData = text;
+                        }
+                    } else {
+                        errorData = 'No error details available';
+                    }
                 } catch {
-                    errorData = await response.text();
+                    errorData = 'Failed to read error response';
                 }
                 console.error('Backend error response:', response.status, errorData);
                 throw new Error(`Failed to save changes: ${response.status} - ${JSON.stringify(errorData)}`);
@@ -340,125 +347,49 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
         case 'REORDER':
             const reorderOp = operation as any;
             const elementToMove = elements.find(el => el.element_id === operation.element_id);
-            if (!elementToMove) return elements;
+            
+            if (!elementToMove) {
+                return elements;
+            }
             
             // Check if we're moving a group parent - if so, move the entire group
             const isGroupParent = (elementToMove as any).element_type === 'GROUP';
             
             if (isGroupParent) {
-                // When moving a group parent, move all children with it
+                // Find all children of this group
                 const groupChildren = elements.filter(el => 
                     el.parent_element_id === elementToMove.element_id
                 );
                 
-                // For group parent moves, just reposition the elements
-                // Time offset changes will be handled by the subsequent UPDATE_ELEMENT operation from the modal
-                const newIndex = reorderOp.new_index;
-                const elementsWithoutGroup = elements.filter(el => 
-                    !([elementToMove, ...groupChildren].some(moveEl => moveEl.element_id === el.element_id))
-                );
-                
-                
-                // Insert the entire group at the new position without changing times
-                const result = [...elementsWithoutGroup];
-                result.splice(newIndex, 0, elementToMove);
-                groupChildren.forEach((child, childIndex) => {
-                    result.splice(newIndex + 1 + childIndex, 0, child);
+                // Update parent sequence and all children sequences to be consecutive after parent
+                const updatedElements = elements.map(el => {
+                    if (el.element_id === operation.element_id) {
+                        // Update the group parent
+                        return { ...el, sequence: reorderOp.new_sequence };
+                    } else if (el.parent_element_id === elementToMove.element_id) {
+                        // Update child elements to be consecutive after parent
+                        const childIndex = groupChildren.findIndex(child => child.element_id === el.element_id);
+                        return { ...el, sequence: reorderOp.new_sequence + childIndex + 1 };
+                    } else {
+                        // Leave other elements unchanged
+                        return el;
+                    }
                 });
                 
-                // Update sequences for all elements
-                return result.map((el, index) => ({
-                    ...el,
-                    sequence: index + 1
-                }));
-            }
-            
-            // Regular element move (not a group parent)
-            const filtered = elements.filter(el => el.element_id !== operation.element_id);
-            const result = [...filtered];
-            
-            // Check if element should be added to or removed from a group based on new position
-            let updatedElementToMove = { ...elementToMove };
-            const newIndex = reorderOp.new_index;
-            
-            if (newIndex > 0 && newIndex < result.length) {
-                // Element being inserted between two elements
-                const beforeElement = result[newIndex - 1];
-                const afterElement = result[newIndex];
+                // Sort all elements by sequence to get the new order
+                return [...updatedElements].sort((a, b) => a.sequence - b.sequence);
+            } else {
+                // Regular element move (not a group parent)
+                // Update the element's sequence
+                const updatedElements = elements.map(el => 
+                    el.element_id === operation.element_id 
+                        ? { ...el, sequence: reorderOp.new_sequence }
+                        : el
+                );
                 
-                
-                // Check if both surrounding elements are in the same group and not group parents themselves
-                if (beforeElement.parent_element_id && 
-                    afterElement.parent_element_id &&
-                    beforeElement.parent_element_id === afterElement.parent_element_id &&
-                    (beforeElement as any).element_type !== 'GROUP' &&
-                    (afterElement as any).element_type !== 'GROUP') {
-                    
-                    // Add the moved element to the same group
-                    updatedElementToMove = {
-                        ...updatedElementToMove,
-                        parent_element_id: beforeElement.parent_element_id,
-                        group_level: beforeElement.group_level || 1
-                    };
-                } else {
-                    // If not being added to a group, and element was previously in a group, remove it
-                    if (elementToMove.parent_element_id) {
-                        updatedElementToMove = {
-                            ...updatedElementToMove,
-                            parent_element_id: undefined,
-                            group_level: 0
-                        };
-                    }
-                }
-            } else if (newIndex === 0 && result.length > 0) {
-                // Element being moved to the beginning
-                const firstElement = result[0];
-                if (firstElement.parent_element_id && (firstElement as any).element_type !== 'GROUP') {
-                    // First element is in a group, add moved element to same group
-                    updatedElementToMove = {
-                        ...updatedElementToMove,
-                        parent_element_id: firstElement.parent_element_id,
-                        group_level: firstElement.group_level || 1
-                    };
-                } else if (elementToMove.parent_element_id) {
-                    // First element is not in a group, remove moved element from any group
-                    updatedElementToMove = {
-                        ...updatedElementToMove,
-                        parent_element_id: undefined,
-                        group_level: 0
-                    };
-                }
-            } else if (newIndex === result.length && result.length > 0) {
-                // Element being moved to the end
-                const lastElement = result[result.length - 1];
-                if (lastElement.parent_element_id && (lastElement as any).element_type !== 'GROUP') {
-                    // Last element is in a group, add moved element to same group
-                    updatedElementToMove = {
-                        ...updatedElementToMove,
-                        parent_element_id: lastElement.parent_element_id,
-                        group_level: lastElement.group_level || 1
-                    };
-                } else if (elementToMove.parent_element_id) {
-                    // Last element is not in a group, remove moved element from any group
-                    updatedElementToMove = {
-                        ...updatedElementToMove,
-                        parent_element_id: undefined,
-                        group_level: 0
-                    };
-                }
+                // Sort all elements by sequence to get the new order
+                return [...updatedElements].sort((a, b) => a.sequence - b.sequence);
             }
-            
-            result.splice(newIndex, 0, updatedElementToMove);
-            
-            // Update sequences - but don't recalculate group durations yet
-            // This will be done after any time offset changes in the main processing
-            const finalResult = result.map((el, index) => ({
-                ...el,
-                sequence: index + 1
-            }));
-            
-            
-            return finalResult;
             
         case 'UPDATE_FIELD':
             const updateOp = operation as any;
@@ -694,17 +625,14 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             const groupParent = {
                 element_id: groupParentId,
                 script_id: elements[0]?.script_id || '',
-                type: 'GROUP' as const,
-                trigger_type: 'TIME' as const,
+                element_type: 'GROUP' as const,
                 sequence: Math.min(...elements.filter(el => elementIds.includes(el.element_id)).map(el => el.sequence)),
                 time_offset_ms: minTimeOffset,
                 duration: Math.round(groupDurationMs / 1000),
                 description: groupName,
                 cue_notes: generatedNotes,
                 custom_color: groupColor,
-                is_active: true,
                 priority: 'NORMAL' as const,
-                execution_status: 'PENDING' as const,
                 group_level: 0,
                 is_collapsed: false,
                 parent_element_id: undefined,
@@ -712,7 +640,6 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                 updated_by: 'user',
                 date_created: new Date().toISOString(),
                 date_updated: new Date().toISOString(),
-                version: 1,
                 isSafetyCritical: false
             };
             

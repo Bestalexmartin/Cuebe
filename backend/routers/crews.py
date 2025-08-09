@@ -1,7 +1,7 @@
 # backend/routers/crews.py
 
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from uuid import UUID
 from datetime import datetime, timezone
@@ -147,6 +147,91 @@ def get_crew_member(
     }
     
     return schemas.CrewMemberWithRelationship(**crew_data)
+
+
+@router.get("/crew/{crew_id}/assignments", response_model=schemas.CrewMemberWithAssignments)
+def get_crew_member_with_assignments(
+    crew_id: UUID,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get a single crew member by ID with their department assignments.
+    Only returns crew members that the current user manages or is themselves.
+    """
+    crew_member = db.query(models.User).filter(models.User.user_id == crew_id).first()
+    
+    if not crew_member:
+        raise HTTPException(status_code=404, detail="Crew member not found")
+    
+    # Determine if this is a self-access vs manager-access
+    is_self_access = str(crew_member.user_id) == str(user.user_id)
+    
+    # Get relationship data for manager access
+    relationship = None
+    if not is_self_access:
+        # Check if current user manages this crew member
+        relationship = db.query(models.CrewRelationship).filter(
+            models.CrewRelationship.manager_user_id == user.user_id,
+            models.CrewRelationship.crew_user_id == crew_id,
+            models.CrewRelationship.is_active.is_(True)
+        ).first()
+        
+        if not relationship:
+            raise HTTPException(status_code=403, detail="Not authorized to access this crew member")
+    
+    # Get department assignments for this crew member
+    assignments = db.query(models.CrewAssignment).filter(
+        models.CrewAssignment.user_id == crew_id
+    ).options(
+        joinedload(models.CrewAssignment.show).joinedload(models.Show.venue),
+        joinedload(models.CrewAssignment.department)
+    ).all()
+    
+    # Format assignments for response
+    assignment_list = []
+    for assignment in assignments:
+        assignment_data = {
+            "assignment_id": assignment.assignment_id,
+            "show_id": assignment.show_id,
+            "show_name": assignment.show.show_name if assignment.show else "Unknown Show",
+            "department_id": assignment.department_id,
+            "department_name": assignment.department.department_name if assignment.department else "Unknown Department",
+            "department_color": assignment.department.department_color if assignment.department else None,
+            "department_initials": assignment.department.department_initials if assignment.department else None,
+            "venue_name": assignment.show.venue.venue_name if assignment.show and assignment.show.venue else None,
+            "venue_city": assignment.show.venue.city if assignment.show and assignment.show.venue else None,
+            "venue_state": assignment.show.venue.state if assignment.show and assignment.show.venue else None,
+            "show_date": assignment.show.show_date if assignment.show else None,
+            "role": assignment.show_role
+        }
+        assignment_list.append(schemas.UserDepartmentAssignment(**assignment_data))
+    
+    # Create base crew member response
+    crew_data = {
+        # User fields
+        "user_id": crew_member.user_id,
+        "clerk_user_id": crew_member.clerk_user_id,
+        "email_address": crew_member.email_address,
+        "fullname_first": crew_member.fullname_first,
+        "fullname_last": crew_member.fullname_last,
+        "user_name": crew_member.user_name,
+        "profile_img_url": crew_member.profile_img_url,
+        "phone_number": crew_member.phone_number,
+        "user_status": crew_member.user_status.value if crew_member.user_status is not None else "guest",
+        "user_role": crew_member.user_role,
+        "created_by": crew_member.created_by,
+        "notes": crew_member.notes,  # Notes from User table
+        "is_active": crew_member.is_active,
+        "date_created": crew_member.date_created,
+        "date_updated": crew_member.date_updated,
+        # Include relationship notes separately
+        "relationship_notes": relationship.notes if relationship else None,
+        # Add assignments
+        "department_assignments": assignment_list
+    }
+    
+    return schemas.CrewMemberWithAssignments(**crew_data)
 
 
 @router.patch("/crew/{crew_id}", response_model=schemas.User)

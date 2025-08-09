@@ -33,7 +33,6 @@ def rate_limit(limit_config):
         return func
     return decorator
 
-
 # =============================================================================
 # SCRIPT ELEMENT ENDPOINTS
 # =============================================================================
@@ -45,7 +44,6 @@ def get_script_elements(
     db: Session = Depends(get_db),
     element_type: Optional[str] = Query(None, description="Filter by element type (cue, note, group)"),
     department_id: Optional[UUID] = Query(None, description="Filter by department ID"),
-    active_only: bool = Query(True, description="Only return active elements"),
     skip: int = Query(0, ge=0, description="Number of elements to skip"),
     limit: int = Query(100, ge=1, le=1000, description="Number of elements to return")
 ):
@@ -67,9 +65,6 @@ def get_script_elements(
     query = db.query(models.ScriptElement).options(
         joinedload(models.ScriptElement.department)
     ).filter(models.ScriptElement.script_id == script_id)
-    
-    if active_only:
-        query = query.filter(models.ScriptElement.is_active == True)
     
     if element_type:
         try:
@@ -95,7 +90,6 @@ def get_script_elements(
     
     return elements
 
-
 @router.get("/elements/{element_id}", response_model=schemas.ScriptElement)
 def get_script_element(
     element_id: UUID,
@@ -117,7 +111,6 @@ def get_script_element(
         raise HTTPException(status_code=403, detail="Not authorized to view this element")
     
     return element
-
 
 # =============================================================================
 # BULK OPERATIONS

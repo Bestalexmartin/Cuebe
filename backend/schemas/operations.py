@@ -22,8 +22,6 @@ class ScriptElementBulkUpdate(BaseModel):
     element_ids: List[UUID]
     department_id: Optional[UUID] = None
     priority: Optional[str] = None
-    execution_status: Optional[str] = None
-    location: Optional[str] = None
     custom_color: Optional[str] = None
 
 # Edit Queue Batch Operations

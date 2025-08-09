@@ -3,7 +3,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from uuid import UUID
-from typing import Optional
+from typing import Optional, List
 
 # =============================================================================
 # USER SCHEMAS
@@ -72,3 +72,22 @@ class CrewMemberWithRelationship(BaseModel):
     
     class Config:
         from_attributes = True
+
+class UserDepartmentAssignment(BaseModel):
+    """Department assignment info for user display"""
+    assignment_id: UUID
+    show_id: UUID
+    show_name: str
+    department_id: UUID
+    department_name: str
+    department_color: Optional[str] = None
+    department_initials: Optional[str] = None
+    venue_name: Optional[str] = None
+    venue_city: Optional[str] = None
+    venue_state: Optional[str] = None
+    show_date: Optional[datetime] = None
+    role: Optional[str] = None
+
+class CrewMemberWithAssignments(CrewMemberWithRelationship):
+    """Crew member with their department assignments"""
+    department_assignments: List[UserDepartmentAssignment] = []

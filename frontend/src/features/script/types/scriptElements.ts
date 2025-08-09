@@ -3,68 +3,40 @@
 // Base types and enums
 export type ScriptElementType = 'CUE' | 'NOTE' | 'GROUP';
 
-export type TriggerType = 
-  | 'MANUAL'        // Operator triggered
-  | 'TIME'          // At specific time offset
-  | 'AUTO'          // Auto-follows previous cue
-  | 'FOLLOW'        // Follows specific cue ID
-  | 'GO'            // On "GO" command
-  | 'STANDBY';      // On "STANDBY" command
-
-export type ExecutionStatus = 
-  | 'PENDING'       // Not yet executed
-  | 'READY'         // Ready to execute
-  | 'EXECUTING'     // Currently executing
-  | 'COMPLETED'     // Successfully executed
-  | 'SKIPPED'       // Skipped during performance
-  | 'FAILED';       // Execution failed
 
 export type PriorityLevel = 'SAFETY' | 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW' | 'OPTIONAL';
 
-export type LocationArea = 
-  | 'stage_left' | 'stage_right' | 'center_stage' | 'upstage' | 'downstage'
-  | 'stage_left_up' | 'stage_right_up' | 'stage_left_down' | 'stage_right_down'
-  | 'fly_gallery' | 'booth' | 'house' | 'backstage' | 'wings_left' | 'wings_right'
-  | 'grid' | 'trap' | 'pit' | 'lobby' | 'dressing_room' | 'other';
 
 // Core interfaces
 export interface ScriptElementBase {
   // Primary identification
   element_id: string;
   script_id: string;
-  type: ScriptElementType;
+  element_type: ScriptElementType;
   
   // Sequencing and timing
   sequence: number;                    // Order in script (auto-incrementing)
   time_offset_ms: number;                // Milliseconds from script start
-  trigger_type: TriggerType;
-  follows_cue_id?: string;               // If trigger_type is 'follow'
   
   // Content and identification
-  cue_id?: string;                      // LX5, SND12, etc.
   description: string;
   cue_notes?: string;
   
   // Department and visual
   department_id?: string;               // Link to department
   department_name?: string;             // Department name from relationship
-  department_color?: string;            // Department color from relationship
   department_initials?: string;         // Department initials from relationship
+  department_color?: string;            // Department color from relationship
   custom_color?: string;                // Custom row color for notes
   
   // Location and logistics
-  location?: LocationArea;
   location_details?: string;            // Specific location description
   
   // Timing and execution
   duration?: number;                   // Runtime in milliseconds
-  fade_in?: number;                     // Fade in time in milliseconds
-  fade_out?: number;                    // Fade out time in milliseconds
   
   // Status and management
-  is_active: boolean;                   // Can be disabled without deletion
   priority: PriorityLevel;
-  execution_status: ExecutionStatus;
   
   // Relationships and grouping
   parent_element_id?: string;            // For groups and hierarchies
@@ -86,7 +58,6 @@ export interface ScriptElementBase {
   updated_by: string;                   // User ID  
   date_created: string;                 // ISO timestamp
   date_updated: string;                 // ISO timestamp
-  version: number;                     // For change tracking
 }
 
 // Conditional execution rules
@@ -100,28 +71,25 @@ export interface ConditionalRule {
 
 // Specific element types extending the base
 export interface CueElement extends ScriptElementBase {
-  type: 'CUE';
-  cue_id: string;                       // Required for cues
+  element_type: 'CUE';
   department_id: string;                // Required for cues
   department_name?: string;             // Department name from relationship
-  department_color?: string;            // Department color from relationship
   department_initials?: string;         // Department initials from relationship
+  department_color?: string;            // Department color from relationship
 }
 
 export interface NoteElement extends ScriptElementBase {
-  type: 'NOTE';
+  element_type: 'NOTE';
   department_id?: string;               // Optional for notes
   department_name?: string;             // Department name from relationship
-  department_color?: string;            // Department color from relationship
   department_initials?: string;         // Department initials from relationship
   custom_color: string;                 // Required for visual distinction
 }
 
 export interface GroupElement extends ScriptElementBase {
-  type: 'GROUP';
-  trigger_type: 'TIME';                 // Groups are time-based by default
+  element_type: 'GROUP';
   custom_color?: string;                // Optional group color
-  // Groups don't require cue_id or department
+  // Groups don't require department
 }
 
 // Union type for all elements
@@ -147,11 +115,10 @@ export interface ScriptElementCollection {
 
 // Display and filtering options
 export interface ElementDisplayOptions {
-  showInactive: boolean;
   filterByDepartment?: string[];
   filterByType?: ScriptElementType[];
   filterByPriority?: PriorityLevel[];
-  sortBy: 'sequence' | 'timeOffset' | 'department' | 'cue_id';
+  sortBy: 'sequence' | 'timeOffset' | 'department';
   sortDirection: 'asc' | 'desc';
   groupBy?: 'department' | 'type' | 'none';
 }
@@ -168,18 +135,12 @@ export interface PlaybackState {
 
 // Form data interfaces for editing
 export interface ScriptElementFormData {
-  type: ScriptElementType;
-  cue_id?: string;
+  element_type: ScriptElementType;
   description: string;
   cue_notes?: string;
   department_id?: string;
   time_offset_ms: number;
-  trigger_type: TriggerType;
-  follows_cue_id?: string;
   duration?: number;
-  fade_in?: number;
-  fade_out?: number;
-  location?: LocationArea;
   location_details?: string;
   priority: PriorityLevel;
   equipmentRequired?: string[];
@@ -193,11 +154,6 @@ export interface ScriptElementFormData {
 
 // Validation rules for form elements
 export interface ElementValidationRules {
-  cue_id: {
-    required: boolean;
-    pattern?: RegExp;
-    maxLength: number;
-  };
   description: {
     required: boolean;
     maxLength: number;
@@ -221,22 +177,16 @@ export interface ScriptElementCreate {
   element_type: ScriptElementType;
   sequence?: number;
   time_offset_ms?: number;
-  trigger_type?: TriggerType;
-  cue_id?: string;
   description: string;
   cue_notes?: string;
   department_id?: string;
-  location?: LocationArea;
   location_details?: string;
   duration?: number;
-  fade_in?: number;
-  fade_out?: number;
   priority?: PriorityLevel;
   parent_element_id?: string;
   group_level?: number;
   isSafetyCritical?: boolean;
   safetyNotes?: string;
-  department_color?: string;
   custom_color?: string;
 }
 
@@ -244,25 +194,17 @@ export interface ScriptElementUpdate {
   element_type?: ScriptElementType;
   sequence?: number;
   time_offset_ms?: number;
-  trigger_type?: TriggerType;
-  follows_cue_id?: string;
-  cue_id?: string;
   description?: string;
   cue_notes?: string;
   department_id?: string;
-  location?: LocationArea;
   location_details?: string;
   duration?: number;
-  fade_in?: number;
-  fade_out?: number;
   priority?: PriorityLevel;
-  execution_status?: ExecutionStatus;
   parent_element_id?: string;
   group_level?: number;
   is_collapsed?: boolean;
   isSafetyCritical?: boolean;
   safetyNotes?: string;
-  department_color?: string;
   custom_color?: string;
 }
 
@@ -280,8 +222,6 @@ export interface ScriptElementBulkUpdate {
   elementIds: string[];
   departmentId?: string;
   priority?: PriorityLevel;
-  execution_status?: ExecutionStatus;
-  location?: LocationArea;
   isSafetyCritical?: boolean;
   custom_color?: string;
 }
@@ -305,7 +245,6 @@ export interface ScriptElementConditionalRule {
   operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
   conditionValue: string;
   description: string;
-  is_active: boolean;
 }
 
 // Extended base interface with all relationships populated

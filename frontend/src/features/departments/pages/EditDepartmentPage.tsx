@@ -1,14 +1,16 @@
 // frontend/src/features/departments/pages/EditDepartmentPage.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
     Box, VStack, HStack, Text, Spinner, Flex,
-    FormControl, FormLabel, Input, Textarea, Button
+    FormControl, FormLabel, Input, Textarea, Button,
+    Avatar, Badge
 } from "@chakra-ui/react";
 import { formatDateTimeLocal } from '../../../utils/dateTimeUtils';
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useDepartment } from "../hooks/useDepartment";
+import { formatRole } from '../../../constants/userRoles';
 import { useValidatedForm } from '../../../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../../../types/validation';
 import { BaseEditPage } from '../../../components/base/BaseEditPage';
@@ -17,6 +19,7 @@ import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfir
 import { useEnhancedToast } from '../../../utils/toastUtils';
 import { ErrorBoundary } from '../../../components/ErrorBoundary';
 import { useChangeDetection } from '../../../hooks/useChangeDetection';
+import { CrewBioModal } from '../../shows/components/modals/CrewBioModal';
 
 // TypeScript interfaces
 interface DepartmentFormData {
@@ -101,6 +104,10 @@ export const EditDepartmentPage: React.FC = () => {
     // Delete confirmation modal state
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    
+    // Crew bio modal state
+    const [isCrewBioModalOpen, setIsCrewBioModalOpen] = useState(false);
+    const [selectedCrewMember, setSelectedCrewMember] = useState<any>(null);
 
     // Fetch the initial department data
     const { department, isLoading: isLoadingDepartment, error: departmentError } = useDepartment(departmentId);
@@ -236,6 +243,33 @@ export const EditDepartmentPage: React.FC = () => {
         }
     };
 
+    // Handle opening crew bio modal
+    const handleCrewBioClick = useCallback((assignment: any) => {
+        // Convert assignment data to crew member format for the modal
+        const crewMemberData = {
+            user_id: assignment.user_id,
+            fullname_first: assignment.fullname_first,
+            fullname_last: assignment.fullname_last,
+            email_address: assignment.email_address,
+            phone_number: assignment.phone_number,
+            profile_img_url: assignment.profile_img_url,
+            show_id: assignment.show_id, // Include show_id for QR code generation
+            // Use actual user data from the assignment
+            user_role: assignment.user_role || 'crew',
+            user_status: assignment.user_status || 'verified',
+            is_active: assignment.is_active ?? true,
+            date_created: assignment.date_created || '',
+            date_updated: assignment.date_updated || ''
+        };
+        setSelectedCrewMember(crewMemberData);
+        setIsCrewBioModalOpen(true);
+    }, []);
+
+    const handleCrewBioModalClose = useCallback(() => {
+        setIsCrewBioModalOpen(false);
+        setSelectedCrewMember(null);
+    }, []);
+
     // Configure actions menu
     const actions: ActionItem[] = [
         {
@@ -299,18 +333,29 @@ export const EditDepartmentPage: React.FC = () => {
                                     h="48px"
                                     borderRadius="full"
                                     bg={form.formData.department_color}
-                                    border="2px solid"
-                                    borderColor="gray.300"
-                                    _dark={{ borderColor: "gray.600" }}
                                     flexShrink={0}
-                                />
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                >
+                                    {form.formData.department_initials && (
+                                        <Text
+                                            fontSize="lg"
+                                            fontWeight="bold"
+                                            color="black"
+                                            userSelect="none"
+                                        >
+                                            {form.formData.department_initials}
+                                        </Text>
+                                    )}
+                                </Box>
                                 <VStack align="start" spacing="1" flex="1">
                                     <HStack spacing="2" align="center">
                                         <Text fontWeight="medium">{form.formData.department_name || 'Department Name'}</Text>
                                     </HStack>
                                     <HStack justify="space-between" width="100%">
                                         <Text fontSize="sm" color="detail.text">
-                                            Crew Members: 0
+                                            {department?.shows_assigned_count || 0} show{(department?.shows_assigned_count || 0) !== 1 ? 's' : ''}
                                         </Text>
                                         <Text fontSize="xs" color="detail.text">
                                             Updated: {formatDateTimeLocal(department.date_updated)}
@@ -318,7 +363,7 @@ export const EditDepartmentPage: React.FC = () => {
                                     </HStack>
                                     <HStack justify="space-between" width="100%">
                                         <Text fontSize="sm" color="detail.text">
-                                            Shows Assigned: 0
+                                            {department?.department_description || 'No description'}
                                         </Text>
                                         <Text fontSize="xs" color="detail.text">
                                             Created: {formatDateTimeLocal(department.date_created)}
@@ -329,60 +374,15 @@ export const EditDepartmentPage: React.FC = () => {
                         </Box>
 
                         {/* Basic Information */}
-                        <FormControl isRequired>
-                            <FormLabel>Department Name</FormLabel>
-                            <Input
-                                value={form.formData.department_name}
-                                onChange={(e) => handleChange('department_name', e.target.value)}
-                                onBlur={() => form.validateField('department_name')}
-                                placeholder="Enter department name"
-                            />
-                        </FormControl>
-
-                        {/* Color Selection and Initials */}
                         <HStack spacing={6} align="start">
                             <FormControl isRequired flex="2">
-                                <FormLabel>Department Color</FormLabel>
-                                <VStack align="stretch" spacing="3">
-                                    <HStack spacing={2} align="center">
-                                        <Input
-                                            type="color"
-                                            value={form.formData.department_color}
-                                            onChange={(e) => handleChange('department_color', e.target.value)}
-                                            width="80px"
-                                            height="40px"
-                                            padding="4px"
-                                            border="2px solid"
-                                            borderColor="gray.300"
-                                            borderRadius="md"
-                                            cursor="pointer"
-                                        />
-                                        <Input
-                                            value={form.formData.department_color}
-                                            onChange={(e) => handleChange('department_color', e.target.value)}
-                                            onBlur={() => form.validateField('department_color')}
-                                            placeholder="#3182CE"
-                                            width="120px"
-                                            fontFamily="mono"
-                                        />
-                                        {PRESET_COLORS.map((color) => (
-                                            <Button
-                                                key={color.value}
-                                                size="sm"
-                                                height="30px"
-                                                width="30px"
-                                                minWidth="30px"
-                                                backgroundColor={color.value}
-                                                border={form.formData.department_color === color.value ? '3px solid' : '1px solid'}
-                                                borderColor={form.formData.department_color === color.value ? 'white' : 'gray.300'}
-                                                onClick={() => handleChange('department_color', color.value)}
-                                                _hover={{ transform: 'scale(1.1)' }}
-                                                title={color.name}
-                                                tabIndex={-1}
-                                            />
-                                        ))}
-                                    </HStack>
-                                </VStack>
+                                <FormLabel>Department Name</FormLabel>
+                                <Input
+                                    value={form.formData.department_name}
+                                    onChange={(e) => handleChange('department_name', e.target.value)}
+                                    onBlur={() => form.validateField('department_name')}
+                                    placeholder="Enter department name"
+                                />
                             </FormControl>
                             
                             <FormControl flex="1">
@@ -394,11 +394,51 @@ export const EditDepartmentPage: React.FC = () => {
                                     placeholder="LX"
                                     maxLength={5}
                                 />
-                                <Text fontSize="xs" color="gray.500" mt={1}>
-                                    Optional
-                                </Text>
                             </FormControl>
                         </HStack>
+
+                        {/* Color Selection */}
+                        <FormControl isRequired>
+                            <FormLabel requiredIndicator={<></>}>Department Color</FormLabel>
+                            <HStack spacing={2} align="center">
+                                <Input
+                                    type="color"
+                                    value={form.formData.department_color}
+                                    onChange={(e) => handleChange('department_color', e.target.value)}
+                                    width="80px"
+                                    height="40px"
+                                    padding="4px"
+                                    border="2px solid"
+                                    borderColor="gray.300"
+                                    borderRadius="md"
+                                    cursor="pointer"
+                                />
+                                <Input
+                                    value={form.formData.department_color}
+                                    onChange={(e) => handleChange('department_color', e.target.value)}
+                                    onBlur={() => form.validateField('department_color')}
+                                    placeholder="#3182CE"
+                                    width="120px"
+                                    fontFamily="mono"
+                                />
+                                {PRESET_COLORS.map((color) => (
+                                    <Button
+                                        key={color.value}
+                                        size="sm"
+                                        height="30px"
+                                        width="30px"
+                                        minWidth="30px"
+                                        backgroundColor={color.value}
+                                        border={form.formData.department_color === color.value ? '3px solid' : '1px solid'}
+                                        borderColor={form.formData.department_color === color.value ? 'white' : 'gray.300'}
+                                        onClick={() => handleChange('department_color', color.value)}
+                                        _hover={{ transform: 'scale(1.1)' }}
+                                        title={color.name}
+                                        tabIndex={-1}
+                                    />
+                                ))}
+                            </HStack>
+                        </FormControl>
 
                         {/* Department Description */}
                         <FormControl>
@@ -412,6 +452,188 @@ export const EditDepartmentPage: React.FC = () => {
                                 minHeight="120px"
                             />
                         </FormControl>
+
+                        {/* Crew Assignments */}
+                        {department?.crew_assignments && department.crew_assignments.length > 0 && (
+                            <Box>
+                                <HStack justify="space-between" mb={2}>
+                                    <FormLabel mb={0}>Crew Assignments</FormLabel>
+                                </HStack>
+
+                                {/* Divider line */}
+                                <Box borderTop="1px solid" borderColor="gray.500" pt={4} mt={2}>
+                                    <VStack spacing={1} align="stretch">
+                                        {department.crew_assignments.map((assignment) => {
+                                            const crewName = `${assignment.fullname_first || ''} ${assignment.fullname_last || ''}`.trim() || 'Unknown';
+                                            
+                                            return (
+                                                <Box
+                                                    key={assignment.assignment_id}
+                                                    py={2}
+                                                    px={4}
+                                                    border="2px solid"
+                                                    borderColor="transparent"
+                                                    borderRadius="md"
+                                                    bg="card.background"
+                                                    _hover={{
+                                                        borderColor: "orange.400"
+                                                    }}
+                                                    cursor="pointer"
+                                                    transition="all 0s"
+                                                    onClick={() => handleCrewBioClick(assignment)}
+                                                >
+                                                    {/* Desktop/Tablet Layout - Single Line */}
+                                                    <HStack 
+                                                        spacing={{ base: 1, sm: 2, md: 3 }} 
+                                                        align="center"
+                                                        display={{ base: "none", md: "flex" }}
+                                                        overflow="hidden"
+                                                        minWidth={0}
+                                                    >
+                                                        {/* Crew Profile Icon */}
+                                                        <Avatar
+                                                            size="sm"
+                                                            name={crewName}
+                                                            src={assignment.profile_img_url}
+                                                        />
+
+                                                        {/* Crew Name */}
+                                                        <Text
+                                                            fontSize="sm"
+                                                            fontWeight="medium"
+                                                            color="blue.500"
+                                                            _dark={{ color: "blue.300" }}
+                                                            minWidth={{ md: "120px", lg: "160px" }}
+                                                            maxWidth={{ md: "120px", lg: "160px" }}
+                                                            isTruncated
+                                                        >
+                                                            {crewName}
+                                                        </Text>
+
+                                                        {/* Email Address */}
+                                                        <Text 
+                                                            fontSize="sm" 
+                                                            color="gray.700" 
+                                                            _dark={{ color: "gray.300" }} 
+                                                            minWidth={{ md: "140px", lg: "180px" }}
+                                                            maxWidth={{ md: "140px", lg: "180px" }}
+                                                            display={{ base: "none", md: "block" }}
+                                                            isTruncated
+                                                            flexShrink={2}
+                                                        >
+                                                            {assignment.email_address || ''}
+                                                        </Text>
+
+                                                        {/* Phone Number */}
+                                                        <Text 
+                                                            fontSize="sm" 
+                                                            color="gray.700" 
+                                                            _dark={{ color: "gray.300" }} 
+                                                            minWidth={{ md: "110px", lg: "110px", xl: "140px" }}
+                                                            maxWidth={{ md: "110px", lg: "110px", xl: "140px" }}
+                                                            display={{ base: "none", md: "block" }}
+                                                            isTruncated
+                                                            flexShrink={2}
+                                                        >
+                                                            {assignment.phone_number || 'No phone'}
+                                                        </Text>
+
+                                                        {/* Show Name - Expanding field */}
+                                                        <Text 
+                                                            fontSize="sm" 
+                                                            display={{ base: "none", xl: "block" }}
+                                                            flex={1}
+                                                            isTruncated
+                                                            ml={4}
+                                                            mr={4}
+                                                        >
+                                                            <Text as="span" fontWeight="medium">Show:</Text>
+                                                            <Text as="span" color="gray.700" _dark={{ color: "gray.300" }} ml="5px">
+                                                                {assignment.show_name}
+                                                            </Text>
+                                                        </Text>
+
+                                                        {/* Role Badge - Aligned to right edge */}
+                                                        <Box 
+                                                            minWidth={{ base: "80px", md: "100px", lg: "120px" }} 
+                                                            maxWidth={{ base: "120px", md: "140px", lg: "160px" }}
+                                                            display="flex" 
+                                                            justifyContent="flex-end"
+                                                            flexShrink={0}
+                                                        >
+                                                            {assignment.role && (
+                                                                <Badge 
+                                                                    colorScheme="blue" 
+                                                                    variant="outline" 
+                                                                    size={{ base: "sm", md: "md" }}
+                                                                    maxWidth="100%"
+                                                                    isTruncated
+                                                                >
+                                                                    {formatRole(assignment.role)}
+                                                                </Badge>
+                                                            )}
+                                                        </Box>
+                                                    </HStack>
+
+                                                    {/* Mobile Layout - Two Lines */}
+                                                    <VStack 
+                                                        spacing={2} 
+                                                        align="stretch"
+                                                        display={{ base: "flex", md: "none" }}
+                                                    >
+                                                        {/* First Line: Avatar, Name, Badge */}
+                                                        <HStack spacing={3} align="center">
+                                                            <Avatar
+                                                                size="sm"
+                                                                name={crewName}
+                                                                src={assignment.profile_img_url}
+                                                            />
+
+                                                            <Text
+                                                                fontSize="sm"
+                                                                fontWeight="medium"
+                                                                color="blue.500"
+                                                                _dark={{ color: "blue.300" }}
+                                                                flex={1}
+                                                                isTruncated
+                                                            >
+                                                                {crewName}
+                                                            </Text>
+
+                                                            {assignment.role && (
+                                                                <Badge colorScheme="blue" variant="outline" size="sm">
+                                                                    {formatRole(assignment.role)}
+                                                                </Badge>
+                                                            )}
+                                                        </HStack>
+
+                                                        {/* Second Line: Show Name, Email */}
+                                                        <HStack spacing={3} align="center" ml="68px">
+                                                            <Text fontSize="xs" color="gray.500" _dark={{ color: "gray.400" }} minWidth="80px">
+                                                                {assignment.show_name}
+                                                            </Text>
+                                                            
+                                                            <VStack spacing={0} align="flex-start" flex={1}>
+                                                                {assignment.email_address && (
+                                                                    <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }}>
+                                                                        {assignment.email_address}
+                                                                    </Text>
+                                                                )}
+                                                                {assignment.phone_number && (
+                                                                    <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }}>
+                                                                        {assignment.phone_number}
+                                                                    </Text>
+                                                                )}
+                                                            </VStack>
+                                                        </HStack>
+                                                    </VStack>
+                                                </Box>
+                                            );
+                                        })}
+                                    </VStack>
+                                </Box>
+                            </Box>
+                        )}
                     </VStack>
                 )}
                 
@@ -444,6 +666,14 @@ export const EditDepartmentPage: React.FC = () => {
                     </Box>
                 )}
             </BaseEditPage>
+
+            {/* Crew Bio Modal */}
+            <CrewBioModal
+                isOpen={isCrewBioModalOpen}
+                onClose={handleCrewBioModalClose}
+                crewMember={selectedCrewMember}
+                showId={selectedCrewMember?.show_id || ''}
+            />
 
             {/* Delete Confirmation Modal */}
             <DeleteConfirmationModal
