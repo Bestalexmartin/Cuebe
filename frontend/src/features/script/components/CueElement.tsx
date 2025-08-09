@@ -24,20 +24,21 @@ interface CueElementProps {
     onToggleGroupCollapse?: (elementId: string) => void;
 }
 
-export const CueElement: React.FC<CueElementProps> = React.memo(({
-    element,
-    index,
-    allElements,
-    isSelected = false,
-    colorizeDepNames = false,
-    showClockTimes = false,
-    scriptStartTime,
-    scriptEndTime,
-    isDragEnabled = false,
-    onSelect,
-    onEdit,
-    onToggleGroupCollapse
-}) => {
+export const CueElement: React.FC<CueElementProps> = React.memo((props: CueElementProps) => {
+    const {
+        element,
+        index,
+        allElements,
+        isSelected = false,
+        colorizeDepNames = false,
+        showClockTimes = false,
+        scriptStartTime,
+        scriptEndTime,
+        isDragEnabled = false,
+        onSelect,
+        onEdit,
+        onToggleGroupCollapse
+    } = props;
     // Drag functionality
     const dragTimeoutRef = useRef<number | null>(null);
     const isDragStartedRef = useRef(false);
@@ -133,8 +134,8 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
         }
     }, [onEdit, element]);
 
-    const isNote = (element as any).element_type === 'NOTE';
-    const isGroup = (element as any).element_type === 'GROUP';
+    const isNote = element.element_type === 'NOTE';
+    const isGroup = element.element_type === 'GROUP';
     const isGroupParent = isGroup;
     const isGroupChild = element.group_level && element.group_level > 0;
 
@@ -143,7 +144,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
         if (!isGroupParent) return null;
 
         // Find all child elements of this group
-        const childElements = allElements.filter(el =>
+        const childElements = allElements.filter((el: ScriptElement) =>
             el.parent_element_id === element.element_id &&
             el.group_level && el.group_level > 0
         );
@@ -151,9 +152,9 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
         if (childElements.length === 0) return "";
 
         // Count element types
-        const cueCount = childElements.filter(el => (el as any).element_type === 'CUE').length;
-        const noteCount = childElements.filter(el => (el as any).element_type === 'NOTE').length;
-        const groupCount = childElements.filter(el => (el as any).element_type === 'GROUP').length;
+        const cueCount = childElements.filter((el: ScriptElement) => el.element_type === 'CUE').length;
+        const noteCount = childElements.filter((el: ScriptElement) => el.element_type === 'NOTE').length;
+        const groupCount = childElements.filter((el: ScriptElement) => el.element_type === 'GROUP').length;
 
         const noteParts: string[] = [];
         if (cueCount > 0) noteParts.push(`${cueCount} cue${cueCount !== 1 ? 's' : ''}`);
@@ -167,7 +168,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
     let groupParentColor: string | null = null;
     if (isGroupChild && element.parent_element_id) {
         // Compare both as strings to handle UUID vs string mismatch
-        const groupParent = allElements.find(el => el && String(el.element_id) === String(element.parent_element_id));
+        const groupParent = allElements.find((el: ScriptElement) => el && String(el.element_id) === String(element.parent_element_id));
         groupParentColor = groupParent?.custom_color || '#E2E8F0';
 
     }
@@ -207,7 +208,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
     const cueIdColor = textColor;
 
     const dynamicCueID = (() => {
-        if ((element as any).element_type !== 'CUE' || !element.department_id) {
+        if (element.element_type !== 'CUE' || !element.department_id) {
             return '';
         }
 
@@ -217,7 +218,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
         let departmentCueCount = 0;
         for (let i = 0; i <= index; i++) {
             const currentElement = allElements[i];
-            if (currentElement && (currentElement as any).element_type === 'CUE' &&
+            if (currentElement && currentElement.element_type === 'CUE' &&
                 currentElement.department_id === element.department_id) {
                 departmentCueCount++;
             }
@@ -227,7 +228,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
     })();
 
     const timeDisplay = useMemo(() => {
-        const timeValue = element.time_offset_ms || 0;
+        const timeValue = element.offset_ms || 0;
 
         // If clock times are requested but we don't have script start time yet, show placeholder
         if (showClockTimes) {
@@ -261,11 +262,11 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
             : `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
         return isNegative ? `-${timeString}` : timeString;
-    }, [element.time_offset_ms, showClockTimes, scriptStartTime]);
+    }, [element.offset_ms, showClockTimes, scriptStartTime]);
 
     const durationDisplay = useMemo(() => {
         // For SHOW START elements, always calculate from script times if available
-        if (element.description?.toUpperCase() === 'SHOW START' &&
+        if (element.element_name?.toUpperCase() === 'SHOW START' &&
             scriptStartTime && scriptEndTime) {
             const startTime = new Date(scriptStartTime);
             const endTime = new Date(scriptEndTime);
@@ -288,14 +289,14 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
             }
         }
 
-        if (element.duration) {
-            const totalSeconds = element.duration;
+        if (element.duration_ms) {
+            const totalSeconds = Math.round(element.duration_ms / 1000);
             const days = Math.floor(totalSeconds / 86400);
             const hours = Math.floor((totalSeconds % 86400) / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
 
-            if (element.description?.toUpperCase() === 'SHOW START') {
+            if (element.element_name?.toUpperCase() === 'SHOW START') {
                 if (days > 0) {
                     return `${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                 } else if (hours > 0) {
@@ -314,7 +315,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
 
 
         return '-';
-    }, [element.duration, element.description, scriptStartTime, scriptEndTime]);
+    }, [element.duration_ms, element.element_name, scriptStartTime, scriptEndTime]);
 
     const dragStyle = {
         transform: CSS.Transform.toString(transform),
@@ -425,7 +426,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                     <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight}>
                         {durationDisplay}
                     </Text>
-                    {!(colorizeDepNames && (element as any).element_type !== 'NOTE' && (element as any).element_type !== 'GROUP') && (
+                    {!(colorizeDepNames && element.element_type !== 'NOTE' && element.element_type !== 'GROUP') && (
                         <Box
                             position="absolute"
                             right="0"
@@ -442,9 +443,9 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                     height="100%"
                     display="flex"
                     alignItems="center"
-                    px={(element as any).element_type === 'NOTE' || (element as any).element_type === 'GROUP' || !colorizeDepNames ? 3 : 0}
+                    px={element.element_type === 'NOTE' || element.element_type === 'GROUP' || !colorizeDepNames ? 3 : 0}
                 >
-                    {colorizeDepNames && element.department_color && (element as any).element_type !== 'NOTE' && (element as any).element_type !== 'GROUP' ? (
+                    {colorizeDepNames && element.department_color && element.element_type !== 'NOTE' && element.element_type !== 'GROUP' ? (
                         <Box
                             bg={element.department_color}
                             borderRadius="sm"
@@ -462,7 +463,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                         </Box>
                     ) : (
                         <Text fontSize="sm" color={textColor} textAlign="center" isTruncated fontWeight={fontWeight} width="100%" marginTop="-1px">
-                            {((element as any).element_type === 'NOTE' || (element as any).element_type === 'GROUP') ? '' : (element.department_name || '')}
+                            {(element.element_type === 'NOTE' || element.element_type === 'GROUP') ? '' : (element.department_name || '')}
                         </Text>
                     )}
                 </Box>
@@ -472,7 +473,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                     <Text fontSize="sm" fontWeight={hasCustomBackground ? "bold" : "normal"} color={cueIdColor} textAlign="center" marginTop="-1px">
                         {dynamicCueID || '\u00A0'}
                     </Text>
-                    {!(colorizeDepNames && (element as any).element_type !== 'NOTE' && (element as any).element_type !== 'GROUP') && (
+                    {!(colorizeDepNames && element.element_type !== 'NOTE' && element.element_type !== 'GROUP') && (
                         <Box
                             position="absolute"
                             left="0"
@@ -495,7 +496,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                 {/* Cue Name/Description */}
                 <Box w="240px" pl={6} pr={3} position="relative" py={.5} borderColor="gray.500">
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
-                        {element.description}
+                        {element.element_name}
                     </Text>
                     <Box
                         position="absolute"
@@ -510,7 +511,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo(({
                 {/* Cue Notes */}
                 <Box flex={1} pl={6} pr={3} position="relative" py={.5} borderColor="gray.500">
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
-                        {isGroupParent ? (groupSummaryNotes || '\u00A0') : ((element as any).cue_notes || '\u00A0')}
+                        {isGroupParent ? (groupSummaryNotes || '\u00A0') : (element.cue_notes || '\u00A0')}
                     </Text>
                     <Box
                         position="absolute"

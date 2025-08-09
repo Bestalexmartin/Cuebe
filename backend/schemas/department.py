@@ -16,7 +16,7 @@ class DepartmentCreate(BaseModel):
     department_initials: Optional[str] = None
 
 class Department(BaseModel):
-    department_id: UUID  # CHANGED TO UUID
+    department_id: UUID
     department_name: str
     department_description: Optional[str] = None
     department_color: str

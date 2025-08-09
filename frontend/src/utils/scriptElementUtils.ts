@@ -4,8 +4,8 @@
  * Utility functions for working with script elements in shared views
  */
 
-import { IconType } from 'react-icons';
-import { FiClock, FiPlayCircle, FiSquare, FiTarget, FiArrowRight, FiPause } from 'react-icons/fi';
+// Utility icons available for export if needed
+// import { FiClock, FiPlayCircle, FiSquare, FiTarget, FiArrowRight, FiPause } from 'react-icons/fi';
 
 /**
  * Get the color scheme for a priority level
@@ -149,8 +149,8 @@ export const sortElements = (elements: any[]): any[] => {
         }
         
         // Secondary sort by time offset
-        if (a.time_offset_ms !== null && b.time_offset_ms !== null) {
-            return a.time_offset_ms - b.time_offset_ms;
+        if (a.offset_ms !== null && b.offset_ms !== null) {
+            return a.offset_ms - b.offset_ms;
         }
         
         // If one has sequence and other doesn't, prioritize sequence
@@ -158,8 +158,8 @@ export const sortElements = (elements: any[]): any[] => {
         if (a.sequence === null && b.sequence !== null) return 1;
         
         // If one has time offset and other doesn't, prioritize time offset
-        if (a.time_offset_ms !== null && b.time_offset_ms === null) return -1;
-        if (a.time_offset_ms === null && b.time_offset_ms !== null) return 1;
+        if (a.offset_ms !== null && b.offset_ms === null) return -1;
+        if (a.offset_ms === null && b.offset_ms !== null) return 1;
         
         // Fallback to element_id for consistent ordering
         return a.element_id.localeCompare(b.element_id);

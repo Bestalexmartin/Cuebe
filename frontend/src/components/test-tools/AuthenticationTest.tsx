@@ -23,6 +23,7 @@ import {
   useClipboard,
   Progress
 } from '@chakra-ui/react';
+import { useAuth, useUser } from '@clerk/clerk-react';
 import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
@@ -208,6 +209,8 @@ export const AuthenticationTest: React.FC = () => {
   const [progress, setProgress] = useState<number>(0);
   const [testMode, setTestMode] = useState<'authenticated' | 'unauthenticated'>('authenticated');
   const { showSuccess, showError, showInfo } = useEnhancedToast();
+  const { getToken, isSignedIn } = useAuth();
+  const { user } = useUser();
 
   const runAuthTest = async (forceMode?: 'authenticated' | 'unauthenticated') => {
     setIsRunning(true);
@@ -243,52 +246,22 @@ export const AuthenticationTest: React.FC = () => {
       let authToken: string | null = null;
       
       if (currentTestMode === 'authenticated') {
-        showInfo('Searching for Authentication', 'Looking for authentication token in various storage locations...');
+        showInfo('Checking Authentication', 'Getting authentication token from Clerk...');
         
-        // Try different possible storage locations for Clerk tokens
-        const possibleTokenKeys = [
-          'authToken',
-          'clerk-token',
-          '__clerk_session',
-          '__session',
-          'clerk_session_token'
-        ];
-        
-        // Check localStorage and sessionStorage
-        for (const key of possibleTokenKeys) {
-          authToken = localStorage.getItem(key) || sessionStorage.getItem(key);
-          if (authToken) break;
-        }
-        
-        // If no token found in storage, try to get from Clerk directly
-        if (!authToken) {
+        if (isSignedIn) {
           try {
-            // Check if Clerk is available globally
-            const clerk = (window as any).__clerk_frontend_api || (window as any).Clerk;
-            if (clerk && clerk.session) {
-              authToken = await clerk.session.getToken();
+            authToken = await getToken();
+            if (authToken) {
+              showInfo('Token Found', `Authentication token retrieved (${authToken.length} chars). Running authenticated tests...`);
+            } else {
+              showInfo('Token Issue', 'Signed in but could not retrieve token. May be a session issue.');
             }
           } catch (e) {
             console.warn('Could not retrieve Clerk token:', e);
+            showInfo('Token Error', 'Failed to retrieve authentication token from Clerk.');
           }
-        }
-        
-        // Try to get token from any cookies as well
-        if (!authToken) {
-          const cookieValue = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('__session=') || row.startsWith('clerk-token='))
-            ?.split('=')[1];
-          if (cookieValue) {
-            authToken = cookieValue;
-          }
-        }
-        
-        // Show user what we found
-        if (authToken) {
-          showInfo('Token Found', `Authentication token located (${authToken.length} chars). Running authenticated tests...`);
         } else {
-          showInfo('No Token Found', 'No authentication token found. Will test as unauthenticated user.');
+          showInfo('Not Signed In', 'User is not signed in. Will test as unauthenticated user.');
         }
       } else {
         // Unauthenticated mode - explicitly don't use any token
@@ -496,28 +469,15 @@ export const AuthenticationTest: React.FC = () => {
       const totalTime = Date.now() - startTime;
       const passedCount = testResults.filter(r => r.status === 'passed').length;
       
-      // Try to get user info if we have a valid token
+      // Get user info from Clerk
       let userInfo: TestResults['userInfo'] = undefined;
-      if (authToken) {
-        try {
-          const userResponse = await fetch('/api/me/crews', {
-            headers: { Authorization: `Bearer ${authToken}` }
-          });
-          if (userResponse.status === 200) {
-            const userData = await userResponse.json();
-            if (userData.length > 0) {
-              const user = userData[0];
-              userInfo = {
-                clerk_user_id: user.clerk_user_id,
-                email: user.email_address,
-                status: user.user_status,
-                permissions: ['read', 'write'] // Placeholder - would need actual permission system
-              };
-            }
-          }
-        } catch (e) {
-          console.warn('Could not fetch user info:', e);
-        }
+      if (user && isSignedIn) {
+        userInfo = {
+          clerk_user_id: user.id,
+          email: user.emailAddresses[0]?.emailAddress || 'N/A',
+          status: 'VERIFIED', // Clerk users are verified by definition
+          permissions: ['read', 'write'] // Placeholder - would need actual permission system
+        };
       }
       
       const modeText = currentTestMode === 'authenticated' ? 'Authenticated' : 'Unauthenticated';
@@ -552,8 +512,15 @@ export const AuthenticationTest: React.FC = () => {
 
   return (
     <VStack spacing={6} align="stretch">
-      <HStack spacing={2}>
-        <Badge colorScheme="purple" fontSize="sm" px={2} py={1}>AUTHENTICATION</Badge>
+      <HStack spacing={2} justify="space-between">
+        <HStack spacing={2}>
+          <Badge colorScheme="purple" fontSize="sm" px={2} py={1}>AUTHENTICATION</Badge>
+        </HStack>
+        <HStack spacing={2}>
+          <Badge colorScheme={isSignedIn ? "green" : "red"} fontSize="xs" px={2} py={1}>
+            {isSignedIn ? `SIGNED IN${user?.emailAddresses[0]?.emailAddress ? ` (${user.emailAddresses[0].emailAddress})` : ''}` : 'NOT SIGNED IN'}
+          </Badge>
+        </HStack>
       </HStack>
 
       <Text color="cardText" mt={-2}>

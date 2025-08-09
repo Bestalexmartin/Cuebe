@@ -80,7 +80,7 @@ def _process_create_group_operation(db: Session, script_id: UUID, operation_data
     
     # Find the minimum sequence and time offset for the group parent
     min_sequence = min(element.sequence for element in elements_to_group)
-    min_time_offset = min(element.time_offset_ms for element in elements_to_group)
+    min_time_offset = min(element.offset_ms for element in elements_to_group)
     
     # Don't generate group summary notes - will be calculated dynamically on frontend
     
@@ -89,8 +89,8 @@ def _process_create_group_operation(db: Session, script_id: UUID, operation_data
         script_id=script_id,
         element_type='GROUP',
         sequence=min_sequence,
-        time_offset_ms=min_time_offset,
-        description=group_name,
+        offset_ms=min_time_offset,
+        element_name=group_name,
         cue_notes="",  # Leave empty - will be calculated dynamically on frontend
         custom_color=background_color,
 

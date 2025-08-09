@@ -59,7 +59,7 @@ interface ScriptModalsProps {
     onColorizeChange: (enabled: boolean) => void;
     onClockTimesChange: (enabled: boolean) => void;
     onConfirmDeleteCue: () => void;
-    onConfirmDuplicate: (description: string, time_offset_ms: number) => void;
+    onConfirmDuplicate: (element_name: string, offset_ms: number) => void;
     onConfirmGroupElements: (groupName: string, backgroundColor: string) => void;
     
     // Script sharing
@@ -96,7 +96,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     selectedElementIds,
     selectedElementName,
     selectedElementTimeOffset,
-    pendingOperations,
+    pendingOperations: _pendingOperations,
     totalChangesCount,
     isDeleting,
     isDeletingCue,

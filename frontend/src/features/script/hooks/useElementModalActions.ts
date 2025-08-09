@@ -71,8 +71,8 @@ export const useElementModalActions = ({
                 return;
             }
 
-            setSelectedElementName(elementData.description || 'Unknown Element');
-            setSelectedElementTimeOffset(elementData.time_offset_ms || 0);
+            setSelectedElementName(elementData.element_name || 'Unknown Element');
+            setSelectedElementTimeOffset(elementData.offset_ms || 0);
             modalState.openModal(modalNames.DUPLICATE_ELEMENT);
 
         } catch (error) {
@@ -81,7 +81,7 @@ export const useElementModalActions = ({
         }
     }, [selectedElementId, editQueueElements, modalState, modalNames.DUPLICATE_ELEMENT, showError]);
 
-    const handleConfirmDuplicate = useCallback(async (description: string, time_offset_ms: number) => {
+    const handleConfirmDuplicate = useCallback(async (element_name: string, offset_ms: number) => {
         if (!selectedElementId || !scriptId) {
             return;
         }
@@ -137,8 +137,8 @@ export const useElementModalActions = ({
 
             const duplicateData = {
                 ...originalElement,
-                description,
-                time_offset_ms,
+                element_name,
+                offset_ms,
                 element_id: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
                 parent_element_id: correctedParentId,
                 created_at: undefined,
@@ -179,7 +179,7 @@ export const useElementModalActions = ({
                 type: 'UPDATE_ELEMENT',
                 element_id: selectedElement.element_id,
                 changes: transformedChanges,
-                description: `Updated element "${selectedElement.description}"`
+                description: `Updated element "${selectedElement.element_name}"`
             });
 
             setForceRender(prev => prev + 1);
@@ -220,7 +220,7 @@ export const useElementModalActions = ({
             return;
         }
 
-        setSelectedElementName(elementToDelete.description || 'Unknown Element');
+        setSelectedElementName(elementToDelete.element_name || 'Unknown Element');
         modalState.openModal(modalNames.DELETE_CUE);
     }, [selectedElementId, editQueueElements, modalState, modalNames.DELETE_CUE, showError]);
 
@@ -269,7 +269,7 @@ export const useElementModalActions = ({
         );
         
         if (alreadyGrouped.length > 0) {
-            const groupedNames = alreadyGrouped.map(el => el.description || 'Unnamed').join(', ');
+            const groupedNames = alreadyGrouped.map(el => el.element_name || 'Unnamed').join(', ');
             showError(`Cannot group elements that are already in groups: ${groupedNames}`);
             return;
         }
@@ -321,7 +321,7 @@ export const useElementModalActions = ({
             const ungroupOperation = {
                 type: 'UNGROUP_ELEMENTS',
                 group_element_id: selectedElementId,
-                group_name: groupElement.description || 'Untitled Group'
+                group_name: groupElement.element_name || 'Untitled Group'
             };
 
             applyLocalChange(ungroupOperation);

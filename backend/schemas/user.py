@@ -10,7 +10,7 @@ from typing import Optional, List
 # =============================================================================
 
 class User(BaseModel):
-    user_id: UUID  # CHANGED TO UUID
+    user_id: UUID
     clerk_user_id: Optional[str] = None  # Nullable for guest users
     email_address: str
     fullname_first: str
@@ -20,7 +20,7 @@ class User(BaseModel):
     phone_number: Optional[str] = None
     user_status: str  # 'guest' or 'verified'
     user_role: str
-    created_by: Optional[UUID] = None  # CHANGED TO UUID
+    created_by: Optional[UUID] = None
     notes: Optional[str] = None
     user_prefs_json: Optional[dict] = None
     is_active: bool
@@ -45,7 +45,7 @@ class GuestUserCreate(BaseModel):
     notes: Optional[str] = None
 
 class CrewRelationshipCreate(BaseModel):
-    crew_user_id: UUID  # CHANGED TO UUID
+    crew_user_id: UUID
     notes: Optional[str] = None
 
 class CrewMemberWithRelationship(BaseModel):

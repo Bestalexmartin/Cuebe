@@ -15,25 +15,25 @@ import { ValidationRules, FormValidationConfig } from '../../../../types/validat
 import { formatTimeOffset, parseTimeToMs } from '../../../../utils/timeUtils';
 
 interface DuplicateElementFormData {
-    description: string;
+    element_name: string;
     timeOffsetInput: string;
 }
 
 interface DuplicateElementModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (description: string, time_offset_ms: number) => void;
+    onConfirm: (element_name: string, offset_ms: number) => void;
     originalElementName: string;
     originalTimeOffset: number;
     isProcessing?: boolean;
 }
 
 const VALIDATION_CONFIG: FormValidationConfig = {
-    description: {
+    element_name: {
         required: true,
         rules: [
-            ValidationRules.minLength(3, 'Description must be at least 3 characters'),
-            ValidationRules.maxLength(200, 'Description must be no more than 200 characters')
+            ValidationRules.minLength(3, 'Element name must be at least 3 characters'),
+            ValidationRules.maxLength(200, 'Element name must be no more than 200 characters')
         ]
     },
     timeOffsetInput: {
@@ -63,7 +63,7 @@ export const DuplicateElementModal: React.FC<DuplicateElementModalProps> = ({
 }) => {
     const form = useValidatedForm<DuplicateElementFormData>(
         {
-            description: `${originalElementName} (Copy)`,
+            element_name: `${originalElementName} (Copy)`,
             timeOffsetInput: formatTimeOffset(originalTimeOffset) || ''
         },
         {
@@ -78,7 +78,7 @@ export const DuplicateElementModal: React.FC<DuplicateElementModalProps> = ({
     useEffect(() => {
         if (isOpen) {
             form.setFormData({
-                description: `${originalElementName} (Copy)`,
+                element_name: `${originalElementName} (Copy)`,
                 timeOffsetInput: formatTimeOffset(originalTimeOffset) || ''
             });
         }
@@ -88,7 +88,7 @@ export const DuplicateElementModal: React.FC<DuplicateElementModalProps> = ({
         if (form.isValid && !isProcessing) {
             const timeOffsetMs = parseTimeToMs(form.formData.timeOffsetInput);
             if (timeOffsetMs !== null) {
-                onConfirm(form.formData.description, timeOffsetMs);
+                onConfirm(form.formData.element_name, timeOffsetMs);
             }
         }
     };
@@ -120,7 +120,7 @@ export const DuplicateElementModal: React.FC<DuplicateElementModalProps> = ({
             <VStack spacing={4} align="stretch">
                 <FormInput
                     form={form}
-                    name="description"
+                    name="element_name"
                     label="Description"
                     placeholder="Enter description for the duplicated element"
                     isRequired

@@ -106,7 +106,6 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
     old_sequence = operation_data.get("old_sequence")
     new_sequence = operation_data.get("new_sequence")
     
-    logger.info(f"DEBUG reorder - element_id: {element_id}, old_sequence: {old_sequence}, new_sequence: {new_sequence}")
     
     if old_sequence == new_sequence:
         # No change needed
@@ -125,8 +124,6 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
             break
     
     if not moved_element:
-        logger.error(f"DEBUG reorder - Element {element_id} not found in script {script_id}")
-        logger.error(f"DEBUG reorder - Available elements: {[str(el.element_id) for el in all_elements]}")
         raise ValueError(f"Element {element_id} not found")
     
     # Update sequences for all elements to ensure no duplicates
@@ -239,7 +236,7 @@ def _process_update_time_offset_operation(db: Session, element_id: str, operatio
     """Process a time offset update operation."""
     
     # Handle both camelCase (from frontend) and snake_case (internal)
-    new_time_offset = operation_data.get("newTimeOffsetMs") or operation_data.get("new_time_offset_ms")
+    new_time_offset = operation_data.get("newOffsetMs") or operation_data.get("new_offset_ms")
     
     element = db.query(models.ScriptElement).filter(
         models.ScriptElement.element_id == UUID(element_id)
@@ -248,7 +245,7 @@ def _process_update_time_offset_operation(db: Session, element_id: str, operatio
     if not element:
         raise ValueError(f"Element {element_id} not found")
     
-    element.time_offset_ms = new_time_offset
+    element.offset_ms = new_time_offset
     element.updated_by = user.user_id
     element.date_updated = datetime.now(timezone.utc)
     return {"element_id": element_id, "new_time_offset": new_time_offset}
@@ -287,8 +284,8 @@ def _process_create_element_operation(db: Session, script_id: UUID, operation_da
         script_id=script_id,
         element_type=element_data.get("element_type", "CUE"),
         sequence=element_data.get("sequence", 1),
-        time_offset_ms=element_data.get("time_offset_ms", 0),
-        description=element_data.get("description", ""),
+        offset_ms=element_data.get("offset_ms", 0),
+        element_name=element_data.get("element_name", ""),
         cue_notes=element_data.get("cue_notes", ""),
         department_id=UUID(element_data["department_id"]) if element_data.get("department_id") else None,
         custom_color=element_data.get("custom_color"),
@@ -374,7 +371,7 @@ def _process_create_group_operation(db: Session, script_id: UUID, operation_data
     
     # Find the minimum sequence and time offset for the group parent
     min_sequence = min(element.sequence for element in elements_to_group)
-    min_time_offset = min(element.time_offset_ms for element in elements_to_group)
+    min_time_offset = min(element.offset_ms for element in elements_to_group)
     
     # Don't generate group summary notes - will be calculated dynamically on frontend
     
@@ -383,8 +380,8 @@ def _process_create_group_operation(db: Session, script_id: UUID, operation_data
         script_id=script_id,
         element_type='GROUP',
         sequence=min_sequence,
-        time_offset_ms=min_time_offset,
-        description=group_name,
+        offset_ms=min_time_offset,
+        element_name=group_name,
         cue_notes="",  # Leave empty - will be calculated dynamically on frontend
         custom_color=background_color,
 

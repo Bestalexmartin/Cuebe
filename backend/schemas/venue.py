@@ -31,7 +31,7 @@ class VenueCreate(VenueBase):
     pass
 
 class Venue(VenueBase):
-    venue_id: UUID  # CHANGED TO UUID
+    venue_id: UUID
     date_created: datetime
     date_updated: datetime
 

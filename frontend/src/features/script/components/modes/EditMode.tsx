@@ -209,10 +209,10 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 if (!newEl) return true;
                 if (el.element_id !== newEl.element_id) return true;
                 // Check if any key fields have changed
-                return el.duration !== newEl.duration ||
+                return el.duration_ms !== newEl.duration_ms ||
                        el.priority !== newEl.priority ||
-                       el.description !== newEl.description ||
-                       el.time_offset_ms !== newEl.time_offset_ms ||
+                       el.element_name !== newEl.element_name ||
+                       el.offset_ms !== newEl.offset_ms ||
                        el.location_details !== newEl.location_details ||
                        el.cue_notes !== newEl.cue_notes ||
                        el.cue_id !== newEl.cue_id ||
@@ -322,9 +322,9 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         setPendingReorder(pendingReorderData);
 
         // Check if all three elements (above, dragged, below) have the same time offset
-        const draggedTimeOffset = draggedEl.time_offset_ms;
-        const aboveTimeOffset = elementAbove?.time_offset_ms;
-        const belowTimeOffset = elementBelow?.time_offset_ms;
+        const draggedTimeOffset = draggedEl.offset_ms;
+        const aboveTimeOffset = elementAbove?.offset_ms;
+        const belowTimeOffset = elementBelow?.offset_ms;
         
         
         const allHaveSameTimeOffset = (
@@ -379,13 +379,13 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 type: 'UPDATE_ELEMENT',
                 element_id: draggedElement.element_id,
                 changes: {
-                    time_offset_ms: {
-                        oldValue: draggedElement.time_offset_ms,
-                        newValue: elementAbove.time_offset_ms
+                    offset_ms: {
+                        oldValue: draggedElement.offset_ms,
+                        newValue: elementAbove.offset_ms
                     }
                 },
                 autoSort: autoSortCues, // Pass current auto-sort state
-                description: `Updated time offset for "${draggedElement.description}" to match preceding element`
+                description: `Updated time offset for "${draggedElement.element_name}" to match preceding element`
             };
             
             onApplyLocalChange(updateElementOperation);
@@ -403,13 +403,13 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 type: 'UPDATE_ELEMENT',
                 element_id: draggedElement.element_id,
                 changes: {
-                    time_offset_ms: {
-                        oldValue: draggedElement.time_offset_ms,
-                        newValue: elementBelow.time_offset_ms
+                    offset_ms: {
+                        oldValue: draggedElement.offset_ms,
+                        newValue: elementBelow.offset_ms
                     }
                 },
                 autoSort: autoSortCues, // Pass current auto-sort state
-                description: `Updated time offset for "${draggedElement.description}" to match following element`
+                description: `Updated time offset for "${draggedElement.element_name}" to match following element`
             };
             
             onApplyLocalChange(updateElementOperation);
@@ -457,7 +457,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             
             if (newIndex === 0) {
                 // Moving to the beginning - get sequence 1 less than the first element
-                const firstOtherElement = reorderedElements.find((el: any, idx: number) => idx === 1);
+                const firstOtherElement = reorderedElements.find((_el: any, idx: number) => idx === 1);
                 newSequence = firstOtherElement ? Math.max(1, firstOtherElement.sequence - 1) : 1;
             } else if (newIndex === reorderedElements.length - 1) {
                 // Moving to the end - get sequence 1 more than the last other element
@@ -513,7 +513,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             
             if (newIndex === 0) {
                 // Moving to the beginning - get sequence 1 less than the first element
-                const firstOtherElement = reorderedElements.find((el: any, idx: number) => idx === 1);
+                const firstOtherElement = reorderedElements.find((_el: any, idx: number) => idx === 1);
                 newSequence = firstOtherElement ? Math.max(1, firstOtherElement.sequence - 1) : 1;
             } else if (newIndex === reorderedElements.length - 1) {
                 // Moving to the end - get sequence 1 more than the last other element
@@ -566,8 +566,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             type: 'UPDATE_ELEMENT',
             element_id: elementToEdit.element_id,
             changes: changes,
-            autoSort: autoSortCues && changes.time_offset_ms, // Only auto-sort if time offset changed and auto-sort is enabled
-            description: `Updated element "${elementToEdit.description}"`
+            autoSort: autoSortCues && changes.offset_ms, // Only auto-sort if time offset changed and auto-sort is enabled
+            description: `Updated element "${elementToEdit.element_name}"`
         };
         
         onApplyLocalChange(updateElementOperation);
@@ -640,7 +640,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         
         // Return sorted copy for display
         return [...localElements].sort((a, b) => {
-            return a.time_offset_ms - b.time_offset_ms;
+            return a.offset_ms - b.offset_ms;
         });
     }, [localElements, autoSortCues, dragModalOpen, pendingReorder]);
 

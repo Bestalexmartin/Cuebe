@@ -13,7 +13,7 @@ export class EditQueueFormatter {
      */
     static formatOperation(operation: EditOperation, allElements: ScriptElement[]): string {
         const element = allElements.find(el => el.element_id === operation.element_id);
-        const elementName = element?.description || `Element ${operation.element_id?.slice(-6) || 'Unknown'}`;
+        const elementName = element?.element_name || `Element ${operation.element_id?.slice(-6) || 'Unknown'}`;
         
         switch (operation.type) {
             case 'REORDER':
@@ -29,18 +29,18 @@ export class EditQueueFormatter {
                 return this.formatFieldUpdate(operation, elementName);
             
             case 'UPDATE_TIME_OFFSET':
-                const oldTime = this.formatTime(operation.old_time_offset_ms);
-                const newTime = this.formatTime(operation.new_time_offset_ms);
+                const oldTime = this.formatTime(operation.old_offset_ms);
+                const newTime = this.formatTime(operation.new_offset_ms);
                 return `Updated "${elementName}" time from ${oldTime} to ${newTime}`;
             
             case 'CREATE_ELEMENT':
                 const elementType = operation.element_data.element_type?.toLowerCase() || 'element';
                 const insertText = operation.insert_index !== undefined ? ` at position ${operation.insert_index + 1}` : '';
-                return `Created new ${elementType}${insertText}: "${operation.element_data.description || 'Untitled'}"`;
+                return `Created new ${elementType}${insertText}: "${operation.element_data.element_name || 'Untitled'}"`;
             
             case 'DELETE_ELEMENT':
                 const deletedType = operation.element_data.element_type?.toLowerCase() || 'element';
-                return `Deleted ${deletedType}: "${operation.element_data.description || 'Untitled'}"`;
+                return `Deleted ${deletedType}: "${operation.element_data.element_name || 'Untitled'}"`;
             
             case 'BULK_REORDER':
                 const count = operation.element_changes.length;
@@ -144,13 +144,13 @@ export class EditQueueFormatter {
             const field = changedFields[0];
             const change = changes[field];
             const fieldDisplayNames: Record<string, string> = {
-                'description': 'description',
+                'element_name': 'description',
                 'cue_notes': 'notes',
                 'priority': 'priority',
                 'department_id': 'department',
                 'custom_color': 'color',
-                'duration': 'duration',
-                'time_offset_ms': 'time offset',
+                'duration_ms': 'duration',
+                'offset_ms': 'time offset',
                 'location_details': 'location',
                 'parent_element_id': 'parent element',
                 'group_level': 'group level',
@@ -167,13 +167,13 @@ export class EditQueueFormatter {
         
         // Multiple fields changed
         const fieldDisplayNames: Record<string, string> = {
-            'description': 'description',
+            'element_name': 'description',
             'cue_notes': 'notes',
             'priority': 'priority',
             'department_id': 'department',
             'custom_color': 'color',
-            'duration': 'duration',
-            'time_offset_ms': 'time',
+            'duration_ms': 'duration',
+            'offset_ms': 'time',
             'location_details': 'location',
             'parent_element_id': 'parent',
             'group_level': 'group level',
@@ -229,13 +229,13 @@ export class EditQueueFormatter {
         const { field, oldValue, newValue } = operation;
         
         const fieldDisplayNames: Record<string, string> = {
-            'description': 'description',
+            'element_name': 'description',
             'cue_notes': 'notes',
             'priority': 'priority',
             'department_id': 'department',
             'custom_color': 'color',
-            'duration': 'duration',
-            'time_offset_ms': 'time offset',
+            'duration_ms': 'duration',
+            'offset_ms': 'time offset',
             'location_details': 'location details',
             'isSafetyCritical': 'safety critical',
             'safetyNotes': 'safety notes',
@@ -273,14 +273,14 @@ export class EditQueueFormatter {
         }
         
         switch (field) {
-            case 'time_offset_ms':
+            case 'offset_ms':
                 // Handle numeric time values, including 0
                 if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
                     return this.formatTime(Number(value));
                 }
                 return '(empty)';
             
-            case 'duration':
+            case 'duration_ms':
                 // Handle numeric duration values, including 0  
                 if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
                     return this.formatDuration(Number(value));

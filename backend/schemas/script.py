@@ -19,13 +19,13 @@ class ScriptCreate(BaseModel):
     end_time: Optional[datetime] = None  # Planned end time
 
 class Script(BaseModel):
-    script_id: UUID  # ALREADY UUID
+    script_id: UUID
     script_name: str
     script_notes: Optional[str] = None
     script_status: str
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None  # Planned end time
-    show_id: UUID  # ALREADY UUID
+    show_id: UUID
     owner_id: UUID  # Missing field needed for authorization
     is_shared: bool = False
     date_created: datetime

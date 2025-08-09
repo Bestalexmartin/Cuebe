@@ -35,8 +35,8 @@ export interface DeleteElementOperation extends BaseEditOperation {
 
 export interface UpdateTimeOffsetOperation extends BaseEditOperation {
     type: 'UPDATE_TIME_OFFSET';
-    old_time_offset_ms: number;
-    new_time_offset_ms: number;
+    old_offset_ms: number;
+    new_offset_ms: number;
 }
 
 export interface BulkReorderOperation extends BaseEditOperation {

@@ -60,8 +60,8 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
         
         // Return sorted copy for display
         return [...elements].sort((a, b) => {
-            const aOffset = a.time_offset_ms || 0;
-            const bOffset = b.time_offset_ms || 0;
+            const aOffset = a.offset_ms || 0;
+            const bOffset = b.offset_ms || 0;
             return aOffset - bOffset;
         });
     }, [elements, autoSortCues]);

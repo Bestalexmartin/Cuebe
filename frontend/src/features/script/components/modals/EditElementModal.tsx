@@ -44,12 +44,11 @@ interface EditElementModalProps {
 }
 
 interface FormData {
-    description: string;
-    cue_id: string;
+    element_name: string;
     cue_notes: string;
     department_id: string;
-    time_offset_ms: number;
-    duration: number;
+    offset_ms: number;
+    duration_ms: number;
     priority: string;
     location_details: string;
     custom_color: string;
@@ -68,12 +67,11 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
 }) => {
     const { departments, isLoading: departmentsLoading } = useDepartments();
     const [formData, setFormData] = useState<FormData>({
-        description: '',
-        cue_id: '',
+        element_name: '',
         cue_notes: '',
         department_id: '',
-        time_offset_ms: 0,
-        duration: 0,
+        offset_ms: 0,
+        duration_ms: 0,
         priority: 'NORMAL',
         location_details: '',
         custom_color: ''
@@ -91,12 +89,11 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         if (!element) return;
 
         const newFormData: FormData = {
-            description: element.description || '',
-            cue_id: element.cue_id || '',
+            element_name: element.element_name || '',
             cue_notes: (element as any).cue_notes || '',
             department_id: element.department_id || '',
-            time_offset_ms: element.time_offset_ms || 0,
-            duration: element.duration || 0,
+            offset_ms: element.offset_ms || 0,
+            duration_ms: element.duration_ms || 0,
             priority: element.priority || 'NORMAL',
             location_details: element.location_details || '',
             custom_color: element.custom_color || ''
@@ -104,8 +101,8 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
 
         setFormData(newFormData);
         setTimeInputs({
-            timeOffsetInput: formatTimeWithHours(newFormData.time_offset_ms),
-            durationInput: formatTimeWithHours(newFormData.duration * 1000)
+            timeOffsetInput: formatTimeWithHours(newFormData.offset_ms),
+            durationInput: formatTimeWithHours(newFormData.duration_ms)
         });
         setHasChanges(false);
         setValidationErrors([]);
@@ -115,12 +112,11 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
     const originalData = useMemo(() => {
         if (!element) return null;
         return {
-            description: element.description || '',
-            cue_id: element.cue_id || '',
+            element_name: element.element_name || '',
             cue_notes: (element as any).cue_notes || '',
             department_id: element.department_id || '',
-            time_offset_ms: element.time_offset_ms || 0,
-            duration: element.duration || 0,
+            offset_ms: element.offset_ms || 0,
+            duration_ms: element.duration_ms || 0,
             priority: element.priority || 'NORMAL',
             location_details: element.location_details || '',
             custom_color: element.custom_color || ''
@@ -144,10 +140,10 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         const errors: FieldError[] = [];
 
         // Required fields validation
-        if (!formData.description.trim()) {
+        if (!formData.element_name.trim()) {
             errors.push({
-                field: 'description',
-                message: 'Description is required',
+                field: 'element_name',
+                message: 'Element name is required',
                 code: 'required'
             });
         }
@@ -163,18 +159,18 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         }
 
         // Time offset validation - now allows negative values for pre-show timing
-        if (!Number.isFinite(formData.time_offset_ms)) {
+        if (!Number.isFinite(formData.offset_ms)) {
             errors.push({
-                field: 'time_offset_ms',
+                field: 'offset_ms',
                 message: 'Time offset must be a valid time value',
                 code: 'invalid_time'
             });
         }
 
         // Duration validation
-        if (formData.duration < 0) {
+        if (formData.duration_ms < 0) {
             errors.push({
-                field: 'duration',
+                field: 'duration_ms',
                 message: 'Duration cannot be negative',
                 code: 'min_value'
             });
@@ -267,7 +263,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         const timeOffsetMs = parseTimeWithHours(timeInputs.timeOffsetInput);
         const formatted = formatTimeWithHours(timeOffsetMs);
         setTimeInputs(prev => ({ ...prev, timeOffsetInput: formatted }));
-        setFormData(prev => ({ ...prev, time_offset_ms: timeOffsetMs }));
+        setFormData(prev => ({ ...prev, offset_ms: timeOffsetMs }));
     };
 
     const handleDurationChange = (value: string) => {
@@ -276,10 +272,9 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
 
     const handleDurationBlur = () => {
         const durationMs = parseTimeWithHours(timeInputs.durationInput);
-        const durationSeconds = Math.round(durationMs / 1000);
         const formatted = formatTimeWithHours(durationMs);
         setTimeInputs(prev => ({ ...prev, durationInput: formatted }));
-        setFormData(prev => ({ ...prev, duration: durationSeconds }));
+        setFormData(prev => ({ ...prev, duration_ms: durationMs }));
     };
 
 
@@ -298,7 +293,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
 
     return (
         <BaseModal
-            title={`Edit ${isNote ? 'Note' : 'Cue'}: ${element.description}`}
+            title={`Edit ${isNote ? 'Note' : 'Cue'}: ${element.element_name}`}
             isOpen={isOpen}
             onClose={onClose}
             onSubmit={handleSubmit}
@@ -316,7 +311,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                 {/* Row 1: Time and Duration */}
                 <HStack spacing={4}>
                     {/* Time Offset */}
-                    <FormControl isInvalid={!!getFieldError('time_offset_ms')}>
+                    <FormControl isInvalid={!!getFieldError('offset_ms')}>
                         <FormLabel>Time Offset</FormLabel>
                         <Input
                             value={timeInputs.timeOffsetInput}
@@ -324,11 +319,11 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                             onBlur={handleTimeOffsetBlur}
                             placeholder="0:00 or 0:00:00"
                         />
-                        <FormErrorMessage>{getFieldError('time_offset_ms')}</FormErrorMessage>
+                        <FormErrorMessage>{getFieldError('offset_ms')}</FormErrorMessage>
                     </FormControl>
 
                     {/* Duration */}
-                    <FormControl isInvalid={!!getFieldError('duration')}>
+                    <FormControl isInvalid={!!getFieldError('duration_ms')}>
                         <FormLabel>Duration</FormLabel>
                         <Input
                             value={timeInputs.durationInput}
@@ -336,7 +331,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                             onBlur={handleDurationBlur}
                             placeholder="0:00 or 0:00:00"
                         />
-                        <FormErrorMessage>{getFieldError('duration')}</FormErrorMessage>
+                        <FormErrorMessage>{getFieldError('duration_ms')}</FormErrorMessage>
                     </FormControl>
                 </HStack>
 
@@ -437,14 +432,14 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                 )}
 
                 {/* Row 3: Cue (Description) */}
-                <FormControl isInvalid={!!getFieldError('description')}>
+                <FormControl isInvalid={!!getFieldError('element_name')}>
                     <FormLabel>Cue</FormLabel>
                     <Input
-                        value={formData.description}
-                        onChange={(e) => handleInputChange('description', e.target.value)}
+                        value={formData.element_name}
+                        onChange={(e) => handleInputChange('element_name', e.target.value)}
                         placeholder="Describe what happens during this cue or note..."
                     />
-                    <FormErrorMessage>{getFieldError('description')}</FormErrorMessage>
+                    <FormErrorMessage>{getFieldError('element_name')}</FormErrorMessage>
                 </FormControl>
 
                 {/* Row 4: Notes */}

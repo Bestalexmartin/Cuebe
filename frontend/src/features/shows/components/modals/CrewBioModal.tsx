@@ -9,7 +9,6 @@ import {
   Avatar,
   Badge,
   Divider,
-  Spacer,
   IconButton,
   useClipboard,
   Input
@@ -19,7 +18,6 @@ import { MdRefresh } from "react-icons/md";
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { CrewMember } from '../../types/crewAssignments';
 import { formatRole } from '../../../../constants/userRoles';
-import { formatDateTimeLocal } from '../../../../utils/dateTimeUtils';
 import { AppIcon } from '../../../../components/AppIcon';
 
 interface CrewBioModalProps {

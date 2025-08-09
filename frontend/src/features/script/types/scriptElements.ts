@@ -16,10 +16,10 @@ export interface ScriptElementBase {
   
   // Sequencing and timing
   sequence: number;                    // Order in script (auto-incrementing)
-  time_offset_ms: number;                // Milliseconds from script start
+  offset_ms: number;                // Milliseconds from script start
   
   // Content and identification
-  description: string;
+  element_name: string;
   cue_notes?: string;
   
   // Department and visual
@@ -33,7 +33,7 @@ export interface ScriptElementBase {
   location_details?: string;            // Specific location description
   
   // Timing and execution
-  duration?: number;                   // Runtime in milliseconds
+  duration_ms?: number;                   // Runtime in milliseconds
   
   // Status and management
   priority: PriorityLevel;
@@ -66,7 +66,7 @@ export interface ConditionalRule {
   condition: 'weather' | 'cast' | 'equipment' | 'time' | 'custom';
   operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
   value: string;
-  description: string;
+  element_name: string;
 }
 
 // Specific element types extending the base
@@ -101,7 +101,7 @@ export interface Department {
   name: string;
   shortName: string;                   // For cue IDs (LX, SND, etc.)
   color: string;                       // Hex color code
-  description?: string;
+  element_name?: string;
 }
 
 // Script element collection with metadata
@@ -136,11 +136,11 @@ export interface PlaybackState {
 // Form data interfaces for editing
 export interface ScriptElementFormData {
   element_type: ScriptElementType;
-  description: string;
+  element_name: string;
   cue_notes?: string;
   department_id?: string;
-  time_offset_ms: number;
-  duration?: number;
+  offset_ms: number;
+  duration_ms?: number;
   location_details?: string;
   priority: PriorityLevel;
   equipmentRequired?: string[];
@@ -154,7 +154,7 @@ export interface ScriptElementFormData {
 
 // Validation rules for form elements
 export interface ElementValidationRules {
-  description: {
+  element_name: {
     required: boolean;
     maxLength: number;
   };
@@ -176,12 +176,12 @@ export interface ElementValidationRules {
 export interface ScriptElementCreate {
   element_type: ScriptElementType;
   sequence?: number;
-  time_offset_ms?: number;
-  description: string;
+  offset_ms?: number;
+  element_name: string;
   cue_notes?: string;
   department_id?: string;
   location_details?: string;
-  duration?: number;
+  duration_ms?: number;
   priority?: PriorityLevel;
   parent_element_id?: string;
   group_level?: number;
@@ -193,12 +193,12 @@ export interface ScriptElementCreate {
 export interface ScriptElementUpdate {
   element_type?: ScriptElementType;
   sequence?: number;
-  time_offset_ms?: number;
-  description?: string;
+  offset_ms?: number;
+  element_name?: string;
   cue_notes?: string;
   department_id?: string;
   location_details?: string;
-  duration?: number;
+  duration_ms?: number;
   priority?: PriorityLevel;
   parent_element_id?: string;
   group_level?: number;
@@ -244,7 +244,7 @@ export interface ScriptElementConditionalRule {
   conditionType: 'weather' | 'cast' | 'equipment' | 'time' | 'custom';
   operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
   conditionValue: string;
-  description: string;
+  element_name: string;
 }
 
 // Extended base interface with all relationships populated
