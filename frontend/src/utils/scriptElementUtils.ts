@@ -132,7 +132,7 @@ export const elementMatchesSearch = (
     const query = searchQuery.toLowerCase();
     
     return (
-        (element.description && element.description.toLowerCase().includes(query)) ||
+        (element.element_name && element.element_name.toLowerCase().includes(query)) ||
         (element.cue_notes && element.cue_notes.toLowerCase().includes(query)) ||
         (element.location_details && element.location_details.toLowerCase().includes(query))
     );

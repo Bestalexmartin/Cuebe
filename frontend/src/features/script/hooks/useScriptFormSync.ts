@@ -80,13 +80,14 @@ export const useScriptFormSync = ({
     // Populate form when script data loads or edit queue changes
     useEffect(() => {
         if (currentScript) {
-            form.setFormData({
+            const formData = {
                 script_name: currentScript.script_name || '',
                 script_status: currentScript.script_status || 'DRAFT',
                 start_time: convertUTCToLocal(currentScript.start_time),
                 end_time: convertUTCToLocal(currentScript.end_time),
                 script_notes: currentScript.script_notes || ''
-            });
+            };
+            form.setFormData(formData);
         }
     }, [currentScript, form.setFormData]);
 

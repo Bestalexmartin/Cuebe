@@ -284,11 +284,21 @@ export const useElementModalActions = ({
         }
 
         try {
+            // Generate a deterministic temporary group ID
+            const tempGroupId = `group-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+            
             const groupOperation = {
                 type: 'CREATE_GROUP',
                 element_ids: selectedElementIds,
                 group_name: groupName,
-                background_color: backgroundColor
+                background_color: backgroundColor,
+                // Add element_data with the temporary group element for backend compatibility
+                element_data: {
+                    element_id: tempGroupId,
+                    element_name: groupName,
+                    element_type: 'GROUP',
+                    custom_color: backgroundColor
+                }
             };
 
             applyLocalChange(groupOperation);
