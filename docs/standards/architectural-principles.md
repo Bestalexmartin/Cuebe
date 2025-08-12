@@ -50,14 +50,14 @@ The most powerful architecture is invisible - it makes the difficult seem simple
 #### Example: Time Offset Implementation
 ```typescript
 // ✅ Mathematical consistency
-time_offset_ms: -30000  // 30 seconds before show start
-time_offset_ms: 120000  // 2 minutes after show start
+offset_ms: -30000  // 30 seconds before show start
+offset_ms: 120000  // 2 minutes after show start
 
 // Automatic chronological sorting:
-elements.sort((a, b) => a.time_offset_ms - b.time_offset_ms)
+elements.sort((a, b) => a.offset_ms - b.offset_ms)
 
 // Natural clock time calculation:
-const clockTime = new Date(showStart.getTime() + time_offset_ms)
+const clockTime = new Date(showStart.getTime() + offset_ms)
 ```
 
 **Result**: Adding pre-show countdown functionality required only removing artificial constraints (`value >= 0`), not building new features. The mathematical foundation already supported the full domain.
@@ -83,7 +83,7 @@ const clockTime = new Date(showStart.getTime() + time_offset_ms)
 ```typescript
 // ✅ Domain-aligned model
 interface ScriptElement {
-  time_offset_ms: number;        // "milliseconds from show start"
+  offset_ms: number;        // "milliseconds from show start"
   department_id: string;        // Direct relationship to departments
   element_type: 'CUE' | 'NOTE';  // Theater terminology
   priority: PriorityLevel;     // Real workflow concepts

@@ -96,7 +96,6 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     selectedElementIds,
     selectedElementName,
     selectedElementTimeOffset,
-    pendingOperations: _pendingOperations,
     totalChangesCount,
     isDeleting,
     isDeletingCue,

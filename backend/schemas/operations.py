@@ -51,8 +51,8 @@ class UpdateFieldEditOperation(EditQueueOperation):
 class UpdateTimeOffsetEditOperation(EditQueueOperation):
     """Schema for time offset update operations"""
     type: str = "UPDATE_TIME_OFFSET"
-    old_time_offset_ms: int
-    new_time_offset_ms: int
+    old_offset_ms: int
+    new_offset_ms: int
 
 class CreateElementEditOperation(EditQueueOperation):
     """Schema for element creation operations"""

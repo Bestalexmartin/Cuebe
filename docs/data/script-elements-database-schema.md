@@ -18,13 +18,13 @@ CREATE TABLE script_elements (
     
     -- Sequencing and timing
     sequence INTEGER NOT NULL,
-    time_offset INTEGER DEFAULT 0, -- milliseconds
+    offset_ms INTEGER DEFAULT 0, -- milliseconds
     trigger_type ENUM('manual', 'time', 'auto', 'follow', 'go', 'standby') DEFAULT 'manual',
     follows_cue_id VARCHAR(36) NULL,
     
     -- Content and identification
     cue_id VARCHAR(50) NULL, -- LX5, SND12, etc.
-    description TEXT NOT NULL,
+    element_name TEXT NOT NULL,
     notes TEXT NULL,
     
     -- Department and visual
@@ -40,7 +40,7 @@ CREATE TABLE script_elements (
     location_details TEXT NULL,
     
     -- Timing and execution
-    duration INTEGER NULL, -- milliseconds
+    duration_ms INTEGER NULL, -- milliseconds
     fade_in INTEGER NULL, -- milliseconds
     fade_out INTEGER NULL, -- milliseconds
     
@@ -75,7 +75,7 @@ CREATE TABLE script_elements (
     
     -- Indexes for performance
     INDEX idx_script_sequence (script_id, sequence),
-    INDEX idx_script_time (script_id, time_offset),
+    INDEX idx_script_time (script_id, offset_ms),
     INDEX idx_department (department_id),
     INDEX idx_parent_element (parent_element_id),
     INDEX idx_cue_id (cue_id),
@@ -159,11 +159,11 @@ POST /api/scripts/{script_id}/elements
 {
   "element_type": "cue|note|group",
   "cue_id": "string?",
-  "description": "string",
+  "element_name": "string",
   "department_id": "UUID?",
-  "time_offset_ms": number,
+  "offset_ms": number,
   "trigger_type": "manual|time|auto|follow|go|standby",
-  "duration": number?,
+  "duration_ms": number?,
   "location": "LocationArea?",
   "priority": "critical|high|normal|low|optional",
   "is_safety_critical": boolean,

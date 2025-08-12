@@ -320,6 +320,7 @@ def create_script_for_show(
     new_script = models.Script(
         show_id=show_id,
         script_name=script.script_name or "New Script",
+        script_notes=script.script_notes,  # Include script_notes from the request
         script_status=models.ScriptStatus(script.script_status) if script.script_status is not None else models.ScriptStatus.DRAFT,
         start_time=show.show_date,
         end_time=show.show_end if show.show_end is not None else None,

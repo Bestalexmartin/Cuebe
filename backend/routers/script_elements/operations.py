@@ -25,11 +25,17 @@ def batch_update_from_edit_queue(
     
     operation_results = []
     processed_operations = 0
+    # Track temporary group IDs to real UUIDs within this batch
+    temp_id_mapping = {}
     
     try:
         for operation_data in batch_request.operations:
             try:
-                result = _process_edit_operation(db, script_id, operation_data, user)
+                # Apply temporary ID mapping before processing  
+                if operation_data.get("element_id") and operation_data.get("element_id") in temp_id_mapping:
+                    operation_data["element_id"] = temp_id_mapping[operation_data.get("element_id")]
+                
+                result = _process_edit_operation(db, script_id, operation_data, user, temp_id_mapping)
                 operation_results.append({
                     "operation_id": operation_data.get("id"),
                     "status": "success",
@@ -63,7 +69,7 @@ def batch_update_from_edit_queue(
         raise HTTPException(status_code=500, detail=f"Failed to process batch operations: {str(e)}")
 
 
-def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User, temp_id_mapping: dict = None):
     """Process a single edit queue operation."""
     
     operation_type = operation_data.get("type")
@@ -88,11 +94,14 @@ def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, 
     elif operation_type == "DISABLE_AUTO_SORT":
         return _process_disable_auto_sort_operation(operation_data)
     elif operation_type == "CREATE_GROUP":
-        return _process_create_group_operation(db, script_id, operation_data, user)
+        return _process_create_group_operation(db, script_id, operation_data, user, temp_id_mapping)
     elif operation_type == "UPDATE_SCRIPT_INFO":
         return _process_update_script_info_operation(db, script_id, operation_data, user)
     elif operation_type == "TOGGLE_GROUP_COLLAPSE":
-        return _process_toggle_group_collapse_operation(db, element_id, user)
+        # Handle temporary ID mapping for group collapse operations too
+        if temp_id_mapping and element_id and element_id in temp_id_mapping:
+            element_id = temp_id_mapping[element_id]
+        return _process_toggle_group_collapse_operation(db, element_id, operation_data, user)
     elif operation_type == "UNGROUP_ELEMENTS":
         return _process_ungroup_elements_operation(db, script_id, operation_data, user)
     else:
@@ -105,7 +114,6 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
     element_id = operation_data.get("element_id")
     old_sequence = operation_data.get("old_sequence")
     new_sequence = operation_data.get("new_sequence")
-    
     
     if old_sequence == new_sequence:
         # No change needed
@@ -126,37 +134,88 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
     if not moved_element:
         raise ValueError(f"Element {element_id} not found")
     
+    # Check if we're moving a group parent - if so, we need to move the entire group
+    is_group_parent = str(moved_element.element_type) == 'ElementType.GROUP' or moved_element.element_type == models.ElementType.GROUP
+    group_children = []
+    if is_group_parent:
+        # Find all children of this group
+        group_children = [el for el in all_elements if el.parent_element_id == str(moved_element.element_id)]
+    
     # Update sequences for all elements to ensure no duplicates
     # Create a new sequence mapping based on the move
     updated_count = 0
     
-    if old_sequence < new_sequence:
-        # Moving down: elements between old and new positions move up by 1
-        for element in all_elements:
-            if element.element_id == moved_element.element_id:
-                element.sequence = new_sequence
-                updated_count += 1
-            elif element.sequence > old_sequence and element.sequence <= new_sequence:
-                element.sequence = element.sequence - 1
-                updated_count += 1
-            # Other elements keep their sequence
-            
-            element.updated_by = user.user_id
-            element.date_updated = datetime.now(timezone.utc)
-            
+    if is_group_parent and group_children:
+        # Special handling for group parent moves - move the entire group as a unit
+        group_size = len(group_children) + 1  # parent + children
+        if old_sequence < new_sequence:
+            # Moving down: elements between old and new positions move up by group_size
+            for element in all_elements:
+                if element.element_id == moved_element.element_id:
+                    # Move the group parent
+                    element.sequence = new_sequence
+                    updated_count += 1
+                elif element.parent_element_id == str(moved_element.element_id):
+                    # Move group children to be consecutive after parent
+                    child_index = group_children.index(element)
+                    element.sequence = new_sequence + child_index + 1
+                    updated_count += 1
+                elif element.sequence > old_sequence and element.sequence <= new_sequence:
+                    # Other elements move up by the size of the group
+                    element.sequence = element.sequence - group_size
+                    updated_count += 1
+                
+                element.updated_by = user.user_id
+                element.date_updated = datetime.now(timezone.utc)
+                
+        else:
+            # Moving up: elements between new and old positions move down by group_size
+            for element in all_elements:
+                if element.element_id == moved_element.element_id:
+                    # Move the group parent
+                    element.sequence = new_sequence
+                    updated_count += 1
+                elif element.parent_element_id == str(moved_element.element_id):
+                    # Move group children to be consecutive after parent
+                    child_index = group_children.index(element)
+                    element.sequence = new_sequence + child_index + 1
+                    updated_count += 1
+                elif element.sequence >= new_sequence and element.sequence < old_sequence:
+                    # Other elements move down by the size of the group
+                    element.sequence = element.sequence + group_size
+                    updated_count += 1
+                
+                element.updated_by = user.user_id
+                element.date_updated = datetime.now(timezone.utc)
     else:
-        # Moving up: elements between new and old positions move down by 1
-        for element in all_elements:
-            if element.element_id == moved_element.element_id:
-                element.sequence = new_sequence
-                updated_count += 1
-            elif element.sequence >= new_sequence and element.sequence < old_sequence:
-                element.sequence = element.sequence + 1
-                updated_count += 1
-            # Other elements keep their sequence
-            
-            element.updated_by = user.user_id
-            element.date_updated = datetime.now(timezone.utc)
+        # Regular element reorder (not a group parent)
+        if old_sequence < new_sequence:
+            # Moving down: elements between old and new positions move up by 1
+            for element in all_elements:
+                if element.element_id == moved_element.element_id:
+                    element.sequence = new_sequence
+                    updated_count += 1
+                elif element.sequence > old_sequence and element.sequence <= new_sequence:
+                    element.sequence = element.sequence - 1
+                    updated_count += 1
+                # Other elements keep their sequence
+                
+                element.updated_by = user.user_id
+                element.date_updated = datetime.now(timezone.utc)
+                
+        else:
+            # Moving up: elements between new and old positions move down by 1
+            for element in all_elements:
+                if element.element_id == moved_element.element_id:
+                    element.sequence = new_sequence
+                    updated_count += 1
+                elif element.sequence >= new_sequence and element.sequence < old_sequence:
+                    element.sequence = element.sequence + 1
+                    updated_count += 1
+                # Other elements keep their sequence
+                
+                element.updated_by = user.user_id
+                element.date_updated = datetime.now(timezone.utc)
     
     return {
         "element_id": element_id, 
@@ -251,7 +310,7 @@ def _process_update_time_offset_operation(db: Session, element_id: str, operatio
     return {"element_id": element_id, "new_time_offset": new_time_offset}
 
 
-def _process_toggle_group_collapse_operation(db: Session, element_id: str, user: models.User):
+def _process_toggle_group_collapse_operation(db: Session, element_id: str, operation_data: dict, user: models.User):
     """Process a toggle group collapse operation."""
     
     element = db.query(models.ScriptElement).filter(
@@ -261,8 +320,14 @@ def _process_toggle_group_collapse_operation(db: Session, element_id: str, user:
     if not element:
         raise ValueError(f"Element {element_id} not found")
     
-    # Toggle the collapse state
-    element.is_collapsed = not (element.is_collapsed or False)
+    # Use the target state from the frontend instead of just toggling
+    target_collapsed_state = operation_data.get("target_collapsed_state")
+    if target_collapsed_state is not None:
+        element.is_collapsed = target_collapsed_state
+    else:
+        # Fallback to toggle behavior if target state not provided
+        element.is_collapsed = not (element.is_collapsed or False)
+    
     element.updated_by = user.user_id
     element.date_updated = datetime.now(timezone.utc)
     
@@ -350,7 +415,7 @@ def _process_disable_auto_sort_operation(operation_data: dict):
     """Process a disable auto-sort operation (preference only, no element changes)."""
     return {"preference_updated": True, "auto_sort_disabled": True}
 
-def _process_create_group_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+def _process_create_group_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User, temp_id_mapping: dict = None):
     """Process a group creation operation."""
     
     element_ids = operation_data.get("element_ids", [])
@@ -430,6 +495,16 @@ def _process_create_group_operation(db: Session, script_id: UUID, operation_data
     # If group parent wasn't inserted yet (shouldn't happen), insert it at the end
     if not group_parent_inserted:
         group_parent.sequence = sequence
+    
+    # Add mapping from temporary frontend ID to real database UUID
+    if temp_id_mapping is not None:
+        # Look for the temporary group ID in the operation data
+        temp_group_id = None
+        if "element_data" in operation_data and "element_id" in operation_data["element_data"]:
+            temp_group_id = operation_data["element_data"]["element_id"]
+        
+        if temp_group_id and temp_group_id.startswith("group-"):
+            temp_id_mapping[temp_group_id] = str(group_parent.element_id)
     
     return {
         "operation": "create_group",

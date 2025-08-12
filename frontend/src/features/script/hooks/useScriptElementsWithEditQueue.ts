@@ -152,7 +152,29 @@ export const useScriptElementsWithEditQueue = (
             }
 
             const data = await response.json();
-            setServerElements(data);
+            
+            // Sort elements with group parents before their children when at same time offset
+            const sortedElements = data.sort((a: ScriptElement, b: ScriptElement) => {
+                // First sort by time offset
+                if (a.offset_ms !== b.offset_ms) {
+                    return a.offset_ms - b.offset_ms;
+                }
+                
+                // If same time offset, check if one is parent of the other
+                if (a.element_id === b.parent_element_id) {
+                    // a is parent of b, a should come first
+                    return -1;
+                }
+                if (b.element_id === a.parent_element_id) {
+                    // b is parent of a, b should come first
+                    return 1;
+                }
+                
+                // If same time but no parent-child relationship, maintain sequence order
+                return a.sequence - b.sequence;
+            });
+            
+            setServerElements(sortedElements);
         } catch (err) {
             console.error('Error fetching script elements:', err);
             setError(err instanceof Error ? err.message : 'Failed to fetch script elements');
@@ -614,8 +636,8 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             
             const generatedNotes = noteParts.length > 0 ? `Includes ${noteParts.join(' and ')}` : '';
             
-            // Create a group parent element
-            const groupParentId = `group-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+            // Create a deterministic group parent ID based on the operation ID to prevent duplicates during React StrictMode
+            const groupParentId = `group-${operation.id}`;
             const groupParent = {
                 element_id: groupParentId,
                 script_id: elements[0]?.script_id || '',
