@@ -1,7 +1,7 @@
 {
-  "name": "callmaster-backend",
+  "name": "cuebe-backend",
   "version": "1.0.0",
-  "description": "CallMaster backend development scripts",
+  "description": "Cuebe backend development scripts",
   "scripts": {
     "dev": "./start-server.sh",
     "test": "./run-tests.sh",
