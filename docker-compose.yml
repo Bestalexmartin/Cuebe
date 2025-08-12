@@ -1,8 +1,11 @@
 # docker-compose.yml
 
+name: cuebe
+
 services:
   ### The FastAPI Backend Service ###
   backend:
+    container_name: cuebe-backend
     build: ./backend  # Tells Docker Compose to look for a Dockerfile in the ./backend directory
     ports:
       - "8000:8000"  # Maps port 8000 on your machine to port 8000 in the container
@@ -20,6 +23,7 @@ services:
 
   ### The React Frontend Service ###
   frontend:
+    container_name: cuebe-frontend
     image: node:20-alpine
     ports:
       - "5173:5173"
@@ -36,6 +40,7 @@ services:
 
   ### The PostgreSQL Database Service ###
   db:
+    container_name: cuebe-db
     image: postgres:15-alpine # Uses the official, lightweight PostgreSQL image
     volumes:
       - postgres_data:/var/lib/postgresql/data/
