@@ -6,7 +6,7 @@
 
 ## Overview
 
-The CallMaster application features a comprehensive color customization system for script notes, allowing users to assign background colors for better visual organization and identification. The system includes intelligent text contrast calculation and preset color management.
+The Cuebe application features a comprehensive color customization system for script notes, allowing users to assign background colors for better visual organization and identification. The system includes intelligent text contrast calculation and preset color management.
 
 ## Architecture
 

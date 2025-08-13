@@ -1,12 +1,12 @@
 # Script Management Workflows
 
-**Date:** July 2025  
-**Status:** Current  
+**Date:** January 2025  
+**Status:** Current (Updated for New Features)  
 **Category:** User Documentation & Workflows
 
 ## Overview
 
-This guide provides step-by-step workflows for common script management tasks in CallMaster. These workflows are designed to help users efficiently create, edit, and manage theatrical scripts using the ManageScriptPage interface.
+This guide provides step-by-step workflows for common script management tasks in Cuebe. These workflows are designed to help users efficiently create, edit, and manage theatrical scripts using the ManageScriptPage interface.
 
 ## Basic Navigation
 
@@ -48,6 +48,58 @@ The ManageScriptPage provides:
 - Changes are added to edit queue, not saved immediately
 - Validation errors prevent saving
 - Browser navigation is blocked with unsaved changes
+
+### 2. Script Sharing Workflow
+
+**Purpose**: Securely share scripts with crew members
+
+#### Creating Script Shares:
+1. **Access Sharing**: Click "Share" button in script toolbar
+2. **Toggle Script Sharing**: Use "Share with All Crew" toggle
+3. **Individual Shares** (Future Feature):
+   - Select crew members from your managed crew
+   - Set permissions (view, download)
+   - Configure expiration dates
+   - Add share-specific notes
+4. **Generate Access**: System creates secure share tokens
+5. **Distribute Links**: Share URLs or QR codes with crew members
+
+#### Managing Existing Shares:
+1. **View Active Shares**: See all current script shares
+2. **Monitor Usage**: Track access counts and last access times
+3. **Modify Permissions**: Update share settings as needed
+4. **Revoke Access**: Immediately disable problematic shares
+5. **Audit Trail**: Review access logs for security
+
+#### Accessing Shared Scripts:
+1. **Public Access**: No login required, use share token
+2. **Mobile Optimized**: Touch-friendly interface for crew access
+3. **Department Filtering**: See only relevant script elements
+4. **Read-Only Access**: Cannot modify shared script content
+
+### 3. Edit Queue Management Workflow
+
+**Purpose**: Professional non-destructive editing with undo/redo
+
+#### Understanding Edit Queue:
+1. **Local Changes**: All edits stored locally until saved
+2. **Non-Destructive**: Original data preserved until save
+3. **Operation History**: Complete audit trail of all changes
+4. **Undo/Redo**: Full reversal capability for any operation
+
+#### Working with Edit Queue:
+1. **Make Changes**: Edit script info, elements, sequences
+2. **Review Queue**: Use "History" mode to see pending changes
+3. **Undo Operations**: Reverse individual or multiple changes
+4. **Batch Save**: Save all changes together to server
+5. **Discard Changes**: Revert to last saved state if needed
+
+#### Edit Queue Features:
+- **Human-Readable History**: Clear descriptions of all changes
+- **Operation Summaries**: "3 updates, 2 new elements, 1 reorder"
+- **Colored Operation Types**: Visual coding for different change types
+- **Export Capability**: Copy change logs to clipboard
+- **Auto-Sort Integration**: Preference changes with immediate reordering
 
 ### 2. Viewing Scripts
 

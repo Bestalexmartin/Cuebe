@@ -6,7 +6,7 @@
 
 ## Overview
 
-The script elements data model defines the structure for all script content in CallMaster. This includes cues, notes, and organizational groups that make up a theater production script.
+The script elements data model defines the structure for all script content in Cuebe. This includes cues, notes, and organizational groups that make up a theater production script.
 
 ## Core Element Types
 

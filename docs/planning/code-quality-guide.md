@@ -6,7 +6,7 @@
 
 ## Overview
 
-This guide documents systematic approaches to maintaining and improving code quality in the CallMaster codebase, focusing on DRY (Don't Repeat Yourself) principles, performance optimization, and maintainable architecture patterns.
+This guide documents systematic approaches to maintaining and improving code quality in the Cuebe codebase, focusing on DRY (Don't Repeat Yourself) principles, performance optimization, and maintainable architecture patterns.
 
 ## DRY Principles & Code Deduplication
 

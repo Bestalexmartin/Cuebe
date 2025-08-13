@@ -6,7 +6,7 @@
 
 ## Overview
 
-This document consolidates the foundational architectural principles discovered and refined throughout CallMaster's development. These principles guide decision-making at all levels - from data modeling to user interface design - ensuring consistency, maintainability, and long-term adaptability.
+This document consolidates the foundational architectural principles discovered and refined throughout Cuebe's development. These principles guide decision-making at all levels - from data modeling to user interface design - ensuring consistency, maintainability, and long-term adaptability.
 
 ---
 
@@ -276,7 +276,7 @@ This level of quality is only achieved through:
 - **Collaborative refinement** that combines human judgment with AI implementation speed
 - **Continuous improvement** based on actual usage patterns
 
-#### Examples from CallMaster Development:
+#### Examples from Cuebe Development:
 
 **Component Complexity Cycle**
 1. **Initial**: Large, monolithic components that worked

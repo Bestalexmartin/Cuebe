@@ -1,4 +1,4 @@
-# CallMaster Development Guide
+# Cuebe Development Guide
 
 **Date:** August 2025  
 **Status:** Current  
@@ -20,7 +20,7 @@
 
 ```bash
 git clone <repository>
-cd CallMaster
+cd Cuebe
 
 # Frontend setup
 cd frontend
@@ -41,10 +41,19 @@ cp .env.example .env
 
 3. **Database setup**:
 
+**Option A: Fresh database**
 ```bash
-# Run migrations
+# Run migrations for empty database
 alembic upgrade head
 ```
+
+**Option B: Seed data (Recommended)**
+```bash
+# Restore database with realistic sample data
+cd backend
+./restore_advanced_seed.sh
+```
+> See `/docs/data/database-seed-data-system.md` for complete seed data documentation
 
 4. **Start development servers**:
 

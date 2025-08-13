@@ -46,7 +46,7 @@ The Script Element Grouping feature allows users to organize script elements (cu
 
 ### Architecture
 
-The implementation follows CallMaster's established patterns:
+The implementation follows Cuebe's established patterns:
 - **Edit Queue System**: All group operations are tracked and can be undone/redone
 - **Component Architecture**: Modular design with dedicated hooks and components
 - **Real-Time Updates**: Dynamic calculations with optimized re-rendering
@@ -449,7 +449,7 @@ toggleGroupCollapse('group-parent-id');
 
 ## Conclusion
 
-The Script Element Grouping feature is now **fully implemented and production-ready**. It provides comprehensive group management with intelligent automation, visual organization, and seamless integration with CallMaster's existing systems.
+The Script Element Grouping feature is now **fully implemented and production-ready**. It provides comprehensive group management with intelligent automation, visual organization, and seamless integration with Cuebe's existing systems.
 
 ### Key Achievements
 - ✅ **Complete Feature Implementation**: All planned functionality delivered
@@ -463,7 +463,7 @@ The feature has been thoroughly implemented with:
 - Full TypeScript type safety
 - Comprehensive edge case handling  
 - Integration with existing edit queue system
-- Visual design consistent with CallMaster UI patterns
+- Visual design consistent with Cuebe UI patterns
 - Performance optimizations for real-world usage
 
 **Status**: ✅ Ready for production use  

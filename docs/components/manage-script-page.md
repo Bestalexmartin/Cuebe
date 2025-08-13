@@ -6,7 +6,7 @@
 
 ## Overview
 
-The `ManageScriptPage` is the central component for script management in CallMaster, providing a comprehensive multi-mode interface for viewing, editing, and managing theatrical scripts. Located at `frontend/src/pages/ManageScriptPage.tsx`, it serves as the primary workspace for script operations.
+The `ManageScriptPage` is the central component for script management in Cuebe, providing a comprehensive multi-mode interface for viewing, editing, and managing theatrical scripts. Located at `frontend/src/pages/ManageScriptPage.tsx`, it serves as the primary workspace for script operations.
 
 ## Architecture
 

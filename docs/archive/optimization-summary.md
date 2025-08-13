@@ -1,4 +1,4 @@
-# CallMaster Optimization Summary
+# Cuebe Optimization Summary
 
 **Date:** July 2025  
 **Status:** Current Summary  
@@ -6,7 +6,7 @@
 
 ## Overview
 
-This document summarizes the major code quality, performance, and architectural improvements made to CallMaster, consolidating detailed optimization records into key metrics and principles.
+This document summarizes the major code quality, performance, and architectural improvements made to Cuebe, consolidating detailed optimization records into key metrics and principles.
 
 ## Performance Metrics Achieved
 

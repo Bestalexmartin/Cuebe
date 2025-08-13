@@ -117,7 +117,7 @@ For longer documents (>3 sections), include a table of contents:
 ## Tools and Integration
 
 ### In-App Documentation Browser
-The documentation is integrated into the CallMaster application at `/docs` route:
+The documentation is integrated into the Cuebe application at `/docs` route:
 - Files are organized by category (Quick Start, Architecture, Testing, Archive)
 - Color-coded for easy navigation
 - Mobile-responsive design
@@ -201,7 +201,7 @@ const badData = {
 - **Migration 3845c61a05aa**: Updated existing ENUM values to uppercase format
 - All existing lowercase values were converted to maintain data integrity
 
-This convention should be followed for all new ENUM types and when working with existing ENUM values throughout the CallMaster application.
+This convention should be followed for all new ENUM types and when working with existing ENUM values throughout the Cuebe application.
 
 ---
 
