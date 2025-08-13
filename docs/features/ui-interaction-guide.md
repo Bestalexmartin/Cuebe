@@ -6,7 +6,7 @@
 
 ## Overview
 
-This guide covers best practices for developing interactive user interfaces in CallMaster, focusing on gesture recognition, context-aware controls, accessibility, and consistent user experience patterns.
+This guide covers best practices for developing interactive user interfaces in Cuebe, focusing on gesture recognition, context-aware controls, accessibility, and consistent user experience patterns.
 
 ## Gesture-Based Interaction Systems
 

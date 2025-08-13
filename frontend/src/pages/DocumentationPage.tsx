@@ -42,11 +42,11 @@ interface DocFile {
 
 const DOCUMENTATION_FILES: DocFile[] = [
   {
-    name: 'Development Roadmap',
-    path: 'planning/roadmap.md',
-    description: 'Comprehensive roadmap for script editing, real-time collaboration, and advanced theater production features',
-    category: 'Planning',
-    icon: 'roadmap'
+    name: 'Documentation Index',
+    path: 'quickstart/documentation-index.md',
+    description: 'Complete documentation index with guided navigation and use cases',
+    category: 'Quick Start',
+    icon: 'docs'
   },
   {
     name: 'Development Guide',
@@ -56,11 +56,25 @@ const DOCUMENTATION_FILES: DocFile[] = [
     icon: 'compass'
   },
   {
-    name: 'Code Quality Guide',
-    path: 'development/code-quality-guide.md',
-    description: 'Code quality maintenance, DRY principles, and performance optimization guide',
+    name: 'Database Seed Data System',
+    path: 'data/database-seed-data-system.md',
+    description: 'Complete seed data creation, backup, and restoration system',
     category: 'Quick Start',
-    icon: 'performance'
+    icon: 'component'
+  },
+  {
+    name: 'Testing Tools Guide',
+    path: 'testing/testing-tools-guide.md',
+    description: 'Verify your installation with comprehensive testing suite',
+    category: 'Quick Start',
+    icon: 'test'
+  },
+  {
+    name: 'Development Roadmap',
+    path: 'planning/roadmap.md',
+    description: 'Comprehensive roadmap for script editing, real-time collaboration, and advanced theater production features',
+    category: 'Planning',
+    icon: 'roadmap'
   },
   {
     name: 'UI Interaction Guide',
@@ -84,11 +98,11 @@ const DOCUMENTATION_FILES: DocFile[] = [
     icon: 'planning'
   },
   {
-    name: 'Documentation Overview',
-    path: 'README.md',
-    description: 'Main documentation index and navigation guide',
-    category: 'Quick Start',
-    icon: 'docs'
+    name: 'Code Quality Guide',
+    path: 'development/code-quality-guide.md',
+    description: 'Code quality maintenance, DRY principles, and performance optimization guide',
+    category: 'Planning',
+    icon: 'performance'
   },
   {
     name: 'System Architecture',
@@ -180,13 +194,6 @@ const DOCUMENTATION_FILES: DocFile[] = [
     description: 'Color selection and customization system for script notes',
     category: 'User Interface',
     icon: 'component'
-  },
-  {
-    name: 'Testing Tools Guide',
-    path: 'testing/testing-tools-guide.md',
-    description: 'Comprehensive testing suite documentation and usage',
-    category: 'Testing',
-    icon: 'test'
   },
   {
     name: 'Feature Tutorial',
@@ -418,20 +425,20 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
   // Quick Access items for documentation categories
   const quickAccessItems = [
     {
-      id: 'planning',
-      title: 'Planning',
-      description: 'Project roadmap and documentation standards',
-      icon: 'planning' as const,
-      isDisabled: false,
-      onClick: () => loadCategory('Planning')
-    },
-    {
       id: 'quick-start',
       title: 'Quick Start',
       description: 'Development guide and documentation overview',
       icon: 'compass' as const,
       isDisabled: false,
       onClick: () => loadCategory('Quick Start')
+    },
+    {
+      id: 'planning',
+      title: 'Planning',
+      description: 'Project roadmap and documentation standards',
+      icon: 'planning' as const,
+      isDisabled: false,
+      onClick: () => loadCategory('Planning')
     },
     {
       id: 'tutorial',
@@ -472,14 +479,6 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
       icon: 'component' as const,
       isDisabled: false,
       onClick: () => loadCategory('System Architecture')
-    },
-    {
-      id: 'testing',
-      title: 'Testing',
-      description: 'Testing tools and strategies',
-      icon: 'test' as const,
-      isDisabled: false,
-      onClick: () => loadCategory('Testing')
     },
     {
       id: 'archive',
@@ -543,13 +542,70 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
       {isLoadingDocs ? (
         <Text>Loading documentation...</Text>
       ) : (
-        Object.entries(
-          documentFiles.reduce((groups, doc) => {
+        (() => {
+          // Group documents by category
+          const groupedDocs = documentFiles.reduce((groups, doc) => {
             if (!groups[doc.category]) groups[doc.category] = [];
             groups[doc.category].push(doc);
             return groups;
-          }, {} as Record<string, DocFile[]>)
-      ).map(([category, docs]) => (
+          }, {} as Record<string, DocFile[]>);
+
+          // Sort documents within each category, especially Quick Start
+          Object.keys(groupedDocs).forEach(category => {
+            if (category === 'Quick Start') {
+              // Define the logical order for Quick Start documents
+              const quickStartOrder = [
+                'Cuebe Documentation',
+                'Cuebe Development Guide',
+                'Database Seed Data System',
+                'Testing Tools Guide'
+              ];
+              groupedDocs[category].sort((a, b) => {
+                const aIndex = quickStartOrder.indexOf(a.name);
+                const bIndex = quickStartOrder.indexOf(b.name);
+                if (aIndex === -1 && bIndex === -1) return a.name.localeCompare(b.name);
+                if (aIndex === -1) return 1;
+                if (bIndex === -1) return -1;
+                return aIndex - bIndex;
+              });
+            } else if (category === 'Planning') {
+              // Define logical order for Planning documents
+              const planningOrder = [
+                'Development Roadmap',
+                'Code Quality Guide',
+                'Documentation Standards', 
+                'State Management Principles',
+                'Architectural Principles'
+              ];
+              groupedDocs[category].sort((a, b) => {
+                const aIndex = planningOrder.indexOf(a.name);
+                const bIndex = planningOrder.indexOf(b.name);
+                if (aIndex === -1 && bIndex === -1) return a.name.localeCompare(b.name);
+                if (aIndex === -1) return 1;
+                if (bIndex === -1) return -1;
+                return aIndex - bIndex;
+              });
+            } else {
+              // For other categories, sort alphabetically by name
+              groupedDocs[category].sort((a, b) => a.name.localeCompare(b.name));
+            }
+          });
+
+          // Get category order from quickAccessItems
+          const categoryOrder = quickAccessItems.map(item => item.title);
+          
+          // Sort categories by the quickAccessItems order
+          const sortedEntries = Object.entries(groupedDocs).sort(([categoryA], [categoryB]) => {
+            const indexA = categoryOrder.indexOf(categoryA);
+            const indexB = categoryOrder.indexOf(categoryB);
+            if (indexA === -1 && indexB === -1) return categoryA.localeCompare(categoryB);
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+          });
+
+          return sortedEntries;
+        })().map(([category, docs]) => (
         <Card 
           key={category} 
           size="sm" 
@@ -659,9 +715,48 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
       {/* Scrollable Content */}
       <Box flex={1} overflowY="auto" className="hide-scrollbar">
         <VStack spacing={3} align="stretch">
-          {documentFiles
-            .filter(doc => doc.category === selectedCategory)
-            .map((doc) => (
+          {(() => {
+            // Apply same sorting logic as overview
+            const categoryDocs = documentFiles.filter(doc => doc.category === selectedCategory);
+            
+            if (selectedCategory === 'Quick Start') {
+              const quickStartOrder = [
+                'Cuebe Documentation',
+                'Cuebe Development Guide',
+                'Database Seed Data System',
+                'Testing Tools Guide'
+              ];
+              categoryDocs.sort((a, b) => {
+                const aIndex = quickStartOrder.indexOf(a.name);
+                const bIndex = quickStartOrder.indexOf(b.name);
+                if (aIndex === -1 && bIndex === -1) return a.name.localeCompare(b.name);
+                if (aIndex === -1) return 1;
+                if (bIndex === -1) return -1;
+                return aIndex - bIndex;
+              });
+            } else if (selectedCategory === 'Planning') {
+              const planningOrder = [
+                'Development Roadmap',
+                'Code Quality Guide',
+                'Documentation Standards', 
+                'State Management Principles',
+                'Architectural Principles'
+              ];
+              categoryDocs.sort((a, b) => {
+                const aIndex = planningOrder.indexOf(a.name);
+                const bIndex = planningOrder.indexOf(b.name);
+                if (aIndex === -1 && bIndex === -1) return a.name.localeCompare(b.name);
+                if (aIndex === -1) return 1;
+                if (bIndex === -1) return -1;
+                return aIndex - bIndex;
+              });
+            } else {
+              // For other categories, sort alphabetically by name
+              categoryDocs.sort((a, b) => a.name.localeCompare(b.name));
+            }
+            
+            return categoryDocs;
+          })().map((doc) => (
               <HStack
                 key={doc.name}
                 spacing={3}

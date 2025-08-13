@@ -5,7 +5,7 @@
 **Category:** Architecture & Documentation System
 
 ## Overview
-This document describes the integration of the `/docs` folder documentation into the CallMaster frontend application.
+This document describes the integration of the `/docs` folder documentation into the Cuebe frontend application.
 
 ## What Was Added
 

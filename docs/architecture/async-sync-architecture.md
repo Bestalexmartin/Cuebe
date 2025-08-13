@@ -1,4 +1,4 @@
-# CallMaster Backend: Synchronous/Asynchronous Architecture Decisions
+# Cuebe Backend: Synchronous/Asynchronous Architecture Decisions
 
 **Date:** July 2025  
 **Status:** Implemented  
@@ -6,11 +6,11 @@
 
 ## Overview
 
-This document explains the architectural decision to convert CallMaster's FastAPI backend from asynchronous to synchronous operations, the rationale behind this choice, and the database optimizations implemented.
+This document explains the architectural decision to convert Cuebe's FastAPI backend from asynchronous to synchronous operations, the rationale behind this choice, and the database optimizations implemented.
 
 ## Problem Statement
 
-The CallMaster backend had an **async/sync mismatch** where:
+The Cuebe backend had an **async/sync mismatch** where:
 - All 62 API endpoints were declared as `async def`
 - All database operations used **synchronous** SQLAlchemy ORM (`db.query()`, `db.commit()`, etc.)
 - No endpoints used `await` for database operations
@@ -203,7 +203,7 @@ def create_guest_user_with_relationship(...):
 - True synchronous operations with proper connection pooling
 - Predictable performance characteristics
 - Lower memory overhead per request
-- Better suited to CallMaster's transactional workload
+- Better suited to Cuebe's transactional workload
 
 ## Monitoring & Metrics
 
@@ -260,7 +260,7 @@ The conversion to synchronous operations provides:
 - ✅ **Data Integrity**: ACID transactions for complex operations
 - ✅ **Performance**: Eliminates async/sync mismatch overhead
 - ✅ **Maintainability**: Simpler error handling and debugging
-- ✅ **Scalability**: Appropriate for CallMaster's workload characteristics
+- ✅ **Scalability**: Appropriate for Cuebe's workload characteristics
 - ✅ **Consistency**: Uniform approach across all endpoints
 
-This architectural decision aligns with CallMaster's requirements for data consistency, operational complexity, and development team capabilities while providing a solid foundation for future growth.
+This architectural decision aligns with Cuebe's requirements for data consistency, operational complexity, and development team capabilities while providing a solid foundation for future growth.

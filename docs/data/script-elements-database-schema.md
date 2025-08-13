@@ -1,87 +1,126 @@
 # Script Elements Database Schema & API Design
 
-**Date:** August 2025  
-**Status:** Current  
+**Date:** January 2025  
+**Status:** Current (Updated for Recent Schema Changes)  
 **Category:** Data Architecture & Database Schema
+
+## Recent Schema Updates (January 2025)
+
+### ✅ Schema Cleanup Complete
+- **Removed 12 unused fields** from scriptElementsTable (Migration: 20250108_220000)
+- **Added script_shares table** for secure script sharing (Migration: bb1001)
+- **Streamlined data model** for production use
 
 ## Database Schema Updates
 
-### New Tables Required
+### Current Database Schema
 
-#### 1. `script_elements` Table
+#### 1. `script_shares` Table (Added January 2025)
 ```sql
-CREATE TABLE script_elements (
+CREATE TABLE script_shares (
     -- Primary identification
-    element_id VARCHAR(36) PRIMARY KEY,
-    script_id VARCHAR(36) NOT NULL,
-    type ENUM('cue', 'note', 'group') NOT NULL,
+    share_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    script_id UUID NOT NULL,
+    created_by UUID NOT NULL,
+    shared_with_user_id UUID NOT NULL,
     
-    -- Sequencing and timing
-    sequence INTEGER NOT NULL,
-    offset_ms INTEGER DEFAULT 0, -- milliseconds
-    trigger_type ENUM('manual', 'time', 'auto', 'follow', 'go', 'standby') DEFAULT 'manual',
-    follows_cue_id VARCHAR(36) NULL,
+    -- Security and access
+    share_token VARCHAR(255) UNIQUE NOT NULL,
+    permissions JSON DEFAULT '{"view": true, "download": false}',
+    expires_at TIMESTAMP WITH TIME ZONE NULL, -- null = never expires
+    is_active BOOLEAN NOT NULL DEFAULT true,
     
-    -- Content and identification
-    cue_id VARCHAR(50) NULL, -- LX5, SND12, etc.
-    element_name TEXT NOT NULL,
-    notes TEXT NULL,
+    -- Usage tracking
+    access_count INTEGER NOT NULL DEFAULT 0,
+    last_accessed_at TIMESTAMP WITH TIME ZONE NULL,
+    last_accessed_by_ip VARCHAR(45) NULL, -- IPv6 support
     
-    -- Department and visual
-    department_id VARCHAR(36) NULL,
-    department_color VARCHAR(7) NULL, -- hex color override
-    custom_color VARCHAR(7) NULL, -- for notes
+    -- Management metadata
+    share_name VARCHAR(255) NULL, -- Optional name for management
+    notes TEXT NULL, -- Internal notes about this share
     
-    -- Location and logistics
-    location ENUM('stage_left', 'stage_right', 'center_stage', 'upstage', 'downstage',
-                  'stage_left_up', 'stage_right_up', 'stage_left_down', 'stage_right_down',
-                  'fly_gallery', 'booth', 'house', 'backstage', 'wings_left', 'wings_right',
-                  'grid', 'trap', 'pit', 'lobby', 'dressing_room', 'other') NULL,
-    location_details TEXT NULL,
-    
-    -- Timing and execution
-    duration_ms INTEGER NULL, -- milliseconds
-    fade_in INTEGER NULL, -- milliseconds
-    fade_out INTEGER NULL, -- milliseconds
-    
-    -- Status and management
-    is_active BOOLEAN DEFAULT true,
-    priority ENUM('critical', 'high', 'normal', 'low', 'optional') DEFAULT 'normal',
-    execution_status ENUM('pending', 'ready', 'executing', 'completed', 'skipped', 'failed') DEFAULT 'pending',
-    
-    -- Relationships and grouping (basic parent-child support)
-    parent_element_id VARCHAR(36) NULL,
-    group_level INTEGER DEFAULT 0,
-    is_collapsed BOOLEAN DEFAULT false,
-    
-    -- Safety and conditions
-    is_safety_critical BOOLEAN DEFAULT false,
-    safety_notes TEXT NULL,
-    
-    -- Metadata
-    created_by VARCHAR(36) NOT NULL,
-    updated_by VARCHAR(36) NOT NULL,
-    date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    date_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    version INTEGER DEFAULT 1,
+    -- Timestamps
+    date_created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    date_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
     -- Foreign key constraints
-    FOREIGN KEY (script_id) REFERENCES scripts(script_id) ON DELETE CASCADE,
-    FOREIGN KEY (department_id) REFERENCES departments(department_id) ON DELETE SET NULL,
-    FOREIGN KEY (parent_element_id) REFERENCES script_elements(element_id) ON DELETE CASCADE,
-    FOREIGN KEY (follows_cue_id) REFERENCES script_elements(element_id) ON DELETE SET NULL,
-    FOREIGN KEY (created_by) REFERENCES users(user_id),
-    FOREIGN KEY (updated_by) REFERENCES users(user_id),
+    FOREIGN KEY (script_id) REFERENCES scriptsTable(script_id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES userTable(user_id) ON DELETE RESTRICT,
+    FOREIGN KEY (shared_with_user_id) REFERENCES userTable(user_id) ON DELETE CASCADE,
+    
+    -- Indexes for performance
+    INDEX ix_script_shares_script_id (script_id),
+    INDEX ix_script_shares_share_token (share_token),
+    INDEX ix_script_shares_shared_with_user_id (shared_with_user_id)
+);
+```
+
+#### 2. `scriptElementsTable` (Current Schema)
+```sql
+CREATE TABLE scriptElementsTable (
+    -- Primary identification  
+    element_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    script_id UUID NOT NULL,
+    element_type ENUM('CUE', 'NOTE', 'GROUP') NOT NULL,
+    
+    -- Sequencing and timing
+    sequence INTEGER NULL, -- Order within script
+    offset_ms INTEGER NOT NULL DEFAULT 0, -- milliseconds from script start
+    
+    -- Content and identification
+    element_name TEXT NOT NULL DEFAULT '',
+    cue_notes TEXT NULL, -- Was 'notes', renamed for clarity
+    
+    -- Department and visual
+    department_id UUID NULL,
+    custom_color VARCHAR(7) NULL, -- hex color for notes/elements
+    
+    -- Location details
+    location_details TEXT NULL,
+    
+    -- Timing 
+    duration_ms INTEGER NULL, -- milliseconds
+    
+    -- Priority
+    priority ENUM('SAFETY', 'CRITICAL', 'HIGH', 'NORMAL', 'LOW', 'OPTIONAL') NOT NULL DEFAULT 'NORMAL',
+    
+    -- Relationships and grouping
+    parent_element_id UUID NULL,
+    group_level INTEGER NOT NULL DEFAULT 0,
+    is_collapsed BOOLEAN NOT NULL DEFAULT false,
+    
+    -- Metadata
+    created_by UUID NULL,
+    updated_by UUID NULL,
+    date_created TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    date_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    -- Foreign key constraints
+    FOREIGN KEY (script_id) REFERENCES scriptsTable(script_id) ON DELETE CASCADE,
+    FOREIGN KEY (department_id) REFERENCES departmentsTable(department_id) ON DELETE SET NULL,
+    FOREIGN KEY (parent_element_id) REFERENCES scriptElementsTable(element_id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES userTable(user_id),
+    FOREIGN KEY (updated_by) REFERENCES userTable(user_id),
     
     -- Indexes for performance
     INDEX idx_script_sequence (script_id, sequence),
-    INDEX idx_script_time (script_id, offset_ms),
-    INDEX idx_department (department_id),
-    INDEX idx_parent_element (parent_element_id),
-    INDEX idx_cue_id (cue_id),
-    INDEX idx_type_active (type, is_active)
+    INDEX idx_script_time_ms (script_id, offset_ms),
+    INDEX idx_department_elements (department_id),
+    INDEX idx_parent_element (parent_element_id)
 );
 ```
+
+#### 🗑️ Removed Fields (January 2025 Cleanup)
+The following 12 fields were removed from scriptElementsTable as they were unused:
+- `fade_in`, `fade_out` - No UI or logic implemented
+- `cue_number`, `element_description` - Legacy fields replaced by other fields  
+- `cue_id` - Unused, element_id is used instead
+- `follows_cue_id` - Feature not implemented
+- `location` - Unused, location_details is used instead
+- `department_color` - Unused, custom_color is used instead
+- `version` - Pointless incrementing field
+- `is_active` - Fake soft-delete, scripts are hard-deleted
+- `execution_status`, `trigger_type` - Unimplemented future features
 
 #### Note: Supporting Tables Removed
 The following tables were originally planned but have been removed as unused features:

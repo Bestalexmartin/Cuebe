@@ -8,7 +8,7 @@ The Edit Queue System provides professional non-destructive editing capabilities
 
 ## Overview
 
-The Edit Queue System transforms CallMaster from a real-time editing system to a professional workflow similar to advanced editing software like Photoshop or Premiere Pro. All changes are held in memory until the user explicitly saves, enabling experimentation without fear of data loss.
+The Edit Queue System transforms Cuebe from a real-time editing system to a professional workflow similar to advanced editing software like Photoshop or Premiere Pro. All changes are held in memory until the user explicitly saves, enabling experimentation without fear of data loss.
 
 ## Key Benefits
 
@@ -52,7 +52,14 @@ type EditOperation =
     | CreateElementOperation 
     | DeleteElementOperation 
     | UpdateTimeOffsetOperation
-    | BulkReorderOperation;
+    | BulkReorderOperation
+    | EnableAutoSortOperation
+    | DisableAutoSortOperation
+    | UpdateScriptInfoOperation
+    | UpdateElementOperation
+    | ToggleGroupCollapseOperation
+    | CreateGroupOperation
+    | UngroupElementsOperation;
 ```
 
 #### Operation Types
@@ -80,6 +87,22 @@ type EditOperation =
 **BulkReorderOperation**: Multiple element changes
 - Efficient handling of complex drag operations
 - Batch processing for performance
+
+**UpdateElementOperation**: Multi-field element updates
+- Changes multiple fields in a single operation
+- More efficient than multiple UPDATE_FIELD operations
+
+**ToggleGroupCollapseOperation**: Group visibility changes
+- Expand/collapse script element groups
+- Visual organization of elements
+
+**CreateGroupOperation**: Group creation operations
+- Creates new groups with specified elements
+- Supports custom background colors and names
+
+**UngroupElementsOperation**: Group dissolution operations
+- Removes grouping while preserving individual elements
+- Maintains element sequence and properties
 
 ### 2. Human-Readable Formatters
 

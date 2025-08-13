@@ -1,4 +1,4 @@
-# CallMaster Development Roadmap
+# Cuebe Development Roadmap
 
 **Date:** July 2025  
 **Status:** Current  
@@ -6,11 +6,11 @@
 
 ## Overview
 
-This roadmap outlines the development plan for CallMaster's script editing and management system, designed to provide professional-grade theater production tools with crew assignment and sharing capabilities.
+This roadmap outlines the development plan for Cuebe's script editing and management system, designed to provide professional-grade theater production tools with crew assignment and sharing capabilities.
 
 ## Vision
 
-Transform CallMaster into a comprehensive theater production platform that supports:
+Transform Cuebe into a comprehensive theater production platform that supports:
 
 - **Professional script editing** with high data density and efficient workflows (owner-only editing)
 - **Crew role assignment** with department-specific crew management
@@ -331,7 +331,7 @@ Send Department-Specific Emails → Track Delivery → Monitor Access
 - **Character dialogue detection** and separation
 - **Stage direction identification** and formatting
 - **Cue extraction** from technical documents
-- **Format standardization** to CallMaster schema
+- **Format standardization** to Cuebe schema
 
 #### 6.3 Import Processing Pipeline
 
@@ -474,7 +474,7 @@ interface ImportTask {
 
 ## Theater Industry Impact
 
-This roadmap positions CallMaster as a comprehensive theater production platform that addresses real industry needs:
+This roadmap positions Cuebe as a comprehensive theater production platform that addresses real industry needs:
 
 - **Professional Script Management**: Replaces traditional paper scripts and fragmented digital tools
 - **Crew Organization**: Streamlines crew assignment and role management
@@ -485,7 +485,7 @@ This roadmap positions CallMaster as a comprehensive theater production platform
 
 ---
 
-_This roadmap represents a focused vision for CallMaster's script management capabilities with owner-only editing and secure sharing. Implementation will be iterative, with regular stakeholder feedback and adaptation based on user needs and technical discoveries._
+_This roadmap represents a focused vision for Cuebe's script management capabilities with owner-only editing and secure sharing. Implementation will be iterative, with regular stakeholder feedback and adaptation based on user needs and technical discoveries._
 
 **Last Updated**: January 2025  
 **Version**: 2.0 - Focused on owner-only editing with sharing  

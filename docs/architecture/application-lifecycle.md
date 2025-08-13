@@ -6,7 +6,7 @@
 
 ## Overview
 
-This document outlines the CallMaster application's startup process, data loading sequences, and critical workflow processes including the script saving system. Understanding these processes is essential for performance optimization, debugging loading issues, and maintaining consistent user experience.
+This document outlines the Cuebe application's startup process, data loading sequences, and critical workflow processes including the script saving system. Understanding these processes is essential for performance optimization, debugging loading issues, and maintaining consistent user experience.
 
 ## Application Startup Process
 
@@ -267,4 +267,4 @@ interface SaveState {
 ---
 
 _Last Updated: January 2025_  
-_Status: Current implementation as of CallMaster v2.0_
+_Status: Current implementation as of Cuebe v2.0_

@@ -1,4 +1,4 @@
-# CallMaster Design Insights Archive
+# Cuebe Design Insights Archive
 
 **Date:** July 2025  
 **Status:** Historical Record  
@@ -86,7 +86,7 @@ During the development of the ScriptEditPage, the question arose about implement
 
 ### Conclusion
 
-Script edit history represents a strategic feature that elevates CallMaster from a basic management tool to a professional-grade theater production platform. The implementation should prioritize comprehensive change tracking while maintaining an intuitive user interface through global save functionality and accessible history viewing.
+Script edit history represents a strategic feature that elevates Cuebe from a basic management tool to a professional-grade theater production platform. The implementation should prioritize comprehensive change tracking while maintaining an intuitive user interface through global save functionality and accessible history viewing.
 
 ---
 

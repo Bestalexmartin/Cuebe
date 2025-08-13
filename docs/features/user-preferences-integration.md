@@ -12,7 +12,7 @@ The User Preferences Integration system provides sophisticated preference manage
 
 ### Preference Types
 
-CallMaster manages several categories of user preferences:
+Cuebe manages several categories of user preferences:
 
 #### **Visual Preferences**
 - `colorizeDepNames`: Department name colorization in script elements

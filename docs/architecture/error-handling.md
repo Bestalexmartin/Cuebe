@@ -4,7 +4,7 @@
 **Status:** Implemented  
 **Category:** Architecture & Error Management
 
-The CallMaster application now includes a comprehensive error handling system that provides better user experience, automatic retry capabilities, and robust error recovery mechanisms.
+The Cuebe application now includes a comprehensive error handling system that provides better user experience, automatic retry capabilities, and robust error recovery mechanisms.
 
 ## Components Overview
 

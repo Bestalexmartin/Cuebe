@@ -1,6 +1,6 @@
 # Security Architecture Decisions
 
-This document outlines key security design decisions made during CallMaster development, including the rationale and trade-offs considered.
+This document outlines key security design decisions made during Cuebe development, including the rationale and trade-offs considered.
 
 ## Script Sharing URL Authentication
 
@@ -32,7 +32,7 @@ When sharing scripts with crew members, we need to provide secure, convenient ac
 
 **Structure**: `https://domain.com/shared/{signed-jwt-payload}`
 
-**Example**: `https://callmaster.com/shared/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...`
+**Example**: `https://cuebe.com/shared/eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...`
 
 **Advantages**:
 - No database lookups required (stateless)
@@ -52,7 +52,7 @@ When sharing scripts with crew members, we need to provide secure, convenient ac
 
 **Structure**: `https://domain.com/shared/{opaque-token}`
 
-**Example**: `https://callmaster.com/shared/cm_sh_4K9mP2xR8nQ7vL3w`
+**Example**: `https://cuebe.com/shared/cm_sh_4K9mP2xR8nQ7vL3w`
 
 **Database Schema**:
 ```sql

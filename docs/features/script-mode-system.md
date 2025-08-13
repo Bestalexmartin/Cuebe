@@ -6,7 +6,7 @@
 
 ## Overview
 
-The Script Mode System is the core interface paradigm for CallMaster's script management functionality. It provides 6 specialized modes, each optimized for specific tasks and user workflows. The system is implemented in the ManageScriptPage component and provides seamless transitions between different operational contexts.
+The Script Mode System is the core interface paradigm for Cuebe's script management functionality. It provides 6 specialized modes, each optimized for specific tasks and user workflows. The system is implemented in the ManageScriptPage component and provides seamless transitions between different operational contexts.
 
 ## Architecture
 

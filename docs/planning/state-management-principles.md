@@ -6,7 +6,7 @@
 
 ## Core Philosophy
 
-State management in CallMaster follows user-centered design principles that respect natural interaction patterns and minimize unnecessary friction between user intent and system response.
+State management in Cuebe follows user-centered design principles that respect natural interaction patterns and minimize unnecessary friction between user intent and system response.
 
 ### Learning Through Play
 

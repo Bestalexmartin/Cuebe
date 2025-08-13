@@ -1,20 +1,26 @@
 # System Architecture
 
-**Date:** August 2025  
-**Status:** Current  
+**Date:** January 2025  
+**Status:** Current (Updated for Recent Features)  
 **Category:** Architecture & Infrastructure
 
 ## Overview
 
-CallMaster is built on a containerized microservices architecture using Docker Compose, designed for scalability, maintainability, and deployment flexibility. This document covers the infrastructure layer that supports the application components.
+Cuebe is built on a containerized microservices architecture using Docker Compose, designed for scalability, maintainability, and deployment flexibility. This document covers the infrastructure layer that supports the application components.
 
 ## Architecture Diagram
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │    Backend      │    │   Database      │
-│   (React/Vite)  │◄──►│   (FastAPI)     │◄──►│  (PostgreSQL)   │
+│   (React/Vite)  │◄──►│   (FastAPI)     │◄──►│ (PostgreSQL)    │
 │   Port: 5173    │    │   Port: 8000    │    │   Port: 5432    │
+│                 │    │                 │    │                 │
+│ • Feature-based │    │ • REST API      │    │ • Script Shares │
+│   Architecture  │    │ • Router-based  │    │ • Edit Queue    │
+│ • Edit Queue    │    │ • Pydantic      │    │ • Alembic       │
+│ • Modal System  │    │ • SQLAlchemy    │    │ • Relationships │
+│ • React.memo    │    │ • Clerk Auth    │    │ • Constraints   │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          │                       │                       │
@@ -33,6 +39,15 @@ CallMaster is built on a containerized microservices architecture using Docker C
                     │ Optional Service│
                     └─────────────────┘
 ```
+
+## Recent Architecture Updates (January 2025)
+
+### ✅ New Features Integrated
+- **Script Sharing System**: Token-based secure sharing with audit trails
+- **Edit Queue System**: Non-destructive editing with undo/redo capabilities
+- **User Permission Model**: Manager-crew relationships with granular access control
+- **Mobile Interface**: Responsive design with mobile-specific components
+- **Feature-Based Frontend**: Organized by business domains for better maintainability
 
 ## Container Architecture
 
@@ -239,9 +254,9 @@ services:
 
 ```bash
 # Database Configuration
-POSTGRES_USER=callmaster_user
+POSTGRES_USER=cuebe_user
 POSTGRES_PASSWORD=secure_password
-POSTGRES_DB=callmaster_db
+POSTGRES_DB=cuebe_db
 
 # API Keys
 CLERK_SECRET_KEY=your_clerk_secret
@@ -336,7 +351,7 @@ if not str(requested_file.resolve()).startswith(str(docs_dir.resolve())):
 # SQLAlchemy connection with environment-based configuration
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://user:password@localhost:5432/callmaster"
+    "postgresql://user:password@localhost:5432/cuebe"
 )
 ```
 
@@ -513,6 +528,219 @@ docker-compose exec backend ls -la /app
 lsof -i :8000
 lsof -i :5173
 lsof -i :5432
+```
+
+## Advanced Feature Architecture
+
+### 1. Script Sharing System
+
+#### Token-Based Security
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Share Token   │    │   Validation    │    │   Content       │
+│   Generation    │───►│   & Access      │───►│   Filtering     │
+│                 │    │   Control       │    │                 │
+│ • Secure tokens │    │ • Permission    │    │ • Department    │
+│ • Expiration    │    │   checking      │    │   filtering     │
+│ • User linking  │    │ • Audit logging │    │ • Element types │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+#### Implementation Pattern
+```python
+# Public endpoint (no auth required)
+@app.get("/api/public/shared-scripts/{share_token}")
+async def access_shared_script(share_token: str):
+    # Validate token and permissions
+    # Return filtered script content
+    
+# Private management endpoint (auth required)
+@app.post("/api/scripts/{script_id}/shares")
+async def create_script_share(user: User = Depends(get_current_user)):
+    # Create secure share with permissions
+```
+
+### 2. Edit Queue System
+
+#### State Management Architecture
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Server State   │    │   Edit Queue    │    │  Current View   │
+│                 │    │                 │    │                 │
+│ • Database      │───►│ • Operations    │───►│ • Computed      │
+│   Elements      │    │   Queue         │    │   State         │
+│ • Authoritative │    │ • Undo/Redo     │    │ • UI Display    │
+│   Source        │    │ • Local Changes │    │ • User Input    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+#### Operation Flow
+```
+User Action → Edit Operation → Queue Storage → UI Update
+                    ↓
+              Batch Save → Server Update → Queue Clear
+```
+
+### 3. User Permission System
+
+#### Relationship-Based Access
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│     Owner       │    │     Manager     │    │  Crew Member    │
+│                 │    │                 │    │                 │
+│ • Full Access   │───►│ • Delegated     │───►│ • Limited       │
+│ • Resource      │    │   Management    │    │   Access        │
+│   Creation      │    │ • Crew Access   │    │ • Read-Only     │
+│ • Sharing       │    │ • Relationship  │    │ • Shared        │
+│   Control       │    │   Control       │    │   Content       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+#### Access Validation Pattern
+```python
+def verify_access(user: User, resource: Any, permission: str = "read"):
+    # Check ownership
+    if resource.owner_id == user.user_id:
+        return True
+    
+    # Check crew relationship for read access
+    if permission == "read":
+        return has_crew_relationship(resource.owner_id, user.user_id)
+    
+    # Write permissions require ownership
+    return False
+```
+
+### 4. Mobile Interface Architecture
+
+#### Responsive Component Strategy
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Desktop UI    │    │  Breakpoint     │    │   Mobile UI     │
+│                 │    │   Detection     │    │                 │
+│ • Full Layout   │───►│                 │───►│ • Drawer-based  │
+│ • Side Panels   │    │ • Screen Size   │    │ • Touch-first   │
+│ • Multi-column  │    │ • Touch Events  │    │ • Simplified    │
+│ • Hover States  │    │ • Capability    │    │ • Gestures      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+#### Mobile-Specific Components
+```typescript
+// Adaptive rendering based on screen size
+const ScriptInterface = () => {
+    const isMobile = useScreenSize() === 'mobile';
+    
+    return isMobile ? 
+        <MobileScriptDrawer /> : 
+        <DesktopScriptView />;
+};
+```
+
+## Performance Architecture
+
+### 1. Frontend Optimization
+
+#### React.memo Strategy
+```typescript
+// Performance-optimized component memoization
+const ScriptElementCard = React.memo((props) => {
+    // Component implementation
+}, (prevProps, nextProps) => {
+    // Custom comparison for complex data
+    return isEqual(prevProps.element, nextProps.element);
+});
+```
+
+#### Render Optimization
+- **Component Memoization**: React.memo for expensive components
+- **Hook Optimization**: useMemo/useCallback for stable references
+- **Conditional Rendering**: Only render active mode components
+- **List Virtualization**: For large element lists (future enhancement)
+
+### 2. Backend Performance
+
+#### Database Optimization
+```sql
+-- Strategic indexing for performance
+CREATE INDEX idx_script_elements_time_ms ON scriptElementsTable(script_id, offset_ms);
+CREATE INDEX idx_script_shares_token ON script_shares(share_token);
+CREATE INDEX idx_crew_relationships_active ON crewRelationshipsTable(manager_user_id, is_active);
+```
+
+#### Query Optimization
+- **Relationship Filtering**: All queries filter by user relationships
+- **Selective Loading**: Only load necessary data for each endpoint
+- **Batch Operations**: Efficient bulk updates for edit queue
+- **Connection Pooling**: PostgreSQL connection management
+
+### 3. Caching Strategy
+
+#### Current Implementation
+```python
+# Documentation caching pattern
+@lru_cache(maxsize=100)
+def get_documentation_content(file_path: str) -> str:
+    return read_markdown_file(file_path)
+```
+
+#### Planned Enhancements
+- **Redis Integration**: Session and API response caching
+- **Client-Side Caching**: React Query for server state management
+- **Static Asset Caching**: CDN for frontend assets
+- **Database Query Caching**: Frequently accessed data
+
+## Security Architecture
+
+### 1. Authentication Flow
+
+#### Clerk Integration
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │     Clerk       │    │    Backend      │
+│                 │    │                 │    │                 │
+│ • Login UI      │───►│ • JWT Creation  │───►│ • Token         │
+│ • Token Storage │◄───│ • User Management│    │   Validation    │
+│ • Auto Refresh  │    │ • Session       │    │ • User Lookup   │
+│                 │    │   Management    │    │ • Permissions   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+#### JWT Validation Pattern
+```python
+async def get_current_user(authorization: str = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401)
+    
+    token = authorization.split(" ")[1]
+    # Validate with Clerk
+    clerk_user = validate_clerk_token(token)
+    # Return local user data
+```
+
+### 2. Authorization Layers
+
+#### Multi-Level Security
+```
+1. Authentication: Valid JWT required
+2. User Lookup: Map Clerk ID to local user
+3. Resource Access: Verify ownership or relationships
+4. Permission Check: Validate specific action permissions
+5. Data Filtering: Return only authorized content
+```
+
+#### Resource Protection
+```python
+# Standard resource protection pattern
+@router.get("/api/scripts/{script_id}")
+async def get_script(script_id: UUID, user: User = Depends(get_current_user)):
+    script = db.query(Script).filter(Script.script_id == script_id).first()
+    if not script:
+        raise HTTPException(status_code=404)
+    
+    # Verify access through ownership or crew relationship
+    verify_script_access(user, script, db)
+    return script
 ```
 
 ## Future Architecture Enhancements

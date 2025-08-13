@@ -1,4 +1,4 @@
-# CallMaster User Guide
+# Cuebe User Guide
 
 **Date:** July 2025  
 **Status:** Implemented  
@@ -6,13 +6,13 @@
 
 ## Overview
 
-This comprehensive guide covers all essential features of CallMaster's theater production management platform. Designed for stage managers, directors, and technical crews, this tutorial provides step-by-step instructions for managing professional theater productions from pre-production through closing night.
+This comprehensive guide covers all essential features of Cuebe's theater production management platform. Designed for stage managers, directors, and technical crews, this tutorial provides step-by-step instructions for managing professional theater productions from pre-production through closing night.
 
 ## Getting Started
 
 ### Account Setup and Security
 
-CallMaster provides enterprise-grade security with instant access:
+Cuebe provides enterprise-grade security with instant access:
 
 - **Navigate to** `/sign-up` for secure account creation
 - **Complete registration** with our bank-level encrypted authentication system
@@ -27,7 +27,7 @@ CallMaster provides enterprise-grade security with instant access:
 
 ### User Role Optimization
 
-CallMaster adapts to different theater professional workflows:
+Cuebe adapts to different theater professional workflows:
 
 #### Stage Managers
 - **Cue sequence management** with millisecond precision timing
@@ -62,7 +62,7 @@ CallMaster adapts to different theater professional workflows:
 
 ### Command Center Architecture
 
-The CallMaster dashboard functions as a professional theater's technical booth - providing immediate access to all production tools with logical organization for high-pressure operational environments.
+The Cuebe dashboard functions as a professional theater's technical booth - providing immediate access to all production tools with logical organization for high-pressure operational environments.
 
 ### Quick Access Panel Systems
 
@@ -129,7 +129,7 @@ The CallMaster dashboard functions as a professional theater's technical booth -
 
 ### Show Lifecycle Architecture
 
-CallMaster recognizes distinct production phases with specialized tool requirements:
+Cuebe recognizes distinct production phases with specialized tool requirements:
 
 #### Pre-Production Phase
 **Core Activities:**
@@ -325,7 +325,7 @@ Communication Hub:
 
 ### Script Architecture Philosophy
 
-Theater scripts in CallMaster are designed as comprehensive production documents that serve multiple specialized functions:
+Theater scripts in Cuebe are designed as comprehensive production documents that serve multiple specialized functions:
 
 - **Dynamic collaboration tools** requiring real-time multi-user editing capabilities
 - **Precision timing instruments** demanding millisecond accuracy for live performance
@@ -738,14 +738,14 @@ Power Failure Protocol Management:
 - [ ] **Multi-venue optimization** for theater companies and touring production efficiency
 - [ ] **Industry networking leverage** for professional advancement and opportunity development
 - [ ] **Training program establishment** for organizational skill development and growth
-- [ ] **Workflow innovation contribution** to CallMaster feature development and enhancement
+- [ ] **Workflow innovation contribution** to Cuebe feature development and enhancement
 - [ ] **Community leadership participation** in user forums and professional support
-- [ ] **Professional certification achievement** in advanced CallMaster capabilities
+- [ ] **Professional certification achievement** in advanced Cuebe capabilities
 - [ ] **Mentorship program development** for professional knowledge transfer and career guidance
 
 ---
 
-This comprehensive guide provides theater professionals with complete CallMaster mastery for production management excellence. Regular reference and practical application will develop expertise in professional theater production coordination.
+This comprehensive guide provides theater professionals with complete Cuebe mastery for production management excellence. Regular reference and practical application will develop expertise in professional theater production coordination.
 
 **Documentation Version:** 2.0  
 **Last Updated:** July 2025  

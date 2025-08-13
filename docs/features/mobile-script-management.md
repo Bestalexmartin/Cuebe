@@ -6,13 +6,13 @@
 
 ## Overview
 
-CallMaster provides comprehensive mobile support for script management through responsive design patterns, touch-optimized interactions, and mobile-specific components. The mobile experience maintains full functionality while adapting to smaller screens and touch interfaces.
+Cuebe provides comprehensive mobile support for script management through responsive design patterns, touch-optimized interactions, and mobile-specific components. The mobile experience maintains full functionality while adapting to smaller screens and touch interfaces.
 
 ## Architecture
 
 ### Responsive Design Strategy
 
-CallMaster uses Chakra UI's responsive breakpoint system with a mobile-first approach:
+Cuebe uses Chakra UI's responsive breakpoint system with a mobile-first approach:
 
 ```typescript
 // Primary breakpoint for mobile/desktop distinction

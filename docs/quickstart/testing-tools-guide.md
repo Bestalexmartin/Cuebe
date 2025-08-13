@@ -6,7 +6,7 @@
 
 ## Overview
 
-CallMaster includes a comprehensive built-in testing suite accessible through the Options menu. This testing infrastructure provides 8 specialized tools for validating different layers of the application, from environment setup to database performance.
+Cuebe includes a comprehensive built-in testing suite accessible through the Options menu. This testing infrastructure provides 8 specialized tools for validating different layers of the application, from environment setup to database performance.
 
 ## Quick Access
 
@@ -18,7 +18,7 @@ CallMaster includes a comprehensive built-in testing suite accessible through th
 
 ## Testing Tools Overview
 
-The testing suite includes 8 comprehensive tools designed to validate all aspects of the CallMaster application:
+The testing suite includes 8 comprehensive tools designed to validate all aspects of the Cuebe application:
 
 ### 1. **Environment Testing** 🟣
 - **Badge**: `ENVIRONMENT`
