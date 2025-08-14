@@ -29,7 +29,7 @@ export interface BaseModalAction {
 }
 
 export interface BaseModalProps extends Omit<ModalContentProps, 'children'> {
-  title: string;
+  title?: string;
   isOpen: boolean;
   onClose: () => void;
   onCloseComplete?: () => void;
@@ -37,6 +37,7 @@ export interface BaseModalProps extends Omit<ModalContentProps, 'children'> {
   // Header customization
   headerIcon?: IconName;
   headerIconColor?: string;
+  showHeader?: boolean;
 
   // Content
   children: React.ReactNode;
@@ -58,7 +59,14 @@ export interface BaseModalProps extends Omit<ModalContentProps, 'children'> {
 
   // UI Options
   showCloseButton?: boolean;
+  showFooter?: boolean;
   rightAlignActions?: boolean;
+  
+  // Modal behavior
+  closeOnOverlayClick?: boolean;
+  closeOnEsc?: boolean;
+  isCentered?: boolean;
+  size?: string;
 }
 
 const BaseModalComponent: React.FC<BaseModalProps> = ({
@@ -68,6 +76,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
   onCloseComplete,
   headerIcon,
   headerIconColor,
+  showHeader = true,
   children,
   onSubmit,
   primaryAction,
@@ -77,7 +86,12 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
   showValidationErrors = true,
   errorBoundaryContext,
   showCloseButton = false,
+  showFooter = true,
   rightAlignActions = true,
+  closeOnOverlayClick = true,
+  closeOnEsc = true,
+  isCentered = false,
+  size,
   ...modalContentProps
 }) => {
   const getButtonVariant = (variant: BaseModalAction['variant'] = 'secondary') => {
@@ -93,6 +107,11 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
           bg: 'red.500',
           color: 'white',
           _hover: { bg: 'red.600' }
+        };
+      case 'outline':
+        return {
+          variant: 'outline',
+          _hover: { bg: 'card.background' }
         };
       case 'secondary':
       default:
@@ -178,6 +197,10 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       onCloseComplete={onCloseComplete}
+      closeOnOverlayClick={closeOnOverlayClick}
+      closeOnEsc={closeOnEsc}
+      isCentered={isCentered}
+      size={size}
     >
       <ModalOverlay />
       <ModalContent
@@ -188,25 +211,29 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
         borderColor="gray.600"
         {...modalContentProps}
       >
-        <ModalHeader>
-          {headerIcon ? (
-            <HStack spacing={3}>
-              <AppIcon name={headerIcon} boxSize="20px" color={headerIconColor} />
-              <Text>{title}</Text>
-            </HStack>
-          ) : (
-            title
-          )}
-        </ModalHeader>
+        {showHeader && (
+          <ModalHeader>
+            {headerIcon && title ? (
+              <HStack spacing={3}>
+                <AppIcon name={headerIcon} boxSize="20px" color={headerIconColor} />
+                <Text>{title}</Text>
+              </HStack>
+            ) : (
+              title
+            )}
+          </ModalHeader>
+        )}
         {showCloseButton && <ModalCloseButton />}
 
-        <ModalBody pb={6}>
+        <ModalBody pb={showFooter ? 6 : 4}>
           {children}
         </ModalBody>
 
-        <ModalFooter justifyContent={rightAlignActions === false ? "flex-start" : "flex-end"}>
-          {renderActions()}
-        </ModalFooter>
+        {showFooter && (
+          <ModalFooter justifyContent={rightAlignActions === false ? "flex-start" : "flex-end"}>
+            {renderActions()}
+          </ModalFooter>
+        )}
 
         {/* Validation Errors */}
         <ValidationErrors
@@ -231,7 +258,17 @@ const areModalPropsEqual = (prevProps: BaseModalProps, nextProps: BaseModalProps
     prevProps.title !== nextProps.title ||
     prevProps.isOpen !== nextProps.isOpen ||
     prevProps.showValidationErrors !== nextProps.showValidationErrors ||
-    prevProps.errorBoundaryContext !== nextProps.errorBoundaryContext
+    prevProps.errorBoundaryContext !== nextProps.errorBoundaryContext ||
+    prevProps.showHeader !== nextProps.showHeader ||
+    prevProps.showFooter !== nextProps.showFooter ||
+    prevProps.showCloseButton !== nextProps.showCloseButton ||
+    prevProps.rightAlignActions !== nextProps.rightAlignActions ||
+    prevProps.closeOnOverlayClick !== nextProps.closeOnOverlayClick ||
+    prevProps.closeOnEsc !== nextProps.closeOnEsc ||
+    prevProps.isCentered !== nextProps.isCentered ||
+    prevProps.size !== nextProps.size ||
+    prevProps.headerIcon !== nextProps.headerIcon ||
+    prevProps.headerIconColor !== nextProps.headerIconColor
   ) {
     return false;
   }

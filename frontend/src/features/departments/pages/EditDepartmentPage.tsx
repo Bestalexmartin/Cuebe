@@ -10,7 +10,7 @@ import { formatDateTimeLocal } from '../../../utils/dateTimeUtils';
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useDepartment } from "../hooks/useDepartment";
-import { formatRole } from '../../../constants/userRoles';
+import { formatRole, formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
 import { useValidatedForm } from '../../../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../../../types/validation';
 import { BaseEditPage } from '../../../components/base/BaseEditPage';
@@ -490,36 +490,33 @@ export const EditDepartmentPage: React.FC = () => {
                                                         overflow="hidden"
                                                         minWidth={0}
                                                     >
-                                                        {/* Crew Profile Icon */}
-                                                        <Avatar
-                                                            size="sm"
-                                                            name={crewName}
-                                                            src={assignment.profile_img_url}
-                                                        />
-
-                                                        {/* Crew Name */}
-                                                        <Text
-                                                            fontSize="sm"
-                                                            fontWeight="medium"
-                                                            color="blue.500"
-                                                            _dark={{ color: "blue.300" }}
-                                                            minWidth={{ md: "120px", lg: "160px" }}
-                                                            maxWidth={{ md: "120px", lg: "160px" }}
-                                                            isTruncated
-                                                        >
-                                                            {crewName}
-                                                        </Text>
+                                                        {/* Crew Profile Icon + Name */}
+                                                        <Box flex={1} display="flex" alignItems="center" gap={2}>
+                                                            <Avatar
+                                                                size="sm"
+                                                                name={crewName}
+                                                                src={assignment.profile_img_url}
+                                                                flexShrink={0}
+                                                            />
+                                                            <Text
+                                                                fontSize="sm"
+                                                                fontWeight="medium"
+                                                                color="blue.500"
+                                                                _dark={{ color: "blue.300" }}
+                                                                isTruncated
+                                                            >
+                                                                {crewName}
+                                                            </Text>
+                                                        </Box>
 
                                                         {/* Email Address */}
                                                         <Text 
                                                             fontSize="sm" 
                                                             color="gray.700" 
                                                             _dark={{ color: "gray.300" }} 
-                                                            minWidth={{ md: "140px", lg: "180px" }}
-                                                            maxWidth={{ md: "140px", lg: "180px" }}
                                                             display={{ base: "none", md: "block" }}
+                                                            flex={1}
                                                             isTruncated
-                                                            flexShrink={2}
                                                         >
                                                             {assignment.email_address || ''}
                                                         </Text>
@@ -529,28 +526,37 @@ export const EditDepartmentPage: React.FC = () => {
                                                             fontSize="sm" 
                                                             color="gray.700" 
                                                             _dark={{ color: "gray.300" }} 
-                                                            minWidth={{ md: "110px", lg: "110px", xl: "140px" }}
-                                                            maxWidth={{ md: "110px", lg: "110px", xl: "140px" }}
                                                             display={{ base: "none", md: "block" }}
+                                                            flex={1}
                                                             isTruncated
-                                                            flexShrink={2}
                                                         >
                                                             {assignment.phone_number || 'No phone'}
                                                         </Text>
 
-                                                        {/* Show Name - Expanding field */}
+                                                        {/* Show Name */}
                                                         <Text 
                                                             fontSize="sm" 
                                                             display={{ base: "none", xl: "block" }}
                                                             flex={1}
                                                             isTruncated
-                                                            ml={4}
-                                                            mr={4}
                                                         >
                                                             <Text as="span" fontWeight="medium">Show:</Text>
                                                             <Text as="span" color="gray.700" _dark={{ color: "gray.300" }} ml="5px">
                                                                 {assignment.show_name}
                                                             </Text>
+                                                        </Text>
+
+                                                        {/* URL Suffix - Last 12 characters of share URL with LinkID prefix */}
+                                                        <Text 
+                                                            fontSize="sm" 
+                                                            color="gray.700" 
+                                                            _dark={{ color: "gray.300" }} 
+                                                            display={{ base: "none", lg: "block" }}
+                                                            flex={1}
+                                                            isTruncated
+                                                            fontFamily="monospace"
+                                                        >
+                                                            {getShareUrlSuffix(assignment.show_id, assignment.user_id)}
                                                         </Text>
 
                                                         {/* Role Badge - Aligned to right edge */}
@@ -569,7 +575,7 @@ export const EditDepartmentPage: React.FC = () => {
                                                                     maxWidth="100%"
                                                                     isTruncated
                                                                 >
-                                                                    {formatRole(assignment.role)}
+                                                                    {formatRoleBadge(assignment.role)}
                                                                 </Badge>
                                                             )}
                                                         </Box>
@@ -602,7 +608,7 @@ export const EditDepartmentPage: React.FC = () => {
 
                                                             {assignment.role && (
                                                                 <Badge colorScheme="blue" variant="outline" size="sm">
-                                                                    {formatRole(assignment.role)}
+                                                                    {formatRoleBadge(assignment.role)}
                                                                 </Badge>
                                                             )}
                                                         </HStack>
@@ -624,6 +630,9 @@ export const EditDepartmentPage: React.FC = () => {
                                                                         {assignment.phone_number}
                                                                     </Text>
                                                                 )}
+                                                                <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }} fontFamily="monospace">
+                                                                    {getShareUrlSuffix(assignment.show_id, assignment.user_id)}
+                                                                </Text>
                                                             </VStack>
                                                         </HStack>
                                                     </VStack>

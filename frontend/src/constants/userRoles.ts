@@ -8,40 +8,56 @@ export interface UserRoleOption {
 // User role options sorted by typical theatre hierarchy and pay rates (highest to lowest)
 export const USER_ROLE_OPTIONS: UserRoleOption[] = [
   // Executive/Creative Leadership (Highest tier)
-  { value: 'director', label: 'Director' },
-  { value: 'producer', label: 'Producer' },
-  { value: 'music_director', label: 'Music Director' },
-  { value: 'choreographer', label: 'Choreographer' },
+  { value: 'DIRECTOR', label: 'Director' },
+  { value: 'PRODUCER', label: 'Producer' },
   
   // Department Heads/Designers (Upper management tier)
-  { value: 'stage_manager', label: 'Stage Manager' },
-  { value: 'technical_director', label: 'Technical Director' },
-  { value: 'lighting_designer', label: 'Lighting Designer' },
-  { value: 'sound_designer', label: 'Sound Designer' },
-  { value: 'set_designer', label: 'Set Designer' },
-  { value: 'costume_designer', label: 'Costume Designer' },
+  { value: 'STAGE_MANAGER', label: 'Stage Manager' },
+  { value: 'TECHNICAL_DIRECTOR', label: 'Technical Director' },
+  { value: 'LIGHTING_DESIGNER', label: 'Lighting Designer' },
+  { value: 'SOUND_DESIGNER', label: 'Sound Designer' },
   
   // Assistant Management (Mid-tier)
-  { value: 'assistant_director', label: 'Assistant Director' },
-  { value: 'assistant_stage_manager', label: 'Assistant Stage Manager' },
-  { value: 'props_master', label: 'Props Master' },
+  { value: 'ASSISTANT_DIRECTOR', label: 'Assistant Director' },
+  { value: 'ASSISTANT_STAGE_MANAGER', label: 'Assistant Stage Manager' },
+  { value: 'PROPS_MASTER', label: 'Props Master' },
   
-  // Specialized Crew (Mid-tier)
-  { value: 'electrician', label: 'Electrician' },
-  { value: 'sound_technician', label: 'Sound Technician' },
-  { value: 'makeup_artist', label: 'Makeup Artist' },
-  { value: 'hair_stylist', label: 'Hair Stylist' },
-  { value: 'wardrobe', label: 'Wardrobe' },
+  // Lead Technical Roles (Mid-tier)
+  { value: 'LEAD_AUDIO', label: 'Lead Audio' },
+  { value: 'LEAD_VIDEO', label: 'Lead Video' },
+  
+  // Specialized Crew (Technical)
+  { value: 'ELECTRICIAN', label: 'Electrician' },
+  { value: 'SOUND_TECHNICIAN', label: 'Sound Technician' },
+  { value: 'PROJECTIONIST', label: 'Projectionist' },
+  { value: 'RECORDIST', label: 'Recordist' },
+  { value: 'GRAPHICS', label: 'Graphics' },
+  { value: 'FLY_OPERATOR', label: 'Fly Operator' },
+  { value: 'CARPENTER', label: 'Carpenter' },
   
   // General Crew (Entry level)
-  { value: 'crew', label: 'Crew' },
+  { value: 'CREW', label: 'Crew' },
   
   // Catch-all
-  { value: 'other', label: 'Other' }
+  { value: 'OTHER', label: 'Other' }
 ];
 
 // Helper function to format role values to display labels
 export const formatRole = (roleValue: string): string => {
   const roleOption = USER_ROLE_OPTIONS.find(option => option.value === roleValue);
   return roleOption ? roleOption.label : roleValue;
+};
+
+// Helper function to format role values for badges (ALL CAPS with spaces)
+export const formatRoleBadge = (roleValue: string): string => {
+  // Convert UPPERCASE enum values to ALL CAPS with spaces for badge display
+  return roleValue.replace(/_/g, ' ');
+};
+
+// Helper function to generate sharing URL suffix (last 12 characters of dynamic portion)
+export const getShareUrlSuffix = (showId: string, userId: string): string => {
+  // Create the dynamic portion: showId/userId
+  const dynamicPortion = `${showId}/${userId}`;
+  // Return last 12 characters with prefix
+  return `LinkID: ${dynamicPortion.slice(-12)}`;
 };

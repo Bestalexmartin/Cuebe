@@ -20,7 +20,7 @@ import { AssignCrewModal } from './modals/AssignCrewModal';
 import { CrewBioModal } from './modals/CrewBioModal';
 import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfirmationModal';
 import { useEnhancedToast } from '../../../utils/toastUtils';
-import { formatRole } from '../../../constants/userRoles';
+import { formatRole, formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
 
 interface CrewAssignmentSectionProps {
   showId: string;
@@ -244,62 +244,58 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                     <Text 
                       fontSize="sm" 
                       fontWeight="medium" 
-                      minWidth={{ md: "90px", lg: "120px" }}
-                      maxWidth={{ md: "90px", lg: "120px" }}
+                      flex={1}
                       isTruncated
                     >
                       {department?.department_name || 'Unknown Dept'}
                     </Text>
 
-                    {/* Crew Profile Icon - clickable for bio */}
-                    <Avatar
-                      size="sm"
-                      name={crewName}
-                      src={crewMember?.profile_img_url}
-                      cursor="pointer"
-                      _hover={{ 
-                        transform: "scale(1.05)",
-                        transition: "transform 0.2s"
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (crewMember) {
-                          handleCrewBioClick(crewMember);
-                        }
-                      }}
-                    />
-
-                    {/* Crew Name - clickable for bio */}
-                    <Text
-                      fontSize="sm"
-                      fontWeight="medium"
-                      cursor="pointer"
-                      color="blue.500"
-                      _dark={{ color: "blue.300" }}
-                      _hover={{ textDecoration: "underline" }}
-                      minWidth={{ md: "120px", lg: "160px" }}
-                      maxWidth={{ md: "120px", lg: "160px" }}
-                      isTruncated
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (crewMember) {
-                          handleCrewBioClick(crewMember);
-                        }
-                      }}
-                    >
-                      {crewName}
-                    </Text>
+                    {/* Crew Profile Icon + Name - clickable for bio */}
+                    <Box flex={1} display="flex" alignItems="center" gap={2}>
+                      <Avatar
+                        size="sm"
+                        name={crewName}
+                        src={crewMember?.profile_img_url}
+                        cursor="pointer"
+                        _hover={{ 
+                          transform: "scale(1.05)",
+                          transition: "transform 0.2s"
+                        }}
+                        flexShrink={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (crewMember) {
+                            handleCrewBioClick(crewMember);
+                          }
+                        }}
+                      />
+                      <Text
+                        fontSize="sm"
+                        fontWeight="medium"
+                        cursor="pointer"
+                        color="blue.500"
+                        _dark={{ color: "blue.300" }}
+                        _hover={{ textDecoration: "underline" }}
+                        isTruncated
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (crewMember) {
+                            handleCrewBioClick(crewMember);
+                          }
+                        }}
+                      >
+                        {crewName}
+                      </Text>
+                    </Box>
 
                     {/* Email Address - Hide on small screens (md+ only) */}
                     <Text 
                       fontSize="sm" 
                       color="gray.700" 
                       _dark={{ color: "gray.300" }} 
-                      minWidth={{ md: "140px", lg: "180px" }}
-                      maxWidth={{ md: "140px", lg: "180px" }}
                       display={{ base: "none", md: "block" }}
+                      flex={1}
                       isTruncated
-                      flexShrink={2}
                     >
                       {crewMember?.email_address || ''}
                     </Text>
@@ -309,17 +305,27 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                       fontSize="sm" 
                       color="gray.700" 
                       _dark={{ color: "gray.300" }} 
-                      minWidth={{ lg: "110px", xl: "140px" }}
-                      maxWidth={{ lg: "110px", xl: "140px" }}
                       display={{ base: "none", lg: "block" }}
+                      flex={1}
                       isTruncated
-                      flexShrink={2}
                     >
                       {crewMember?.phone_number || ''}
                     </Text>
 
-                    {/* Spacer - Expand to fill remaining space before badge */}
-                    <Box flex={1} />
+                    {/* URL Suffix - Last 12 characters of share URL with LinkID prefix */}
+                    {crewMember && (
+                      <Text 
+                        fontSize="sm" 
+                        color="gray.700" 
+                        _dark={{ color: "gray.300" }} 
+                        display={{ base: "none", lg: "block" }}
+                        flex={1}
+                        isTruncated
+                        fontFamily="monospace"
+                      >
+                        {getShareUrlSuffix(showId, crewMember.user_id)}
+                      </Text>
+                    )}
 
                     {/* Role Badge - Aligned to right edge */}
                     <Box 
@@ -337,7 +343,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                           maxWidth="100%"
                           isTruncated
                         >
-                          {formatRole(assignment.role)}
+                          {formatRoleBadge(assignment.role)}
                         </Badge>
                       )}
                     </Box>
@@ -415,12 +421,12 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                       {/* Role Badge */}
                       {assignment.role && (
                         <Badge colorScheme="blue" variant="outline" size="sm">
-                          {formatRole(assignment.role)}
+                          {formatRoleBadge(assignment.role)}
                         </Badge>
                       )}
                     </HStack>
 
-                    {/* Second Line: Department Name, Email, Phone */}
+                    {/* Second Line: Department Name, Email, Phone, URL Suffix */}
                     <HStack spacing={3} align="center" ml="68px">
                       <Text fontSize="xs" color="gray.500" _dark={{ color: "gray.400" }} minWidth="80px">
                         {department?.department_name || 'Unknown Dept'}
@@ -435,6 +441,11 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                         {crewMember?.phone_number && (
                           <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }}>
                             {crewMember.phone_number}
+                          </Text>
+                        )}
+                        {crewMember && (
+                          <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }} fontFamily="monospace">
+                            {getShareUrlSuffix(showId, crewMember.user_id)}
                           </Text>
                         )}
                       </VStack>

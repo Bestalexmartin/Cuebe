@@ -1,19 +1,8 @@
 // frontend/src/features/script/components/modals/DeleteCueModal.tsx
 
 import React from 'react';
-import {
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalFooter,
-    Button,
-    Text,
-    VStack,
-    HStack
-} from '@chakra-ui/react';
-import { AppIcon } from '../../../../components/AppIcon';
+import { Text, VStack } from '@chakra-ui/react';
+import { BaseModal } from '../../../../components/base/BaseModal';
 
 interface DeleteCueModalProps {
     isOpen: boolean;
@@ -31,58 +20,37 @@ export const DeleteCueModal: React.FC<DeleteCueModalProps> = ({
     isDeleting = false
 }) => {
     return (
-        <Modal isOpen={isOpen} onClose={onClose} size="md">
-            <ModalOverlay />
-            <ModalContent
-                bg="page.background"
-                border="2px solid"
-                borderColor="gray.600"
-            >
-                <ModalHeader>
-                    <HStack spacing="3">
-                        <AppIcon name="warning" boxSize="20px" color="red.500" />
-                        <Text>Delete Script Element</Text>
-                    </HStack>
-                </ModalHeader>
-
-                <ModalBody>
-                    <VStack spacing="4" align="stretch">
-                        <VStack align="center" spacing="4" width="100%">
-                            <Text fontSize="md" textAlign="center">
-                                Are you sure you want to delete "{cueName}"?
-                            </Text>
-                            <Text fontSize="md" color="orange.500" fontWeight="bold" textAlign="center" lineHeight="1.4">
-                                This script element will be removed from your script but may be restored from the edit history before saving.
-                            </Text>
-                        </VStack>
-                    </VStack>
-                </ModalBody>
-
-                <ModalFooter>
-                    <HStack spacing="3">
-                        <Button
-                            onClick={onClose}
-                            size="sm"
-                            isDisabled={isDeleting}
-                            _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            bg="blue.400"
-                            color="white"
-                            onClick={onConfirm}
-                            size="sm"
-                            isLoading={isDeleting}
-                            loadingText="Deleting..."
-                            _hover={{ bg: 'orange.400' }}
-                            _focus={{ boxShadow: 'none' }}
-                        >
-                            Delete Script Element
-                        </Button>
-                    </HStack>
-                </ModalFooter>
-            </ModalContent>
-        </Modal>
+        <BaseModal
+            title="Delete Script Element"
+            headerIcon="warning"
+            headerIconColor="red.500"
+            isOpen={isOpen}
+            onClose={onClose}
+            size="md"
+            primaryAction={{
+                label: "Delete Script Element",
+                onClick: onConfirm,
+                variant: 'primary',
+                isLoading: isDeleting,
+                loadingText: "Deleting..."
+            }}
+            secondaryAction={{
+                label: "Cancel",
+                onClick: onClose,
+                variant: 'secondary',
+                isDisabled: isDeleting
+            }}
+        >
+            <VStack spacing="4" align="stretch">
+                <VStack align="center" spacing="4" width="100%">
+                    <Text fontSize="md" textAlign="center">
+                        Are you sure you want to delete "{cueName}"?
+                    </Text>
+                    <Text fontSize="md" color="orange.500" fontWeight="bold" textAlign="center" lineHeight="1.4">
+                        This script element will be removed from your script but may be restored from the edit history before saving.
+                    </Text>
+                </VStack>
+            </VStack>
+        </BaseModal>
     );
 };

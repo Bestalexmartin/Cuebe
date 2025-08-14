@@ -41,7 +41,7 @@ const INITIAL_FORM_STATE: CrewFormData = {
     email_address: '',
     fullname_first: '',
     fullname_last: '',
-    user_role: 'crew',
+    user_role: 'CREW',
 };
 
 const VALIDATION_CONFIG: FormValidationConfig = {

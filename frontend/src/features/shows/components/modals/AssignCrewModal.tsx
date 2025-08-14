@@ -89,7 +89,7 @@ export const AssignCrewModal: React.FC<AssignCrewModalProps> = ({
   const handleCrewMemberSelect = useCallback((crew: CrewMember) => {
     setSelectedCrewMember(crew);
     // Default to crew member's profile role if they have one
-    if (crew.user_role && crew.user_role !== 'other') {
+    if (crew.user_role && crew.user_role !== 'OTHER') {
       setRole(crew.user_role);
     } else {
       setRole('');
