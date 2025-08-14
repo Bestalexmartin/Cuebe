@@ -19,7 +19,7 @@ import { useEnhancedToast } from '../../../utils/toastUtils';
 import { formatDateTimeLocal } from '../../../utils/dateTimeUtils';
 import { useChangeDetection } from '../../../hooks/useChangeDetection';
 import { ErrorBoundary } from '../../../components/ErrorBoundary';
-import { USER_ROLE_OPTIONS, formatRole } from '../../../constants/userRoles';
+import { USER_ROLE_OPTIONS, formatRole, formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
 import { CrewBioModal } from '../../shows/components/modals/CrewBioModal';
 import { formatShowDateTime } from '../../../utils/dateTimeUtils';
 
@@ -592,8 +592,7 @@ export const EditCrewPage: React.FC = () => {
                                                         <Text 
                                                             fontSize="sm" 
                                                             fontWeight="medium" 
-                                                            minWidth={{ md: "90px", lg: "120px" }}
-                                                            maxWidth={{ md: "90px", lg: "120px" }}
+                                                            flex={1}
                                                             isTruncated
                                                         >
                                                             {assignment.department_name || 'Unknown Dept'}
@@ -602,8 +601,7 @@ export const EditCrewPage: React.FC = () => {
                                                         {/* Show Name with Label */}
                                                         <Text 
                                                             fontSize="sm" 
-                                                            minWidth={{ md: "120px", lg: "160px" }}
-                                                            maxWidth={{ md: "200px", lg: "240px", xl: "300px" }}
+                                                            flex={1}
                                                             isTruncated
                                                         >
                                                             <Text as="span" fontWeight="medium">Show:</Text>
@@ -617,19 +615,16 @@ export const EditCrewPage: React.FC = () => {
                                                             fontSize="sm" 
                                                             color="gray.700" 
                                                             _dark={{ color: "gray.300" }} 
-                                                            minWidth={{ md: "140px", lg: "180px" }}
-                                                            maxWidth={{ md: "200px", lg: "240px", xl: "280px" }}
                                                             display={{ base: "none", md: "block" }}
+                                                            flex={1}
                                                             isTruncated
-                                                            flexShrink={2}
-                                                            ml={24}
                                                         >
                                                             {assignment.venue_name ? (
                                                                 `${assignment.venue_name}${assignment.venue_city && assignment.venue_state ? ` - ${assignment.venue_city}, ${assignment.venue_state}` : ''}`
                                                             ) : 'No venue'}
                                                         </Text>
 
-                                                        {/* Show Date & Time - Expanding field */}
+                                                        {/* Show Date & Time */}
                                                         <Text 
                                                             fontSize="sm" 
                                                             color="gray.700" 
@@ -637,11 +632,24 @@ export const EditCrewPage: React.FC = () => {
                                                             display={{ base: "none", xl: "block" }}
                                                             flex={1}
                                                             isTruncated
-                                                            ml={24}
-                                                            mr={4}
                                                         >
                                                             {formatShowDateTime(assignment.show_date)}
                                                         </Text>
+
+                                                        {/* URL Suffix - Last 12 characters of share URL with LinkID prefix */}
+                                                        {crew && (
+                                                            <Text 
+                                                                fontSize="sm" 
+                                                                color="gray.700" 
+                                                                _dark={{ color: "gray.300" }} 
+                                                                display={{ base: "none", lg: "block" }}
+                                                                flex={1}
+                                                                isTruncated
+                                                                fontFamily="monospace"
+                                                            >
+                                                                {getShareUrlSuffix(assignment.show_id, crew.user_id)}
+                                                            </Text>
+                                                        )}
 
                                                         {/* Role Badge - Aligned to right edge */}
                                                         <Box 
@@ -659,7 +667,7 @@ export const EditCrewPage: React.FC = () => {
                                                                     maxWidth="100%"
                                                                     isTruncated
                                                                 >
-                                                                    {formatRole(assignment.role)}
+                                                                    {formatRoleBadge(assignment.role)}
                                                                 </Badge>
                                                             )}
                                                         </Box>
@@ -704,7 +712,7 @@ export const EditCrewPage: React.FC = () => {
 
                                                             {assignment.role && (
                                                                 <Badge colorScheme="blue" variant="outline" size="sm">
-                                                                    {formatRole(assignment.role)}
+                                                                    {formatRoleBadge(assignment.role)}
                                                                 </Badge>
                                                             )}
                                                         </HStack>
@@ -724,6 +732,11 @@ export const EditCrewPage: React.FC = () => {
                                                                 <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }}>
                                                                     {formatShowDateTime(assignment.show_date)}
                                                                 </Text>
+                                                                {crew && (
+                                                                    <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }} fontFamily="monospace">
+                                                                        {getShareUrlSuffix(assignment.show_id, crew.user_id)}
+                                                                    </Text>
+                                                                )}
                                                             </VStack>
                                                         </HStack>
                                                     </VStack>

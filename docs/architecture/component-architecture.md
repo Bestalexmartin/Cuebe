@@ -136,19 +136,29 @@ BaseModal (Foundation)
 ├── CreateVenueModal
 ├── CreateCrewModal
 ├── CreateDepartmentModal
-└── CreateScriptModal
+├── CreateScriptModal
+├── DeleteConfirmationModal
+├── DeleteCueModal
+├── ProcessingModal
+├── UnsavedChangesModal
+└── SaveConfirmationModal
 ```
 
 ### Modal Structure
-BaseModal provides consistent modal functionality:
+BaseModal provides consistent modal functionality with extensive customization options:
 
 ```typescript
 interface BaseModalProps {
   // Core modal functionality
-  title: string;
+  title?: string;
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
+  
+  // Header customization
+  headerIcon?: IconName;
+  headerIconColor?: string;
+  showHeader?: boolean;
   
   // Form handling
   onSubmit?: (event: React.FormEvent) => void;
@@ -156,11 +166,22 @@ interface BaseModalProps {
   // Action configuration
   primaryAction?: BaseModalAction;      // Main action (Create, Save, etc.)
   secondaryAction?: BaseModalAction;    // Cancel, secondary action
-  customActions?: BaseModalAction[];    // Additional actions
+  customActions?: BaseModalAction[];    // Multi-action support (3+ buttons)
   
   // Validation integration
   validationErrors?: FieldError[];
   showValidationErrors?: boolean;
+  
+  // UI Options
+  showCloseButton?: boolean;
+  showFooter?: boolean;
+  rightAlignActions?: boolean;
+  
+  // Modal behavior
+  closeOnOverlayClick?: boolean;
+  closeOnEsc?: boolean;
+  isCentered?: boolean;
+  size?: string;
   
   // Error boundaries
   errorBoundaryContext?: string;
@@ -383,6 +404,311 @@ const MyModalComponent: React.FC<MyModalProps> = ({
 
 export const MyModal = React.memo(MyModalComponent);
 ```
+
+### BaseModal Consolidation (August 2025)
+
+The BaseModal component underwent a comprehensive enhancement to eliminate modal duplication throughout the application. This improvement focused on standardizing modal behavior and reducing code repetition across DashboardPage, ManageScriptPage, and other sections.
+
+#### Enhancement Objectives
+- **Eliminate Duplicate Modal Implementations**: Remove ~200 lines of duplicate modal boilerplate code
+- **Standardize Modal Behavior**: Consistent styling, button variants, and interaction patterns
+- **Extend Customization Options**: Support for complex modal types (processing, multi-action, confirmation)
+- **Maintain Type Safety**: Full TypeScript support for all modal configurations
+
+#### Key Enhancements
+
+##### 1. Advanced Modal Control Options
+Enhanced BaseModal to support diverse modal use cases:
+
+```typescript
+// Processing modals (no header/footer)
+<BaseModal
+  isOpen={isProcessing}
+  onClose={() => {}}
+  closeOnOverlayClick={false}
+  closeOnEsc={false}
+  showHeader={false}
+  showFooter={false}
+>
+  <ProcessingSpinner />
+</BaseModal>
+
+// Multi-action modals (3+ buttons)
+<BaseModal
+  title="Unsaved Changes"
+  customActions={[
+    { label: "Cancel", variant: 'outline', onClick: onClose },
+    { label: "Discard", variant: 'danger', onClick: onDiscard },
+    { label: "Save & Continue", variant: 'primary', onClick: onSave, isLoading: saving }
+  ]}
+>
+  <WarningContent />
+</BaseModal>
+
+// Confirmation modals with icons and custom sizing
+<BaseModal
+  title="Delete Script Element"
+  headerIcon="warning"
+  headerIconColor="red.500"
+  size="md"
+  isCentered={true}
+  primaryAction={{ label: "Delete", variant: 'primary', onClick: onConfirm }}
+>
+  <ConfirmationContent />
+</BaseModal>
+```
+
+##### 2. Button Variant System
+Implemented comprehensive button styling system with consistent hover behavior:
+
+```typescript
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'outline';
+
+// Primary: blue.400 → orange.400 on hover (brand colors)
+// Danger: red.500 → red.600 on hover (destructive actions)  
+// Secondary: default → gray hover (cancel actions)
+// Outline: outlined → card background hover (alternative actions)
+```
+
+##### 3. Modal Behavior Control
+Added granular control over modal interaction behavior:
+
+```typescript
+interface BaseModalProps {
+  // Prevent accidental dismissal during processing
+  closeOnOverlayClick?: boolean;
+  closeOnEsc?: boolean;
+  
+  // Enhanced positioning and sizing
+  isCentered?: boolean;
+  size?: string;
+  
+  // Content structure control
+  showHeader?: boolean;
+  showFooter?: boolean;
+  showCloseButton?: boolean;
+}
+```
+
+#### Consolidation Results
+
+##### Refactored Modal Components
+**DeleteConfirmationModal** (`-57 lines`)
+```typescript
+// Before: 120 lines of custom modal implementation
+<Modal isOpen={isOpen} onClose={onClose} size="md">
+  <ModalOverlay />
+  <ModalContent bg="page.background" border="2px solid" borderColor="gray.600">
+    <ModalHeader>
+      <HStack spacing="3">
+        <AppIcon name="warning" boxSize="20px" color="red.500" />
+        <Text>{actionWord} {entityType}</Text>
+      </HStack>
+    </ModalHeader>
+    {/* ... 80+ more lines of duplicate modal structure */}
+  </ModalContent>
+</Modal>
+
+// After: 88 lines using BaseModal
+<BaseModal
+  title={`${actionWord} ${entityType}`}
+  headerIcon="warning"
+  headerIconColor="red.500"
+  isOpen={isOpen}
+  onClose={onClose}
+  size="md"
+  primaryAction={{
+    label: `${actionWord} ${entityType}`,
+    onClick: onConfirm,
+    variant: 'primary',
+    isLoading: isLoading,
+    loadingText: "Deleting..."
+  }}
+>
+  <ConfirmationContent />
+</BaseModal>
+```
+
+**ProcessingModal** (`-36 lines`)
+```typescript
+// Before: 75 lines of custom spinner modal
+<Modal isOpen={isOpen} onClose={() => {}} closeOnOverlayClick={false} closeOnEsc={false}>
+  <ModalOverlay />
+  <ModalContent maxWidth="400px" mx="4" bg="page.background" border="2px solid" borderColor="gray.600">
+    <ModalBody py="8">
+      {/* ... spinner and text content */}
+    </ModalBody>
+  </ModalContent>
+</Modal>
+
+// After: 39 lines using BaseModal
+<BaseModal
+  isOpen={isOpen}
+  onClose={() => {}}
+  closeOnOverlayClick={false}
+  closeOnEsc={false}
+  showHeader={false}
+  showFooter={false}
+  maxWidth="400px"
+>
+  <SpinnerContent />
+</BaseModal>
+```
+
+**UnsavedChangesModal** (`-55 lines`)
+```typescript
+// Before: 123 lines with complex 3-button layout
+<Modal isOpen={isOpen} onClose={onClose} closeOnOverlayClick={false} closeOnEsc={false} isCentered size="md">
+  <ModalOverlay bg="blackAlpha.600" />
+  <ModalContent bg="window.background" borderRadius="lg">
+    <ModalHeader pb={2}>
+      <HStack spacing={3}>
+        <AppIcon name="warning" boxSize="24px" color="orange.500" />
+        <Text fontSize="lg" fontWeight="bold">Unsaved Changes</Text>
+      </HStack>
+    </ModalHeader>
+    <ModalBody>{/* content */}</ModalBody>
+    <ModalFooter>
+      <HStack spacing={3}>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button colorScheme="red" onClick={onDiscard}>Discard</Button>
+        <Button colorScheme="blue" onClick={onSave}>Save</Button>
+      </HStack>
+    </ModalFooter>
+  </ModalContent>
+</Modal>
+
+// After: 68 lines using BaseModal with customActions
+<BaseModal
+  title="Unsaved Changes"
+  headerIcon="warning"
+  headerIconColor="orange.500"
+  isOpen={isOpen}
+  onClose={onClose}
+  closeOnOverlayClick={false}
+  closeOnEsc={false}
+  isCentered={true}
+  size="md"
+  customActions={[
+    { label: "Cancel", onClick: onClose, variant: 'outline' },
+    { label: "Discard Changes", onClick: onDiscard, variant: 'danger' },
+    { label: "Save & Continue", onClick: onSave, variant: 'primary', isLoading: isSaving }
+  ]}
+>
+  <WarningContent />
+</BaseModal>
+```
+
+**DeleteCueModal** (`-53 lines`)
+```typescript
+// Before: 89 lines nearly identical to DeleteConfirmationModal
+// After: 36 lines using BaseModal (follows same pattern as DeleteConfirmationModal)
+```
+
+##### Code Reduction Summary
+- **Total Lines Eliminated**: ~200 lines of duplicate modal implementation code
+- **Components Consolidated**: 4 major modal components refactored
+- **Consistency Improved**: All modals now use standardized button variants and styling
+- **Maintainability Enhanced**: Modal changes now happen in single BaseModal component
+
+##### Performance Benefits
+- **Bundle Size Reduction**: Eliminated duplicate modal structure imports and implementations
+- **Render Performance**: Enhanced React.memo implementation with comprehensive prop comparison
+- **Memory Efficiency**: Reduced component tree complexity through consolidated modal logic
+
+#### Development Standards Established
+
+##### Modal Implementation Pattern
+```typescript
+// Standard modal creation pattern
+export const CustomModal: React.FC<CustomModalProps> = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  // ... other props
+}) => {
+  return (
+    <BaseModal
+      title="Modal Title"
+      headerIcon="iconName"
+      headerIconColor="semantic.color"
+      isOpen={isOpen}
+      onClose={onClose}
+      size="md" // sm, md, lg, xl, or custom
+      primaryAction={{
+        label: "Primary Action",
+        variant: 'primary', // or 'danger' for destructive actions
+        onClick: onConfirm,
+        isLoading: loading,
+        isDisabled: !canSubmit
+      }}
+      // Use customActions for 3+ buttons
+      customActions={multipleActions}
+      // Control modal behavior
+      closeOnOverlayClick={false} // for important modals
+      isCentered={true} // for confirmation dialogs
+    >
+      <ModalContent />
+    </BaseModal>
+  );
+};
+```
+
+##### Button Variant Guidelines
+- **Primary**: Main positive actions (Save, Create, Confirm)
+- **Danger**: Destructive actions (Delete, Remove, Discard)
+- **Secondary**: Cancel actions and neutral operations
+- **Outline**: Alternative actions in multi-button layouts
+
+##### Modal Behavior Guidelines
+- **Processing Modals**: `showHeader={false}`, `showFooter={false}`, `closeOnOverlayClick={false}`
+- **Confirmation Dialogs**: `isCentered={true}`, `size="md"`, warning icons
+- **Form Modals**: Default behavior with validation error integration
+- **Multi-Action Modals**: Use `customActions` array instead of primary/secondary
+
+#### Testing Integration
+The modal consolidation maintains full backward compatibility while enabling more comprehensive testing:
+
+```typescript
+// Test BaseModal configurations
+describe('BaseModal Configuration', () => {
+  it('should support processing modal layout', () => {
+    render(
+      <BaseModal
+        isOpen={true}
+        onClose={jest.fn()}
+        showHeader={false}
+        showFooter={false}
+      >
+        <div>Processing...</div>
+      </BaseModal>
+    );
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('should render multi-action buttons correctly', () => {
+    render(
+      <BaseModal
+        isOpen={true}
+        onClose={jest.fn()}
+        customActions={[
+          { label: 'Cancel', onClick: jest.fn(), variant: 'outline' },
+          { label: 'Delete', onClick: jest.fn(), variant: 'danger' },
+          { label: 'Save', onClick: jest.fn(), variant: 'primary' }
+        ]}
+      >
+        <div>Content</div>
+      </BaseModal>
+    );
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(screen.getByText('Save')).toBeInTheDocument();
+  });
+});
+```
+
+This consolidation establishes BaseModal as the definitive modal solution for the entire application, ensuring consistent user experience while dramatically reducing code maintenance overhead.
 
 ## Best Practices
 
