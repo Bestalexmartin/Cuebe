@@ -24,6 +24,7 @@ export interface BaseEditPageAction {
 interface BaseEditPageProps {
   pageTitle: string;
   pageIcon?: IconName;
+  headerBadge?: React.ReactNode;  // Custom badge to show next to title
   children: React.ReactNode;
 
   // Form handling
@@ -41,6 +42,7 @@ interface BaseEditPageProps {
 export const BaseEditPage: React.FC<BaseEditPageProps> = ({
   pageTitle,
   pageIcon = 'edit',
+  headerBadge,
   children,
   onSubmit,
   primaryAction,
@@ -70,6 +72,7 @@ export const BaseEditPage: React.FC<BaseEditPageProps> = ({
           <Heading as="h2" size="md">
             {isLoading ? 'Loading...' : pageTitle}
           </Heading>
+          {!isLoading && headerBadge && headerBadge}
         </HStack>
         
         <HStack spacing="2">

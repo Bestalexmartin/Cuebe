@@ -244,6 +244,131 @@ def update_show_crew_assignments(
         )
 
 
+@router.post("/shows/{show_id}/crew-assignments", response_model=schemas.CrewAssignment)
+def create_crew_assignment(
+    show_id: UUID,
+    assignment_data: schemas.CrewAssignmentCreateRequest,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Create a single crew assignment for a show."""
+    # Verify show exists and user has permission
+    show = db.query(models.Show).filter(models.Show.show_id == show_id).first()
+    if not show:
+        raise HTTPException(status_code=404, detail="Show not found")
+    
+    if show.owner_id != user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this show")
+    
+    # Check if assignment already exists
+    existing = db.query(models.CrewAssignment).filter(
+        models.CrewAssignment.show_id == show_id,
+        models.CrewAssignment.user_id == assignment_data.user_id,
+        models.CrewAssignment.department_id == assignment_data.department_id,
+        models.CrewAssignment.is_active == True
+    ).first()
+    
+    if existing:
+        raise HTTPException(status_code=409, detail="Crew assignment already exists")
+    
+    try:
+        new_assignment = models.CrewAssignment(
+            show_id=show_id,
+            user_id=assignment_data.user_id,
+            department_id=assignment_data.department_id,
+            show_role=assignment_data.show_role,
+            is_active=True
+        )
+        
+        db.add(new_assignment)
+        db.commit()
+        db.refresh(new_assignment)
+        
+        logger.info(f"Created crew assignment {new_assignment.assignment_id} for show {show_id}")
+        return new_assignment
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to create crew assignment for show {show_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create crew assignment: {str(e)}"
+        )
+
+
+@router.patch("/crew-assignments/{assignment_id}", response_model=schemas.CrewAssignment)
+def update_crew_assignment(
+    assignment_id: UUID,
+    update_data: schemas.CrewAssignmentUpdateRequest,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Update a single crew assignment."""
+    assignment = db.query(models.CrewAssignment).options(
+        joinedload(models.CrewAssignment.show)
+    ).filter(models.CrewAssignment.assignment_id == assignment_id).first()
+    
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Crew assignment not found")
+    
+    if assignment.show.owner_id != user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this assignment")
+    
+    try:
+        # Update fields that were provided
+        if update_data.show_role is not None:
+            assignment.show_role = update_data.show_role
+        if update_data.is_active is not None:
+            assignment.is_active = update_data.is_active
+        
+        db.commit()
+        db.refresh(assignment)
+        
+        logger.info(f"Updated crew assignment {assignment_id}")
+        return assignment
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to update crew assignment {assignment_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update crew assignment: {str(e)}"
+        )
+
+
+@router.delete("/crew-assignments/{assignment_id}")
+def delete_crew_assignment(
+    assignment_id: UUID,
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a single crew assignment."""
+    assignment = db.query(models.CrewAssignment).options(
+        joinedload(models.CrewAssignment.show)
+    ).filter(models.CrewAssignment.assignment_id == assignment_id).first()
+    
+    if not assignment:
+        raise HTTPException(status_code=404, detail="Crew assignment not found")
+    
+    if assignment.show.owner_id != user.user_id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this assignment")
+    
+    try:
+        db.delete(assignment)
+        db.commit()
+        
+        logger.info(f"Deleted crew assignment {assignment_id}")
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to delete crew assignment {assignment_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete crew assignment: {str(e)}"
+        )
+
+
 @router.get("/shows/{show_id}/crew", response_model=list[schemas.CrewMemberWithDetails])
 def get_show_crew(
     show_id: UUID,

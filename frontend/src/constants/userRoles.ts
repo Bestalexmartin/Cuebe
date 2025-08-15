@@ -54,10 +54,11 @@ export const formatRoleBadge = (roleValue: string): string => {
   return roleValue.replace(/_/g, ' ');
 };
 
-// Helper function to generate sharing URL suffix (last 12 characters of dynamic portion)
-export const getShareUrlSuffix = (showId: string, userId: string): string => {
-  // Create the dynamic portion: showId/userId
-  const dynamicPortion = `${showId}/${userId}`;
-  // Return last 12 characters with prefix
-  return `LinkID: ${dynamicPortion.slice(-12)}`;
+// Helper function to generate sharing URL suffix from share token
+export const getShareUrlSuffix = (shareToken?: string): string => {
+  if (!shareToken) {
+    return 'LinkID: Loading...';
+  }
+  // Return last 12 characters of the share token with prefix
+  return `LinkID: ${shareToken.slice(-12)}`;
 };

@@ -113,8 +113,7 @@ export const EditShowPage: React.FC = () => {
                 department_id: assignment.department_id,
                 crew_member_ids: [assignment.user_id],
                 role: assignment.show_role || '',
-                isNew: false as boolean,
-                isSelected: false as boolean
+                isNew: false as boolean
             })) || [];
 
             form.setFormData({
@@ -142,8 +141,7 @@ export const EditShowPage: React.FC = () => {
             department_id: assignment.department_id,
             crew_member_ids: [assignment.user_id],
             role: assignment.show_role || '',
-            isNew: false as boolean,
-            isSelected: false as boolean
+            isNew: false as boolean
         })) || []
     } : null;
 
@@ -153,8 +151,7 @@ export const EditShowPage: React.FC = () => {
             ...form.formData,
             crew_assignments: form.formData.crew_assignments.map(assignment => ({
                 ...assignment,
-                isNew: assignment.isNew || false,
-                isSelected: assignment.isSelected || false
+                isNew: assignment.isNew || false
             }))
         },
         true // Always active for show editing
@@ -236,8 +233,7 @@ export const EditShowPage: React.FC = () => {
                 ...form.formData,
                 crew_assignments: form.formData.crew_assignments.map(assignment => ({
                     ...assignment,
-                    isNew: assignment.isNew || false,
-                    isSelected: assignment.isSelected || false
+                    isNew: assignment.isNew || false
                 }))
             });
 
