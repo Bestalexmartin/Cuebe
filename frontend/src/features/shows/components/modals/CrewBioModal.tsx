@@ -1,6 +1,6 @@
 // frontend/src/features/shows/components/modals/CrewBioModal.tsx
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   VStack,
@@ -19,6 +19,8 @@ import { BaseModal } from '../../../../components/base/BaseModal';
 import { CrewMember } from '../../types/crewAssignments';
 import { formatRole } from '../../../../constants/userRoles';
 import { AppIcon } from '../../../../components/AppIcon';
+import { useAuth } from '@clerk/clerk-react';
+import { useEnhancedToast } from '../../../../utils/toastUtils';
 
 interface CrewBioModalProps {
   isOpen: boolean;
@@ -33,15 +35,18 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
   crewMember,
   showId
 }) => {
-  if (!crewMember) return null;
+  const { getToken } = useAuth();
+  const { showSuccess, showError } = useEnhancedToast();
 
   const getFullName = (): string => {
+    if (!crewMember) return 'Unknown User';
     const firstName = crewMember.fullname_first || '';
     const lastName = crewMember.fullname_last || '';
     return `${firstName} ${lastName}`.trim() || 'Unknown User';
   };
 
   const getUserStatusBadge = () => {
+    if (!crewMember) return null;
     const isVerified = crewMember.user_status === 'verified';
     return (
       <Badge
@@ -54,12 +59,89 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
     );
   };
 
-  // Construct sharing URL for this crew member and show
-  const sharingUrl = showId && crewMember 
-    ? `${window.location.origin}/shared/${showId}/${crewMember.user_id}`
-    : '';
+  // State for the actual share token and URL
+  const [shareUrl, setShareUrl] = useState('');
+  const [isLoadingShare, setIsLoadingShare] = useState(false);
+  
+  // Get the share token when modal opens
+  useEffect(() => {
+    if (isOpen && showId && crewMember) {
+      const getShareUrl = async () => {
+        setIsLoadingShare(true);
+        try {
+          const token = await getToken();
+          if (!token) {
+            console.warn('No auth token available for share URL');
+            return;
+          }
+          
+          const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (response.ok) {
+            const shareData = await response.json();
+            setShareUrl(`${window.location.origin}${shareData.share_url}`);
+          } else {
+            console.warn('Failed to get share URL');
+          }
+        } catch (error) {
+          console.error('Error getting share URL:', error);
+        } finally {
+          setIsLoadingShare(false);
+        }
+      };
+      
+      getShareUrl();
+    }
+  }, [isOpen, showId, crewMember, getToken]);
 
-  const { onCopy, hasCopied } = useClipboard(sharingUrl);
+  const { onCopy, hasCopied } = useClipboard(shareUrl);
+
+  // Early return after all hooks are declared
+  if (!crewMember) return null;
+
+  // Handle refresh sharing link
+  const handleRefreshLink = async () => {
+    if (!showId || !crewMember) return;
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token not available');
+      }
+
+      // Create or refresh the show-level share
+      const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh sharing link');
+      }
+
+      const shareData = await response.json();
+      
+      // Update the URL with the new token
+      setShareUrl(`${window.location.origin}${shareData.share_url}`);
+
+      showSuccess(
+        "Link Refreshed", 
+        `A new sharing link has been ${shareData.action}`
+      );
+    } catch (error) {
+      console.error('Error refreshing link:', error);
+      showError("Failed to refresh sharing link. Please try again.");
+    }
+  };
 
   return (
     <BaseModal
@@ -156,7 +238,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
                     aria-label="Regenerate sharing link"
                     icon={<MdRefresh size={20} />}
                     size="sm"
-                    onClick={() => {}} // Placeholder for future implementation
+                    onClick={handleRefreshLink}
                     variant="ghost"
                     colorScheme="gray"
                   />
@@ -171,17 +253,18 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
                 _dark={{ borderColor: "green.400" }}
               >
                 <Input
-                  value={sharingUrl}
+                  value={isLoadingShare ? 'Loading share URL...' : shareUrl}
                   isReadOnly
                   fontSize="xs"
                   fontFamily="monospace"
                   variant="unstyled"
                   p={0}
                   cursor="text"
+                  opacity={isLoadingShare ? 0.6 : 1}
                 />
               </Box>
               
-              {sharingUrl && (
+              {shareUrl && !isLoadingShare && (
                 <Box
                   alignSelf="center"
                   mt={5}
@@ -196,7 +279,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
                   position="relative"
                 >
                   <QRCodeSVG
-                    value={sharingUrl}
+                    value={shareUrl}
                     size={160}
                     bgColor="white"
                     fgColor="black"

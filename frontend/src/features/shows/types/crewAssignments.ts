@@ -63,7 +63,6 @@ export interface CrewAssignmentRow {
   crew_member_ids: string[]; // Multiple crew members can be assigned to same dept
   role: string;
   isNew?: boolean; // True for unsaved assignments
-  isSelected?: boolean; // For UI selection state
 }
 
 export interface CrewAssignmentFormData {

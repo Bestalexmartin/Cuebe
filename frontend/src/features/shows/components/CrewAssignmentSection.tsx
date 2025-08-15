@@ -1,6 +1,6 @@
 // frontend/src/features/shows/components/CrewAssignmentSection.tsx
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
   VStack,
@@ -18,9 +18,12 @@ import { useCrews } from '../../crew/hooks/useCrews';
 import { CrewAssignmentRow, Department, CrewMember } from '../types/crewAssignments';
 import { AssignCrewModal } from './modals/AssignCrewModal';
 import { CrewBioModal } from './modals/CrewBioModal';
+import { EditRoleModal } from './modals/EditRoleModal';
 import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfirmationModal';
+import { ActionsMenu, ActionItem } from '../../../components/ActionsMenu';
 import { useEnhancedToast } from '../../../utils/toastUtils';
 import { formatRole, formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
+import { useAuth } from '@clerk/clerk-react';
 
 interface CrewAssignmentSectionProps {
   showId: string;
@@ -33,95 +36,250 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
   assignments,
   onAssignmentsChange
 }) => {
-  const { showSuccess } = useEnhancedToast();
+  const { showSuccess, showError } = useEnhancedToast();
+  const { getToken } = useAuth();
   const [selectedAssignments, setSelectedAssignments] = useState<Set<string>>(new Set());
+  const [shareTokens, setShareTokens] = useState<Map<string, string>>(new Map()); // user_id -> share_token
 
   // Modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isCrewBioModalOpen, setIsCrewBioModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isEditRoleModalOpen, setIsEditRoleModalOpen] = useState(false);
   const [selectedCrewMember, setSelectedCrewMember] = useState<CrewMember | null>(null);
+  const [selectedAssignmentForEdit, setSelectedAssignmentForEdit] = useState<CrewAssignmentRow | null>(null);
 
   // Fetch departments and crew
   const { departments, isLoading: isLoadingDepartments } = useDepartments();
   const { crews, isLoading: isLoadingCrews } = useCrews();
 
   const isLoading = isLoadingDepartments || isLoadingCrews;
-
-  // Generate unique ID for new assignments
-  const generateId = useCallback(() => {
-    return `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }, []);
-
-  // Handle crew assignment from modal
-  const handleCrewAssignment = useCallback((department: Department, crewMember: CrewMember, role?: string) => {
-    const newAssignment: CrewAssignmentRow = {
-      id: generateId(),
-      department_id: department.department_id,
-      crew_member_ids: [crewMember.user_id],
-      role: role || '',
-      isNew: true,
-      isSelected: false
+  
+  // Fetch share tokens for saved crew assignments only (not new/unsaved ones)
+  useEffect(() => {
+    const fetchShareTokens = async () => {
+      // Only fetch for saved assignments (not ones with isNew flag)
+      const savedAssignments = assignments.filter(a => !a.isNew);
+      
+      console.log('=== SHARE TOKEN FETCH DEBUG ===');
+      console.log(`Total assignments: ${assignments.length}`);
+      console.log(`Saved assignments: ${savedAssignments.length}`);
+      console.log(`Assignments:`, assignments.map(a => ({ id: a.id, isNew: a.isNew, crew_ids: a.crew_member_ids })));
+      
+      if (!savedAssignments.length || !crews.length) {
+        console.log('No saved assignments or crews, skipping share token fetch');
+        return;
+      }
+      
+      try {
+        const token = await getToken();
+        if (!token) {
+          console.log('No auth token, skipping share token fetch');
+          return;
+        }
+        
+        const tokenMap = new Map<string, string>();
+        
+        // Fetch share tokens for each unique crew member in saved assignments only
+        const uniqueUserIds = [...new Set(savedAssignments.flatMap(a => a.crew_member_ids))];
+        
+        console.log(`Fetching share tokens for ${uniqueUserIds.length} saved crew assignments`);
+        console.log(`User IDs: ${uniqueUserIds.join(', ')}`);
+        
+        await Promise.all(
+          uniqueUserIds.map(async (userId) => {
+            try {
+              console.log(`Fetching share token for user ${userId}...`);
+              const response = await fetch(`/api/shows/${showId}/crew/${userId}/share`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json',
+                },
+              });
+              
+              if (response.ok) {
+                const shareData = await response.json();
+                tokenMap.set(userId, shareData.share_token);
+                console.log(`✅ Got share token for user ${userId}: ${shareData.share_token.slice(-8)}`);
+              } else {
+                console.warn(`❌ Failed to get share token for user ${userId}: ${response.status} ${response.statusText}`);
+              }
+            } catch (error) {
+              console.error(`💥 Error fetching share token for user ${userId}:`, error);
+            }
+          })
+        );
+        
+        console.log(`Final token map size: ${tokenMap.size}`);
+        setShareTokens(tokenMap);
+      } catch (error) {
+        console.error('💥 Error in fetchShareTokens:', error);
+      }
     };
+    
+    fetchShareTokens();
+  }, [assignments, crews, showId, getToken]);
 
-    onAssignmentsChange([...assignments, newAssignment]);
 
-    showSuccess(
-      "Crew Assigned",
-      `${crewMember.fullname_first} ${crewMember.fullname_last} assigned to ${department.department_name}`
-    );
-  }, [assignments, onAssignmentsChange, generateId, showSuccess]);
+  // Handle crew assignment from modal - call API immediately
+  const handleCrewAssignment = useCallback(async (department: Department, crewMember: CrewMember, role?: string) => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token not available');
+      }
+
+      console.log(`Creating crew assignment: user ${crewMember.user_id}, dept ${department.department_id}, role ${role}`);
+      
+      const response = await fetch(`/api/shows/${showId}/crew-assignments`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: crewMember.user_id,
+          department_id: department.department_id,
+          show_role: role || ''
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to create assignment: ${response.status}`);
+      }
+
+      const newAssignment = await response.json();
+      console.log('✅ Created assignment:', newAssignment);
+      
+      // Create a local assignment object for immediate UI update
+      const localAssignment: CrewAssignmentRow = {
+        id: newAssignment.assignment_id,
+        department_id: newAssignment.department_id,
+        crew_member_ids: [newAssignment.user_id],
+        role: newAssignment.show_role || '',
+        isNew: false  // This is now saved
+      };
+
+      // Update local state
+      onAssignmentsChange([...assignments, localAssignment]);
+      
+      // Immediately fetch share token for the new assignment
+      try {
+        const shareResponse = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (shareResponse.ok) {
+          const shareData = await shareResponse.json();
+          setShareTokens(prev => new Map(prev).set(crewMember.user_id, shareData.share_token));
+          console.log(`✅ Generated share token for new assignment: ${shareData.share_token.slice(-8)}`);
+        }
+      } catch (shareError) {
+        console.warn('Failed to generate share token for new assignment:', shareError);
+        // Don't fail the whole operation for share token issues
+      }
+
+      showSuccess(
+        "Crew Assigned",
+        `${crewMember.fullname_first} ${crewMember.fullname_last} assigned to ${department.department_name}`
+      );
+      
+    } catch (error) {
+      console.error('Failed to create crew assignment:', error);
+      showError(`Failed to assign crew member: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, [assignments, onAssignmentsChange, showId, getToken, showSuccess, showError, setShareTokens]);
 
   // Handle row selection (single select only)
   const handleRowSelect = useCallback((id: string) => {
-    const newSelected = new Set<string>();
-
     // Single select - deselect if already selected, otherwise select this one
     if (selectedAssignments.has(id) && selectedAssignments.size === 1) {
       // Already selected and it's the only one - deselect it
-      newSelected.clear();
+      setSelectedAssignments(new Set());
     } else {
       // Select this one (deselects any others)
-      newSelected.add(id);
+      setSelectedAssignments(new Set([id]));
     }
-
-    setSelectedAssignments(newSelected);
-
-    // Update assignment selection state for styling
-    const updatedAssignments = assignments.map(assignment => ({
-      ...assignment,
-      isSelected: newSelected.has(assignment.id)
-    }));
-    onAssignmentsChange(updatedAssignments);
-  }, [selectedAssignments, assignments, onAssignmentsChange]);
+    // Note: We don't call onAssignmentsChange here to avoid triggering Save Changes
+  }, [selectedAssignments]);
 
   // Handle delete button click (opens confirmation modal)
   const handleDeleteClick = useCallback(() => {
-    if (selectedAssignments.size === 0) {
+    if (selectedAssignments.size !== 1) {
       return;
     }
     setIsDeleteModalOpen(true);
   }, [selectedAssignments]);
 
-  // Actually delete selected assignments (after confirmation)
-  const handleDeleteConfirm = useCallback(() => {
-    if (selectedAssignments.size === 0) {
+  // Actually delete selected assignment (after confirmation) - call API immediately
+  const handleDeleteConfirm = useCallback(async () => {
+    if (selectedAssignments.size !== 1) {
       return;
     }
 
-    const remainingAssignments = assignments.filter(assignment =>
-      !selectedAssignments.has(assignment.id)
-    );
+    const assignmentId = Array.from(selectedAssignments)[0];
+    const assignment = assignments.find(a => a.id === assignmentId);
+    
+    if (!assignment) {
+      showError('Assignment not found');
+      return;
+    }
 
-    onAssignmentsChange(remainingAssignments);
-    setSelectedAssignments(new Set());
-    setIsDeleteModalOpen(false);
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token not available');
+      }
 
-    showSuccess(
-      "Assignment Deleted",
-      "Crew assignment removed"
-    );
-  }, [selectedAssignments, assignments, onAssignmentsChange, showSuccess]);
+      console.log(`Deleting crew assignment: ${assignmentId}`);
+      
+      const response = await fetch(`/api/crew-assignments/${assignmentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to delete assignment: ${response.status}`);
+      }
+
+      console.log('✅ Deleted assignment:', assignmentId);
+      
+      // Update local state
+      const remainingAssignments = assignments.filter(a => a.id !== assignmentId);
+      onAssignmentsChange(remainingAssignments);
+      
+      // Remove share token from local state
+      if (assignment.crew_member_ids.length > 0) {
+        setShareTokens(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(assignment.crew_member_ids[0]);
+          return newMap;
+        });
+      }
+      
+      setSelectedAssignments(new Set());
+      setIsDeleteModalOpen(false);
+
+      showSuccess(
+        "Assignment Deleted",
+        "Crew assignment removed"
+      );
+      
+    } catch (error) {
+      console.error('Failed to delete crew assignment:', error);
+      showError(`Failed to delete assignment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setIsDeleteModalOpen(false);
+    }
+  }, [selectedAssignments, assignments, onAssignmentsChange, showSuccess, showError, getToken, setShareTokens]);
 
   // Handle delete modal close
   const handleDeleteCancel = useCallback(() => {
@@ -139,7 +297,148 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
     setSelectedCrewMember(null);
   }, []);
 
-  const hasSelectedAssignments = selectedAssignments.size > 0;
+  // Handle Edit Role action
+  const handleEditRoleClick = useCallback(() => {
+    if (selectedAssignments.size === 1) {
+      const assignmentId = Array.from(selectedAssignments)[0];
+      const assignment = assignments.find(a => a.id === assignmentId);
+      if (assignment) {
+        setSelectedAssignmentForEdit(assignment);
+        setIsEditRoleModalOpen(true);
+      }
+    }
+  }, [selectedAssignments, assignments]);
+
+  // Handle Refresh Link action
+  const handleRefreshLinkClick = useCallback(async () => {
+    if (selectedAssignments.size === 1) {
+      const assignmentId = Array.from(selectedAssignments)[0];
+      const assignment = assignments.find(a => a.id === assignmentId);
+      
+      if (assignment) {
+        try {
+          const token = await getToken();
+          if (!token) {
+            throw new Error('Authentication token not available');
+          }
+
+          // Get crew member details to find user_id
+          const crewMember = crews.find(c => c.user_id === assignment.crew_member_ids[0]);
+          if (!crewMember) {
+            throw new Error('Crew member not found');
+          }
+
+          // Create or refresh the show-level share
+          const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to refresh sharing link');
+          }
+
+          const shareData = await response.json();
+          
+          // Update the local share token
+          setShareTokens(prev => new Map(prev).set(crewMember.user_id, shareData.share_token));
+          
+          showSuccess(
+            "Link Refreshed", 
+            `A new sharing link has been ${shareData.action} for this crew member`
+          );
+        } catch (error) {
+          console.error('Error refreshing link:', error);
+          showError("Failed to refresh sharing link. Please try again.");
+        }
+      }
+    }
+  }, [selectedAssignments, assignments, crews, showId, getToken, showSuccess, showError]);
+
+  // Handle Edit Role modal close
+  const handleEditRoleModalClose = useCallback(() => {
+    setIsEditRoleModalOpen(false);
+    setSelectedAssignmentForEdit(null);
+  }, []);
+
+  // Handle role update from Edit Role modal - call API immediately
+  const handleRoleUpdate = useCallback(async (newRole: string) => {
+    if (!selectedAssignmentForEdit) {
+      return;
+    }
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token not available');
+      }
+
+      console.log(`Updating role for assignment ${selectedAssignmentForEdit.id} to: ${newRole}`);
+      
+      const response = await fetch(`/api/crew-assignments/${selectedAssignmentForEdit.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          show_role: newRole
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Failed to update role: ${response.status}`);
+      }
+
+      const updatedAssignment = await response.json();
+      console.log('✅ Updated assignment role:', updatedAssignment);
+      
+      // Update local state
+      const updatedAssignments = assignments.map(assignment =>
+        assignment.id === selectedAssignmentForEdit.id
+          ? { ...assignment, role: updatedAssignment.show_role || '' }
+          : assignment
+      );
+      onAssignmentsChange(updatedAssignments);
+      
+      showSuccess("Role Updated", `Role has been updated to ${formatRole(newRole)}`);
+      setIsEditRoleModalOpen(false);
+      setSelectedAssignmentForEdit(null);
+      
+    } catch (error) {
+      console.error('Failed to update role:', error);
+      showError(`Failed to update role: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }, [selectedAssignmentForEdit, assignments, onAssignmentsChange, showSuccess, showError, getToken]);
+
+  const hasExactlyOneSelection = selectedAssignments.size === 1;
+
+  // Create actions array for the Actions menu
+  const actionItems: ActionItem[] = [
+    {
+      id: 'edit-role',
+      label: 'Edit Role',
+      onClick: handleEditRoleClick,
+      isDisabled: !hasExactlyOneSelection
+    },
+    {
+      id: 'refresh-link',
+      label: 'Refresh Link',
+      onClick: handleRefreshLinkClick,
+      isDisabled: !hasExactlyOneSelection
+    },
+    {
+      id: 'delete',
+      label: 'Delete',
+      onClick: handleDeleteClick,
+      isDestructive: true,
+      isDisabled: !hasExactlyOneSelection
+    }
+  ];
 
   if (isLoading) {
     return (
@@ -160,14 +459,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       <HStack justify="space-between" mb={2}>
         <FormLabel mb={0}>Departments & Crew</FormLabel>
         <HStack spacing={2}>
-          <Button
-            size="xs"
-            variant="outline"
-            onClick={handleDeleteClick}
-            isDisabled={!hasSelectedAssignments}
-          >
-            Delete
-          </Button>
+          <ActionsMenu actions={actionItems} isDisabled={assignments.length === 0} />
           <Button
             size="xs"
             bg="blue.400"
@@ -199,7 +491,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                   py={2}
                   px={4}
                   border="2px solid"
-                  borderColor={assignment.isSelected ? "blue.400" : "transparent"}
+                  borderColor={selectedAssignments.has(assignment.id) ? "blue.400" : "transparent"}
                   borderRadius="md"
                   bg="card.background"
                   _hover={{
@@ -323,7 +615,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                         isTruncated
                         fontFamily="monospace"
                       >
-                        {getShareUrlSuffix(showId, crewMember.user_id)}
+                        {getShareUrlSuffix(shareTokens.get(crewMember.user_id))}
                       </Text>
                     )}
 
@@ -445,7 +737,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                         )}
                         {crewMember && (
                           <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }} fontFamily="monospace">
-                            {getShareUrlSuffix(showId, crewMember.user_id)}
+                            {getShareUrlSuffix(shareTokens.get(crewMember.user_id))}
                           </Text>
                         )}
                       </VStack>
@@ -477,15 +769,23 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
         showId={showId}
       />
 
+      {/* Edit Role Modal */}
+      <EditRoleModal
+        isOpen={isEditRoleModalOpen}
+        onClose={handleEditRoleModalClose}
+        onUpdate={handleRoleUpdate}
+        assignment={selectedAssignmentForEdit}
+      />
+
       {/* Delete Confirmation Modal */}
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         entityType="Assignment"
-        entityName="assignment"
+        entityName="crew assignment"
         customQuestion="Are you sure you want to remove this crew assignment?"
-        customWarning="The selected crew member will be unassigned from this department and their access to scripts for this show will be revoked."
+        customWarning="The crew member will be unassigned from this department and their access to scripts for this show will be revoked."
         actionWord="Delete"
       />
     </Box>

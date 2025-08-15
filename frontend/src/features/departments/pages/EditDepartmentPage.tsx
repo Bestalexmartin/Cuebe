@@ -6,11 +6,10 @@ import {
     FormControl, FormLabel, Input, Textarea, Button,
     Avatar, Badge
 } from "@chakra-ui/react";
-import { formatDateTimeLocal } from '../../../utils/dateTimeUtils';
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useDepartment } from "../hooks/useDepartment";
-import { formatRole, formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
+import { formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
 import { useValidatedForm } from '../../../hooks/useValidatedForm';
 import { ValidationRules, FormValidationConfig } from '../../../types/validation';
 import { BaseEditPage } from '../../../components/base/BaseEditPage';
@@ -320,58 +319,6 @@ export const EditDepartmentPage: React.FC = () => {
                 {/* Form Content */}
                 {!isLoadingDepartment && department && (
                     <VStack spacing={6} align="stretch">
-                        {/* Department Profile Preview */}
-                        <Box
-                            p="4"
-                            bg="gray.50"
-                            _dark={{ bg: "gray.700" }}
-                            borderRadius="md"
-                        >
-                            <HStack spacing="3" align="start">
-                                <Box
-                                    w="48px"
-                                    h="48px"
-                                    borderRadius="full"
-                                    bg={form.formData.department_color}
-                                    flexShrink={0}
-                                    display="flex"
-                                    alignItems="center"
-                                    justifyContent="center"
-                                >
-                                    {form.formData.department_initials && (
-                                        <Text
-                                            fontSize="lg"
-                                            fontWeight="bold"
-                                            color="black"
-                                            userSelect="none"
-                                        >
-                                            {form.formData.department_initials}
-                                        </Text>
-                                    )}
-                                </Box>
-                                <VStack align="start" spacing="1" flex="1">
-                                    <HStack spacing="2" align="center">
-                                        <Text fontWeight="medium">{form.formData.department_name || 'Department Name'}</Text>
-                                    </HStack>
-                                    <HStack justify="space-between" width="100%">
-                                        <Text fontSize="sm" color="detail.text">
-                                            {department?.shows_assigned_count || 0} show{(department?.shows_assigned_count || 0) !== 1 ? 's' : ''}
-                                        </Text>
-                                        <Text fontSize="xs" color="detail.text">
-                                            Updated: {formatDateTimeLocal(department.date_updated)}
-                                        </Text>
-                                    </HStack>
-                                    <HStack justify="space-between" width="100%">
-                                        <Text fontSize="sm" color="detail.text">
-                                            {department?.department_description || 'No description'}
-                                        </Text>
-                                        <Text fontSize="xs" color="detail.text">
-                                            Created: {formatDateTimeLocal(department.date_created)}
-                                        </Text>
-                                    </HStack>
-                                </VStack>
-                            </HStack>
-                        </Box>
 
                         {/* Basic Information */}
                         <HStack spacing={6} align="start">
@@ -556,7 +503,7 @@ export const EditDepartmentPage: React.FC = () => {
                                                             isTruncated
                                                             fontFamily="monospace"
                                                         >
-                                                            {getShareUrlSuffix(assignment.show_id, assignment.user_id)}
+                                                            {getShareUrlSuffix()}
                                                         </Text>
 
                                                         {/* Role Badge - Aligned to right edge */}
@@ -631,7 +578,7 @@ export const EditDepartmentPage: React.FC = () => {
                                                                     </Text>
                                                                 )}
                                                                 <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }} fontFamily="monospace">
-                                                                    {getShareUrlSuffix(assignment.show_id, assignment.user_id)}
+                                                                    {getShareUrlSuffix()}
                                                                 </Text>
                                                             </VStack>
                                                         </HStack>

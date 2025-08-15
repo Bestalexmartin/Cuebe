@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
     Box, HStack, VStack, Text, Spinner, Flex,
-    FormControl, FormLabel, Input, Textarea, Select, Badge, Avatar
+    FormControl, FormLabel, Input, Textarea, Select, Badge
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
@@ -16,10 +16,9 @@ import { ActionItem } from '../../../components/ActionsMenu';
 import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfirmationModal';
 import { FinalDeleteConfirmationModal } from '../../../components/modals/FinalDeleteConfirmationModal';
 import { useEnhancedToast } from '../../../utils/toastUtils';
-import { formatDateTimeLocal } from '../../../utils/dateTimeUtils';
 import { useChangeDetection } from '../../../hooks/useChangeDetection';
 import { ErrorBoundary } from '../../../components/ErrorBoundary';
-import { USER_ROLE_OPTIONS, formatRole, formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
+import { USER_ROLE_OPTIONS, formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
 import { CrewBioModal } from '../../shows/components/modals/CrewBioModal';
 import { formatShowDateTime } from '../../../utils/dateTimeUtils';
 
@@ -338,7 +337,8 @@ export const EditCrewPage: React.FC = () => {
             <Badge
                 variant={isVerified ? "solid" : "outline"}
                 colorScheme={isVerified ? "green" : "orange"}
-                size="sm"
+                size="md"
+                fontSize="sm"
             >
                 {isVerified ? "Verified" : "Guest"}
             </Badge>
@@ -349,6 +349,7 @@ export const EditCrewPage: React.FC = () => {
         <ErrorBoundary context="Edit Crew Page">
             <BaseEditPage
                 pageTitle={getFullName()}
+                headerBadge={getUserStatusBadge()}
                 onSubmit={handleSubmit}
                 isLoading={isLoadingCrew}
                 primaryAction={{
@@ -384,48 +385,6 @@ export const EditCrewPage: React.FC = () => {
                 {/* Form Content */}
                 {!isLoadingCrew && crew && (
                     <VStack spacing={6} align="stretch">
-                        {/* Profile Preview */}
-                        <Box
-                            p="4"
-                            bg="gray.50"
-                            _dark={{ bg: "gray.700" }}
-                            borderRadius="md"
-                        >
-                            <HStack spacing="3" align="start">
-                                <Avatar
-                                    size="md"
-                                    name={getFullName()}
-                                    src={crew.profile_img_url}
-                                />
-                                <VStack align="start" spacing="1" flex="1">
-                                    <HStack spacing="2" align="center">
-                                        <Text fontWeight="medium">{getFullName()}</Text>
-                                        {getUserStatusBadge()}
-                                        {!crew.is_active && (
-                                            <Badge variant="solid" colorScheme="red" size="sm">
-                                                Inactive
-                                            </Badge>
-                                        )}
-                                    </HStack>
-                                    <HStack justify="space-between" width="100%">
-                                        <Text fontSize="sm" color="detail.text">
-                                            {formatRole(form.formData.user_role)}
-                                        </Text>
-                                         <Text fontSize="xs" color="detail.text">
-                                            Updated: {formatDateTimeLocal(crew.date_updated)}
-                                        </Text>
-                                    </HStack>
-                                    <HStack justify="space-between" width="100%">
-                                        <Text fontSize="sm" color="detail.text">
-                                            {form.formData.email_address}
-                                        </Text>
-                                        <Text fontSize="xs" color="detail.text">
-                                            Created: {formatDateTimeLocal(crew.date_created)}
-                                        </Text>
-                                    </HStack>
-                                </VStack>
-                            </HStack>
-                        </Box>
 
                         {/* Contact Information Explanation for Verified Users (Manager Edit Only) */}
                         {isVerifiedUser() && !isSelfEdit() && (
@@ -647,7 +606,7 @@ export const EditCrewPage: React.FC = () => {
                                                                 isTruncated
                                                                 fontFamily="monospace"
                                                             >
-                                                                {getShareUrlSuffix(assignment.show_id, crew.user_id)}
+                                                                {getShareUrlSuffix()}
                                                             </Text>
                                                         )}
 
@@ -734,7 +693,7 @@ export const EditCrewPage: React.FC = () => {
                                                                 </Text>
                                                                 {crew && (
                                                                     <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }} fontFamily="monospace">
-                                                                        {getShareUrlSuffix(assignment.show_id, crew.user_id)}
+                                                                        {getShareUrlSuffix()}
                                                                     </Text>
                                                                 )}
                                                             </VStack>

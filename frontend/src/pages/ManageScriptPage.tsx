@@ -31,7 +31,6 @@ import { EnableAutoSortOperation } from '../features/script/types/editQueue';
 import { useModalState } from '../hooks/useModalState';
 import { SaveConfirmationModal } from '../components/modals/SaveConfirmationModal';
 import { SaveProcessingModal } from '../components/modals/SaveProcessingModal';
-import { ScriptSharingService } from '../services/scriptSharingService';
 import { useAuth } from '@clerk/clerk-react';
 
 import { ScriptToolbar } from '../features/script/components/ScriptToolbar';
@@ -567,12 +566,13 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             if (!scriptId) return;
             
             try {
-                const token = await getToken();
-                if (!token) return;
-                
-                const status = await ScriptSharingService.getSharingStatus(scriptId, token);
-                setIsScriptShared(status.isShared);
-                setShareCount(status.shareCount);
+                // Script sharing status is now determined by the script.is_shared flag
+                // which is already loaded in currentScript
+                if (currentScript) {
+                    setIsScriptShared(currentScript.is_shared || false);
+                    // Share count is no longer tracked at script level
+                    setShareCount(0);
+                }
             } catch (error) {
                 // Silently handle sharing status errors
             }
@@ -590,7 +590,19 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             const token = await getToken();
             if (!token) throw new Error('Authentication required');
             
-            await ScriptSharingService.shareWithAllCrew(scriptId, token);
+            // Update script to set is_shared = true
+            const response = await fetch(`/api/scripts/${scriptId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ is_shared: true }),
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update script sharing status');
+            }
             modalState.closeModal(MODAL_NAMES.SHARE_CONFIRMATION);
             setIsScriptShared(true);
             await refetchScript(); // Refresh script data to update currentScript.is_shared
@@ -618,7 +630,19 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             const token = await getToken();
             if (!token) throw new Error('Authentication required');
             
-            await ScriptSharingService.hideFromAllCrew(scriptId, token);
+            // Update script to set is_shared = false
+            const response = await fetch(`/api/scripts/${scriptId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ is_shared: false }),
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update script sharing status');
+            }
             modalState.closeModal(MODAL_NAMES.FINAL_HIDE_SCRIPT);
             setIsScriptShared(false);
             setShareCount(0);

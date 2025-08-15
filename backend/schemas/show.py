@@ -43,6 +43,17 @@ class CrewAssignmentCreate(BaseModel):
     show_role: Optional[str] = None
     is_active: bool = True
 
+class CrewAssignmentCreateRequest(BaseModel):
+    """Schema for creating a single crew assignment"""
+    user_id: UUID
+    department_id: UUID
+    show_role: Optional[str] = None
+
+class CrewAssignmentUpdateRequest(BaseModel):
+    """Schema for updating a single crew assignment"""
+    show_role: Optional[str] = None
+    is_active: Optional[bool] = None
+
 class CrewAssignmentBulkRequest(BaseModel):
     """Schema for bulk crew assignment updates"""
     assignments: List[CrewAssignmentCreate]

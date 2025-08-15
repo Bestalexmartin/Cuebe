@@ -19,7 +19,7 @@ except ImportError:
     RATE_LIMITING_ENABLED = False
 
 # Import routers
-from routers import users, crews, venues, departments, shows, webhooks, development, system_tests, script_elements
+from routers import users, crews, venues, departments, shows, webhooks, development, system_tests, script_elements, show_sharing
 from routers.auth import get_current_user
 import models
 
@@ -70,6 +70,7 @@ app.include_router(venues.router)       # Venue management at /api/me/venues, /a
 app.include_router(departments.router)  # Department management at /api/me/departments, /api/departments/*
 app.include_router(shows.router)        # Show and script management at /api/shows/*, /api/scripts/*
 app.include_router(script_elements.router)  # Script elements CRUD at /api/scripts/*/elements, /api/elements/*
+app.include_router(show_sharing.router) # Show-level sharing at /api/shows/*/crew/*/share, /shared/*
 app.include_router(system_tests.router) # System testing endpoints at /api/system-tests/*
 
 # =============================================================================
