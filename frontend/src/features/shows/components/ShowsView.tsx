@@ -82,13 +82,14 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
     onSortChange,
 }) => {
     // Shows-specific sorting logic
-    const handleSortClick = (newSortBy: SortBy): void => {
-        if (sortBy === newSortBy) {
+    const handleSortClick = (newSortBy: string): void => {
+        const typedSortBy = newSortBy as SortBy;
+        if (sortBy === typedSortBy) {
             const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-            onSortChange(newSortBy, newDirection);
+            onSortChange(typedSortBy, newDirection);
         } else {
-            const newDirection = newSortBy === 'date_updated' ? 'desc' : 'asc';
-            onSortChange(newSortBy, newDirection);
+            const newDirection = typedSortBy === 'date_updated' ? 'desc' : 'asc';
+            onSortChange(typedSortBy, newDirection);
         }
     };
 

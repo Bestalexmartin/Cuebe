@@ -38,7 +38,7 @@ const SHOWS_SORT_OPTIONS: SortOption[] = [
 const GuestDarkModeSwitch: React.FC<{ shareToken?: string }> = ({ shareToken }) => {
   const [guestDarkMode, setGuestDarkMode] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const { colorMode, setColorMode } = useColorMode();
+  const { setColorMode } = useColorMode();
   const { showError } = useEnhancedToast();
 
   // Load guest preferences on mount

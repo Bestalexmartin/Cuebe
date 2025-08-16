@@ -12,13 +12,14 @@ export const useSorting = (sharedData: SharedData | null) => {
   const [sortBy, setSortBy] = useState<SortBy>('date_updated');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
-  const handleSortClick = useCallback((newSortBy: SortBy) => {
-    if (sortBy === newSortBy) {
+  const handleSortClick = useCallback((newSortBy: string) => {
+    const typedSortBy = newSortBy as SortBy;
+    if (sortBy === typedSortBy) {
       const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
       setSortDirection(newDirection);
     } else {
-      setSortBy(newSortBy);
-      const newDirection = newSortBy === 'date_updated' ? 'desc' : 'asc';
+      setSortBy(typedSortBy);
+      const newDirection = typedSortBy === 'date_updated' ? 'desc' : 'asc';
       setSortDirection(newDirection);
     }
   }, [sortBy, sortDirection]);

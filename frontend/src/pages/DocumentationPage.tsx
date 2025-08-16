@@ -6,7 +6,6 @@ import {
   VStack,
   HStack,
   Text,
-  Badge,
   Card,
   CardBody,
   Button,
@@ -31,14 +30,10 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BaseUtilityPage } from '../components/base/BaseUtilityPage';
 import { AppIcon } from '../components/AppIcon';
 import { useAuth } from '@clerk/clerk-react';
+import { DocumentCard } from '../components/shared/DocumentCard';
+import { CategoryDocumentList } from '../components/shared/CategoryDocumentList';
+import { DocFile, groupAndSortDocuments, getDocumentsForCategory } from '../utils/documentSorting';
 
-interface DocFile {
-  name: string;
-  path: string;
-  description: string;
-  category: 'Planning' | 'Quick Start' | 'System Architecture' | 'Component Architecture' | 'Data Management' | 'User Interface' | 'Testing' | 'Tutorial' | 'Archive';
-  icon: 'planning' | 'roadmap' | 'compass' | 'docs' | 'component' | 'performance' | 'warning' | 'test' | 'archive';
-}
 
 const DOCUMENTATION_FILES: DocFile[] = [
   {
@@ -281,10 +276,6 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
   const headingColor = useColorModeValue('blue.600', 'blue.300');
   const subHeadingColor = useColorModeValue('blue.500', 'blue.400');
 
-  // Color mode values for documentation cards
-  const cardBg = useColorModeValue('white', 'gray.800');
-  const textColor = useColorModeValue('gray.900', 'white');
-  const iconColor = useColorModeValue('gray.600', 'white');
 
   const { getToken } = useAuth();
 
@@ -542,251 +533,34 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
       {isLoadingDocs ? (
         <Text>Loading documentation...</Text>
       ) : (
-        (() => {
-          // Group documents by category
-          const groupedDocs = documentFiles.reduce((groups, doc) => {
-            if (!groups[doc.category]) groups[doc.category] = [];
-            groups[doc.category].push(doc);
-            return groups;
-          }, {} as Record<string, DocFile[]>);
-
-          // Sort documents within each category, especially Quick Start
-          Object.keys(groupedDocs).forEach(category => {
-            if (category === 'Quick Start') {
-              // Define the logical order for Quick Start documents
-              const quickStartOrder = [
-                'Cuebe Documentation',
-                'Cuebe Development Guide',
-                'Database Seed Data System',
-                'Testing Tools Guide'
-              ];
-              groupedDocs[category].sort((a, b) => {
-                const aIndex = quickStartOrder.indexOf(a.name);
-                const bIndex = quickStartOrder.indexOf(b.name);
-                if (aIndex === -1 && bIndex === -1) return a.name.localeCompare(b.name);
-                if (aIndex === -1) return 1;
-                if (bIndex === -1) return -1;
-                return aIndex - bIndex;
-              });
-            } else if (category === 'Planning') {
-              // Define logical order for Planning documents
-              const planningOrder = [
-                'Development Roadmap',
-                'Code Quality Guide',
-                'Documentation Standards', 
-                'State Management Principles',
-                'Architectural Principles'
-              ];
-              groupedDocs[category].sort((a, b) => {
-                const aIndex = planningOrder.indexOf(a.name);
-                const bIndex = planningOrder.indexOf(b.name);
-                if (aIndex === -1 && bIndex === -1) return a.name.localeCompare(b.name);
-                if (aIndex === -1) return 1;
-                if (bIndex === -1) return -1;
-                return aIndex - bIndex;
-              });
-            } else {
-              // For other categories, sort alphabetically by name
-              groupedDocs[category].sort((a, b) => a.name.localeCompare(b.name));
-            }
-          });
-
-          // Get category order from quickAccessItems
-          const categoryOrder = quickAccessItems.map(item => item.title);
-          
-          // Sort categories by the quickAccessItems order
-          const sortedEntries = Object.entries(groupedDocs).sort(([categoryA], [categoryB]) => {
-            const indexA = categoryOrder.indexOf(categoryA);
-            const indexB = categoryOrder.indexOf(categoryB);
-            if (indexA === -1 && indexB === -1) return categoryA.localeCompare(categoryB);
-            if (indexA === -1) return 1;
-            if (indexB === -1) return -1;
-            return indexA - indexB;
-          });
-
-          return sortedEntries;
-        })().map(([category, docs]) => (
-        <Card 
-          key={category} 
-          size="sm" 
-          bg={cardBg}
-          borderWidth="2px"
-          borderRadius="md"
-          shadow="sm"
-          borderColor="gray.600"
-          cursor="pointer"
-          _hover={{ borderColor: "orange.400" }}
-          onClick={() => loadCategory(category)}
-        >
-          <CardBody>
-            <VStack align="stretch" spacing={3}>
-              <HStack spacing={4}>
-                <Badge
-                  colorScheme="blue"
-                  fontSize="sm"
-                  px={2}
-                  py={1}
-                  cursor="pointer"
-                  _hover={{ bg: "blue.600", color: "white" }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    loadCategory(category);
-                  }}
-                >
-                  {category}
-                </Badge>
-                <Text fontWeight="semibold" fontSize="sm" color="cardText">
-                  {docs.length} document{docs.length > 1 ? 's' : ''}
-                </Text>
-              </HStack>
-              <VStack spacing={2} align="stretch">
-                {docs.map((doc) => (
-                  <HStack
-                    key={doc.name}
-                    spacing={3}
-                    p={2}
-                    rounded="md"
-                    shadow="sm"
-                    bg="app.background"
-                    borderWidth="2px"
-                    borderColor="gray.600"
-                    cursor="pointer"
-                    _hover={{ borderColor: "orange.400" }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      loadDocument(doc.name);
-                    }}
-                  >
-                    <Box px={2}>
-                      <AppIcon name={doc.icon} boxSize="21px" color={iconColor} />
-                    </Box>
-                    <VStack align="start" spacing={0} flex={1}>
-                      <Text fontWeight="medium" fontSize="sm" color={textColor}>
-                        {doc.name}
-                      </Text>
-                      <Text fontSize="xs" color="cardText" noOfLines={1}>
-                        {doc.description}
-                      </Text>
-                    </VStack>
-                  </HStack>
-                ))}
-              </VStack>
-            </VStack>
-          </CardBody>
-        </Card>
-      ))
+        groupAndSortDocuments(
+          documentFiles, 
+          quickAccessItems.map(item => item.title)
+        ).map(([category, docs]) => (
+          <DocumentCard
+            key={category}
+            category={category}
+            documents={docs}
+            onCategoryClick={loadCategory}
+            onDocumentClick={loadDocument}
+          />
+        ))
       )}
     </VStack>
   );
 
   // Category view content
   const categoryContent = selectedCategory ? (
-    <VStack spacing={0} align="stretch" height="100%">
-      {/* Sticky Header */}
-      <Box position="sticky" top={0} bg="page.background" zIndex={10} pb="4px">
-        <VStack spacing={4} align="stretch">
-          <HStack spacing={3} align="center" justify="space-between">
-            <HStack spacing={3} align="center">
-              <AppIcon
-                name={getCategoryIcon(selectedCategory)}
-                boxSize="24px"
-                color={iconColor}
-              />
-              <Text fontWeight="semibold" fontSize="lg">{selectedCategory} Documentation</Text>
-              <Text fontSize="sm" color="gray.500">
-                {documentFiles.filter(doc => doc.category === selectedCategory).length} documents
-              </Text>
-            </HStack>
-            <Button
-              size="xs"
-              variant="outline"
-              onClick={() => {
-                setSelectedCategory(null);
-                setSelectedDoc(null);
-              }}
-            >
-              Back to Overview
-            </Button>
-          </HStack>
-          <Divider />
-        </VStack>
-      </Box>
-      
-      {/* Scrollable Content */}
-      <Box flex={1} overflowY="auto" className="hide-scrollbar">
-        <VStack spacing={3} align="stretch">
-          {(() => {
-            // Apply same sorting logic as overview
-            const categoryDocs = documentFiles.filter(doc => doc.category === selectedCategory);
-            
-            if (selectedCategory === 'Quick Start') {
-              const quickStartOrder = [
-                'Cuebe Documentation',
-                'Cuebe Development Guide',
-                'Database Seed Data System',
-                'Testing Tools Guide'
-              ];
-              categoryDocs.sort((a, b) => {
-                const aIndex = quickStartOrder.indexOf(a.name);
-                const bIndex = quickStartOrder.indexOf(b.name);
-                if (aIndex === -1 && bIndex === -1) return a.name.localeCompare(b.name);
-                if (aIndex === -1) return 1;
-                if (bIndex === -1) return -1;
-                return aIndex - bIndex;
-              });
-            } else if (selectedCategory === 'Planning') {
-              const planningOrder = [
-                'Development Roadmap',
-                'Code Quality Guide',
-                'Documentation Standards', 
-                'State Management Principles',
-                'Architectural Principles'
-              ];
-              categoryDocs.sort((a, b) => {
-                const aIndex = planningOrder.indexOf(a.name);
-                const bIndex = planningOrder.indexOf(b.name);
-                if (aIndex === -1 && bIndex === -1) return a.name.localeCompare(b.name);
-                if (aIndex === -1) return 1;
-                if (bIndex === -1) return -1;
-                return aIndex - bIndex;
-              });
-            } else {
-              // For other categories, sort alphabetically by name
-              categoryDocs.sort((a, b) => a.name.localeCompare(b.name));
-            }
-            
-            return categoryDocs;
-          })().map((doc) => (
-              <HStack
-                key={doc.name}
-                spacing={3}
-                p={3}
-                rounded="md"
-                shadow="sm"
-                bg={cardBg}
-                borderWidth="2px"
-                borderColor="gray.600"
-                cursor="pointer"
-                _hover={{ borderColor: "orange.400" }}
-                onClick={() => loadDocument(doc.name)}
-                align="start"
-              >
-                <Box px={2}>
-                  <AppIcon name={doc.icon} boxSize="16px" color={iconColor} />
-                </Box>
-                <VStack align="start" spacing={1} flex={1}>
-                  <Text fontWeight="medium" fontSize="sm" color={textColor}>
-                    {doc.name}
-                  </Text>
-                  <Text fontSize="xs" color="cardText">
-                    {doc.description}
-                  </Text>
-                </VStack>
-              </HStack>
-            ))}
-        </VStack>
-      </Box>
-    </VStack>
+    <CategoryDocumentList
+      category={selectedCategory}
+      documents={getDocumentsForCategory(documentFiles, selectedCategory)}
+      categoryIcon={getCategoryIcon(selectedCategory)}
+      onDocumentClick={loadDocument}
+      onBackToOverview={() => {
+        setSelectedCategory(null);
+        setSelectedDoc(null);
+      }}
+    />
   ) : null;
 
   // Selected document content
@@ -804,7 +578,7 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
             <VStack spacing={4} align="stretch">
               <HStack spacing={3} align="center" justify="space-between">
                 <HStack spacing={3} align="center">
-                  <AppIcon name={documentFiles.find(doc => doc.name === selectedDoc)?.icon || 'docs'} boxSize="24px" color={iconColor} />
+                  <AppIcon name={documentFiles.find(doc => doc.name === selectedDoc)?.icon || 'docs'} boxSize="24px" />
                   <Text fontWeight="semibold" fontSize="lg">{selectedDoc}</Text>
                 </HStack>
                 <Button
