@@ -1,6 +1,8 @@
 # The 63:1 Ratio Lesson - A Case Study in Over-Engineering
 
-*Archive Entry - August 16, 2025*
+**Date:** August 16, 2025  
+**Status:** Historical Record  
+**Category:** Archive & Development Lessons
 
 ## The Problem
 
