@@ -579,7 +579,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         };
         
         loadSharingStatus();
-    }, [scriptId, getToken]);
+    }, [scriptId, currentScript, getToken]);
 
     // Sharing handlers
     const handleShareConfirm = async () => {

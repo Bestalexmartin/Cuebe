@@ -95,6 +95,7 @@ docker logs cuebe-frontend
 - **ENUMs**: Always UPPERCASE (e.g., `UserRole.ADMIN`)
 - **Don't run migrations** - create Alembic files and ask user to run
 - **Schema organization**: Break large files into domain modules (~300-400 lines max)
+- **API Response Consistency**: NEVER manually construct JSON in endpoints. Always use Pydantic schemas with SQLAlchemy models for consistent serialization. If an endpoint returns similar data to an existing endpoint, use the same schema or extend it - never create manual dictionaries with `.isoformat()` calls.
 
 ### Frontend & React
 - **Naming**: Database identifiers stay `snake_case`, frontend-only vars can be `camelCase`

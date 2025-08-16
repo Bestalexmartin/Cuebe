@@ -328,8 +328,8 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
             throw new Error('Crew member not found');
           }
 
-          // Create or refresh the show-level share
-          const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
+          // Refresh the show-level share (generates new token)
+          const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share?force_refresh=true`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,

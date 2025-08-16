@@ -91,3 +91,19 @@ class UserDepartmentAssignment(BaseModel):
 class CrewMemberWithAssignments(CrewMemberWithRelationship):
     """Crew member with their department assignments"""
     department_assignments: List[UserDepartmentAssignment] = []
+
+
+class MessageResponse(BaseModel):
+    """Generic response for simple message responses"""
+    message: str
+    
+    class Config:
+        from_attributes = True
+
+
+class StatusResponse(BaseModel):
+    """Generic response for status responses"""
+    status: str
+    
+    class Config:
+        from_attributes = True

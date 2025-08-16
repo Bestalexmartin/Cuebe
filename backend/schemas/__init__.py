@@ -12,6 +12,8 @@ from .user import (
     CrewMemberWithRelationship,
     UserDepartmentAssignment,
     CrewMemberWithAssignments,
+    MessageResponse,
+    StatusResponse,
 )
 
 # Venue schemas
@@ -55,6 +57,8 @@ from .script_element import (
     ScriptElementCreate,
     ScriptElementUpdate,
     ScriptElementEnhanced,
+    CrewContext,
+    SharedScriptElementsResponse,
 )
 
 # Operation schemas
@@ -81,6 +85,8 @@ from .sharing import (
     SharedScriptAccessResponse,
     TokenValidationResponse,
     ShareUsageUpdate,
+    SharedShowResponse,
+    ShareTokenResponse,
 )
 
 __all__ = [
@@ -92,6 +98,8 @@ __all__ = [
     "CrewMemberWithRelationship",
     "UserDepartmentAssignment",
     "CrewMemberWithAssignments",
+    "MessageResponse",
+    "StatusResponse",
     
     # Venue schemas
     "VenueBase",
@@ -147,6 +155,8 @@ __all__ = [
     "SharedScriptAccessResponse",
     "TokenValidationResponse",
     "ShareUsageUpdate",
+    "SharedShowResponse",
+    "ShareTokenResponse",
 ]
 
 # Rebuild models to resolve forward references

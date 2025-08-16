@@ -2,7 +2,7 @@
 
 import React from "react";
 import { SignedIn, UserButton } from "@clerk/clerk-react";
-import { Flex, Text, Heading, Image, IconButton } from "@chakra-ui/react";
+import { Flex, Text, Heading, Image, IconButton, useColorModeValue } from "@chakra-ui/react";
 import { AppIcon } from '../AppIcon';
 import { useIntegratedColorMode } from '../../hooks/useIntegratedColorMode';
 
@@ -38,17 +38,21 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
     onMenuOpen();
   };
 
+  const headerBgColor = useColorModeValue('white', 'gray.800');
+
   return (
     <Flex
       as="header"
       width="100%"
       align="center"
       justify="space-between"
-      borderBottom="0px"
-      borderColor="ui.border"
-      paddingX="6"
-      paddingY="0"
-      paddingTop="2"
+      borderBottom="1px solid"
+      borderColor="gray.200"
+      _dark={{ borderColor: 'gray.700' }}
+      px={{ base: 4, md: 6 }}
+      py={3}
+      bg={headerBgColor}
+      boxShadow="sm"
       boxSizing="border-box"
     >
       <Flex align="center">

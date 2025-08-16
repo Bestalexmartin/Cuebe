@@ -56,6 +56,11 @@ interface ShowCardProps {
   sortDirection: "asc" | "desc";
   onSaveNavigationState?: () => void;
   isLoading?: boolean;
+  // New props for share page customization
+  hideEditButton?: boolean;
+  hideCreateScriptButton?: boolean;
+  hideScriptBadges?: boolean;
+  disableInternalNavigation?: boolean;
 }
 
 const ShowCardComponent: React.FC<ShowCardProps> = ({
@@ -71,6 +76,10 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
   sortDirection,
   onSaveNavigationState,
   isLoading = false,
+  hideEditButton = false,
+  hideCreateScriptButton = false,
+  hideScriptBadges = false,
+  disableInternalNavigation = false,
 }) => {
   const navigate = useNavigate();
 
@@ -102,26 +111,29 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
     navigate(`/shows/${show.show_id}/edit`);
   };
 
-  // Handler for script click - now navigates to manage page
+  // Handler for script click - navigates to manage page unless disabled
   const handleScriptClick = (scriptId: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
     // Call the original handler for any additional logic (like analytics, etc.)
     onScriptClick(scriptId);
 
-    // Save navigation state before leaving dashboard
-    if (onSaveNavigationState) {
-      onSaveNavigationState();
-    }
+    // Only do internal navigation if not disabled (e.g., for shared pages)
+    if (!disableInternalNavigation) {
+      // Save navigation state before leaving dashboard
+      if (onSaveNavigationState) {
+        onSaveNavigationState();
+      }
 
-    // Navigate to the script management page
-    navigate(`/scripts/${scriptId}/manage`);
+      // Navigate to the script management page
+      navigate(`/scripts/${scriptId}/manage`);
+    }
   };
 
   // Get venue name safely
   const venueName = show.venue?.venue_name || "No venue set";
 
-  const headerActions: BaseCardAction[] = [
+  const headerActions: BaseCardAction[] = hideEditButton ? [] : [
     {
       label: "Edit",
       icon: "edit",
@@ -162,17 +174,19 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
         <Text fontWeight="semibold">
           Scripts
         </Text>
-        <Button
-          variant="primary"
-          size="xs"
-          onClick={(e: React.MouseEvent) => {
-            e.stopPropagation();
-            onCreateScriptClick(show.show_id);
-          }}
-          _focus={{ boxShadow: "none" }}
-        >
-          Create Script
-        </Button>
+        {!hideCreateScriptButton && (
+          <Button
+            variant="primary"
+            size="xs"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              onCreateScriptClick(show.show_id);
+            }}
+            _focus={{ boxShadow: "none" }}
+          >
+            Create Script
+          </Button>
+        )}
       </HStack>
       <Box>
         {sortedScripts.length > 0 ? (
@@ -199,23 +213,25 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
               >
                 <VStack align="stretch" spacing="1">
                   <Text fontWeight="semibold" size="sm">{script.script_name}</Text>
-                  <HStack
-                    justify="space-between"
-                    fontSize="xs"
-                    color="cardText"
-                    mt={2}
-                  >
-                    <HStack spacing={2}>
-                      <Badge variant="solid" colorScheme="blue">
-                        {script.script_status.toUpperCase()}
-                      </Badge>
-                      {script.is_shared && (
-                        <Badge variant="solid" colorScheme="green">
-                          SHARED
+                  {!hideScriptBadges && (
+                    <HStack
+                      justify="space-between"
+                      fontSize="xs"
+                      color="cardText"
+                      mt={2}
+                    >
+                      <HStack spacing={2}>
+                        <Badge variant="solid" colorScheme="blue">
+                          {script.script_status.toUpperCase()}
                         </Badge>
-                      )}
+                        {script.is_shared && (
+                          <Badge variant="solid" colorScheme="green">
+                            SHARED
+                          </Badge>
+                        )}
+                      </HStack>
                     </HStack>
-                  </HStack>
+                  )}
                   <HStack
                     justify="space-between"
                     fontSize="sm"

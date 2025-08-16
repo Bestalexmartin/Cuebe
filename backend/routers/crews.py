@@ -332,7 +332,7 @@ def update_crew_member(
         )
 
 
-@router.post("/crew-relationships/", status_code=status.HTTP_201_CREATED)
+@router.post("/crew-relationships/", response_model=schemas.MessageResponse, status_code=status.HTTP_201_CREATED)
 def create_crew_relationship(
     relationship_data: schemas.CrewRelationshipCreate,
     user: models.User = Depends(get_current_user),
@@ -353,7 +353,7 @@ def create_crew_relationship(
             existing_relationship.is_active = True
             existing_relationship.notes = relationship_data.notes
             db.commit()
-            return {"message": "Crew relationship reactivated"}
+            return schemas.MessageResponse(message="Crew relationship reactivated")
     
     # Create new relationship
     new_relationship = models.CrewRelationship(
@@ -364,7 +364,7 @@ def create_crew_relationship(
     db.add(new_relationship)
     db.commit()
     
-    return {"message": "User added to your crew"}
+    return schemas.MessageResponse(message="User added to your crew")
 
 
 @router.delete("/crew-relationships/{crew_user_id}", status_code=status.HTTP_204_NO_CONTENT)
