@@ -381,8 +381,8 @@ export const CueElement: React.FC<CueElementProps> = React.memo((props: CueEleme
                     justifyContent="center"
                 >
 
-                    {/* Collapse/Expand button for group parents */}
-                    {isGroupParent && (
+                    {/* Collapse/Expand button for group parents (only in interactive mode) */}
+                    {isGroupParent && onToggleGroupCollapse && (
                         <IconButton
                             aria-label={element.is_collapsed ? "Expand group" : "Collapse group"}
                             icon={element.is_collapsed ? <BiSolidRightArrow /> : <AppIcon name="triangle-down" />}

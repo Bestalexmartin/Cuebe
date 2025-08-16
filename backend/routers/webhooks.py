@@ -7,6 +7,7 @@ from svix.webhooks import Webhook, WebhookVerificationError
 import logging
 
 import models
+import schemas
 from database import get_db
 
 # Optional rate limiting import
@@ -35,7 +36,7 @@ def rate_limit(limit_config):
 # CLERK WEBHOOK
 # =============================================================================
 
-@router.post("/webhooks/clerk")
+@router.post("/webhooks/clerk", response_model=schemas.StatusResponse)
 @rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 async def handle_clerk_webhook(
     request: Request,
@@ -116,4 +117,4 @@ async def handle_clerk_webhook(
                 db.commit()
                 logger.info(f"User {clerk_id_to_delete} deactivated.")
     
-    return {"status": "ok"}
+    return schemas.StatusResponse(status="ok")

@@ -3,7 +3,7 @@
 from pydantic import BaseModel, model_validator
 from datetime import datetime
 from uuid import UUID
-from typing import Optional
+from typing import Optional, List
 
 # =============================================================================
 # SCRIPT ELEMENT SCHEMAS
@@ -123,3 +123,20 @@ class ScriptElementEnhanced(BaseModel):
         return data
 
 # Note: ScriptElement and ScriptElementEnhanced are separate schemas for different use cases
+
+# =============================================================================
+# SHARED ACCESS SCHEMAS
+# =============================================================================
+
+class CrewContext(BaseModel):
+    """Crew assignment context for shared script access"""
+    department_name: Optional[str] = None
+    department_initials: Optional[str] = None  
+    department_color: Optional[str] = None
+    show_role: Optional[str] = None
+    user_name: Optional[str] = None
+
+class SharedScriptElementsResponse(BaseModel):
+    """Response schema for shared script elements with crew context"""
+    elements: List[ScriptElementEnhanced]
+    crew_context: Optional[CrewContext] = None

@@ -4,6 +4,7 @@ from pydantic import BaseModel, model_validator, Field
 from datetime import datetime
 from uuid import UUID
 from typing import Optional, List
+from .show import Show
 
 # =============================================================================
 # SCRIPT SHARING SCHEMAS
@@ -113,3 +114,25 @@ class ShareUsageUpdate(BaseModel):
     access_count: int
     last_accessed_at: datetime
     last_accessed_by_ip: Optional[str] = None
+
+
+class SharedShowResponse(BaseModel):
+    """Schema for accessing shared shows via crew assignment token"""
+    shows: List[Show]
+    user_name: Optional[str] = None
+    user_profile_image: Optional[str] = None
+    share_expires: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+
+class ShareTokenResponse(BaseModel):
+    """Schema for share token creation/retrieval responses"""
+    assignment_id: UUID
+    share_token: str
+    share_url: str
+    action: str  # "created" or "retrieved"
+    
+    class Config:
+        from_attributes = True
