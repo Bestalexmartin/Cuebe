@@ -11,6 +11,11 @@ import models
 import schemas
 from database import get_db
 from .auth import get_current_user
+from utils.user_preferences import (
+    bitmap_to_preferences,
+    preferences_to_bitmap_updates,
+    validate_preferences,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -134,4 +139,98 @@ async def access_shared_show(
         raise  # Re-raise HTTP exceptions
     except Exception as e:
         logger.error(f"Error processing share token {share_token}: {e}")
+        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+
+
+@router.get("/shared/{share_token}/preferences", response_model=dict)
+async def get_guest_user_preferences(
+    share_token: str,
+    db: Session = Depends(get_db)
+):
+    """Get guest user preferences via share token (public endpoint, no auth required)"""
+    
+    try:
+        # Find the crew assignment by share token
+        crew_assignment = db.query(models.CrewAssignment).filter(
+            models.CrewAssignment.share_token == share_token,
+            models.CrewAssignment.is_active == True
+        ).first()
+        
+        if not crew_assignment:
+            logger.warning(f"Share token not found for preferences: {share_token}")
+            raise HTTPException(status_code=404, detail="Share not found or expired")
+        
+        # Get the user associated with this share token
+        user = db.query(models.User).filter(models.User.user_id == crew_assignment.user_id).first()
+        if not user:
+            logger.error(f"User not found for crew assignment: {crew_assignment.user_id}")
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Convert bitmap to preferences and return
+        bitmap = user.user_prefs_bitmap if user.user_prefs_bitmap is not None else 0
+        preferences = bitmap_to_preferences(bitmap)
+        
+        logger.info(f"Retrieved guest preferences for share token: {share_token[:8]}...")
+        return preferences
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
+    except Exception as e:
+        logger.error(f"Error retrieving guest preferences for {share_token}: {e}")
+        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+
+
+@router.patch("/shared/{share_token}/preferences", response_model=dict)
+async def update_guest_user_preferences(
+    share_token: str,
+    preference_updates: dict,
+    db: Session = Depends(get_db)
+):
+    """Update guest user preferences via share token (public endpoint, no auth required)"""
+    
+    try:
+        # Find the crew assignment by share token
+        crew_assignment = db.query(models.CrewAssignment).filter(
+            models.CrewAssignment.share_token == share_token,
+            models.CrewAssignment.is_active == True
+        ).first()
+        
+        if not crew_assignment:
+            logger.warning(f"Share token not found for preferences update: {share_token}")
+            raise HTTPException(status_code=404, detail="Share not found or expired")
+        
+        # Get the user associated with this share token
+        user = db.query(models.User).filter(models.User.user_id == crew_assignment.user_id).first()
+        if not user:
+            logger.error(f"User not found for crew assignment: {crew_assignment.user_id}")
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Validate the preference updates
+        validation_errors = validate_preferences(preference_updates)
+        if validation_errors:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid preferences: {validation_errors}"
+            )
+        
+        # Get current bitmap
+        current_bitmap = user.user_prefs_bitmap if user.user_prefs_bitmap is not None else 0
+        
+        # Apply updates to bitmap
+        updated_bitmap = preferences_to_bitmap_updates(current_bitmap, preference_updates)
+        
+        # Save to database
+        user.user_prefs_bitmap = updated_bitmap
+        db.commit()
+        
+        # Return updated preferences
+        updated_preferences = bitmap_to_preferences(updated_bitmap)
+        
+        logger.info(f"Updated guest preferences for share token: {share_token[:8]}...")
+        return updated_preferences
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
+    except Exception as e:
+        logger.error(f"Error updating guest preferences for {share_token}: {e}")
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")

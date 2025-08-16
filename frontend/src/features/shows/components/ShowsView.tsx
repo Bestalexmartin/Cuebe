@@ -1,9 +1,10 @@
 // frontend/src/features/shows/components/ShowsView.tsx
 
 import React, { useMemo } from 'react';
-import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
+import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner } from "@chakra-ui/react";
 import { AppIcon } from '../../../components/AppIcon';
 import { ShowCard } from "./ShowCard";
+import { SortMenu, SortOption } from '../../../components/shared/SortMenu';
 
 // TypeScript interfaces
 interface Venue {
@@ -54,6 +55,13 @@ interface ShowsViewProps {
 
 type SortBy = 'show_name' | 'show_date' | 'date_updated' | 'date_created';
 type SortDirection = 'asc' | 'desc';
+
+const SHOWS_SORT_OPTIONS: SortOption[] = [
+    { value: 'show_name', label: 'Name' },
+    { value: 'show_date', label: 'Show Date' },
+    { value: 'date_created', label: 'Created' },
+    { value: 'date_updated', label: 'Updated' },
+];
 
 export const ShowsView: React.FC<ShowsViewProps> = ({
     shows,
@@ -115,43 +123,12 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                     <Heading as="h2" size="md">Shows</Heading>
                 </HStack>
                 <HStack spacing="2">
-                    <Menu>
-                        <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
-                        <MenuList zIndex={9999}>
-                            <MenuItem
-                                onClick={() => handleSortClick('show_name')}
-                                color={sortBy === 'show_name' ? 'blue.400' : 'inherit'}
-                                fontWeight={sortBy === 'show_name' ? 'bold' : 'normal'}
-                                _hover={{ borderColor: 'orange.400' }}
-                            >
-                                Name
-                            </MenuItem>
-                            <MenuItem
-                                onClick={() => handleSortClick('show_date')}
-                                color={sortBy === 'show_date' ? 'blue.400' : 'inherit'}
-                                fontWeight={sortBy === 'show_date' ? 'bold' : 'normal'}
-                                _hover={{ borderColor: 'orange.400' }}
-                            >
-                                Show Date
-                            </MenuItem>
-                            <MenuItem
-                                onClick={() => handleSortClick('date_created')}
-                                color={sortBy === 'date_created' ? 'blue.400' : 'inherit'}
-                                fontWeight={sortBy === 'date_created' ? 'bold' : 'normal'}
-                                _hover={{ borderColor: 'orange.400' }}
-                            >
-                                Created
-                            </MenuItem>
-                            <MenuItem
-                                onClick={() => handleSortClick('date_updated')}
-                                color={sortBy === 'date_updated' ? 'blue.400' : 'inherit'}
-                                fontWeight={sortBy === 'date_updated' ? 'bold' : 'normal'}
-                                _hover={{ borderColor: 'orange.400' }}
-                            >
-                                Updated
-                            </MenuItem>
-                        </MenuList>
-                    </Menu>
+                    <SortMenu
+                        sortBy={sortBy}
+                        sortDirection={sortDirection}
+                        sortOptions={SHOWS_SORT_OPTIONS}
+                        onSortClick={handleSortClick}
+                    />
                     <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
                     <Button
                         bg="blue.400"
