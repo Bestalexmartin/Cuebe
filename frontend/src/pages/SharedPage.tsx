@@ -21,7 +21,7 @@ import {
   MenuItem,
   Divider
 } from '@chakra-ui/react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { ShowCard } from '../features/shows/components/ShowCard';
 import { AppIcon } from '../components/AppIcon';
 import { useIntegratedColorMode } from '../hooks/useIntegratedColorMode';
@@ -30,36 +30,7 @@ import { ViewMode } from '../features/script/components/modes/ViewMode';
 import { useUserPreferences } from '../hooks/useUserPreferences';
 import { ScriptElement } from '../features/script/types/scriptElements';
 import { formatRoleBadge } from '../constants/userRoles';
-
-// Use the same interfaces as the working ShowsView implementation
-interface Venue {
-  venue_id: string;
-  venue_name: string;
-}
-
-interface Script {
-  script_id: string;
-  script_name: string;
-  script_status: string;
-  show_id: string;
-  start_time: string;
-  end_time?: string;
-  date_created: string;
-  date_updated: string;
-  last_used?: string;
-  is_shared: boolean;
-}
-
-interface Show {
-  show_id: string;
-  show_name: string;
-  show_date?: string;
-  show_end?: string;
-  date_created: string;
-  date_updated: string;
-  venue?: Venue;
-  scripts: Script[];
-}
+import { Show } from '../features/shows/types';
 
 interface SharedData {
   shows?: Show[];
@@ -87,7 +58,6 @@ const DarkModeSwitch: React.FC = () => {
 
 export const SharedPage: React.FC = () => {
   const { shareToken } = useParams<{ shareToken: string }>();
-  const navigate = useNavigate();
   const [sharedData, setSharedData] = useState<SharedData | null>(null);
   const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
@@ -117,7 +87,6 @@ export const SharedPage: React.FC = () => {
     preferences: { colorizeDepNames, showClockTimes }
   } = useUserPreferences();
 
-  // Fetch shared data
   useEffect(() => {
     const fetchSharedData = async () => {
       if (!shareToken) {
@@ -127,8 +96,8 @@ export const SharedPage: React.FC = () => {
       }
 
       try {
-        const response = await fetch(`/api/shared/${shareToken}`);
-        
+        const response = await fetch(`/api/shared/${encodeURIComponent(shareToken)}`);
+
         if (!response.ok) {
           if (response.status === 404) {
             throw new Error('Share link not found or expired');
@@ -139,7 +108,6 @@ export const SharedPage: React.FC = () => {
         const data = await response.json();
         setSharedData(data);
       } catch (err) {
-        console.error('Error fetching shared data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load shared content');
       } finally {
         setIsLoading(false);
@@ -154,20 +122,26 @@ export const SharedPage: React.FC = () => {
   };
 
   const handleScriptClick = async (scriptId: string) => {
+    if (!shareToken) {
+      setScriptError('Invalid share link');
+      return;
+    }
+
     setIsLoadingScript(true);
     setScriptError(null);
     setViewingScriptId(scriptId);
-    
+
     try {
-      // Load script elements using share token
-      const elementsResponse = await fetch(`/api/scripts/${scriptId}/elements?share_token=${shareToken}`);
+      const elementsResponse = await fetch(
+        `/api/scripts/${scriptId}/elements?share_token=${encodeURIComponent(shareToken)}`
+      );
+
       if (!elementsResponse.ok) {
         throw new Error('Failed to load script elements');
       }
-      
+
       const elementsData = await elementsResponse.json();
-      
-      // Handle both old format (array) and new format (object with crew context)
+
       if (Array.isArray(elementsData)) {
         setScriptElements(elementsData);
         setCrewContext(null);
@@ -177,7 +151,7 @@ export const SharedPage: React.FC = () => {
       }
     } catch (err) {
       setScriptError(err instanceof Error ? err.message : 'Failed to load script');
-      setViewingScriptId(null); // Reset if failed
+      setViewingScriptId(null);
     } finally {
       setIsLoadingScript(false);
     }
@@ -190,7 +164,7 @@ export const SharedPage: React.FC = () => {
     setCrewContext(null);
   };
 
-  // Sort handling - exactly like ShowsView
+  // Sort handling
   const handleSortClick = (newSortBy: typeof sortBy) => {
     if (sortBy === newSortBy) {
       const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -202,13 +176,11 @@ export const SharedPage: React.FC = () => {
     }
   };
 
-  // Sorted shows - exactly like ShowsView but filtered for shared scripts
   const sortedShows = useMemo(() => {
     if (!sharedData?.shows || sharedData.shows.length === 0) return [];
 
-    // Filter to only shows that have shared scripts
-    const showsWithSharedScripts = sharedData.shows.filter(show => 
-      show.scripts && show.scripts.length > 0
+    const showsWithSharedScripts = sharedData.shows.filter(
+      show => show.scripts && show.scripts.length > 0
     );
 
     if (showsWithSharedScripts.length === 0) return [];
@@ -232,12 +204,17 @@ export const SharedPage: React.FC = () => {
     return showsToSort;
   }, [sharedData?.shows, sortBy, sortDirection]);
 
-  // Get current script and show for script view mode
-  const currentScript = viewingScriptId ? 
-    sharedData?.shows?.flatMap(show => show.scripts)?.find(script => script.script_id === viewingScriptId) : null;
-  
-  const currentShow = viewingScriptId ? 
-    sharedData?.shows?.find(show => show.scripts.some(script => script.script_id === viewingScriptId)) : null;
+  const currentScript = viewingScriptId
+    ? sharedData?.shows
+        ?.flatMap(show => show.scripts)
+        ?.find(script => script.script_id === viewingScriptId)
+    : null;
+
+  const currentShow = viewingScriptId
+    ? sharedData?.shows?.find(show =>
+        show.scripts.some(script => script.script_id === viewingScriptId)
+      )
+    : null;
   
 
   if (isLoading) {
@@ -282,10 +259,7 @@ export const SharedPage: React.FC = () => {
     );
   }
 
-
-  // Add defensive programming - wrap everything in try-catch to avoid crashes
-  try {
-    return (
+  return (
     <ErrorBoundary context="Shared Page">
       <Box
         display="grid"
@@ -325,7 +299,7 @@ export const SharedPage: React.FC = () => {
           </Flex>
 
           <Flex align="center" gap={4}>
-            {/* Dark mode switch - first to match main site */}
+            {/* Dark mode switch */}
             <Flex
               justify="center"
               align="center"
@@ -338,7 +312,7 @@ export const SharedPage: React.FC = () => {
               <DarkModeSwitch />
             </Flex>
 
-            {/* Shared user profile - second to match main site */}
+            {/* Shared user profile */}
             <Flex
               justify="center"
               align="center"
@@ -357,7 +331,7 @@ export const SharedPage: React.FC = () => {
           </Flex>
         </Flex>
 
-        {/* Main Content Area - Copy ShowsView structure */}
+        {/* Main Content Area */}
         <Box
           as="main"
           overflow="hidden"
@@ -366,7 +340,7 @@ export const SharedPage: React.FC = () => {
           p="2rem"
         >
           <Flex direction="column" height="100%">
-            {/* Header Section - conditional based on viewing mode */}
+            {/* Shows header */}
             {!viewingScriptId && (
               <Flex justify="space-between" align="center" flexShrink={0} mb={4}>
                 <HStack spacing="2" align="center">
@@ -424,9 +398,8 @@ export const SharedPage: React.FC = () => {
               </Flex>
             )}
 
-            {/* Script View Mode: Use ManageScriptPage structure */}
+            {/* Script View Mode */}
             {viewingScriptId ? (
-              /* Header Section for Script View */
               <>
                 <Flex justify="space-between" align="center" flexShrink={0} mb={4}>
                   <HStack spacing="3" align="center">
@@ -468,7 +441,7 @@ export const SharedPage: React.FC = () => {
                   </HStack>
                 </Flex>
 
-                {/* Script Content - Full Window */}
+                {/* Script Content */}
                 <Box
                   border="1px solid"
                   borderColor="container.border"
@@ -516,7 +489,6 @@ export const SharedPage: React.FC = () => {
                 </Box>
               </>
             ) : (
-              /* Show List Mode */
               <>
                 <Box
                   border="1px solid"
@@ -527,23 +499,8 @@ export const SharedPage: React.FC = () => {
                   overflowY="auto"
                   className="hide-scrollbar"
                 >
-                  {/* Loading State */}
-                  {isLoading && (
-                    <Flex justify="center" align="center" height="200px">
-                      <Spinner />
-                    </Flex>
-                  )}
-
-                  {/* Error State */}
-                  {error && (
-                    <Text color="red.500" textAlign="center" p="4">
-                      {error}
-                    </Text>
-                  )}
-
                   {/* Show List */}
-                  {!isLoading && !error && (
-                    sortedShows.length > 0 ? (
+                  {sortedShows.length > 0 ? (
                       <VStack spacing={4} align="stretch">
                         {sortedShows.map(show => (
                           <ShowCard
@@ -575,8 +532,7 @@ export const SharedPage: React.FC = () => {
                           }
                         </Text>
                       </Flex>
-                    )
-                  )}
+                    )}
                 </Box>
               </>
             )}
@@ -585,35 +541,4 @@ export const SharedPage: React.FC = () => {
       </Box>
     </ErrorBoundary>
   );
-  } catch (renderError) {
-    console.error('SharedPage render error:', renderError);
-    return (
-      <Flex
-        height="100vh"
-        width="100vw"
-        align="center"
-        justify="center"
-        bg="gray.50"
-        _dark={{ bg: 'gray.900' }}
-        p={4}
-      >
-        <VStack spacing={4} textAlign="center">
-          <AppIcon name="warning" boxSize="48px" color="red.500" />
-          <Text fontSize="xl" fontWeight="bold" color="red.500">
-            Something went wrong
-          </Text>
-          <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-            Please try refreshing the page or contact support if the problem persists.
-          </Text>
-          <Button
-            onClick={() => window.location.reload()}
-            colorScheme="blue"
-            size="sm"
-          >
-            Refresh Page
-          </Button>
-        </VStack>
-      </Flex>
-    );
-  }
 };
