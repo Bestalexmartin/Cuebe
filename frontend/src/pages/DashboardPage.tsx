@@ -15,7 +15,6 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ModalRenderer } from '../components/dashboard/ModalRenderer';
 import { ViewRenderer } from '../components/dashboard/ViewRenderer';
 import { DashboardProvider } from '../contexts/DashboardContext';
-import { BorderedContainer } from '../components/shared/BorderedContainer';
 
 // TypeScript interfaces
 interface DashboardPageProps {
