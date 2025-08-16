@@ -1,6 +1,6 @@
 // frontend/src/pages/SharedPage.tsx
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Box,
   Flex,
@@ -31,6 +31,12 @@ import { useUserPreferences } from '../hooks/useUserPreferences';
 import { ScriptElement } from '../features/script/types/scriptElements';
 import { formatRoleBadge } from '../constants/userRoles';
 import { Show } from '../features/shows/types';
+import { useSharedData } from '../hooks/useSharedData';
+import { useScriptViewing } from '../hooks/useScriptViewing';
+import { useSorting } from '../hooks/useSorting';
+import { ScriptHeader } from '../components/shared/ScriptHeader';
+import { ShowsList } from '../components/shared/ShowsList';
+import { LoadingSpinner, ErrorState, ScriptLoadingState } from '../components/shared/LoadingStates';
 
 interface SharedData {
   shows?: Show[];
@@ -56,28 +62,23 @@ const DarkModeSwitch: React.FC = () => {
   );
 };
 
-export const SharedPage: React.FC = () => {
+export const SharedPage = React.memo(() => {
   const { shareToken } = useParams<{ shareToken: string }>();
-  const [sharedData, setSharedData] = useState<SharedData | null>(null);
   const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<'show_name' | 'show_date' | 'date_updated' | 'date_created'>('date_updated');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
-  // Script viewing state
-  const [viewingScriptId, setViewingScriptId] = useState<string | null>(null);
-  const [scriptElements, setScriptElements] = useState<ScriptElement[]>([]);
-  const [isLoadingScript, setIsLoadingScript] = useState(false);
-  const [scriptError, setScriptError] = useState<string | null>(null);
-  const [crewContext, setCrewContext] = useState<{
-    department_name?: string;
-    department_initials?: string;
-    department_color?: string;
-    show_role?: string;
-    user_name?: string;
-  } | null>(null);
+  // Custom hooks
+  const { sharedData, isLoading, error } = useSharedData(shareToken);
+  const {
+    viewingScriptId,
+    scriptElements,
+    isLoadingScript,
+    scriptError,
+    crewContext,
+    handleScriptClick,
+    handleBackToShows,
+  } = useScriptViewing(shareToken);
+  const { sortBy, sortDirection, sortedShows, handleSortClick } = useSorting(sharedData);
 
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBgColor = useColorModeValue('white', 'gray.800');
@@ -87,176 +88,31 @@ export const SharedPage: React.FC = () => {
     preferences: { colorizeDepNames, showClockTimes }
   } = useUserPreferences();
 
-  useEffect(() => {
-    const fetchSharedData = async () => {
-      if (!shareToken) {
-        setError('Invalid share link');
-        setIsLoading(false);
-        return;
-      }
+  const handleShowClick = useCallback((showId: string) => {
+    setSelectedShowId(prevId => prevId === showId ? null : showId);
+  }, []);
 
-      try {
-        const response = await fetch(`/api/shared/${encodeURIComponent(shareToken)}`);
+  const currentScript = useMemo(() => {
+    if (!viewingScriptId || !sharedData?.shows) return null;
+    return sharedData.shows
+      .flatMap(show => show.scripts)
+      .find(script => script.script_id === viewingScriptId) || null;
+  }, [viewingScriptId, sharedData?.shows]);
 
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error('Share link not found or expired');
-          }
-          throw new Error('Failed to load shared content');
-        }
-
-        const data = await response.json();
-        setSharedData(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load shared content');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchSharedData();
-  }, [shareToken]);
-
-  const handleShowClick = (showId: string) => {
-    setSelectedShowId(selectedShowId === showId ? null : showId);
-  };
-
-  const handleScriptClick = async (scriptId: string) => {
-    if (!shareToken) {
-      setScriptError('Invalid share link');
-      return;
-    }
-
-    setIsLoadingScript(true);
-    setScriptError(null);
-    setViewingScriptId(scriptId);
-
-    try {
-      const elementsResponse = await fetch(
-        `/api/scripts/${scriptId}/elements?share_token=${encodeURIComponent(shareToken)}`
-      );
-
-      if (!elementsResponse.ok) {
-        throw new Error('Failed to load script elements');
-      }
-
-      const elementsData = await elementsResponse.json();
-
-      if (Array.isArray(elementsData)) {
-        setScriptElements(elementsData);
-        setCrewContext(null);
-      } else {
-        setScriptElements(elementsData.elements || []);
-        setCrewContext(elementsData.crew_context || null);
-      }
-    } catch (err) {
-      setScriptError(err instanceof Error ? err.message : 'Failed to load script');
-      setViewingScriptId(null);
-    } finally {
-      setIsLoadingScript(false);
-    }
-  };
-
-  const handleBackToShows = () => {
-    setViewingScriptId(null);
-    setScriptElements([]);
-    setScriptError(null);
-    setCrewContext(null);
-  };
-
-  // Sort handling
-  const handleSortClick = (newSortBy: typeof sortBy) => {
-    if (sortBy === newSortBy) {
-      const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-      setSortDirection(newDirection);
-    } else {
-      setSortBy(newSortBy);
-      const newDirection = newSortBy === 'date_updated' ? 'desc' : 'asc';
-      setSortDirection(newDirection);
-    }
-  };
-
-  const sortedShows = useMemo(() => {
-    if (!sharedData?.shows || sharedData.shows.length === 0) return [];
-
-    const showsWithSharedScripts = sharedData.shows.filter(
-      show => show.scripts && show.scripts.length > 0
-    );
-
-    if (showsWithSharedScripts.length === 0) return [];
-
-    const showsToSort = [...showsWithSharedScripts];
-    showsToSort.sort((a, b) => {
-      let comparison = 0;
-      if (sortBy === 'show_name') {
-        comparison = a.show_name.localeCompare(b.show_name);
-      } else if (sortBy === 'show_date') {
-        if (!a.show_date) return 1;
-        if (!b.show_date) return -1;
-        comparison = new Date(a.show_date).getTime() - new Date(b.show_date).getTime();
-      } else if (sortBy === 'date_created') {
-        comparison = new Date(b.date_created).getTime() - new Date(a.date_created).getTime();
-      } else {
-        comparison = new Date(b.date_updated).getTime() - new Date(a.date_updated).getTime();
-      }
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
-    return showsToSort;
-  }, [sharedData?.shows, sortBy, sortDirection]);
-
-  const currentScript = viewingScriptId
-    ? sharedData?.shows
-        ?.flatMap(show => show.scripts)
-        ?.find(script => script.script_id === viewingScriptId)
-    : null;
-
-  const currentShow = viewingScriptId
-    ? sharedData?.shows?.find(show =>
-        show.scripts.some(script => script.script_id === viewingScriptId)
-      )
-    : null;
+  const currentShow = useMemo(() => {
+    if (!viewingScriptId || !sharedData?.shows) return null;
+    return sharedData.shows.find(show =>
+      show.scripts.some(script => script.script_id === viewingScriptId)
+    ) || null;
+  }, [viewingScriptId, sharedData?.shows]);
   
 
   if (isLoading) {
-    return (
-      <Flex
-        height="100vh"
-        width="100vw"
-        align="center"
-        justify="center"
-        bg={bgColor}
-      >
-        <VStack spacing={4}>
-          <Spinner size="xl" color="blue.400" />
-          <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-            Loading shared content...
-          </Text>
-        </VStack>
-      </Flex>
-    );
+    return <LoadingSpinner bgColor={bgColor} />;
   }
 
   if (error || !sharedData) {
-    return (
-      <Flex
-        height="100vh"
-        width="100vw"
-        align="center"
-        justify="center"
-        bg={bgColor}
-        p={4}
-      >
-        <VStack spacing={4} textAlign="center">
-          <AppIcon name="warning" boxSize="48px" color="orange.400" />
-          <Text fontSize="xl" fontWeight="bold" color="red.500">
-            {error || 'Content Not Available'}
-          </Text>
-          <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-            This share link may be invalid or expired.
-          </Text>
-        </VStack>
-      </Flex>
-    );
+    return <ErrorState bgColor={bgColor} error={error || 'Content Not Available'} />;
   }
 
   return (
@@ -401,45 +257,11 @@ export const SharedPage: React.FC = () => {
             {/* Script View Mode */}
             {viewingScriptId ? (
               <>
-                <Flex justify="space-between" align="center" flexShrink={0} mb={4}>
-                  <HStack spacing="3" align="center">
-                    <AppIcon name="script" boxSize="20px" />
-                    <Heading as="h2" size="md">{currentScript?.script_name || 'Script'}</Heading>
-                    {crewContext?.department_name && (
-                      <>
-                        <Text color="gray.400" fontSize="lg">—</Text>
-                        <Badge 
-                          colorScheme="blue"
-                          variant="solid"
-                          fontSize="sm"
-                          style={{ backgroundColor: crewContext.department_color || '#3182CE' }}
-                        >
-                          {crewContext.department_name}
-                        </Badge>
-                      </>
-                    )}
-                    {crewContext?.show_role && (
-                      <Badge 
-                        colorScheme="green"
-                        variant="solid"
-                        fontSize="sm"
-                      >
-                        {formatRoleBadge(crewContext.show_role)}
-                      </Badge>
-                    )}
-                  </HStack>
-                  <HStack spacing="2">
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={handleBackToShows}
-                      _hover={{ bg: 'gray.100' }}
-                      _dark={{ _hover: { bg: 'gray.700' } }}
-                    >
-                      Back
-                    </Button>
-                  </HStack>
-                </Flex>
+                <ScriptHeader 
+                  currentScript={currentScript}
+                  crewContext={crewContext}
+                  onBackToShows={handleBackToShows}
+                />
 
                 {/* Script Content */}
                 <Box
@@ -451,22 +273,12 @@ export const SharedPage: React.FC = () => {
                   display="flex"
                   flexDirection="column"
                 >
-                  {isLoadingScript ? (
-                    <Flex justify="center" align="center" height="200px">
-                      <VStack spacing={4}>
-                        <Spinner size="lg" />
-                        <Text>Loading script...</Text>
-                      </VStack>
-                    </Flex>
-                  ) : scriptError ? (
-                    <Flex direction="column" align="center" justify="center" height="200px" gap="4">
-                      <AppIcon name="warning" boxSize="40px" color="red.400" />
-                      <Text color="red.500" textAlign="center">{scriptError}</Text>
-                      <Button onClick={handleBackToShows} variant="outline" size="sm">
-                        Back to Shows
-                      </Button>
-                    </Flex>
-                  ) : (
+                  <ScriptLoadingState 
+                    isLoading={isLoadingScript}
+                    error={scriptError}
+                    onBackToShows={handleBackToShows}
+                  />
+                  {!isLoadingScript && !scriptError && (
                     <Box
                       flex={1}
                       p="4"
@@ -499,40 +311,17 @@ export const SharedPage: React.FC = () => {
                   overflowY="auto"
                   className="hide-scrollbar"
                 >
-                  {/* Show List */}
-                  {sortedShows.length > 0 ? (
-                      <VStack spacing={4} align="stretch">
-                        {sortedShows.map(show => (
-                          <ShowCard
-                            key={show.show_id}
-                            show={show}
-                            sortBy={sortBy}
-                            sortDirection={sortDirection}
-                            isSelected={selectedShowId === show.show_id}
-                            isHovered={hoveredCardId === show.show_id}
-                            onShowHover={setHoveredCardId}
-                            onShowClick={handleShowClick}
-                            selectedScriptId={null}
-                            onScriptClick={handleScriptClick}
-                            onCreateScriptClick={() => {}}
-                            hideEditButton={true}
-                            hideCreateScriptButton={true}
-                            hideScriptBadges={true}
-                            disableInternalNavigation={true}
-                          />
-                        ))}
-                      </VStack>
-                    ) : (
-                      <Flex direction="column" align="center" justify="center" height="200px" gap="4">
-                        <AppIcon name="show" boxSize="40px" color="gray.400" />
-                        <Text color="gray.500" textAlign="center">
-                          {sharedData && sharedData.shows ? 
-                            "No scripts have been shared with you." : 
-                            "No shows have been shared with you."
-                          }
-                        </Text>
-                      </Flex>
-                    )}
+                  <ShowsList 
+                    sortedShows={sortedShows}
+                    selectedShowId={selectedShowId}
+                    hoveredCardId={hoveredCardId}
+                    sortBy={sortBy}
+                    sortDirection={sortDirection}
+                    sharedData={sharedData}
+                    onShowHover={setHoveredCardId}
+                    onShowClick={handleShowClick}
+                    onScriptClick={handleScriptClick}
+                  />
                 </Box>
               </>
             )}
@@ -541,4 +330,4 @@ export const SharedPage: React.FC = () => {
       </Box>
     </ErrorBoundary>
   );
-};
+});
