@@ -5,6 +5,23 @@ import { SignedIn, UserButton } from "@clerk/clerk-react";
 import { Flex, Text, Heading, Image, IconButton, useColorModeValue } from "@chakra-ui/react";
 import { AppIcon } from '../AppIcon';
 import { useIntegratedColorMode } from '../../hooks/useIntegratedColorMode';
+import { BorderedContainer } from '../shared/BorderedContainer';
+
+const DarkModeSwitch: React.FC = () => {
+  const { colorMode, toggleColorMode } = useIntegratedColorMode();
+
+  return (
+    <IconButton
+      aria-label="Toggle dark mode"
+      icon={<AppIcon name={colorMode === 'light' ? 'moon' : 'sun'} />}
+      onClick={toggleColorMode}
+      variant="ghost"
+      isRound={true}
+      _focus={{ boxShadow: 'none' }}
+      _hover={{ bg: "transparent", color: "initial" }}
+    />
+  );
+};
 
 // TypeScript interfaces
 
@@ -13,25 +30,6 @@ interface HeaderProps {
   isMenuOpen: boolean;
 }
 
-const DarkModeSwitch: React.FC = () => {
-  const { colorMode, toggleColorMode } = useIntegratedColorMode();
-
-  const handleToggle = (): void => {
-    toggleColorMode();
-  };
-
-  return (
-    <IconButton
-      aria-label="Toggle dark mode"
-      icon={<AppIcon name={colorMode === 'light' ? 'moon' : 'sun'} />}
-      onClick={handleToggle}
-      variant="ghost"
-      isRound={true}
-      _focus={{ boxShadow: 'none' }}
-      _hover={{ bg: "transparent", color: "initial" }}
-    />
-  );
-};
 
 const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
   const handleMenuOpen = (): void => {
@@ -72,28 +70,12 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
 
           {/* This group is now ALWAYS visible */}
           <Flex align="center" gap="4">
-            <Flex
-              justify="center"
-              align="center"
-              boxSize="40px"
-              borderRadius="full"
-              border="3px solid"
-              borderColor="blue.400"
-              _hover={{ borderColor: 'orange.400' }}
-            >
+            <BorderedContainer>
               <DarkModeSwitch />
-            </Flex>
-            <Flex
-              justify="center"
-              align="center"
-              boxSize="40px"
-              borderRadius="full"
-              border="3px solid"
-              borderColor="blue.400"
-              _hover={{ borderColor: 'orange.400' }}
-            >
+            </BorderedContainer>
+            <BorderedContainer>
               <UserButton />
-            </Flex>
+            </BorderedContainer>
           </Flex>
 
           {/* This button is visible ONLY on mobile screens */}

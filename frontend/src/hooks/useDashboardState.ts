@@ -122,6 +122,68 @@ interface UseDashboardStateReturn {
 }
 
 const SCROLL_DELAY = 100; // Configurable scroll delay
+const SCROLL_PADDING = 15; // Padding around scrolled elements for better visual spacing
+
+// Helper function to scroll element into view with proper padding
+const scrollElementIntoView = (targetRef: HTMLElement) => {
+  // Find the scroll container more reliably
+  let container = targetRef.parentElement;
+  while (container && container !== document.body) {
+    const overflowY = window.getComputedStyle(container).overflowY;
+    if (overflowY === 'auto' || overflowY === 'scroll') {
+      break;
+    }
+    container = container.parentElement;
+  }
+  
+  if (container && container !== document.body) {
+    console.log('Found scroll container:', container.className || container.tagName, 'with overflow:', window.getComputedStyle(container).overflowY);
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = targetRef.getBoundingClientRect();
+    const scrollTop = container.scrollTop;
+    const containerHeight = containerRect.height;
+    
+    // Calculate target position relative to scroll container
+    const targetRelativeTop = targetRect.top - containerRect.top;
+    const targetHeight = targetRect.height;
+    
+    let targetScrollPosition;
+    
+    if (targetRelativeTop < SCROLL_PADDING) {
+      // Element is too close to top or above visible area - scroll up to show it with padding
+      targetScrollPosition = scrollTop + targetRelativeTop - SCROLL_PADDING;
+    } else if (targetRelativeTop + targetHeight > containerHeight - SCROLL_PADDING) {
+      // Element is too close to bottom or below visible area - scroll down to show it with padding
+      targetScrollPosition = scrollTop + targetRelativeTop + targetHeight - containerHeight + SCROLL_PADDING;
+    } else {
+      // Element is already visible with adequate padding - don't scroll
+      console.log('Element already visible with adequate padding, no scroll needed');
+      return;
+    }
+    
+    // Ensure we don't scroll past the top
+    const finalScrollPosition = Math.max(0, targetScrollPosition);
+    
+    console.log('Container height:', containerHeight, 'Target relative:', targetRelativeTop, 'Target height:', targetHeight, 'Final position:', finalScrollPosition);
+    container.scrollTo({
+      top: finalScrollPosition,
+      behavior: "smooth"
+    });
+  } else {
+    console.log('Using window scroll fallback');
+    // Fallback with custom padding by calculating offset
+    const targetRect = targetRef.getBoundingClientRect();
+    const windowHeight = window.innerHeight;
+    const targetCenter = targetRect.top + targetRect.height / 2;
+    const viewportCenter = windowHeight / 2;
+    const offset = targetCenter - viewportCenter;
+    
+    window.scrollBy({
+      top: offset,
+      behavior: "smooth"
+    });
+  }
+};
 
 export const useDashboardState = (
   shows: Show[] | undefined,
@@ -232,22 +294,7 @@ export const useDashboardState = (
           if (currentSelection) {
             const targetRef = showCardRefs.current[currentSelection];
             if (targetRef) {
-              const container = targetRef.closest('[class*="overflowY"]') || targetRef.parentElement?.closest('[style*="overflow-y: auto"]') || document.documentElement;
-              if (container && container !== document.documentElement) {
-                const containerRect = container.getBoundingClientRect();
-                const targetRect = targetRef.getBoundingClientRect();
-                const scrollTop = container.scrollTop;
-                const targetPosition = targetRect.top - containerRect.top + scrollTop - 10;
-                container.scrollTo({
-                  top: targetPosition,
-                  behavior: "smooth"
-                });
-              } else {
-                targetRef.scrollIntoView({
-                  behavior: "smooth",
-                  block: "nearest",
-                });
-              }
+              scrollElementIntoView(targetRef);
             }
           }
 
@@ -343,22 +390,7 @@ export const useDashboardState = (
     setTimeout(() => {
       const targetRef = showCardRefs.current[showId];
       if (targetRef) {
-        const container = targetRef.closest('[class*="overflowY"]') || targetRef.parentElement?.closest('[style*="overflow-y: auto"]') || document.documentElement;
-        if (container && container !== document.documentElement) {
-          const containerRect = container.getBoundingClientRect();
-          const targetRect = targetRef.getBoundingClientRect();
-          const scrollTop = container.scrollTop;
-          const targetPosition = targetRect.top - containerRect.top + scrollTop - 10;
-          container.scrollTo({
-            top: targetPosition,
-            behavior: "smooth"
-          });
-        } else {
-          targetRef.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-          });
-        }
+        scrollElementIntoView(targetRef);
       }
     }, SCROLL_DELAY);
   };
@@ -376,22 +408,7 @@ export const useDashboardState = (
     setTimeout(() => {
       const targetRef = showCardRefs.current[venueId];
       if (targetRef) {
-        const container = targetRef.closest('[class*="overflowY"]') || targetRef.parentElement?.closest('[style*="overflow-y: auto"]') || document.documentElement;
-        if (container && container !== document.documentElement) {
-          const containerRect = container.getBoundingClientRect();
-          const targetRect = targetRef.getBoundingClientRect();
-          const scrollTop = container.scrollTop;
-          const targetPosition = targetRect.top - containerRect.top + scrollTop - 10;
-          container.scrollTo({
-            top: targetPosition,
-            behavior: "smooth"
-          });
-        } else {
-          targetRef.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-          });
-        }
+        scrollElementIntoView(targetRef);
       }
     }, SCROLL_DELAY);
   };
@@ -409,22 +426,7 @@ export const useDashboardState = (
     setTimeout(() => {
       const targetRef = showCardRefs.current[departmentId];
       if (targetRef) {
-        const container = targetRef.closest('[class*="overflowY"]') || targetRef.parentElement?.closest('[style*="overflow-y: auto"]') || document.documentElement;
-        if (container && container !== document.documentElement) {
-          const containerRect = container.getBoundingClientRect();
-          const targetRect = targetRef.getBoundingClientRect();
-          const scrollTop = container.scrollTop;
-          const targetPosition = targetRect.top - containerRect.top + scrollTop - 10;
-          container.scrollTo({
-            top: targetPosition,
-            behavior: "smooth"
-          });
-        } else {
-          targetRef.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-          });
-        }
+        scrollElementIntoView(targetRef);
       }
     }, SCROLL_DELAY);
   };
@@ -437,22 +439,7 @@ export const useDashboardState = (
     setTimeout(() => {
       const targetRef = showCardRefs.current[crewId];
       if (targetRef) {
-        const container = targetRef.closest('[class*="overflowY"]') || targetRef.parentElement?.closest('[style*="overflow-y: auto"]') || document.documentElement;
-        if (container && container !== document.documentElement) {
-          const containerRect = container.getBoundingClientRect();
-          const targetRect = targetRef.getBoundingClientRect();
-          const scrollTop = container.scrollTop;
-          const targetPosition = targetRect.top - containerRect.top + scrollTop - 10;
-          container.scrollTo({
-            top: targetPosition,
-            behavior: "smooth"
-          });
-        } else {
-          targetRef.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-          });
-        }
+        scrollElementIntoView(targetRef);
       }
     }, SCROLL_DELAY);
   };
