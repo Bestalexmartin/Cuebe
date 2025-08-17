@@ -2,18 +2,8 @@
 
 # backend/tests/system_tests package
 
-import time
-import socket
 import logging
-import subprocess
-import json as json_lib
-import os
-from fastapi import APIRouter, HTTPException, Depends, Request
-from sqlalchemy.orm import Session
-from sqlalchemy import text
-from database import get_db
-from routers.auth import get_current_user
-import models
+from fastapi import APIRouter
 
 # Optional rate limiting import
 try:
@@ -60,4 +50,4 @@ def rate_limit(limit_config):
     return decorator
 
 # Import endpoint modules which register routes on import
-from . import general, speed_tests, filesystem_checks, external_service_checks  # noqa: E402
+from . import general, speed_tests, filesystem_checks, external_service_checks  # noqa: F401,E402

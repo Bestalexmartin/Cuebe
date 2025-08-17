@@ -61,20 +61,13 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       // Only fetch for saved assignments (not ones with isNew flag)
       const savedAssignments = assignments.filter(a => !a.isNew);
       
-      console.log('=== SHARE TOKEN FETCH DEBUG ===');
-      console.log(`Total assignments: ${assignments.length}`);
-      console.log(`Saved assignments: ${savedAssignments.length}`);
-      console.log(`Assignments:`, assignments.map(a => ({ id: a.id, isNew: a.isNew, crew_ids: a.crew_member_ids })));
-      
       if (!savedAssignments.length || !crews.length) {
-        console.log('No saved assignments or crews, skipping share token fetch');
         return;
       }
       
       try {
         const token = await getToken();
         if (!token) {
-          console.log('No auth token, skipping share token fetch');
           return;
         }
         
@@ -83,13 +76,10 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
         // Fetch share tokens for each unique crew member in saved assignments only
         const uniqueUserIds = [...new Set(savedAssignments.flatMap(a => a.crew_member_ids))];
         
-        console.log(`Fetching share tokens for ${uniqueUserIds.length} saved crew assignments`);
-        console.log(`User IDs: ${uniqueUserIds.join(', ')}`);
         
         await Promise.all(
           uniqueUserIds.map(async (userId) => {
             try {
-              console.log(`Fetching share token for user ${userId}...`);
               const response = await fetch(`/api/shows/${showId}/crew/${userId}/share`, {
                 method: 'POST',
                 headers: {
@@ -101,7 +91,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
               if (response.ok) {
                 const shareData = await response.json();
                 tokenMap.set(userId, shareData.share_token);
-                console.log(`✅ Got share token for user ${userId}: ${shareData.share_token.slice(-8)}`);
               } else {
                 console.warn(`❌ Failed to get share token for user ${userId}: ${response.status} ${response.statusText}`);
               }
@@ -111,7 +100,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
           })
         );
         
-        console.log(`Final token map size: ${tokenMap.size}`);
         setShareTokens(tokenMap);
       } catch (error) {
         console.error('💥 Error in fetchShareTokens:', error);
@@ -130,8 +118,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
         throw new Error('Authentication token not available');
       }
 
-      console.log(`Creating crew assignment: user ${crewMember.user_id}, dept ${department.department_id}, role ${role}`);
-      
       const response = await fetch(`/api/shows/${showId}/crew-assignments`, {
         method: 'POST',
         headers: {
@@ -151,7 +137,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       }
 
       const newAssignment = await response.json();
-      console.log('✅ Created assignment:', newAssignment);
       
       // Create a local assignment object for immediate UI update
       const localAssignment: CrewAssignmentRow = {
@@ -178,7 +163,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
         if (shareResponse.ok) {
           const shareData = await shareResponse.json();
           setShareTokens(prev => new Map(prev).set(crewMember.user_id, shareData.share_token));
-          console.log(`✅ Generated share token for new assignment: ${shareData.share_token.slice(-8)}`);
         }
       } catch (shareError) {
         console.warn('Failed to generate share token for new assignment:', shareError);
@@ -237,7 +221,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
         throw new Error('Authentication token not available');
       }
 
-      console.log(`Deleting crew assignment: ${assignmentId}`);
       
       const response = await fetch(`/api/crew-assignments/${assignmentId}`, {
         method: 'DELETE',
@@ -251,7 +234,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
         throw new Error(errorData.detail || `Failed to delete assignment: ${response.status}`);
       }
 
-      console.log('✅ Deleted assignment:', assignmentId);
       
       // Update local state
       const remainingAssignments = assignments.filter(a => a.id !== assignmentId);
@@ -376,7 +358,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
         throw new Error('Authentication token not available');
       }
 
-      console.log(`Updating role for assignment ${selectedAssignmentForEdit.id} to: ${newRole}`);
       
       const response = await fetch(`/api/crew-assignments/${selectedAssignmentForEdit.id}`, {
         method: 'PATCH',
@@ -395,7 +376,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       }
 
       const updatedAssignment = await response.json();
-      console.log('✅ Updated assignment role:', updatedAssignment);
       
       // Update local state
       const updatedAssignments = assignments.map(assignment =>
