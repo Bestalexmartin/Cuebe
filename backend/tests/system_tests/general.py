@@ -15,9 +15,9 @@ from . import (
     redis,
     RedisConnectionError,
     logger,
-    get_current_user,
-    models,
 )
+from routers.auth import get_current_user
+import models
 
 import time
 import os
@@ -277,14 +277,12 @@ def prepare_pytest(
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pass
 
-        try:
-            import pytest
+        import importlib.util
+        if importlib.util.find_spec("pytest") is not None:
             result["pytest_available"] = True
             result["method_used"] = "available as Python module"
             logger.info("pytest available as Python module")
             return result
-        except ImportError:
-            pass
 
         logger.info("pytest not found, attempting installation for API testing")
         result["installation_required"] = True
@@ -325,10 +323,8 @@ def prepare_pytest(
                     else:
                         logger.warning("pytest installation appeared successful but verification failed")
                 else:
-                    logger.debug(f"pytest installation method failed: {install_result.stderr}")
                     continue
-            except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError) as e:
-                logger.debug(f"pytest installation method {' '.join(method)} failed: {str(e)}")
+            except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError):
                 continue
 
         result["error"] = "All pytest installation methods failed. pytest may need to be installed manually for API testing."
@@ -347,7 +343,6 @@ async def run_pytest_suite(
     current_user: models.User = Depends(get_current_user)
 ):
     """Run pytest test suite and return structured results"""
-    import json
     import os
     import subprocess
     
@@ -604,16 +599,16 @@ def test_fixtures_status(
             
             # Test database setup
             try:
-                from conftest import TestingSessionLocal, engine
+                from conftest import TestingSessionLocal
                 db = TestingSessionLocal()
                 db.close()
                 result["database_setup"] = True
             except Exception as db_error:
                 result["errors"].append(f"Database setup error: {str(db_error)}")
-            
+
             # Test mock data generation
             try:
-                fake_data = conftest.fake.email()  # Test faker instance
+                conftest.fake.email()  # Test faker instance
                 result["mock_data_working"] = True
             except Exception as mock_error:
                 result["errors"].append(f"Mock data generation error: {str(mock_error)}")
