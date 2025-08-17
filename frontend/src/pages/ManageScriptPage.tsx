@@ -51,6 +51,7 @@ import { useScriptNavigation } from '../hooks/useScriptNavigation';
 import { useScriptFormSync } from '../features/script/hooks/useScriptFormSync';
 import { useShowCrew } from '../features/shows/hooks/useShowCrew';
 import { createActionMenuConfig } from '../features/script/config/actionMenuConfig';
+import { FloatingValidationErrorPanel } from '../components/base/FloatingValidationErrorPanel';
 
 const MODAL_NAMES = {
     DELETE: 'delete',
@@ -761,7 +762,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                     {/* Left: Script Content Area - matches BaseEditPage dimensions but shifted left */}
                     <Box
                         flex={1}
-                        bg="window.background"
                         borderRadius="md"
                         mr={isMobile ? "0" : "8"}
                         position="relative"
@@ -857,33 +857,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             </Flex>
 
             {/* Floating Validation Error Panel */}
-            {form.fieldErrors.length > 0 && (
-                <Box
-                    position="fixed"
-                    bottom="20px"
-                    left="50%"
-                    transform="translateX(-50%)"
-                    bg="red.500"
-                    color="white"
-                    px="8"
-                    py="6"
-                    borderRadius="lg"
-                    boxShadow="xl"
-                    flexShrink={0}
-                    minWidth="450px"
-                >
-                    <Text fontWeight="semibold" fontSize="md" display="inline">
-                        Validation Errors:
-                    </Text>
-                    <Text fontSize="md" display="inline" ml={1}>
-                        {form.fieldErrors.map((error, i) => (
-                            <Text key={i} as="span">
-                                {i > 0 && '; '}{error.message}
-                            </Text>
-                        ))}
-                    </Text>
-                </Box>
-            )}
+            <FloatingValidationErrorPanel fieldErrors={form.fieldErrors} />
 
             {/* All Script Modals - Consolidated */}
             <ScriptModals

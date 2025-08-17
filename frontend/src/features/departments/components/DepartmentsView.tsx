@@ -1,11 +1,14 @@
 // frontend/src/features/departments/components/DepartmentsView.tsx
 
 import React, { useMemo } from 'react';
-import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
+import { Flex } from "@chakra-ui/react";
 import { useNavigate } from 'react-router-dom';
-import { AppIcon } from '../../../components/AppIcon';
 import { DepartmentCard } from './DepartmentCard';
 import { useDepartments } from '../hooks/useDepartments';
+import { EntityViewHeader } from '../../../components/shared/EntityViewHeader';
+import { EntityViewContainer } from '../../../components/shared/EntityViewContainer';
+import { EntityEmptyState } from '../../../components/shared/EntityEmptyState';
+import { SortOption } from '../../../components/shared/SortMenu';
 
 
 // TypeScript interfaces
@@ -21,6 +24,13 @@ interface DepartmentsViewProps {
     onSortChange: (sortBy: 'department_name' | 'department_color' | 'date_created' | 'date_updated', sortDirection: 'asc' | 'desc') => void;
     showCardRefs: React.MutableRefObject<Record<string, HTMLElement | null>>;
 }
+
+const DEPARTMENTS_SORT_OPTIONS: SortOption[] = [
+    { value: 'department_name', label: 'Name' },
+    { value: 'department_color', label: 'Color' },
+    { value: 'date_created', label: 'Date Added' },
+    { value: 'date_updated', label: 'Updated' },
+];
 
 export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
     onCreateDepartment,
@@ -38,13 +48,14 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
     const { departments, isLoading, error } = useDepartments();
 
     // Department-specific sorting logic
-    const handleSortClick = (newSortBy: typeof sortBy) => {
-        if (sortBy === newSortBy) {
+    const handleSortClick = (newSortBy: string) => {
+        const typedSortBy = newSortBy as typeof sortBy;
+        if (sortBy === typedSortBy) {
             const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-            onSortChange(newSortBy, newDirection);
+            onSortChange(typedSortBy, newDirection);
         } else {
-            const newDirection = newSortBy === 'department_name' ? 'asc' : 'desc';
-            onSortChange(newSortBy, newDirection);
+            const newDirection = typedSortBy === 'department_name' ? 'asc' : 'desc';
+            onSortChange(typedSortBy, newDirection);
         }
     };
 
@@ -98,124 +109,48 @@ export const DepartmentsView: React.FC<DepartmentsViewProps> = ({
     // Use the modal handler from props if provided, otherwise use local modal
     const handleCreateDepartment = onCreateDepartment;
 
+    const emptyState = (
+        <EntityEmptyState
+            entityIcon="department"
+            message="You haven't added any departments yet."
+            actionButtonText="Add Your First Department"
+            onActionClick={handleCreateDepartment}
+        />
+    );
+
     return (
-        <>
-            <Flex direction="column" height="100%">
-                {/* Header Section */}
-                <Flex justify="space-between" align="center" flexShrink={0}>
-                    <HStack spacing="2" align="center">
-                        <AppIcon name="department" boxSize="25px" />
-                        <Heading as="h2" size="md">Departments</Heading>
-                    </HStack>
-                    <HStack spacing="2">
-                        <Menu>
-                            <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
-                            <MenuList zIndex={9999}>
-                                <MenuItem
-                                    onClick={() => handleSortClick('department_name')}
-                                    color={sortBy === 'department_name' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'department_name' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Name
-                                </MenuItem>
-                                <MenuItem
-                                    onClick={() => handleSortClick('department_color')}
-                                    color={sortBy === 'department_color' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'department_color' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Color
-                                </MenuItem>
-                                <MenuItem
-                                    onClick={() => handleSortClick('date_created')}
-                                    color={sortBy === 'date_created' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'date_created' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Date Added
-                                </MenuItem>
-                                <MenuItem
-                                    onClick={() => handleSortClick('date_updated')}
-                                    color={sortBy === 'date_updated' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'date_updated' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Updated
-                                </MenuItem>
-                            </MenuList>
-                        </Menu>
-                        <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
-                        <Button
-                            bg="blue.400"
-                            color="white"
-                            size="xs"
-                            onClick={handleCreateDepartment}
-                            _hover={{ bg: 'orange.400' }}
-                        >
-                            Add Department
-                        </Button>
-                    </HStack>
-                </Flex>
+        <Flex direction="column" height="100%">
+            <EntityViewHeader
+                entityName="Departments"
+                entityIcon="department"
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                sortOptions={DEPARTMENTS_SORT_OPTIONS}
+                onSortClick={handleSortClick}
+                createButtonText="Add Department"
+                onCreateClick={handleCreateDepartment}
+            />
 
-                <Box
-                    mt="4"
-                    border="1px solid"
-                    borderColor="container.border"
-                    p="4"
-                    borderRadius="md"
-                    flexGrow={1}
-                    overflowY="auto"
-                    className="hide-scrollbar"
-                >
-                    {isLoading && (
-                        <Flex justify="center" align="center" height="200px">
-                            <Spinner />
-                        </Flex>
-                    )}
-                    {error && (
-                        <Text color="red.500" textAlign="center" p="4">
-                            {error}
-                        </Text>
-                    )}
-                    {!isLoading && !error && (
-                        sortedDepartments.length > 0 ? (
-                            <VStack spacing={4} align="stretch">
-                                {sortedDepartments.map(department => (
-                                    <div key={department.department_id} ref={el => { showCardRefs.current[department.department_id] = el; }}>
-                                        <DepartmentCard
-                                            department={department}
-                                            onEdit={handleEdit}
-                                            onDepartmentClick={onDepartmentClick}
-                                            isHovered={hoveredCardId === department.department_id}
-                                            isSelected={selectedDepartmentId === department.department_id}
-                                            onHover={setHoveredCardId}
-                                            onSaveNavigationState={onSaveNavigationState}
-                                        />
-                                    </div>
-                                ))}
-                            </VStack>
-                        ) : (
-                            <Flex direction="column" align="center" justify="center" height="200px" gap="4">
-                                <AppIcon name="department" boxSize="40px" color="gray.400" />
-                                <Text color="gray.500" textAlign="center">
-                                    You haven't added any departments yet.
-                                </Text>
-                                <Button
-                                    bg="blue.400"
-                                    color="white"
-                                    size="sm"
-                                    onClick={handleCreateDepartment}
-                                    _hover={{ bg: 'orange.400' }}
-                                >
-                                    Add Your First Department
-                                </Button>
-                            </Flex>
-                        )
-                    )}
-                </Box>
-            </Flex>
-
-        </>
+            <EntityViewContainer
+                isLoading={isLoading}
+                error={error}
+                hasItems={sortedDepartments.length > 0}
+                emptyStateComponent={emptyState}
+            >
+                {sortedDepartments.map(department => (
+                    <div key={department.department_id} ref={el => { showCardRefs.current[department.department_id] = el; }}>
+                        <DepartmentCard
+                            department={department}
+                            onEdit={handleEdit}
+                            onDepartmentClick={onDepartmentClick}
+                            isHovered={hoveredCardId === department.department_id}
+                            isSelected={selectedDepartmentId === department.department_id}
+                            onHover={setHoveredCardId}
+                            onSaveNavigationState={onSaveNavigationState}
+                        />
+                    </div>
+                ))}
+            </EntityViewContainer>
+        </Flex>
     );
 };

@@ -1,11 +1,14 @@
 // frontend/src/features/venues/components/VenuesView.tsx
 
 import React, { useMemo } from 'react';
-import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
-import { AppIcon } from '../../../components/AppIcon';
+import { Flex } from "@chakra-ui/react";
 import { useVenues } from '../hooks/useVenues';
 import { VenueCard } from './VenueCard';
 import { useNavigate } from 'react-router-dom';
+import { EntityViewHeader } from '../../../components/shared/EntityViewHeader';
+import { EntityViewContainer } from '../../../components/shared/EntityViewContainer';
+import { EntityEmptyState } from '../../../components/shared/EntityEmptyState';
+import { SortOption } from '../../../components/shared/SortMenu';
 
 // TypeScript interfaces
 interface VenuesViewProps {
@@ -20,6 +23,14 @@ interface VenuesViewProps {
     onSortChange: (sortBy: 'venue_name' | 'capacity' | 'venue_type' | 'date_created' | 'date_updated', sortDirection: 'asc' | 'desc') => void;
     showCardRefs: React.MutableRefObject<Record<string, HTMLElement | null>>;
 }
+
+const VENUES_SORT_OPTIONS: SortOption[] = [
+    { value: 'venue_name', label: 'Name' },
+    { value: 'capacity', label: 'Capacity' },
+    { value: 'venue_type', label: 'Type' },
+    { value: 'date_created', label: 'Created' },
+    { value: 'date_updated', label: 'Updated' },
+];
 
 export const VenuesView: React.FC<VenuesViewProps> = ({
     onCreateVenue,
@@ -37,13 +48,14 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
     const { venues, isLoading } = useVenues();
 
     // Venue-specific sorting logic
-    const handleSortClick = (newSortBy: typeof sortBy) => {
-        if (sortBy === newSortBy) {
+    const handleSortClick = (newSortBy: string) => {
+        const typedSortBy = newSortBy as typeof sortBy;
+        if (sortBy === typedSortBy) {
             const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-            onSortChange(newSortBy, newDirection);
+            onSortChange(typedSortBy, newDirection);
         } else {
-            const newDirection = newSortBy === 'venue_name' ? 'asc' : 'desc';
-            onSortChange(newSortBy, newDirection);
+            const newDirection = typedSortBy === 'venue_name' ? 'asc' : 'desc';
+            onSortChange(typedSortBy, newDirection);
         }
     };
 
@@ -85,127 +97,48 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
     // Use the modal handler from props if provided, otherwise use local modal
     const handleCreateVenue = onCreateVenue;
 
+    const emptyState = (
+        <EntityEmptyState
+            entityIcon="venue"
+            message="You haven't added any venues yet."
+            actionButtonText="Add Your First Venue"
+            onActionClick={handleCreateVenue}
+        />
+    );
+
     return (
-        <>
-            <Flex direction="column" height="100%">
-                <Flex justify="space-between" align="center" flexShrink={0}>
-                    <HStack spacing="2" align="center">
-                        <AppIcon name="venue" boxSize="25px" />
-                        <Heading as="h2" size="md">Venues</Heading>
-                    </HStack>
-                    <HStack spacing="2">
-                        <Menu>
-                            <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
-                            <MenuList zIndex={9999}>
-                                <MenuItem
-                                    onClick={() => handleSortClick('venue_name')}
-                                    color={sortBy === 'venue_name' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'venue_name' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Name
-                                </MenuItem>
-                                <MenuItem
-                                    onClick={() => handleSortClick('capacity')}
-                                    color={sortBy === 'capacity' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'capacity' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Capacity
-                                </MenuItem>
-                                <MenuItem
-                                    onClick={() => handleSortClick('venue_type')}
-                                    color={sortBy === 'venue_type' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'venue_type' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Type
-                                </MenuItem>
-                                <MenuItem
-                                    onClick={() => handleSortClick('date_created')}
-                                    color={sortBy === 'date_created' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'date_created' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Created
-                                </MenuItem>
-                                <MenuItem
-                                    onClick={() => handleSortClick('date_updated')}
-                                    color={sortBy === 'date_updated' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'date_updated' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Updated
-                                </MenuItem>
-                            </MenuList>
-                        </Menu>
-                        <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
-                        <Button
-                            bg="blue.400"
-                            color="white"
-                            size="xs"
-                            onClick={handleCreateVenue}
-                            _hover={{ bg: 'orange.400' }}
-                        >
-                            Add Venue
-                        </Button>
-                    </HStack>
-                </Flex>
+        <Flex direction="column" height="100%">
+            <EntityViewHeader
+                entityName="Venues"
+                entityIcon="venue"
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                sortOptions={VENUES_SORT_OPTIONS}
+                onSortClick={handleSortClick}
+                createButtonText="Add Venue"
+                onCreateClick={handleCreateVenue}
+            />
 
-                <Box
-                    mt="4"
-                    border="1px solid"
-                    borderColor="container.border"
-                    p="4"
-                    borderRadius="md"
-                    flexGrow={1}
-                    overflowY="auto"
-                    className="hide-scrollbar"
-                >
-                    {isLoading && (
-                        <Flex justify="center" align="center" height="200px">
-                            <Spinner />
-                        </Flex>
-                    )}
-                    {!isLoading && (
-                        sortedVenues.length > 0 ? (
-                            <VStack spacing={4} align="stretch">
-                                {sortedVenues.map(venue => (
-                                    <div key={venue.venue_id} ref={el => { showCardRefs.current[venue.venue_id] = el; }}>
-                                        <VenueCard
-                                            venue={venue}
-                                            onEdit={handleEdit}
-                                            onVenueClick={onVenueClick}
-                                            showCount={0}
-                                            isHovered={hoveredCardId === venue.venue_id}
-                                            isSelected={selectedVenueId === venue.venue_id}
-                                            onHover={setHoveredCardId}
-                                            onSaveNavigationState={onSaveNavigationState}
-                                        />
-                                    </div>
-                                ))}
-                            </VStack>
-                        ) : (
-                            <Flex direction="column" align="center" justify="center" height="200px" gap="4">
-                                <AppIcon name="venue" boxSize="40px" color="gray.400" />
-                                <Text color="gray.500" textAlign="center">
-                                    You haven't added any venues yet.
-                                </Text>
-                                <Button
-                                    bg="blue.400"
-                                    color="white"
-                                    size="sm"
-                                    onClick={handleCreateVenue}
-                                    _hover={{ bg: 'orange.400' }}
-                                >
-                                    Add Your First Venue
-                                </Button>
-                            </Flex>
-                        )
-                    )}
-                </Box>
-            </Flex>
-
-        </>
+            <EntityViewContainer
+                isLoading={isLoading}
+                hasItems={sortedVenues.length > 0}
+                emptyStateComponent={emptyState}
+            >
+                {sortedVenues.map(venue => (
+                    <div key={venue.venue_id} ref={el => { showCardRefs.current[venue.venue_id] = el; }}>
+                        <VenueCard
+                            venue={venue}
+                            onEdit={handleEdit}
+                            onVenueClick={onVenueClick}
+                            showCount={0}
+                            isHovered={hoveredCardId === venue.venue_id}
+                            isSelected={selectedVenueId === venue.venue_id}
+                            onHover={setHoveredCardId}
+                            onSaveNavigationState={onSaveNavigationState}
+                        />
+                    </div>
+                ))}
+            </EntityViewContainer>
+        </Flex>
     );
 };

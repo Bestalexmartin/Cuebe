@@ -16,6 +16,8 @@ import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfir
 import { useEnhancedToast } from '../../../utils/toastUtils';
 import { ErrorBoundary } from '../../../components/ErrorBoundary';
 import { useChangeDetection } from '../../../hooks/useChangeDetection';
+import { FloatingValidationErrorPanel } from '../../../components/base/FloatingValidationErrorPanel';
+import { EditPageFormField } from '../../../components/base/EditPageFormField';
 
 // TypeScript interfaces
 interface VenueFormData {
@@ -342,200 +344,154 @@ export const EditVenuePage: React.FC = () => {
                 {!isLoadingVenue && venue && (
                     <VStack spacing={4} align="stretch">
                         {/* Basic Information */}
-                        <FormControl isRequired>
-                            <FormLabel>Venue Name</FormLabel>
-                            <Input
-                                value={form.formData.venue_name}
-                                onChange={(e) => handleChange('venue_name', e.target.value)}
-                                onBlur={() => form.validateField('venue_name')}
-                                placeholder="Enter venue name"
-                            />
-                        </FormControl>
+                        <EditPageFormField
+                            type="input"
+                            label="Venue Name"
+                            value={form.formData.venue_name}
+                            onChange={(value) => handleChange('venue_name', value)}
+                            onBlur={() => form.validateField('venue_name')}
+                            placeholder="Enter venue name"
+                            isRequired
+                        />
 
-                        <FormControl>
-                            <FormLabel>Venue Type</FormLabel>
-                            <Select
-                                value={form.formData.venue_type}
-                                onChange={(e) => handleChange('venue_type', e.target.value)}
-                                placeholder="Select venue type"
-                            >
-                                {VENUE_TYPE_OPTIONS.map(option => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        <EditPageFormField
+                            type="select"
+                            label="Venue Type"
+                            value={form.formData.venue_type}
+                            onChange={(value) => handleChange('venue_type', value)}
+                            placeholder="Select venue type"
+                            options={VENUE_TYPE_OPTIONS}
+                        />
 
-                        <FormControl>
-                            <FormLabel>Address</FormLabel>
-                            <Textarea
-                                value={form.formData.address}
-                                onChange={(e) => handleChange('address', e.target.value)}
-                                placeholder="Enter venue address"
-                                rows={3}
-                            />
-                        </FormControl>
+                        <EditPageFormField
+                            type="textarea"
+                            label="Address"
+                            value={form.formData.address}
+                            onChange={(value) => handleChange('address', value)}
+                            placeholder="Enter venue address"
+                            rows={3}
+                        />
 
                         <HStack spacing={4}>
-                            <FormControl>
-                                <FormLabel>City</FormLabel>
-                                <Input
-                                    value={form.formData.city}
-                                    onChange={(e) => handleChange('city', e.target.value)}
-                                    placeholder="Enter city"
-                                />
-                            </FormControl>
-                            <FormControl>
-                                <FormLabel>State</FormLabel>
-                                <Input
-                                    value={form.formData.state}
-                                    onChange={(e) => handleChange('state', e.target.value)}
-                                    placeholder="CA"
-                                    maxLength={2}
-                                />
-                            </FormControl>
+                            <EditPageFormField
+                                type="input"
+                                label="City"
+                                value={form.formData.city}
+                                onChange={(value) => handleChange('city', value)}
+                                placeholder="Enter city"
+                            />
+                            <EditPageFormField
+                                type="input"
+                                label="State"
+                                value={form.formData.state}
+                                onChange={(value) => handleChange('state', value)}
+                                placeholder="CA"
+                                maxLength={2}
+                            />
                         </HStack>
 
                         {/* Capacity and Technical Specs - All on one row */}
                         <HStack spacing={4}>
-                            <FormControl>
-                                <FormLabel>Capacity</FormLabel>
-                                <Input
-                                    type="number"
-                                    value={form.formData.capacity}
-                                    onChange={(e) => handleChange('capacity', e.target.value)}
-                                    onBlur={() => form.validateField('capacity')}
-                                    placeholder="Number of seats"
-                                />
-                            </FormControl>
-                            <FormControl>
-                                <FormLabel>Stage Width (ft)</FormLabel>
-                                <Input
-                                    type="number"
-                                    value={form.formData.stage_width}
-                                    onChange={(e) => handleChange('stage_width', e.target.value)}
-                                    placeholder="Width in feet"
-                                />
-                            </FormControl>
-                            <FormControl>
-                                <FormLabel>Stage Depth (ft)</FormLabel>
-                                <Input
-                                    type="number"
-                                    value={form.formData.stage_depth}
-                                    onChange={(e) => handleChange('stage_depth', e.target.value)}
-                                    placeholder="Depth in feet"
-                                />
-                            </FormControl>
-                            <FormControl>
-                                <FormLabel>Fly Height (ft)</FormLabel>
-                                <Input
-                                    type="number"
-                                    value={form.formData.fly_height}
-                                    onChange={(e) => handleChange('fly_height', e.target.value)}
-                                    placeholder="Height in feet"
-                                />
-                            </FormControl>
+                            <EditPageFormField
+                                type="input"
+                                inputType="number"
+                                label="Capacity"
+                                value={form.formData.capacity}
+                                onChange={(value) => handleChange('capacity', value)}
+                                onBlur={() => form.validateField('capacity')}
+                                placeholder="Number of seats"
+                            />
+                            <EditPageFormField
+                                type="input"
+                                inputType="number"
+                                label="Stage Width (ft)"
+                                value={form.formData.stage_width}
+                                onChange={(value) => handleChange('stage_width', value)}
+                                placeholder="Width in feet"
+                            />
+                            <EditPageFormField
+                                type="input"
+                                inputType="number"
+                                label="Stage Depth (ft)"
+                                value={form.formData.stage_depth}
+                                onChange={(value) => handleChange('stage_depth', value)}
+                                placeholder="Depth in feet"
+                            />
+                            <EditPageFormField
+                                type="input"
+                                inputType="number"
+                                label="Fly Height (ft)"
+                                value={form.formData.fly_height}
+                                onChange={(value) => handleChange('fly_height', value)}
+                                placeholder="Height in feet"
+                            />
                         </HStack>
 
                         {/* Contact Information */}
-                        <FormControl>
-                            <FormLabel>Contact Name</FormLabel>
-                            <Input
-                                value={form.formData.contact_name}
-                                onChange={(e) => handleChange('contact_name', e.target.value)}
-                                placeholder="Venue contact person"
-                            />
-                        </FormControl>
+                        <EditPageFormField
+                            type="input"
+                            label="Contact Name"
+                            value={form.formData.contact_name}
+                            onChange={(value) => handleChange('contact_name', value)}
+                            placeholder="Venue contact person"
+                        />
 
                         <HStack spacing={4}>
-                            <FormControl>
-                                <FormLabel>Contact Email</FormLabel>
-                                <Input
-                                    type="email"
-                                    value={form.formData.contact_email}
-                                    onChange={(e) => handleChange('contact_email', e.target.value)}
-                                    onBlur={() => form.validateField('contact_email')}
-                                    placeholder="contact@venue.com"
-                                />
-                            </FormControl>
-                            <FormControl>
-                                <FormLabel>Contact Phone</FormLabel>
-                                <Input
-                                    type="tel"
-                                    value={form.formData.contact_phone}
-                                    onChange={(e) => handleChange('contact_phone', e.target.value)}
-                                    onBlur={() => form.validateField('contact_phone')}
-                                    placeholder="(555) 123-4567"
-                                />
-                            </FormControl>
+                            <EditPageFormField
+                                type="input"
+                                inputType="email"
+                                label="Contact Email"
+                                value={form.formData.contact_email}
+                                onChange={(value) => handleChange('contact_email', value)}
+                                onBlur={() => form.validateField('contact_email')}
+                                placeholder="contact@venue.com"
+                            />
+                            <EditPageFormField
+                                type="input"
+                                inputType="tel"
+                                label="Contact Phone"
+                                value={form.formData.contact_phone}
+                                onChange={(value) => handleChange('contact_phone', value)}
+                                onBlur={() => form.validateField('contact_phone')}
+                                placeholder="(555) 123-4567"
+                            />
                         </HStack>
 
                         {/* Rental Information */}
                         <HStack spacing={4}>
-                            <FormControl>
-                                <FormLabel>Daily Rental Rate ($)</FormLabel>
-                                <Input
-                                    type="number"
-                                    value={form.formData.rental_rate}
-                                    onChange={(e) => handleChange('rental_rate', e.target.value)}
-                                    placeholder="Daily rate in dollars"
-                                />
-                            </FormControl>
-                            <FormControl>
-                                <FormLabel>Minimum Rental ($)</FormLabel>
-                                <Input
-                                    type="number"
-                                    value={form.formData.minimum_rental}
-                                    onChange={(e) => handleChange('minimum_rental', e.target.value)}
-                                    placeholder="Minimum rental amount"
-                                />
-                            </FormControl>
+                            <EditPageFormField
+                                type="input"
+                                inputType="number"
+                                label="Daily Rental Rate ($)"
+                                value={form.formData.rental_rate}
+                                onChange={(value) => handleChange('rental_rate', value)}
+                                placeholder="Daily rate in dollars"
+                            />
+                            <EditPageFormField
+                                type="input"
+                                inputType="number"
+                                label="Minimum Rental ($)"
+                                value={form.formData.minimum_rental}
+                                onChange={(value) => handleChange('minimum_rental', value)}
+                                placeholder="Minimum rental amount"
+                            />
                         </HStack>
 
                         {/* Expandable notes textarea */}
-                        <FormControl>
-                            <FormLabel>Notes</FormLabel>
-                            <Textarea
-                                value={form.formData.venue_notes}
-                                onChange={(e) => handleChange('venue_notes', e.target.value)}
-                                onBlur={() => form.validateField('venue_notes')}
-                                placeholder="Additional venue information, equipment, special requirements, etc."
-                                minHeight="120px"
-                                resize="vertical"
-                            />
-                        </FormControl>
+                        <EditPageFormField
+                            type="textarea"
+                            label="Notes"
+                            value={form.formData.venue_notes}
+                            onChange={(value) => handleChange('venue_notes', value)}
+                            onBlur={() => form.validateField('venue_notes')}
+                            placeholder="Additional venue information, equipment, special requirements, etc."
+                            minHeight="120px"
+                        />
                     </VStack>
                 )}
 
                 {/* Floating Validation Error Panel */}
-                {form.fieldErrors.length > 0 && (
-                    <Box
-                        position="fixed"
-                        bottom="20px"
-                        left="50%"
-                        transform="translateX(-50%)"
-                        bg="red.500"
-                        color="white"
-                        px="8"
-                        py="6"
-                        borderRadius="lg"
-                        boxShadow="xl"
-                        flexShrink={0}
-                        minWidth="450px"
-                    >
-                        <Text fontWeight="semibold" fontSize="md" display="inline">
-                            Validation Errors:
-                        </Text>
-                        <Text fontSize="md" display="inline" ml={1}>
-                            {form.fieldErrors.map((error, i) => (
-                                <Text key={i} as="span">
-                                    {i > 0 && '; '}{error.message}
-                                </Text>
-                            ))}
-                        </Text>
-                    </Box>
-                )}
+                <FloatingValidationErrorPanel fieldErrors={form.fieldErrors} />
 
             </BaseEditPage>
 
