@@ -129,10 +129,12 @@ __all__ = [
     
     # Script element schemas
     "ScriptElementFromDB",
-    "ScriptElement", 
+    "ScriptElement",
     "ScriptElementCreate",
     "ScriptElementUpdate",
     "ScriptElementEnhanced",
+    "CrewContext",
+    "SharedScriptElementsResponse",
     
     # Operation schemas
     "ScriptElementReorderItem",

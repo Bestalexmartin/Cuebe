@@ -2,7 +2,9 @@
 
 from fastapi import Request, Depends
 
-from . import router, rate_limit, RateLimitConfig, logger, get_current_user, models
+from . import router, rate_limit, RateLimitConfig
+from routers.auth import get_current_user
+import models
 import time
 import os
 

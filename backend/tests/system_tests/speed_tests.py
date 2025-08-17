@@ -2,7 +2,9 @@
 
 from fastapi import Request, HTTPException, Depends
 
-from . import router, rate_limit, RateLimitConfig, logger, get_current_user, models
+from . import router, rate_limit, RateLimitConfig, logger
+from routers.auth import get_current_user
+import models
 import subprocess
 import json as json_lib
 import os
@@ -144,10 +146,8 @@ def test_network_speed(
                         logger.info(f"Host speed test successful with method: {' '.join(method[:2])}")
                         break
                     else:
-                        logger.debug(f"Method {' '.join(method[:2])} failed with return code {result.returncode}")
                         continue
-                except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError) as e:
-                    logger.debug(f"Method {' '.join(method[:2])} failed: {str(e)}")
+                except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError):
                     continue
             if not host_success or result is None:
                 raise Exception("All host-level speed test methods failed")
@@ -287,7 +287,6 @@ def test_network_speed(
         if upload_speed == 0 and download_speed > 0:
             try:
                 logger.info("Attempting upload speed test using POST to httpbin")
-                import io
                 test_data = b'x' * (1024 * 1024)
                 upload_start = time.time()
                 response = requests.post(
@@ -417,10 +416,8 @@ def prepare_speedtest(
                     else:
                         logger.warning("Installation appeared successful but verification failed")
                 else:
-                    logger.debug(f"Installation method failed: {install_result.stderr}")
                     continue
-            except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError) as e:
-                logger.debug(f"Installation method {' '.join(method)} failed: {str(e)}")
+            except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError):
                 continue
         result["error"] = "All installation methods failed. speedtest-cli may need to be installed manually."
         logger.warning("Failed to install speedtest-cli automatically")
