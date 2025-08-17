@@ -137,7 +137,6 @@ const scrollElementIntoView = (targetRef: HTMLElement) => {
   }
   
   if (container && container !== document.body) {
-    console.log('Found scroll container:', container.className || container.tagName, 'with overflow:', window.getComputedStyle(container).overflowY);
     const containerRect = container.getBoundingClientRect();
     const targetRect = targetRef.getBoundingClientRect();
     const scrollTop = container.scrollTop;
@@ -157,20 +156,16 @@ const scrollElementIntoView = (targetRef: HTMLElement) => {
       targetScrollPosition = scrollTop + targetRelativeTop + targetHeight - containerHeight + SCROLL_PADDING;
     } else {
       // Element is already visible with adequate padding - don't scroll
-      console.log('Element already visible with adequate padding, no scroll needed');
       return;
     }
-    
+
     // Ensure we don't scroll past the top
     const finalScrollPosition = Math.max(0, targetScrollPosition);
-    
-    console.log('Container height:', containerHeight, 'Target relative:', targetRelativeTop, 'Target height:', targetHeight, 'Final position:', finalScrollPosition);
     container.scrollTo({
       top: finalScrollPosition,
       behavior: "smooth"
     });
   } else {
-    console.log('Using window scroll fallback');
     // Fallback with custom padding by calculating offset
     const targetRect = targetRef.getBoundingClientRect();
     const windowHeight = window.innerHeight;
