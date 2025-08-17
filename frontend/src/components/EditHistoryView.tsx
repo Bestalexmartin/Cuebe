@@ -138,7 +138,6 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
                 left={0}
                 right={0}
                 zIndex={10}
-                bg="window.background"
                 px={1}
                 py={3}
                 pt={2}
@@ -176,65 +175,108 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
             </Box>
 
             {/* Operations List - with top padding to account for fixed header */}
-            <Box height="100%" overflowY="auto" className="hide-scrollbar" pt="72px">
-                <VStack spacing={0} align="stretch">
+            <Box height="100%" overflowY="auto" className="hide-scrollbar" pt="87px">
+                <VStack spacing={1} align="stretch">
                     {operations.map((operation, index) => {
                         const formattedDescription = EditQueueFormatter.formatOperation(operation, allElements);
                         const timestamp = EditQueueFormatter.formatTimestamp(operation.timestamp);
 
                         const isClickable = onRevertToPoint && index < operations.length - 1;
+                        const paddedNumber = String(index + 1).padStart(2, '0');
+                        
+                        // Calculate blue color progression - most recent (last) is blue.400, older ones progressively darker
+                        const distanceFromMostRecent = operations.length - 1 - index;
+                        const blueIntensity = Math.min(900, 400 + (distanceFromMostRecent * 100));
+                        const blueColor = `blue.${blueIntensity}`;
 
                         return (
                             <Box
                                 key={operation.id}
                                 py={2}
-                                px={1}
-                                borderBottom="1px solid"
-                                borderColor="ui.border"
+                                px={4}
+                                border="2px solid"
+                                borderColor="transparent"
+                                borderRadius="md"
+                                bg="card.background"
                                 _hover={{
-                                    bg: "row.hover",
+                                    borderColor: "orange.400",
                                     cursor: isClickable ? "pointer" : "default"
                                 }}
                                 onClick={() => isClickable && handleRowClick(index)}
-                                position="relative"
+                                transition="all 0s"
                             >
-                                <HStack align="center">
+                                <HStack align="center" spacing={6}>
+                                    {/* Number Circle - same size as department/avatar spots */}
                                     <Box
-                                        minWidth="24px"
-                                        height="24px"
-                                        bg="blue.100"
+                                        w="32px"
+                                        h="32px"
                                         borderRadius="full"
+                                        bg={blueColor}
+                                        flexShrink={0}
                                         display="flex"
                                         alignItems="center"
                                         justifyContent="center"
-                                        flexShrink={0}
-                                        mr={4}
                                     >
-                                        <Text fontSize="md" fontWeight="bold" color="blue.700">
-                                            {index + 1}
+                                        <Text
+                                            fontSize="xs"
+                                            fontWeight="bold"
+                                            color="white"
+                                            userSelect="none"
+                                            fontFamily="mono"
+                                        >
+                                            {paddedNumber}
                                         </Text>
                                     </Box>
 
-                                    <Box width="200px" flexShrink={0} mr={10}>
+                                    {/* Operation Type Badge - outline style like role badges */}
+                                    <Box 
+                                        width="180px" 
+                                        flexShrink={0}
+                                        display="flex"
+                                        alignItems="center"
+                                    >
                                         <Badge
+                                            colorScheme="blue"
+                                            variant="outline"
                                             size="sm"
-                                            colorScheme={getOperationColor(operation.type)}
-                                            variant="subtle"
-                                            px={2}
-                                            py={1}
+                                            maxWidth="100%"
+                                            isTruncated
                                         >
                                             {operation.type.toLowerCase().replace(/_/g, ' ')}
                                         </Badge>
                                     </Box>
 
-                                    <Box width="120px" flexShrink={0} mr={3}>
-                                        <Text fontSize="sm" color="page.text" fontWeight="medium">
+                                    {/* Timestamp */}
+                                    <Box 
+                                        width="120px" 
+                                        flexShrink={0}
+                                        display="flex"
+                                        alignItems="center"
+                                    >
+                                        <Text 
+                                            fontSize="sm" 
+                                            color="gray.700" 
+                                            _dark={{ color: "gray.300" }}
+                                            fontWeight="medium"
+                                        >
                                             {timestamp}
                                         </Text>
                                     </Box>
 
-                                    <Box flex={1}>
-                                        <Text fontSize="sm" fontWeight="medium" lineHeight="1.4" color="page.text">
+                                    {/* Description */}
+                                    <Box 
+                                        flex={1}
+                                        display="flex"
+                                        alignItems="center"
+                                    >
+                                        <Text 
+                                            fontSize="sm" 
+                                            fontWeight="medium" 
+                                            lineHeight="1.4" 
+                                            color="gray.700"
+                                            _dark={{ color: "gray.300" }}
+                                            isTruncated
+                                        >
                                             {formattedDescription}
                                         </Text>
                                     </Box>

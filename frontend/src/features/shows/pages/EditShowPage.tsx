@@ -21,6 +21,8 @@ import { useChangeDetection } from '../../../hooks/useChangeDetection';
 import { ErrorBoundary } from '../../../components/ErrorBoundary';
 import { CrewAssignmentSection } from '../components/CrewAssignmentSection';
 import { CrewAssignmentRow } from '../types/crewAssignments';
+import { FloatingValidationErrorPanel } from '../../../components/base/FloatingValidationErrorPanel';
+import { EditPageFormField } from '../../../components/base/EditPageFormField';
 
 // TypeScript interfaces
 interface ShowFormData {
@@ -376,73 +378,62 @@ export const EditShowPage: React.FC = () => {
                     <VStack spacing={4} align="stretch">
                         {/* Show Name and Venue on same line */}
                         <HStack spacing={4}>
-                            <FormControl isRequired>
-                                <FormLabel>Show Name</FormLabel>
-                                <Input
-                                    value={form.formData.show_name}
-                                    onChange={(e) => handleChange('show_name', e.target.value)}
-                                    onPaste={() => handlePaste('show_name')}
-                                    placeholder="Enter show title"
-                                />
-                            </FormControl>
+                            <EditPageFormField
+                                type="input"
+                                label="Show Name"
+                                value={form.formData.show_name}
+                                onChange={(value) => handleChange('show_name', value)}
+                                onPaste={() => handlePaste('show_name')}
+                                placeholder="Enter show title"
+                                isRequired
+                            />
 
-                            <FormControl>
-                                <FormLabel>Venue</FormLabel>
-                                <Select
-                                    value={form.formData.venue_id}
-                                    onChange={(e) => handleChange('venue_id', e.target.value)}
-                                    placeholder={isLoadingVenues ? "Loading venues..." : "Select venue"}
-                                    disabled={isLoadingVenues}
-                                >
-                                    {venues?.map(venue => (
-                                        <option key={venue.venue_id} value={venue.venue_id}>
-                                            {venue.venue_name}
-                                        </option>
-                                    ))}
-                                </Select>
-                            </FormControl>
+                            <EditPageFormField
+                                type="select"
+                                label="Venue"
+                                value={form.formData.venue_id}
+                                onChange={(value) => handleChange('venue_id', value)}
+                                placeholder={isLoadingVenues ? "Loading venues..." : "Select venue"}
+                                options={venues?.map(venue => ({ value: venue.venue_id, label: venue.venue_name })) || []}
+                                isDisabled={isLoadingVenues}
+                            />
                         </HStack>
 
                         {/* Date fields side-by-side */}
                         <HStack spacing={4}>
-                            <FormControl>
-                                <FormLabel>Show Date</FormLabel>
-                                <Input
-                                    type="datetime-local"
-                                    value={form.formData.show_date}
-                                    onChange={(e) => handleChange('show_date', e.target.value)}
-                                />
-                            </FormControl>
-                            <FormControl>
-                                <FormLabel>End Time</FormLabel>
-                                <Input
-                                    type="datetime-local"
-                                    value={form.formData.show_end}
-                                    onChange={(e) => handleChange('show_end', e.target.value)}
-                                />
-                            </FormControl>
-                            <FormControl>
-                                <FormLabel>Script Deadline</FormLabel>
-                                <Input
-                                    type="datetime-local"
-                                    value={form.formData.deadline}
-                                    onChange={(e) => handleChange('deadline', e.target.value)}
-                                />
-                            </FormControl>
+                            <EditPageFormField
+                                type="input"
+                                inputType="datetime-local"
+                                label="Show Date"
+                                value={form.formData.show_date}
+                                onChange={(value) => handleChange('show_date', value)}
+                            />
+                            <EditPageFormField
+                                type="input"
+                                inputType="datetime-local"
+                                label="End Time"
+                                value={form.formData.show_end}
+                                onChange={(value) => handleChange('show_end', value)}
+                            />
+                            <EditPageFormField
+                                type="input"
+                                inputType="datetime-local"
+                                label="Script Deadline"
+                                value={form.formData.deadline}
+                                onChange={(value) => handleChange('deadline', value)}
+                            />
                         </HStack>
 
                         {/* Notes textarea - 3 rows high */}
-                        <FormControl>
-                            <FormLabel>Notes</FormLabel>
-                            <Textarea
-                                value={form.formData.show_notes}
-                                onChange={(e) => handleChange('show_notes', e.target.value)}
-                                onBlur={() => form.validateField('show_notes')}
-                                placeholder="Additional show information, special requirements, etc."
-                                rows={3}
-                                resize="vertical"
-                            />
-                        </FormControl>
+                        <EditPageFormField
+                            type="textarea"
+                            label="Notes"
+                            value={form.formData.show_notes}
+                            onChange={(value) => handleChange('show_notes', value)}
+                            onBlur={() => form.validateField('show_notes')}
+                            placeholder="Additional show information, special requirements, etc."
+                            rows={3}
+                        />
 
                         {/* Crew Assignments Section */}
                         <Box mt={6}>
@@ -456,33 +447,7 @@ export const EditShowPage: React.FC = () => {
                 )}
                 
                 {/* Floating Validation Error Panel */}
-                {form.fieldErrors.length > 0 && (
-                    <Box
-                        position="fixed"
-                        bottom="20px"
-                        left="50%"
-                        transform="translateX(-50%)"
-                        bg="red.500"
-                        color="white"
-                        px="8"
-                        py="6"
-                        borderRadius="lg"
-                        boxShadow="xl"
-                        flexShrink={0}
-                        minWidth="450px"
-                    >
-                        <Text fontWeight="semibold" fontSize="md" display="inline">
-                            Validation Errors: 
-                        </Text>
-                        <Text fontSize="md" display="inline" ml={1}>
-                            {form.fieldErrors.map((error, i) => (
-                                <Text key={i} as="span">
-                                    {i > 0 && '; '}{error.message}
-                                </Text>
-                            ))}
-                        </Text>
-                    </Box>
-                )}
+                <FloatingValidationErrorPanel fieldErrors={form.fieldErrors} />
             </BaseEditPage>
 
             {/* Delete Confirmation Modals */}

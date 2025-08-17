@@ -1,9 +1,10 @@
 // frontend/src/features/script/components/modes/InfoMode.tsx
 
 import React from 'react';
-import { VStack, HStack, FormControl, FormLabel, Input, Select, Textarea, FormErrorMessage } from '@chakra-ui/react';
+import { VStack, HStack } from '@chakra-ui/react';
 import { useValidatedForm } from '../../../../hooks/useValidatedForm';
 import { SCRIPT_STATUS_OPTIONS } from '../../constants';
+import { EditPageFormField } from '../../../../components/base/EditPageFormField';
 
 interface ScriptFormData {
     script_name: string;
@@ -21,69 +22,53 @@ interface InfoModeProps {
 export const InfoMode: React.FC<InfoModeProps> = ({ form }) => {
     return (
         <VStack spacing={4} align="stretch" width="100%">
-            <FormControl isRequired isInvalid={!!form.getFieldError('script_name')}>
-                <FormLabel>Script Name</FormLabel>
-                <Input
-                    value={form.formData.script_name}
-                    onChange={(e) => form.updateField('script_name', e.target.value)}
-                    onBlur={() => form.validateField('script_name')}
-                    placeholder="Enter script name"
-                />
-                <FormErrorMessage>
-                    {form.getFieldError('script_name')}
-                </FormErrorMessage>
-            </FormControl>
+            <EditPageFormField
+                type="input"
+                label="Script Name"
+                value={form.formData.script_name}
+                onChange={(value) => form.updateField('script_name', value)}
+                onBlur={() => form.validateField('script_name')}
+                placeholder="Enter script name"
+                isRequired
+            />
 
-            <FormControl>
-                <FormLabel>Script Status</FormLabel>
-                <Select
-                    value={form.formData.script_status}
-                    onChange={(e) => form.updateField('script_status', e.target.value)}
-                >
-                    {SCRIPT_STATUS_OPTIONS.map(option => (
-                        <option key={option.value} value={option.value}>
-                            {option.label}
-                        </option>
-                    ))}
-                </Select>
-            </FormControl>
+            <EditPageFormField
+                type="select"
+                label="Script Status"
+                value={form.formData.script_status}
+                onChange={(value) => form.updateField('script_status', value)}
+                options={SCRIPT_STATUS_OPTIONS}
+            />
 
             {/* Time fields side-by-side */}
             <HStack spacing={4}>
-                <FormControl>
-                    <FormLabel>Start Time</FormLabel>
-                    <Input
-                        type="datetime-local"
-                        value={form.formData.start_time}
-                        onChange={(e) => form.updateField('start_time', e.target.value)}
-                        placeholder="Select start time"
-                    />
-                </FormControl>
-                <FormControl>
-                    <FormLabel>End Time</FormLabel>
-                    <Input
-                        type="datetime-local"
-                        value={form.formData.end_time}
-                        onChange={(e) => form.updateField('end_time', e.target.value)}
-                        placeholder="Select end time"
-                    />
-                </FormControl>
+                <EditPageFormField
+                    type="input"
+                    inputType="datetime-local"
+                    label="Start Time"
+                    value={form.formData.start_time}
+                    onChange={(value) => form.updateField('start_time', value)}
+                    placeholder="Select start time"
+                />
+                <EditPageFormField
+                    type="input"
+                    inputType="datetime-local"
+                    label="End Time"
+                    value={form.formData.end_time}
+                    onChange={(value) => form.updateField('end_time', value)}
+                    placeholder="Select end time"
+                />
             </HStack>
 
-            <FormControl isInvalid={!!form.getFieldError('script_notes')}>
-                <FormLabel>Notes</FormLabel>
-                <Textarea
-                    value={form.formData.script_notes}
-                    onChange={(e) => form.updateField('script_notes', e.target.value)}
-                    onBlur={() => form.validateField('script_notes')}
-                    placeholder="Script notes or special instructions..."
-                    minHeight="120px"
-                    resize="vertical"
-                />
-                <FormErrorMessage>
-                    {form.getFieldError('script_notes')}
-                </FormErrorMessage>
-            </FormControl>
+            <EditPageFormField
+                type="textarea"
+                label="Notes"
+                value={form.formData.script_notes}
+                onChange={(value) => form.updateField('script_notes', value)}
+                onBlur={() => form.validateField('script_notes')}
+                placeholder="Script notes or special instructions..."
+                minHeight="120px"
+            />
         </VStack>
     );
 };

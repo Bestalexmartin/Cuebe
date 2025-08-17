@@ -21,6 +21,9 @@ import { ErrorBoundary } from '../../../components/ErrorBoundary';
 import { USER_ROLE_OPTIONS, formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
 import { CrewBioModal } from '../../shows/components/modals/CrewBioModal';
 import { formatShowDateTime } from '../../../utils/dateTimeUtils';
+import { FloatingValidationErrorPanel } from '../../../components/base/FloatingValidationErrorPanel';
+import { EditPageFormField } from '../../../components/base/EditPageFormField';
+import { ResponsiveAssignmentList } from '../../../components/base/ResponsiveAssignmentList';
 
 // TypeScript interfaces
 interface CrewFormData {
@@ -401,342 +404,103 @@ export const EditCrewPage: React.FC = () => {
 
                         {/* Basic Information */}
                         <HStack spacing={4}>
-                            <FormControl isRequired={!(isVerifiedUser() && !isSelfEdit())}>
-                                <FormLabel>First Name</FormLabel>
-                                <Input
-                                    value={form.formData.fullname_first}
-                                    onChange={(e) => handleChange('fullname_first', e.target.value)}
-                                    onBlur={() => form.validateField('fullname_first')}
-                                    placeholder="Enter first name"
-                                    isDisabled={isVerifiedUser() && !isSelfEdit()}
-                                    bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
-                                    _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
-                                />
-                            </FormControl>
-                            <FormControl isRequired={!(isVerifiedUser() && !isSelfEdit())}>
-                                <FormLabel>Last Name</FormLabel>
-                                <Input
-                                    value={form.formData.fullname_last}
-                                    onChange={(e) => handleChange('fullname_last', e.target.value)}
-                                    onBlur={() => form.validateField('fullname_last')}
-                                    placeholder="Enter last name"
-                                    isDisabled={isVerifiedUser() && !isSelfEdit()}
-                                    bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
-                                    _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
-                                />
-                            </FormControl>
+                            <EditPageFormField
+                                type="input"
+                                label="First Name"
+                                value={form.formData.fullname_first}
+                                onChange={(value) => handleChange('fullname_first', value)}
+                                onBlur={() => form.validateField('fullname_first')}
+                                placeholder="Enter first name"
+                                isRequired={!(isVerifiedUser() && !isSelfEdit())}
+                                isDisabled={isVerifiedUser() && !isSelfEdit()}
+                                bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
+                                _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
+                            />
+                            <EditPageFormField
+                                type="input"
+                                label="Last Name"
+                                value={form.formData.fullname_last}
+                                onChange={(value) => handleChange('fullname_last', value)}
+                                onBlur={() => form.validateField('fullname_last')}
+                                placeholder="Enter last name"
+                                isRequired={!(isVerifiedUser() && !isSelfEdit())}
+                                isDisabled={isVerifiedUser() && !isSelfEdit()}
+                                bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
+                                _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
+                            />
                         </HStack>
 
                         {/* Contact Information */}
                         <HStack spacing={4}>
-                            <FormControl isRequired={!(isVerifiedUser() && !isSelfEdit())}>
-                                <FormLabel>Email Address</FormLabel>
-                                <Input
-                                    type="email"
-                                    value={form.formData.email_address}
-                                    onChange={(e) => handleChange('email_address', e.target.value)}
-                                    onBlur={() => form.validateField('email_address')}
-                                    placeholder="crew@example.com"
-                                    isDisabled={isVerifiedUser() && !isSelfEdit()}
-                                    bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
-                                    _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
-                                />
-                            </FormControl>
-                            <FormControl>
-                                <FormLabel>Phone Number</FormLabel>
-                                <Input
-                                    type="tel"
-                                    value={form.formData.phone_number}
-                                    onChange={(e) => handleChange('phone_number', e.target.value)}
-                                    onBlur={() => form.validateField('phone_number')}
-                                    placeholder="(555) 123-4567"
-                                    isDisabled={isVerifiedUser() && !isSelfEdit()}
-                                    bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
-                                    _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
-                                />
-                            </FormControl>
-                        </HStack>
-
-                        {/* Role Selection */}
-                        <FormControl isRequired={!(isVerifiedUser() && !isSelfEdit())}>
-                            <FormLabel>Role</FormLabel>
-                            <Select
-                                value={form.formData.user_role}
-                                onChange={(e) => handleChange('user_role', e.target.value)}
-                                placeholder="Select role"
+                            <EditPageFormField
+                                type="input"
+                                inputType="email"
+                                label="Email Address"
+                                value={form.formData.email_address}
+                                onChange={(value) => handleChange('email_address', value)}
+                                onBlur={() => form.validateField('email_address')}
+                                placeholder="crew@example.com"
+                                isRequired={!(isVerifiedUser() && !isSelfEdit())}
                                 isDisabled={isVerifiedUser() && !isSelfEdit()}
                                 bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
                                 _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
-                            >
-                                {USER_ROLE_OPTIONS.map(option => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </Select>
-                        </FormControl>
+                            />
+                            <EditPageFormField
+                                type="input"
+                                inputType="tel"
+                                label="Phone Number"
+                                value={form.formData.phone_number}
+                                onChange={(value) => handleChange('phone_number', value)}
+                                onBlur={() => form.validateField('phone_number')}
+                                placeholder="(555) 123-4567"
+                                isDisabled={isVerifiedUser() && !isSelfEdit()}
+                                bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
+                                _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
+                            />
+                        </HStack>
+
+                        {/* Role Selection */}
+                        <EditPageFormField
+                            type="select"
+                            label="Role"
+                            value={form.formData.user_role}
+                            onChange={(value) => handleChange('user_role', value)}
+                            placeholder="Select role"
+                            options={USER_ROLE_OPTIONS}
+                            isRequired={!(isVerifiedUser() && !isSelfEdit())}
+                            isDisabled={isVerifiedUser() && !isSelfEdit()}
+                            bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
+                            _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
+                        />
 
                         {/* Notes Section - Personal notes for self-edit, Manager notes for manager edit */}
-                        <FormControl>
-                            <FormLabel>{isSelfEdit() ? 'Personal Notes' : 'Manager Notes'}</FormLabel>
-                            <Textarea
-                                value={form.formData.notes}
-                                onChange={(e) => handleChange('notes', e.target.value)}
-                                onBlur={() => form.validateField('notes')}
-                                placeholder={isSelfEdit() ? "Your personal notes" : "Your private notes about this crew"}
-                                resize="vertical"
-                                minHeight="100px"
-                            />
-                        </FormControl>
+                        <EditPageFormField
+                            type="textarea"
+                            label={isSelfEdit() ? 'Personal Notes' : 'Manager Notes'}
+                            value={form.formData.notes}
+                            onChange={(value) => handleChange('notes', value)}
+                            onBlur={() => form.validateField('notes')}
+                            placeholder={isSelfEdit() ? "Your personal notes" : "Your private notes about this crew"}
+                            minHeight="100px"
+                        />
 
                         {/* Department Assignments */}
                         {crew?.department_assignments && crew.department_assignments.length > 0 && (
-                            <Box>
-                                <HStack justify="space-between" mb={2}>
-                                    <FormLabel mb={0}>Department Assignments</FormLabel>
-                                </HStack>
-
-                                {/* Divider line */}
-                                <Box borderTop="1px solid" borderColor="gray.500" pt={4} mt={2}>
-                                    <VStack spacing={1} align="stretch">
-                                        {crew.department_assignments.map((assignment) => {
-                                            return (
-                                                <Box
-                                                    key={assignment.assignment_id}
-                                                    py={2}
-                                                    px={4}
-                                                    border="2px solid"
-                                                    borderColor="transparent"
-                                                    borderRadius="md"
-                                                    bg="card.background"
-                                                    _hover={{
-                                                        borderColor: "orange.400"
-                                                    }}
-                                                    cursor="pointer"
-                                                    transition="all 0s"
-                                                    onClick={() => handleCrewBioClick(assignment)}
-                                                >
-                                                    {/* Desktop/Tablet Layout - Single Line */}
-                                                    <HStack 
-                                                        spacing={{ base: 1, sm: 2, md: 3 }} 
-                                                        align="center"
-                                                        display={{ base: "none", md: "flex" }}
-                                                        overflow="hidden"
-                                                        minWidth={0}
-                                                    >
-                                                        {/* Department Color Chip */}
-                                                        <Box
-                                                            w="32px"
-                                                            h="32px"
-                                                            borderRadius="full"
-                                                            bg={assignment.department_color || 'gray.400'}
-                                                            flexShrink={0}
-                                                            display="flex"
-                                                            alignItems="center"
-                                                            justifyContent="center"
-                                                        >
-                                                            {assignment.department_initials && (
-                                                                <Text
-                                                                    fontSize="xs"
-                                                                    fontWeight="bold"
-                                                                    color="black"
-                                                                    userSelect="none"
-                                                                >
-                                                                    {assignment.department_initials}
-                                                                </Text>
-                                                            )}
-                                                        </Box>
-
-                                                        {/* Department Name */}
-                                                        <Text 
-                                                            fontSize="sm" 
-                                                            fontWeight="medium" 
-                                                            flex={1}
-                                                            isTruncated
-                                                        >
-                                                            {assignment.department_name || 'Unknown Dept'}
-                                                        </Text>
-
-                                                        {/* Show Name with Label */}
-                                                        <Text 
-                                                            fontSize="sm" 
-                                                            flex={1}
-                                                            isTruncated
-                                                        >
-                                                            <Text as="span" fontWeight="medium">Show:</Text>
-                                                            <Text as="span" color="gray.700" _dark={{ color: "gray.300" }} ml="5px">
-                                                                {assignment.show_name}
-                                                            </Text>
-                                                        </Text>
-
-                                                        {/* Venue Name with City, State */}
-                                                        <Text 
-                                                            fontSize="sm" 
-                                                            color="gray.700" 
-                                                            _dark={{ color: "gray.300" }} 
-                                                            display={{ base: "none", md: "block" }}
-                                                            flex={1}
-                                                            isTruncated
-                                                        >
-                                                            {assignment.venue_name ? (
-                                                                `${assignment.venue_name}${assignment.venue_city && assignment.venue_state ? ` - ${assignment.venue_city}, ${assignment.venue_state}` : ''}`
-                                                            ) : 'No venue'}
-                                                        </Text>
-
-                                                        {/* Show Date & Time */}
-                                                        <Text 
-                                                            fontSize="sm" 
-                                                            color="gray.700" 
-                                                            _dark={{ color: "gray.300" }} 
-                                                            display={{ base: "none", xl: "block" }}
-                                                            flex={1}
-                                                            isTruncated
-                                                        >
-                                                            {formatShowDateTime(assignment.show_date)}
-                                                        </Text>
-
-                                                        {/* URL Suffix - Last 12 characters of share URL with LinkID prefix */}
-                                                        {crew && (
-                                                            <Text 
-                                                                fontSize="sm" 
-                                                                color="gray.700" 
-                                                                _dark={{ color: "gray.300" }} 
-                                                                display={{ base: "none", lg: "block" }}
-                                                                flex={1}
-                                                                isTruncated
-                                                                fontFamily="monospace"
-                                                            >
-                                                                {getShareUrlSuffix()}
-                                                            </Text>
-                                                        )}
-
-                                                        {/* Role Badge - Aligned to right edge */}
-                                                        <Box 
-                                                            minWidth={{ base: "80px", md: "100px", lg: "120px" }} 
-                                                            maxWidth={{ base: "120px", md: "140px", lg: "160px" }}
-                                                            display="flex" 
-                                                            justifyContent="flex-end"
-                                                            flexShrink={0}
-                                                        >
-                                                            {assignment.role && (
-                                                                <Badge 
-                                                                    colorScheme="blue" 
-                                                                    variant="outline" 
-                                                                    size={{ base: "sm", md: "md" }}
-                                                                    maxWidth="100%"
-                                                                    isTruncated
-                                                                >
-                                                                    {formatRoleBadge(assignment.role)}
-                                                                </Badge>
-                                                            )}
-                                                        </Box>
-                                                    </HStack>
-
-                                                    {/* Mobile Layout - Two Lines */}
-                                                    <VStack 
-                                                        spacing={2} 
-                                                        align="stretch"
-                                                        display={{ base: "flex", md: "none" }}
-                                                    >
-                                                        {/* First Line: Department Circle, Show Name, Badge */}
-                                                        <HStack spacing={3} align="center">
-                                                            <Box
-                                                                w="24px"
-                                                                h="24px"
-                                                                borderRadius="full"
-                                                                bg={assignment.department_color || 'gray.400'}
-                                                                flexShrink={0}
-                                                                display="flex"
-                                                                alignItems="center"
-                                                                justifyContent="center"
-                                                            >
-                                                                <Text
-                                                                    fontSize="10px"
-                                                                    fontWeight="bold"
-                                                                    color="black"
-                                                                    userSelect="none"
-                                                                >
-                                                                    {assignment.department_initials || assignment.department_name?.substring(0, 2).toUpperCase() || 'DE'}
-                                                                </Text>
-                                                            </Box>
-
-                                                            <Text
-                                                                fontSize="sm"
-                                                                fontWeight="medium"
-                                                                flex={1}
-                                                                isTruncated
-                                                            >
-                                                                {assignment.show_name}
-                                                            </Text>
-
-                                                            {assignment.role && (
-                                                                <Badge colorScheme="blue" variant="outline" size="sm">
-                                                                    {formatRoleBadge(assignment.role)}
-                                                                </Badge>
-                                                            )}
-                                                        </HStack>
-
-                                                        {/* Second Line: Department Name, Venue, Show Date */}
-                                                        <HStack spacing={3} align="center" ml="32px">
-                                                            <Text fontSize="xs" color="gray.500" _dark={{ color: "gray.400" }} minWidth="80px">
-                                                                {assignment.department_name || 'Unknown Dept'}
-                                                            </Text>
-                                                            
-                                                            <VStack spacing={0} align="flex-start" flex={1}>
-                                                                <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }}>
-                                                                    {assignment.venue_name ? (
-                                                                        `${assignment.venue_name}${assignment.venue_city && assignment.venue_state ? ` - ${assignment.venue_city}, ${assignment.venue_state}` : ''}`
-                                                                    ) : 'No venue'}
-                                                                </Text>
-                                                                <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }}>
-                                                                    {formatShowDateTime(assignment.show_date)}
-                                                                </Text>
-                                                                {crew && (
-                                                                    <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }} fontFamily="monospace">
-                                                                        {getShareUrlSuffix()}
-                                                                    </Text>
-                                                                )}
-                                                            </VStack>
-                                                        </HStack>
-                                                    </VStack>
-                                                </Box>
-                                            );
-                                        })}
-                                    </VStack>
-                                </Box>
-                            </Box>
+                            <ResponsiveAssignmentList
+                                title="Department Assignments"
+                                assignments={crew.department_assignments}
+                                onAssignmentClick={handleCrewBioClick}
+                                showDepartmentInfo={true}
+                                formatRoleBadge={formatRoleBadge}
+                                getShareUrlSuffix={getShareUrlSuffix}
+                                formatDateTime={formatShowDateTime}
+                            />
                         )}
                     </VStack>
                 )}
                 
                 {/* Floating Validation Error Panel */}
-                {form.fieldErrors.length > 0 && (
-                    <Box
-                        position="fixed"
-                        bottom="20px"
-                        left="50%"
-                        transform="translateX(-50%)"
-                        bg="red.500"
-                        color="white"
-                        px="8"
-                        py="6"
-                        borderRadius="lg"
-                        boxShadow="xl"
-                        flexShrink={0}
-                        minWidth="450px"
-                    >
-                        <Text fontWeight="semibold" fontSize="md" display="inline">
-                            Validation Errors: 
-                        </Text>
-                        <Text fontSize="md" display="inline" ml={1}>
-                            {form.fieldErrors.map((error, i) => (
-                                <Text key={i} as="span">
-                                    {i > 0 && '; '}{error.message}
-                                </Text>
-                            ))}
-                        </Text>
-                    </Box>
-                )}
+                <FloatingValidationErrorPanel fieldErrors={form.fieldErrors} />
             </BaseEditPage>
 
             {/* Delete Confirmation Modals */}

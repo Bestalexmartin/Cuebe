@@ -1,11 +1,14 @@
 // frontend/src/features/crew/components/CrewView.tsx
 
 import React, { useMemo } from 'react';
-import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner, Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
+import { Flex } from "@chakra-ui/react";
 import { useNavigate } from 'react-router-dom';
-import { AppIcon } from '../../../components/AppIcon';
 import { CrewCard } from './CrewCard';
 import { useCrews } from '../hooks/useCrews';
+import { EntityViewHeader } from '../../../components/shared/EntityViewHeader';
+import { EntityViewContainer } from '../../../components/shared/EntityViewContainer';
+import { EntityEmptyState } from '../../../components/shared/EntityEmptyState';
+import { SortOption } from '../../../components/shared/SortMenu';
 
 // TypeScript interfaces
 interface CrewViewProps {
@@ -20,6 +23,15 @@ interface CrewViewProps {
     onSortChange: (sortBy: 'fullname_first' | 'fullname_last' | 'user_role' | 'email_address' | 'date_created' | 'date_updated', sortDirection: 'asc' | 'desc') => void;
     showCardRefs: React.MutableRefObject<Record<string, HTMLElement | null>>;
 }
+
+const CREW_SORT_OPTIONS: SortOption[] = [
+    { value: 'fullname_first', label: 'First Name' },
+    { value: 'fullname_last', label: 'Last Name' },
+    { value: 'user_role', label: 'Role' },
+    { value: 'email_address', label: 'Email' },
+    { value: 'date_created', label: 'Created' },
+    { value: 'date_updated', label: 'Updated' },
+];
 
 export const CrewView: React.FC<CrewViewProps> = ({
     onCreateCrew,
@@ -37,13 +49,14 @@ export const CrewView: React.FC<CrewViewProps> = ({
     const { crews, isLoading, error } = useCrews();
 
     // Crew-specific sorting logic
-    const handleSortClick = (newSortBy: typeof sortBy) => {
-        if (sortBy === newSortBy) {
+    const handleSortClick = (newSortBy: string) => {
+        const typedSortBy = newSortBy as typeof sortBy;
+        if (sortBy === typedSortBy) {
             const newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-            onSortChange(newSortBy, newDirection);
+            onSortChange(typedSortBy, newDirection);
         } else {
-            const newDirection = (newSortBy === 'date_created' || newSortBy === 'date_updated') ? 'desc' : 'asc';
-            onSortChange(newSortBy, newDirection);
+            const newDirection = (typedSortBy === 'date_created' || typedSortBy === 'date_updated') ? 'desc' : 'asc';
+            onSortChange(typedSortBy, newDirection);
         }
     };
 
@@ -89,140 +102,48 @@ export const CrewView: React.FC<CrewViewProps> = ({
     // Use the modal handler from props if provided, otherwise use local modal
     const handleCreateCrew = onCreateCrew;
 
+    const emptyState = (
+        <EntityEmptyState
+            entityIcon="crew"
+            message="You haven't added any crew yet."
+            actionButtonText="Add Your First Crew"
+            onActionClick={handleCreateCrew}
+        />
+    );
+
     return (
-        <>
-            <Flex direction="column" height="100%">
-                {/* Header Section */}
-                <Flex justify="space-between" align="center" flexShrink={0}>
-                    <HStack spacing="2" align="center">
-                        <AppIcon name="crew" boxSize="25px" />
-                        <Heading as="h2" size="md">Crew</Heading>
-                    </HStack>
-                    <HStack spacing="2">
-                        <Menu>
-                            <MenuButton as={Button} size="xs" rightIcon={<AppIcon name={sortDirection} boxSize={4} />}>Sort</MenuButton>
-                            <MenuList zIndex={9999}>
-                                <MenuItem
-                                    onClick={() => handleSortClick('fullname_first')}
-                                    color={sortBy === 'fullname_first' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'fullname_first' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    First Name
-                                </MenuItem>
-                                <MenuItem
-                                    onClick={() => handleSortClick('fullname_last')}
-                                    color={sortBy === 'fullname_last' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'fullname_last' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Last Name
-                                </MenuItem>
-                                <MenuItem
-                                    onClick={() => handleSortClick('user_role')}
-                                    color={sortBy === 'user_role' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'user_role' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Role
-                                </MenuItem>
-                                <MenuItem
-                                    onClick={() => handleSortClick('email_address')}
-                                    color={sortBy === 'email_address' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'email_address' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Email
-                                </MenuItem>
-                                <MenuItem
-                                    onClick={() => handleSortClick('date_created')}
-                                    color={sortBy === 'date_created' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'date_created' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Created
-                                </MenuItem>
-                                <MenuItem
-                                    onClick={() => handleSortClick('date_updated')}
-                                    color={sortBy === 'date_updated' ? 'blue.400' : 'inherit'}
-                                    fontWeight={sortBy === 'date_updated' ? 'bold' : 'normal'}
-                                    _hover={{ borderColor: 'orange.400' }}
-                                >
-                                    Updated
-                                </MenuItem>
-                            </MenuList>
-                        </Menu>
-                        <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
-                        <Button
-                            bg="blue.400"
-                            color="white"
-                            size="xs"
-                            onClick={handleCreateCrew}
-                            _hover={{ bg: 'orange.400' }}
-                        >
-                            Add Crew
-                        </Button>
-                    </HStack>
-                </Flex>
+        <Flex direction="column" height="100%">
+            <EntityViewHeader
+                entityName="Crew"
+                entityIcon="crew"
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                sortOptions={CREW_SORT_OPTIONS}
+                onSortClick={handleSortClick}
+                createButtonText="Add Crew"
+                onCreateClick={handleCreateCrew}
+            />
 
-                <Box
-                    mt="4"
-                    border="1px solid"
-                    borderColor="container.border"
-                    p="4"
-                    borderRadius="md"
-                    flexGrow={1}
-                    overflowY="auto"
-                    className="hide-scrollbar"
-                >
-                    {isLoading && (
-                        <Flex justify="center" align="center" height="200px">
-                            <Spinner />
-                        </Flex>
-                    )}
-                    {error && (
-                        <Text color="red.500" textAlign="center" p="4">
-                            {error}
-                        </Text>
-                    )}
-                    {!isLoading && !error && (
-                        sortedCrews.length > 0 ? (
-                            <VStack spacing={4} align="stretch">
-                                {sortedCrews.map(crewMember => (
-                                    <div key={crewMember.user_id} ref={el => { showCardRefs.current[crewMember.user_id] = el; }}>
-                                        <CrewCard
-                                            crewMember={crewMember}
-                                            onEdit={handleEdit}
-                                            onCrewClick={onCrewClick}
-                                            isHovered={hoveredCardId === crewMember.user_id}
-                                            isSelected={selectedCrewId === crewMember.user_id}
-                                            onHover={setHoveredCardId}
-                                            onSaveNavigationState={onSaveNavigationState}
-                                        />
-                                    </div>
-                                ))}
-                            </VStack>
-                        ) : (
-                            <Flex direction="column" align="center" justify="center" height="200px" gap="4">
-                                <AppIcon name="crew" boxSize="40px" color="gray.400" />
-                                <Text color="gray.500" textAlign="center">
-                                    You haven't added any crew yet.
-                                </Text>
-                                <Button
-                                    bg="blue.400"
-                                    color="white"
-                                    size="sm"
-                                    onClick={handleCreateCrew}
-                                    _hover={{ bg: 'orange.400' }}
-                                >
-                                    Add Your First Crew
-                                </Button>
-                            </Flex>
-                        )
-                    )}
-                </Box>
-            </Flex>
-
-        </>
+            <EntityViewContainer
+                isLoading={isLoading}
+                error={error}
+                hasItems={sortedCrews.length > 0}
+                emptyStateComponent={emptyState}
+            >
+                {sortedCrews.map(crewMember => (
+                    <div key={crewMember.user_id} ref={el => { showCardRefs.current[crewMember.user_id] = el; }}>
+                        <CrewCard
+                            crewMember={crewMember}
+                            onEdit={handleEdit}
+                            onCrewClick={onCrewClick}
+                            isHovered={hoveredCardId === crewMember.user_id}
+                            isSelected={selectedCrewId === crewMember.user_id}
+                            onHover={setHoveredCardId}
+                            onSaveNavigationState={onSaveNavigationState}
+                        />
+                    </div>
+                ))}
+            </EntityViewContainer>
+        </Flex>
     );
 };
