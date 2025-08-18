@@ -185,6 +185,7 @@ const DashboardPage = React.memo<DashboardPageProps>(({ isMenuOpen, onMenuClose 
         modalData={modalData}
         onClose={closeModal}
         onDataRefresh={handleDataRefresh}
+        openModal={openModal}
       />
 
       <Drawer isOpen={isMenuOpen} placement="right" onClose={onMenuClose}>

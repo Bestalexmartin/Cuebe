@@ -5,12 +5,14 @@ import { ActionItem } from '../../../components/ActionsMenu';
 interface ActionMenuConfigParams {
     onOptionsClick: () => void;
     onDuplicateClick: () => void;
+    onExportClick: () => void;
     onDeleteClick: () => void;
 }
 
 export const createActionMenuConfig = ({
     onOptionsClick,
     onDuplicateClick,
+    onExportClick,
     onDeleteClick
 }: ActionMenuConfigParams): ActionItem[] => [
     {
@@ -30,9 +32,9 @@ export const createActionMenuConfig = ({
     {
         id: 'export-script',
         label: 'Export Script',
-        onClick: () => { },
+        onClick: onExportClick,
         isDestructive: false,
-        isDisabled: true
+        isDisabled: false
     },
     {
         id: 'edit-history',

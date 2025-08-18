@@ -1,6 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CreateShowModal } from "../../features/shows/components/modals/CreateShowModal";
 import { CreateScriptModal } from "../../features/shows/components/modals/CreateScriptModal";
+import { ScriptImportModal } from "../../features/script/import/components/ScriptImportModal";
 import { CreateVenueModal } from "../../features/venues/components/modals/CreateVenueModal";
 import { CreateDepartmentModal } from "../../features/departments/components/modals/CreateDepartmentModal";
 import { CreateCrewModal } from "../../features/crew/components/modals/CreateCrewModal";
@@ -12,6 +14,7 @@ interface ModalRendererProps {
   modalData: any;
   onClose: () => void;
   onDataRefresh: () => void;
+  openModal: (modalType: string, data?: any) => void;
 }
 
 export const ModalRenderer: React.FC<ModalRendererProps> = React.memo(({
@@ -20,7 +23,9 @@ export const ModalRenderer: React.FC<ModalRendererProps> = React.memo(({
   modalData,
   onClose,
   onDataRefresh,
+  openModal,
 }) => {
+  const navigate = useNavigate();
   switch (activeModal) {
     case MODAL_TYPES.createShow:
       return (
@@ -37,6 +42,21 @@ export const ModalRenderer: React.FC<ModalRendererProps> = React.memo(({
           onClose={onClose}
           showId={modalData.showId}
           onScriptCreated={onDataRefresh}
+          onImportRequest={(scriptName) => openModal(MODAL_TYPES.importScript, { showId: modalData.showId, scriptName })}
+        />
+      );
+    case MODAL_TYPES.importScript:
+      return (
+        <ScriptImportModal
+          isOpen={isOpen}
+          onClose={onClose}
+          showId={modalData.showId}
+          initialScriptName={modalData.scriptName}
+          onImportSuccess={(scriptId) => {
+            onDataRefresh();
+            onClose();
+            navigate(`/scripts/${scriptId}/manage`);
+          }}
         />
       );
     case MODAL_TYPES.createVenue:
