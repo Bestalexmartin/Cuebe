@@ -7,6 +7,7 @@ import { useState, useMemo } from 'react';
 export const MODAL_TYPES = {
     createShow: 'createShow',
     createScript: 'createScript',
+    importScript: 'importScript',
     createVenue: 'createVenue',
     createDepartment: 'createDepartment',
     createCrew: 'createCrew',

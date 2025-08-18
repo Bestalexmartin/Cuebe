@@ -52,6 +52,7 @@ import { useScriptFormSync } from '../features/script/hooks/useScriptFormSync';
 import { useShowCrew } from '../features/shows/hooks/useShowCrew';
 import { createActionMenuConfig } from '../features/script/config/actionMenuConfig';
 import { FloatingValidationErrorPanel } from '../components/base/FloatingValidationErrorPanel';
+import { exportScriptAsCSV } from '../features/script/export/utils/csvExporter';
 
 const MODAL_NAMES = {
     DELETE: 'delete',
@@ -127,6 +128,7 @@ const VALIDATION_CONFIG: FormValidationConfig = {
 export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, onMenuClose }) => {
     const { scriptId } = useParams<{ scriptId: string }>();
     const { getToken } = useAuth();
+    const { showSuccess, showError } = useEnhancedToast();
 
     const viewModeRef = useRef<ViewModeRef>(null);
     const editModeRef = useRef<EditModeRef>(null);
@@ -483,7 +485,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     };
 
     // Auto-sort functionality
-    const { showSuccess, showError } = useEnhancedToast();
     
     const handleAutoSortElements = useCallback(async () => {
         if (!scriptId) return;
@@ -664,10 +665,31 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         modalState.closeModal(MODAL_NAMES.FINAL_HIDE_SCRIPT);
     }, [modalState]);
 
+    // Export handler
+    const handleExportScript = async () => {
+        if (!scriptId || !script) return;
+        
+        try {
+            const token = await getToken();
+            if (!token) {
+                throw new Error('Authentication token not available');
+            }
+            
+            await exportScriptAsCSV(scriptId, token);
+            showSuccess('Export Complete', `Script "${script.script_name}" exported successfully`);
+        } catch (error) {
+            console.error('Export failed:', error);
+            showError('Export Failed', {
+                description: error instanceof Error ? error.message : 'Failed to export script'
+            });
+        }
+    };
+
     // Configure actions menu using extracted config
     const actions = createActionMenuConfig({
         onOptionsClick: () => modalState.openModal(MODAL_NAMES.OPTIONS),
         onDuplicateClick: () => modalState.openModal(MODAL_NAMES.DUPLICATE),
+        onExportClick: handleExportScript,
         onDeleteClick: modalHandlers.handleDeleteClick
     });
 
