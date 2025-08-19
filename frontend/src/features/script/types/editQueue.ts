@@ -39,6 +39,24 @@ export interface UpdateTimeOffsetOperation extends BaseEditOperation {
     new_offset_ms: number;
 }
 
+export interface UpdateGroupWithPropagationOperation extends BaseEditOperation {
+    type: 'UPDATE_GROUP_WITH_PROPAGATION';
+    field_updates: {
+        element_name?: string;
+        cue_notes?: string;
+        custom_color?: string;
+        offset_ms?: number;
+    };
+    old_values: {
+        element_name?: string;
+        cue_notes?: string;
+        custom_color?: string;
+        offset_ms?: number;
+    };
+    offset_delta_ms: number; // For propagating to children
+    affected_children: string[]; // IDs of child elements that will be affected
+}
+
 export interface BulkReorderOperation extends BaseEditOperation {
     type: 'BULK_REORDER';
     element_changes: Array<{
@@ -115,7 +133,8 @@ export type EditOperation =
     | UpdateElementOperation
     | ToggleGroupCollapseOperation
     | CreateGroupOperation
-    | UngroupElementsOperation;
+    | UngroupElementsOperation
+    | UpdateGroupWithPropagationOperation;
 
 export interface EditQueue {
     operations: EditOperation[];

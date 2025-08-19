@@ -27,6 +27,7 @@ import { useResource } from '../../../hooks/useResource';
 import { ValidationRules, FormValidationConfig } from '../../../types/validation';
 import { ScriptElementCreate, ElementType, PriorityLevel } from '../types/scriptElements';
 import { formatTimeOffset, parseTimeToMs } from '../../../utils/timeUtils';
+import { ColorSelector, PRESET_COLORS } from './ColorSelector';
 
 // TypeScript interfaces
 interface Department {
@@ -96,15 +97,6 @@ const PRIORITY_OPTIONS: { value: PriorityLevel; label: string }[] = [
 ];
 
 
-// Preset colors for note backgrounds - consistent with Show Start and semantic tokens
-const NOTE_PRESET_COLORS = [
-    { name: 'Default', value: '#E2E8F0' },
-    { name: 'Red', value: '#EF4444' },     // Matches semantic token note.preset.red
-    { name: 'Grey', value: '#808080' },
-    { name: 'Black', value: '#10151C' },
-    { name: 'Blue', value: '#3B82F6' },
-    { name: 'Yellow', value: '#EAB308' },
-];
 
 // Helper functions moved to shared utils
 
@@ -321,49 +313,16 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                 ) : (
                     <FormControl>
                         <FormLabel>Background Color</FormLabel>
-                        <HStack spacing={3} align="center">
-                            <Input
-                                type="color"
-                                value={form.formData.custom_color || '#E2E8F0'}
-                                onChange={(e) => form.updateField('custom_color', e.target.value)}
-                                width="60px"
-                                height="40px"
-                                padding="1"
-                                cursor="pointer"
-                            />
-                            <Input
-                                value={form.formData.custom_color || '#E2E8F0'}
-                                onChange={(e) => form.updateField('custom_color', e.target.value)}
-                                placeholder="#E2E8F0"
-                                width="120px"
-                                fontFamily="mono"
-                            />
-                            <HStack spacing={1} ml={2}>
-                                {/* Preset color buttons */}
-                                {NOTE_PRESET_COLORS.map((color) => (
-                                    <Button
-                                        key={color.value}
-                                        size="sm"
-                                        height="30px"
-                                        width="30px"
-                                        minWidth="30px"
-                                        backgroundColor={color.value}
-                                        border={form.formData.custom_color === color.value ? '3px solid' : '1px solid'}
-                                        borderColor={form.formData.custom_color === color.value ? 'white' : 'gray.300'}
-                                        onClick={() => form.updateField('custom_color', color.value)}
-                                        _hover={{ transform: 'scale(1.1)' }}
-                                        title={color.name}
-                                        tabIndex={-1}
-                                    />
-                                ))}
-                            </HStack>
-                        </HStack>
+                        <ColorSelector
+                            selectedColor={form.formData.custom_color || PRESET_COLORS[0].value}
+                            onColorChange={(color) => form.updateField('custom_color', color)}
+                        />
                     </FormControl>
                 )}
 
                 {/* Row 4: Cue (Description) */}
                 <FormControl isRequired>
-                    <FormLabel>Cue</FormLabel>
+                    <FormLabel>{form.formData.element_type === 'NOTE' ? 'Note' : 'Cue'}</FormLabel>
                     <Input
                         value={form.formData.element_name}
                         onChange={(e) => form.updateField('element_name', e.target.value)}

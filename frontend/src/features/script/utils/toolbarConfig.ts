@@ -150,7 +150,7 @@ export const getElementManagementButtons = (hasSelection: boolean, hasMultipleSe
     const isGroupSelected = selectedGroupElement && (selectedGroupElement as any).element_type === 'GROUP';
     
     // When multiple elements are selected, only GROUP should be enabled
-    // When a group parent is selected, only BREAK should be enabled
+    // When a group parent is selected, only BREAK and MODIFY should be enabled
     const shouldDisableEditButtons = hasMultipleSelection || isGroupSelected;
     
     return [
@@ -160,7 +160,7 @@ export const getElementManagementButtons = (hasSelection: boolean, hasMultipleSe
             label: 'ADD',
             description: 'Add Script Element',
             isActive: false,
-            isDisabled: hasMultipleSelection || isGroupSelected
+            isDisabled: hasSelection
         },
         {
             id: 'edit-element',
@@ -168,7 +168,7 @@ export const getElementManagementButtons = (hasSelection: boolean, hasMultipleSe
             label: 'MODIFY',
             description: 'Edit Selected Element',
             isActive: false,
-            isDisabled: !hasSelection || shouldDisableEditButtons
+            isDisabled: !hasSelection || hasMultipleSelection
         },
         {
             id: 'duplicate-element',

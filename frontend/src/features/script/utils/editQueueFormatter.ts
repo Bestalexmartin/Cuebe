@@ -59,6 +59,9 @@ export class EditQueueFormatter {
             case 'UPDATE_ELEMENT':
                 return this.formatElementUpdate(operation, elementName);
             
+            case 'UPDATE_GROUP_WITH_PROPAGATION':
+                return this.formatGroupUpdate(operation, elementName);
+            
             case 'CREATE_GROUP':
                 const groupName = operation.group_name || 'Untitled Group';
                 const elementCount = operation.element_ids?.length || 0;
@@ -182,6 +185,56 @@ export class EditQueueFormatter {
         
         const fieldNames = changedFields.map(field => fieldDisplayNames[field] || this.formatFieldName(field)).join(', ');
         return `Updated "${elementName}" ${fieldNames}`;
+    }
+    
+    /**
+     * Format group updates with appropriate descriptions
+     */
+    private static formatGroupUpdate(operation: any, elementName: string): string {
+        const fieldUpdates = operation.field_updates || {};
+        const changedFields = Object.keys(fieldUpdates);
+        const affectedChildren = operation.affected_children || [];
+        
+        if (changedFields.length === 0) {
+            return `Updated group "${elementName}"`;
+        }
+        
+        if (changedFields.length === 1) {
+            const field = changedFields[0];
+            const newValue = fieldUpdates[field];
+            const oldValue = operation.old_values?.[field];
+            
+            const fieldDisplayNames: Record<string, string> = {
+                'element_name': 'name',
+                'cue_notes': 'description',
+                'custom_color': 'color',
+                'offset_ms': 'start time'
+            };
+            
+            const fieldName = fieldDisplayNames[field] || this.formatFieldName(field);
+            
+            if (field === 'offset_ms' && affectedChildren.length > 0) {
+                const offsetDelta = operation.offset_delta_ms || 0;
+                const timeChange = offsetDelta > 0 ? `+${this.formatTime(Math.abs(offsetDelta))}` : `-${this.formatTime(Math.abs(offsetDelta))}`;
+                return `Updated group "${elementName}" ${fieldName} (${timeChange}, ${affectedChildren.length} children affected)`;
+            }
+            
+            const formattedOldValue = this.formatValue(field, oldValue);
+            const formattedNewValue = this.formatValue(field, newValue);
+            return `Updated group "${elementName}" ${fieldName} from "${formattedOldValue}" to "${formattedNewValue}"`;
+        }
+        
+        // Multiple fields changed
+        const fieldDisplayNames: Record<string, string> = {
+            'element_name': 'name',
+            'cue_notes': 'description',
+            'custom_color': 'color',
+            'offset_ms': 'start time'
+        };
+        
+        const fieldNames = changedFields.map(field => fieldDisplayNames[field] || this.formatFieldName(field)).join(', ');
+        const childrenNote = affectedChildren.length > 0 ? ` (${affectedChildren.length} children affected)` : '';
+        return `Updated group "${elementName}" ${fieldNames}${childrenNote}`;
     }
     
     /**
@@ -402,6 +455,7 @@ export class EditQueueFormatter {
             'REORDER': 'moves',
             'UPDATE_FIELD': 'updates',
             'UPDATE_ELEMENT': 'updates',
+            'UPDATE_GROUP_WITH_PROPAGATION': 'group updates',
             'UPDATE_TIME_OFFSET': 'time changes',
             'CREATE_ELEMENT': 'additions',
             'DELETE_ELEMENT': 'deletions',

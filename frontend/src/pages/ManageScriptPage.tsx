@@ -60,7 +60,8 @@ const MODAL_NAMES = {
     DUPLICATE: 'duplicate',
     PROCESSING: 'processing',
     ADD_ELEMENT: 'add_element',
-    EDIT_ELEMENT: 'edit_element',
+    EDIT_CUE: 'edit_cue',
+    EDIT_GROUP: 'edit_group',
     OPTIONS: 'options',
     DELETE_CUE: 'delete_cue',
     DUPLICATE_ELEMENT: 'duplicate_element',
@@ -925,6 +926,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onFinalSaveConfirm={modalHandlers.handleFinalSaveConfirm}
                 onSaveCancel={modalHandlers.handleSaveCancel}
                 onElementEdit={elementActions.handleElementEditSave}
+                onGroupEdit={elementActions.handleGroupEditSave}
+                allElements={allEditQueueElements}
                 scriptName={currentScript?.script_name || 'Script'}
                 crewCount={Array.from(new Map(crewMembers.map(member => [member.user_id, member])).values()).length}
                 shareCount={shareCount}

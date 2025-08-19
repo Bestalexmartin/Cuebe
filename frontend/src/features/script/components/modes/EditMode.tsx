@@ -583,6 +583,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         setElementToEdit(null);
     };
 
+
     // Function to check scroll state
     const checkScrollState = () => {
         if (!scrollContainerRef.current || !onScrollStateChange) return;
