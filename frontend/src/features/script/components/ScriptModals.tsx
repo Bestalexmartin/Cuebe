@@ -11,6 +11,7 @@ import { OptionsModal } from './modals/OptionsModal';
 import { DeleteCueModal } from './modals/DeleteCueModal';
 import { DuplicateElementModal } from './modals/DuplicateElementModal';
 import { EditElementModal } from './modals/EditElementModal';
+import { EditGroupModal } from './modals/EditGroupModal';
 import { AddScriptElementModal } from './AddScriptElementModal';
 import { GroupElementsModal } from './modals/GroupElementsModal';
 import { ShareConfirmationModal } from './modals/ShareConfirmationModal';
@@ -79,6 +80,8 @@ interface ScriptModalsProps {
     onFinalSaveConfirm: () => void;
     onSaveCancel: () => void;
     onElementEdit: (changes: Record<string, { oldValue: any; newValue: any }>) => void;
+    onGroupEdit: (changes: Record<string, { oldValue: any; newValue: any }>, offsetDelta: number, affectedChildren: string[]) => void;
+    allElements: any[]; // For group calculations
 }
 
 /**
@@ -135,7 +138,9 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     onAbandonChangesConfirm,
     onFinalSaveConfirm,
     onSaveCancel,
-    onElementEdit
+    onElementEdit,
+    onGroupEdit,
+    allElements
 }) => {
     return (
         <>
@@ -206,10 +211,19 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
 
             {/* Edit Script Element Modal */}
             <EditElementModal
-                isOpen={modalState.isOpen(modalNames.EDIT_ELEMENT)}
-                onClose={() => modalState.closeModal(modalNames.EDIT_ELEMENT)}
+                isOpen={modalState.isOpen(modalNames.EDIT_CUE)}
+                onClose={() => modalState.closeModal(modalNames.EDIT_CUE)}
                 element={selectedElement}
                 onSave={onElementEdit}
+            />
+
+            {/* Edit Group Modal */}
+            <EditGroupModal
+                isOpen={modalState.isOpen(modalNames.EDIT_GROUP)}
+                onClose={() => modalState.closeModal(modalNames.EDIT_GROUP)}
+                element={selectedElement}
+                allElements={allElements}
+                onSave={onGroupEdit}
             />
 
             {/* Options Modal */}

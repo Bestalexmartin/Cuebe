@@ -761,6 +761,28 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             
             return elementUpdates;
             
+        case 'UPDATE_GROUP_WITH_PROPAGATION':
+            const updateGroupOp = operation as any;
+            const offsetDelta = updateGroupOp.offset_delta_ms || 0;
+            
+            return elements.map(el => {
+                if (el.element_id === operation.element_id) {
+                    // Update the group element itself
+                    const updatedGroup = { ...el };
+                    Object.entries(updateGroupOp.field_updates || {}).forEach(([field, newValue]: [string, any]) => {
+                        (updatedGroup as any)[field] = newValue;
+                    });
+                    return updatedGroup;
+                } else if (offsetDelta !== 0 && el.parent_element_id === operation.element_id && el.group_level && el.group_level > 0) {
+                    // Update child elements with offset propagation
+                    return {
+                        ...el,
+                        offset_ms: Math.max(0, (el.offset_ms || 0) + offsetDelta)
+                    };
+                }
+                return el;
+            });
+            
         case 'TOGGLE_GROUP_COLLAPSE':
             const toggleOp = operation as any;
             return elements.map(el => 

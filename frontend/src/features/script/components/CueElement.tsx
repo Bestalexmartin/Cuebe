@@ -139,30 +139,6 @@ export const CueElement: React.FC<CueElementProps> = React.memo((props: CueEleme
     const isGroupParent = isGroup;
     const isGroupChild = element.group_level && element.group_level > 0;
 
-    // Calculate group summary notes dynamically for group parents
-    const groupSummaryNotes = useMemo(() => {
-        if (!isGroupParent) return null;
-
-        // Find all child elements of this group
-        const childElements = allElements.filter((el: ScriptElement) =>
-            el.parent_element_id === element.element_id &&
-            el.group_level && el.group_level > 0
-        );
-
-        if (childElements.length === 0) return "";
-
-        // Count element types
-        const cueCount = childElements.filter((el: ScriptElement) => el.element_type === 'CUE').length;
-        const noteCount = childElements.filter((el: ScriptElement) => el.element_type === 'NOTE').length;
-        const groupCount = childElements.filter((el: ScriptElement) => el.element_type === 'GROUP').length;
-
-        const noteParts: string[] = [];
-        if (cueCount > 0) noteParts.push(`${cueCount} cue${cueCount !== 1 ? 's' : ''}`);
-        if (noteCount > 0) noteParts.push(`${noteCount} note${noteCount !== 1 ? 's' : ''}`);
-        if (groupCount > 0) noteParts.push(`${groupCount} group${groupCount !== 1 ? 's' : ''}`);
-
-        return noteParts.length > 0 ? `Includes ${noteParts.join(' and ')}` : "";
-    }, [isGroupParent, allElements, element.element_id]);
 
     // Get the group parent's background color for group children
     let groupParentColor: string | null = null;
@@ -511,7 +487,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo((props: CueEleme
                 {/* Cue Notes */}
                 <Box flex={1} pl={6} pr={3} position="relative" py={.5} borderColor="gray.500">
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
-                        {isGroupParent ? (groupSummaryNotes || '\u00A0') : (element.cue_notes || '\u00A0')}
+                        {element.cue_notes || '\u00A0'}
                     </Text>
                     <Box
                         position="absolute"

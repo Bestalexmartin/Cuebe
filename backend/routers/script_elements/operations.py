@@ -81,6 +81,8 @@ def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, 
         return _process_update_field_operation(db, element_id, operation_data, user)    
     elif operation_type == "UPDATE_ELEMENT":
         return _process_update_element_operation(db, element_id, operation_data, user)    
+    elif operation_type == "UPDATE_GROUP_WITH_PROPAGATION":
+        return _process_update_group_with_propagation_operation(db, script_id, element_id, operation_data, user)
     elif operation_type == "UPDATE_TIME_OFFSET":
         return _process_update_time_offset_operation(db, element_id, operation_data, user)    
     elif operation_type == "CREATE_ELEMENT":
@@ -289,6 +291,64 @@ def _process_update_element_operation(db: Session, element_id: str, operation_da
     element.updated_by = user.user_id
     element.date_updated = datetime.now(timezone.utc)
     return {"element_id": element_id, "updated_fields": updated_fields}
+
+
+def _process_update_group_with_propagation_operation(db: Session, script_id: UUID, element_id: str, operation_data: dict, user: models.User):
+    """Process a group update operation with offset propagation to children."""
+    
+    field_updates = operation_data.get("field_updates", {})
+    offset_delta_ms = operation_data.get("offset_delta_ms", 0)
+    
+    # Get the group element
+    group_element = db.query(models.ScriptElement).filter(
+        and_(
+            models.ScriptElement.element_id == UUID(element_id),
+            models.ScriptElement.script_id == script_id,
+            models.ScriptElement.element_type == 'GROUP'
+        )
+    ).first()
+    
+    if not group_element:
+        raise ValueError(f"Group element {element_id} not found")
+    
+    updated_fields = {}
+    
+    # Update group element fields
+    for field, new_value in field_updates.items():
+        if hasattr(group_element, field):
+            setattr(group_element, field, new_value)
+            updated_fields[field] = new_value
+    
+    # Propagate offset changes to children if there's a delta
+    children_updated = 0
+    if offset_delta_ms != 0:
+        child_elements = db.query(models.ScriptElement).filter(
+            and_(
+                models.ScriptElement.script_id == script_id,
+                models.ScriptElement.parent_element_id == UUID(element_id),
+                models.ScriptElement.group_level > 0
+            )
+        ).all()
+        
+        for child in child_elements:
+            new_offset = (child.offset_ms or 0) + offset_delta_ms
+            # Ensure offset doesn't go negative
+            child.offset_ms = max(0, new_offset)
+            child.updated_by = user.user_id
+            child.date_updated = datetime.now(timezone.utc)
+            children_updated += 1
+    
+    # Update group metadata
+    group_element.updated_by = user.user_id
+    group_element.date_updated = datetime.now(timezone.utc)
+    
+    
+    return {
+        "element_id": element_id,
+        "updated_fields": updated_fields,
+        "children_updated": children_updated,
+        "offset_delta_ms": offset_delta_ms
+    }
 
 
 def _process_update_time_offset_operation(db: Session, element_id: str, operation_data: dict, user: models.User):

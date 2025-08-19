@@ -25,16 +25,8 @@ import { ScriptElement } from '../../types/scriptElements';
 import { useDepartments } from '../../../departments/hooks/useDepartments';
 import { FieldError } from '../../../../types/validation';
 import { parseTimeToMs } from '../../../../utils/timeUtils';
+import { ColorSelector, PRESET_COLORS } from '../ColorSelector';
 
-// Preset colors for note backgrounds - consistent with Show Start and semantic tokens
-const NOTE_PRESET_COLORS = [
-    { name: 'Default', value: '#E2E8F0' },
-    { name: 'Red', value: '#EF4444' },     // Matches semantic token note.preset.red
-    { name: 'Grey', value: '#808080' },
-    { name: 'Black', value: '#10151C' },
-    { name: 'Blue', value: '#3B82F6' },
-    { name: 'Yellow', value: '#EAB308' },
-];
 
 interface EditElementModalProps {
     isOpen: boolean;
@@ -391,43 +383,10 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                 ) : (
                     <FormControl>
                         <FormLabel>Background Color</FormLabel>
-                        <HStack spacing={3} align="center">
-                            <Input
-                                type="color"
-                                value={formData.custom_color || '#E2E8F0'}
-                                onChange={(e) => handleInputChange('custom_color', e.target.value)}
-                                width="60px"
-                                height="40px"
-                                padding="1"
-                                cursor="pointer"
-                            />
-                            <Input
-                                value={formData.custom_color || '#E2E8F0'}
-                                onChange={(e) => handleInputChange('custom_color', e.target.value)}
-                                placeholder="#E2E8F0"
-                                width="120px"
-                                fontFamily="mono"
-                            />
-                            <HStack spacing={1} ml={2}>
-                                {/* Preset color buttons */}
-                                {NOTE_PRESET_COLORS.map((color) => (
-                                    <Button
-                                        key={color.value}
-                                        size="sm"
-                                        height="30px"
-                                        width="30px"
-                                        minWidth="30px"
-                                        backgroundColor={color.value}
-                                        border={formData.custom_color === color.value ? '3px solid' : '1px solid'}
-                                        borderColor={formData.custom_color === color.value ? 'white' : 'gray.300'}
-                                        onClick={() => handleInputChange('custom_color', color.value)}
-                                        _hover={{ transform: 'scale(1.1)' }}
-                                        title={color.name}
-                                        tabIndex={-1}
-                                    />
-                                ))}
-                            </HStack>
-                        </HStack>
+                        <ColorSelector
+                            selectedColor={formData.custom_color || PRESET_COLORS[0].value}
+                            onColorChange={(color) => handleInputChange('custom_color', color)}
+                        />
                     </FormControl>
                 )}
 

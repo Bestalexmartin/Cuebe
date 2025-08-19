@@ -230,7 +230,7 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
 
                                     {/* Operation Type Badge - outline style like role badges */}
                                     <Box 
-                                        width="180px" 
+                                        width="220px" 
                                         flexShrink={0}
                                         display="flex"
                                         alignItems="center"
@@ -242,7 +242,7 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
                                             maxWidth="100%"
                                             isTruncated
                                         >
-                                            {operation.type.toLowerCase().replace(/_/g, ' ')}
+                                            {operation.type.toLowerCase().replace(/_/g, ' ').replace(' with propagation', '')}
                                         </Badge>
                                     </Box>
 
