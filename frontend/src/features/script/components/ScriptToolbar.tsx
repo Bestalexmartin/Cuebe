@@ -23,9 +23,9 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
         );
 
         if (activeMode === 'view') {
-            // View mode: Head, Tail, Play, Share/Hide
+            // View mode: Head, Tail, Play, Toggle Groups, Share/Hide
             const modeButtons = toolButtons.filter(tool => 
-                ['play', 'share', 'hide'].includes(tool.id)
+                ['play', 'toggle-all-groups', 'share', 'hide'].includes(tool.id)
             );
             return [...navigationButtons, ...modeButtons];
         } else if (activeMode === 'edit') {
