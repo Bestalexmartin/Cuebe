@@ -23,6 +23,7 @@ interface BaseFormFieldProps<T extends FormData> {
 interface FormInputProps<T extends FormData> extends BaseFormFieldProps<T> {
   type?: 'text' | 'email' | 'password' | 'url' | 'tel' | 'datetime-local';
   placeholder?: string;
+  showFieldError?: boolean;
 }
 
 interface FormTextareaProps<T extends FormData> extends BaseFormFieldProps<T> {
@@ -60,7 +61,8 @@ export const FormInput = <T extends FormData>({
   helperText,
   isRequired,
   type = 'text',
-  placeholder
+  placeholder,
+  showFieldError = false
 }: FormInputProps<T>) => {
   const fieldName = name as string;
   const value = form.formData[name] as string;
@@ -77,6 +79,7 @@ export const FormInput = <T extends FormData>({
       onChange={(newValue) => form.updateField(name, newValue)}
       onBlur={() => form.touchField(fieldName)}
       placeholder={placeholder}
+      showFieldError={showFieldError}
     />
   );
 };

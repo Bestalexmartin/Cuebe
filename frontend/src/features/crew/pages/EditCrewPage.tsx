@@ -9,8 +9,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useCrew } from "../hooks/useCrew";
 import { useUser } from '@clerk/clerk-react';
-import { useValidatedForm } from '../../../hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from '../../../types/validation';
+import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm';
 import { BaseEditPage } from '../../../components/base/BaseEditPage';
 import { ActionItem } from '../../../components/ActionsMenu';
 import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfirmationModal';
@@ -45,58 +44,6 @@ const INITIAL_FORM_STATE: CrewFormData = {
     notes: ''
 };
 
-const VALIDATION_CONFIG: FormValidationConfig = {
-    fullname_first: {
-        required: false,
-        rules: [
-            {
-                validator: (value: string) => {
-                    if (!value || value.trim().length === 0) {
-                        return true; // Empty is valid
-                    }
-                    return value.trim().length >= 4; // Must have 4+ chars if not empty
-                },
-                message: 'First name must be at least 4 characters',
-                code: 'MIN_LENGTH'
-            },
-            ValidationRules.maxLength(50, 'First name must be no more than 50 characters')
-        ]
-    },
-    fullname_last: {
-        required: false,
-        rules: [
-            {
-                validator: (value: string) => {
-                    if (!value || value.trim().length === 0) {
-                        return true; // Empty is valid
-                    }
-                    return value.trim().length >= 4; // Must have 4+ chars if not empty
-                },
-                message: 'Last name must be at least 4 characters',
-                code: 'MIN_LENGTH'
-            },
-            ValidationRules.maxLength(50, 'Last name must be no more than 50 characters')
-        ]
-    },
-    email_address: {
-        required: false,
-        rules: [
-            ValidationRules.email('Please enter a valid email address')
-        ]
-    },
-    phone_number: {
-        required: false,
-        rules: [
-            ValidationRules.phone('Please enter a valid phone number')
-        ]
-    },
-    notes: {
-        required: false,
-        rules: [
-            ValidationRules.maxLength(1000, 'Notes must be no more than 1000 characters')
-        ]
-    }
-};
 
 
 export const EditCrewPage: React.FC = () => {
@@ -119,12 +66,16 @@ export const EditCrewPage: React.FC = () => {
     const { crew, isLoading: isLoadingCrew, error: crewError } = useCrew(crewId);
 
     // Form management
-    const form = useValidatedForm<CrewFormData>(INITIAL_FORM_STATE, {
-        validationConfig: VALIDATION_CONFIG,
-        validateOnChange: true,
-        validateOnBlur: true,
-        showFieldErrorsInToast: false
-    });
+    const form = useValidatedFormSchema<CrewFormData>(
+        INITIAL_FORM_STATE,
+        'crew',
+        'crewEdit',
+        undefined,
+        {
+            validateOnBlur: true,
+            showFieldErrorsInToast: false
+        }
+    );
 
     // Populate form when crew data loads
     useEffect(() => {

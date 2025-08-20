@@ -8,9 +8,8 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useShow } from "../hooks/useShow";
-import { useValidatedForm } from '../../../hooks/useValidatedForm';
 import { useResource } from '../../../hooks/useResource';
-import { ValidationRules, FormValidationConfig } from '../../../types/validation';
+import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm';
 import { BaseEditPage } from '../../../components/base/BaseEditPage';
 import { ActionItem } from '../../../components/ActionsMenu';
 import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfirmationModal';
@@ -50,31 +49,6 @@ const INITIAL_FORM_STATE: ShowFormData = {
     crew_assignments: []
 };
 
-const VALIDATION_CONFIG: FormValidationConfig = {
-    show_name: {
-        required: false, // Handle through custom minLength rule
-        rules: [
-            // Custom minLength rule that requires at least 4 characters (empty is allowed)
-            {
-                validator: (value: string) => {
-                    if (!value || value.trim().length === 0) {
-                        return true; // Empty is valid
-                    }
-                    return value.trim().length >= 4; // Must have 4+ chars if not empty
-                },
-                message: 'Show name must be at least 4 characters',
-                code: 'MIN_LENGTH'
-            },
-            ValidationRules.maxLength(100, 'Show name must be no more than 100 characters')
-        ]
-    },
-    show_notes: {
-        required: false,
-        rules: [
-            ValidationRules.maxLength(500, 'Notes must be no more than 500 characters')
-        ]
-    }
-};
 
 export const EditShowPage: React.FC = () => {
     const { showId } = useParams<{ showId: string }>();
@@ -99,12 +73,16 @@ export const EditShowPage: React.FC = () => {
     } = useResource<Venue>('/api/me/venues');
 
     // Form management
-    const form = useValidatedForm<ShowFormData>(INITIAL_FORM_STATE, {
-        validationConfig: VALIDATION_CONFIG,
-        validateOnChange: true, // Re-enabled with fixed timing
-        validateOnBlur: true,
-        showFieldErrorsInToast: false
-    });
+    const form = useValidatedFormSchema<ShowFormData>(
+        INITIAL_FORM_STATE,
+        'show',
+        'show',
+        undefined,
+        {
+            validateOnBlur: true,
+            showFieldErrorsInToast: false
+        }
+    );
 
     // Populate form when show data loads
     useEffect(() => {

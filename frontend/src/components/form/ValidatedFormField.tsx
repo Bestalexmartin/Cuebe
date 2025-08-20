@@ -28,6 +28,7 @@ interface BaseFieldProps {
   error?: string;
   isInvalid?: boolean;
   onBlur?: () => void;
+  showFieldError?: boolean;
 }
 
 interface ValidatedInputProps extends BaseFieldProps {
@@ -93,6 +94,7 @@ export const ValidatedInput: React.FC<ValidatedInputProps> = ({
   onChange,
   onBlur,
   placeholder,
+  showFieldError = true,
   inputProps = {}
 }) => {
   return (
@@ -106,8 +108,8 @@ export const ValidatedInput: React.FC<ValidatedInputProps> = ({
         placeholder={placeholder}
         {...inputProps}
       />
-      {error && <FormErrorMessage>{error}</FormErrorMessage>}
-      {helperText && !error && <FormHelperText>{helperText}</FormHelperText>}
+      {error && showFieldError && <FormErrorMessage>{error}</FormErrorMessage>}
+      {helperText && (!error || !showFieldError) && <FormHelperText>{helperText}</FormHelperText>}
     </FormControl>
   );
 };
@@ -123,6 +125,7 @@ export const ValidatedTextarea: React.FC<ValidatedTextareaProps> = ({
   onBlur,
   placeholder,
   rows = 3,
+  showFieldError = true,
   textareaProps = {}
 }) => {
   return (
@@ -136,8 +139,8 @@ export const ValidatedTextarea: React.FC<ValidatedTextareaProps> = ({
         rows={rows}
         {...textareaProps}
       />
-      {error && <FormErrorMessage>{error}</FormErrorMessage>}
-      {helperText && !error && <FormHelperText>{helperText}</FormHelperText>}
+      {error && showFieldError && <FormErrorMessage>{error}</FormErrorMessage>}
+      {helperText && (!error || !showFieldError) && <FormHelperText>{helperText}</FormHelperText>}
     </FormControl>
   );
 };
@@ -153,6 +156,7 @@ export const ValidatedSelect: React.FC<ValidatedSelectProps> = ({
   onBlur,
   placeholder,
   children,
+  showFieldError = true,
   selectProps = {}
 }) => {
   return (
@@ -167,8 +171,8 @@ export const ValidatedSelect: React.FC<ValidatedSelectProps> = ({
       >
         {children}
       </Select>
-      {error && <FormErrorMessage>{error}</FormErrorMessage>}
-      {helperText && !error && <FormHelperText>{helperText}</FormHelperText>}
+      {error && showFieldError && <FormErrorMessage>{error}</FormErrorMessage>}
+      {helperText && (!error || !showFieldError) && <FormHelperText>{helperText}</FormHelperText>}
     </FormControl>
   );
 };

@@ -7,11 +7,10 @@ import {
     Select,
     VStack,
 } from '@chakra-ui/react';
-import { useValidatedForm } from '../../../../hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from '../../../../types/validation';
 import { FormInput } from '../../../../components/form/FormField';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
+import { useValidatedFormSchema } from '../../../../components/forms/ValidatedForm';
 import { SCRIPT_STATUS_OPTIONS } from '../../../script/constants';
 
 // TypeScript interfaces
@@ -34,24 +33,6 @@ const INITIAL_FORM_STATE: ScriptFormData = {
     script_status: 'DRAFT',
 };
 
-const VALIDATION_CONFIG: FormValidationConfig = {
-    script_name: {
-        required: false, // Handle required validation manually for button state
-        rules: [
-            {
-                validator: (value: string) => {
-                    if (!value || value.trim().length === 0) {
-                        return true; // Empty is valid
-                    }
-                    return value.trim().length >= 4; // Must have 4+ chars if not empty
-                },
-                message: 'Script name must be at least 4 characters',
-                code: 'MIN_LENGTH'
-            },
-            ValidationRules.maxLength(100, 'Script name must be no more than 100 characters')
-        ]
-    }
-};
 
 export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
     isOpen,
@@ -61,11 +42,16 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
     onImportRequest
 }) => {
     
-    const form = useValidatedForm<ScriptFormData>(INITIAL_FORM_STATE, {
-        validationConfig: VALIDATION_CONFIG,
-        validateOnBlur: true,
-        showFieldErrorsInToast: false // Only show validation errors in red alert box
-    });
+    const form = useValidatedFormSchema<ScriptFormData>(
+        INITIAL_FORM_STATE,
+        'show',
+        'script',
+        undefined,
+        {
+            validateOnBlur: true,
+            showFieldErrorsInToast: false // Only show validation errors in red alert box
+        }
+    );
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();

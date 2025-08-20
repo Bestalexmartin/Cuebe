@@ -1,20 +1,8 @@
 // frontend/src/features/shows/components/modals/DepartmentSelectionModal.tsx
 
 import React from 'react';
-import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  VStack,
-  HStack,
-  Text,
-  Box,
-  Button,
-  Flex,
-  Spinner
-} from '@chakra-ui/react';
+import { Button, HStack, VStack, Text, Box } from '@chakra-ui/react';
+import { SelectionModal, SelectionItem } from '../../../../components/base/SelectionModal';
 import { useDepartments } from '../../../departments/hooks/useDepartments';
 import { Department } from '../../types/crewAssignments';
 
@@ -25,6 +13,11 @@ interface DepartmentSelectionModalProps {
   excludeDepartmentIds?: string[];
 }
 
+interface DepartmentSelectionItem extends SelectionItem {
+  color?: string;
+  originalDepartment: Department;
+}
+
 export const DepartmentSelectionModal: React.FC<DepartmentSelectionModalProps> = ({
   isOpen,
   onClose,
@@ -33,69 +26,66 @@ export const DepartmentSelectionModal: React.FC<DepartmentSelectionModalProps> =
 }) => {
   const { departments, isLoading } = useDepartments();
 
-  const availableDepartments = departments.filter(dept => 
-    !excludeDepartmentIds.includes(dept.department_id)
-  );
+  // Transform departments to SelectionItem format
+  const selectionItems: DepartmentSelectionItem[] = departments.map(dept => ({
+    id: dept.department_id,
+    primaryText: dept.department_name,
+    secondaryText: dept.department_description || undefined,
+    color: dept.department_color,
+    originalDepartment: dept
+  }));
 
-  const handleDepartmentSelect = (department: Department) => {
-    onSelect(department);
-    onClose();
+  const handleDepartmentSelect = (item: DepartmentSelectionItem) => {
+    onSelect(item.originalDepartment);
   };
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>Select Department</ModalHeader>
-        <ModalBody pb={6}>
-          {isLoading ? (
-            <Flex justify="center" align="center" height="200px">
-              <Spinner />
-            </Flex>
-          ) : availableDepartments.length === 0 ? (
-            <Text color="gray.500" textAlign="center" py={8}>
-              No available departments to assign.
+  const renderDepartmentItem = (item: DepartmentSelectionItem, onItemSelect: (item: DepartmentSelectionItem) => void) => (
+    <Button
+      key={item.id}
+      variant="ghost"
+      justifyContent="flex-start"
+      width="100%"
+      height="auto"
+      py={3}
+      px={4}
+      onClick={() => onItemSelect(item)}
+      _hover={{
+        bg: "row.hover"
+      }}
+    >
+      <HStack spacing={3} width="100%">
+        <Box
+          width="14px"
+          height="14px"
+          borderRadius="50%"
+          bg={item.color || 'gray.400'}
+          flexShrink={0}
+        />
+        <VStack spacing={0} align="flex-start" flex={1}>
+          <Text fontWeight="medium" fontSize="md">
+            {item.primaryText}
+          </Text>
+          {item.secondaryText && (
+            <Text fontSize="sm" color="gray.600" noOfLines={1}>
+              {item.secondaryText}
             </Text>
-          ) : (
-            <VStack spacing={2} align="stretch">
-              {availableDepartments.map((department) => (
-                <Button
-                  key={department.department_id}
-                  variant="ghost"
-                  justifyContent="flex-start"
-                  height="auto"
-                  py={3}
-                  px={4}
-                  onClick={() => handleDepartmentSelect(department)}
-                  _hover={{
-                    bg: "row.hover"
-                  }}
-                >
-                  <HStack spacing={3} width="100%">
-                    <Box
-                      width="14px"
-                      height="14px"
-                      borderRadius="50%"
-                      bg={department.department_color || 'gray.400'}
-                      flexShrink={0}
-                    />
-                    <VStack spacing={0} align="flex-start" flex={1}>
-                      <Text fontWeight="medium" fontSize="md">
-                        {department.department_name}
-                      </Text>
-                      {department.department_description && (
-                        <Text fontSize="sm" color="gray.600" noOfLines={1}>
-                          {department.department_description}
-                        </Text>
-                      )}
-                    </VStack>
-                  </HStack>
-                </Button>
-              ))}
-            </VStack>
           )}
-        </ModalBody>
-      </ModalContent>
-    </Modal>
+        </VStack>
+      </HStack>
+    </Button>
+  );
+
+  return (
+    <SelectionModal
+      title="Select Department"
+      isOpen={isOpen}
+      onClose={onClose}
+      onSelect={handleDepartmentSelect}
+      items={selectionItems}
+      isLoading={isLoading}
+      emptyMessage="No available departments to assign."
+      excludeIds={excludeDepartmentIds}
+      renderCustomItem={renderDepartmentItem}
+    />
   );
 };

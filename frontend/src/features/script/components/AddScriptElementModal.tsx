@@ -22,9 +22,8 @@ import {
 } from '@chakra-ui/react';
 import { AppIcon } from '../../../components/AppIcon';
 import { BaseModal } from '../../../components/base/BaseModal';
-import { useValidatedForm } from '../../../hooks/useValidatedForm';
 import { useResource } from '../../../hooks/useResource';
-import { ValidationRules, FormValidationConfig } from '../../../types/validation';
+import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm';
 import { ScriptElementCreate, ElementType, PriorityLevel } from '../types/scriptElements';
 import { formatTimeOffset, parseTimeToMs } from '../../../utils/timeUtils';
 import { ColorSelector, PRESET_COLORS } from './ColorSelector';
@@ -54,32 +53,6 @@ const INITIAL_FORM_STATE: ScriptElementCreate = {
     custom_color: '' // For note background color
 };
 
-const VALIDATION_CONFIG: FormValidationConfig = {
-    element_name: {
-        required: true,
-        rules: [
-            ValidationRules.minLength(3, 'Cue Event must be at least 3 characters'),
-            ValidationRules.maxLength(200, 'Cue Event must be no more than 200 characters')
-        ]
-    },
-    // departmentID validation is handled manually in canSubmit logic
-    offset_ms: {
-        required: true,
-        rules: [
-            {
-                validator: (value: number) => Number.isFinite(value),
-                message: 'Time offset must be a valid time value',
-                code: 'INVALID_TIME'
-            }
-        ]
-    },
-    cue_notes: {
-        required: false,
-        rules: [
-            ValidationRules.maxLength(500, 'Cue Notes must be no more than 500 characters')
-        ]
-    }
-};
 
 const ELEMENT_TYPE_OPTIONS: { value: ElementType; label: string; description: string }[] = [
     { value: 'CUE', label: 'Cue', description: 'Technical cue (lighting, sound, etc.)' },
@@ -110,12 +83,16 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
     // Separate state for time input to allow free typing
     const [timeInputValue, setTimeInputValue] = useState('00:00');
     
-    const form = useValidatedForm<ScriptElementCreate>(INITIAL_FORM_STATE, {
-        validationConfig: VALIDATION_CONFIG,
-        validateOnChange: true,
-        validateOnBlur: true,
-        showFieldErrorsInToast: false
-    });
+    const form = useValidatedFormSchema<ScriptElementCreate>(
+        INITIAL_FORM_STATE,
+        'scriptElement',
+        'element',
+        undefined,
+        {
+            validateOnBlur: true,
+            showFieldErrorsInToast: false
+        }
+    );
 
     // Department data management
     const {

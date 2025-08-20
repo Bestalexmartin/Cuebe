@@ -5,8 +5,7 @@ import {
     VStack,
     HStack,
 } from '@chakra-ui/react';
-import { useValidatedForm } from '../../../../hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from '../../../../types/validation';
+import { useValidatedFormSchema } from '../../../../components/forms/ValidatedForm';
 import { FormInput } from '../../../../components/form/FormField';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
@@ -30,47 +29,22 @@ const INITIAL_FORM_STATE: VenueFormData = {
     state: '',
 };
 
-const VALIDATION_CONFIG: FormValidationConfig = {
-    venue_name: {
-        required: false, // Handle required validation manually for button state
-        rules: [
-            {
-                validator: (value: string) => {
-                    if (!value || value.trim().length === 0) {
-                        return true; // Empty is valid
-                    }
-                    return value.trim().length >= 4; // Must have 4+ chars if not empty
-                },
-                message: 'Venue name must be at least 4 characters',
-                code: 'MIN_LENGTH'
-            },
-            ValidationRules.maxLength(100, 'Venue name must be no more than 100 characters')
-        ]
-    },
-    city: {
-        required: false,
-        rules: [
-            ValidationRules.maxLength(50, 'City must be no more than 50 characters')
-        ]
-    },
-    state: {
-        required: false,
-        rules: [
-            ValidationRules.maxLength(2, 'State must be no more than 2 characters')
-        ]
-    }
-};
 
 export const CreateVenueModal: React.FC<CreateVenueModalProps> = ({
     isOpen,
     onClose,
     onVenueCreated
 }) => {
-    const form = useValidatedForm<VenueFormData>(INITIAL_FORM_STATE, {
-        validationConfig: VALIDATION_CONFIG,
-        validateOnBlur: true,
-        showFieldErrorsInToast: false // Only show validation errors in red alert box
-    });
+    const form = useValidatedFormSchema<VenueFormData>(
+        INITIAL_FORM_STATE,
+        'venue',
+        'venue',
+        undefined,
+        {
+            validateOnBlur: true,
+            showFieldErrorsInToast: false // Only show validation errors in red alert box
+        }
+    );
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
