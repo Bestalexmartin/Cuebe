@@ -1,0 +1,8 @@
+Time,Type,Element Name,Description,Group Path,Department,Priority,Location,Duration,Color
+10:00,GROUP,Cue Group,Three Lighting Cues ,,,NORMAL,,,#3B82F6
+10:00,CUE,Cue 01,First Lighting Cue,Cue Group,Lighting,NORMAL,,,
+0:00,NOTE,Disable Power to Elevator,,,,SAFETY,,,#EAB308
+10:10,CUE,Cue 02,,Cue Group,Lighting,NORMAL,,,
+1:00,CUE,Music Down,,,Audio,NORMAL,,,
+10:20,CUE,House lights down,,Cue Group,Lighting,NORMAL,,,
+1:30,CUE,Cue 03,,,Audio,NORMAL,,,

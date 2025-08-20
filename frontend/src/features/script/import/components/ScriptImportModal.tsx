@@ -42,7 +42,7 @@ interface ImportState {
   validationResult: ImportValidationResult | null;
   scriptMetadata: {
     script_name: string;
-    script_status: 'DRAFT' | 'COPY' | 'WORKING' | 'FINAL';
+    script_status: 'DRAFT' | 'COPY' | 'WORKING' | 'FINAL' | 'IMPORTED' | 'BACKUP';
     script_notes: string;
   };
 }
@@ -66,7 +66,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
     validationResult: null,
     scriptMetadata: {
       script_name: initialScriptName || '',
-      script_status: 'DRAFT',
+      script_status: 'IMPORTED',
       script_notes: ''
     }
   });
@@ -109,7 +109,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
         validationResult: null,
         scriptMetadata: {
           script_name: initialScriptName || '',
-          script_status: 'DRAFT',
+          script_status: 'IMPORTED',
           script_notes: ''
         }
       });

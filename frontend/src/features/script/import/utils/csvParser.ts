@@ -374,7 +374,7 @@ export const convertCSVToCleanImport = (
   columnMappings: CSVColumnMapping,
   scriptMetadata: {
     script_name: string;
-    script_status: 'DRAFT' | 'COPY' | 'WORKING' | 'FINAL';
+    script_status: 'DRAFT' | 'COPY' | 'WORKING' | 'FINAL' | 'IMPORTED' | 'BACKUP';
     start_time?: string;
     end_time?: string;
     script_notes?: string;

@@ -395,6 +395,32 @@ async def import_script(
             # No 00:00 elements, insert at the beginning
             element_dicts.insert(0, show_start_element)
         
+        # Create SHOW END element if show has an end time
+        if show.show_end and show.show_date:
+            # Calculate runtime in milliseconds
+            runtime_delta = show.show_end - show.show_date
+            runtime_ms = int(runtime_delta.total_seconds() * 1000)
+            
+            show_end_element = {
+                'element_id': uuid4(),
+                'element_type': ElementType.NOTE,
+                'element_name': 'SHOW END',
+                'cue_notes': None,
+                'offset_ms': runtime_ms,
+                'duration_ms': None,
+                'sequence': len(element_dicts) + 1,  # Will be recalculated
+                'department_name': None,
+                'department_id': None,
+                'priority': PriorityLevel.CRITICAL,
+                'location_details': None,
+                'custom_color': '#EF4444',  # Matches frontend note preset red
+                'group_level': 0,
+                'parent_element_id': None
+            }
+            
+            # Add SHOW END at the end
+            element_dicts.append(show_end_element)
+        
         # Recalculate sequence numbers after insertion
         for i, element_data in enumerate(element_dicts):
             element_data['sequence'] = i + 1

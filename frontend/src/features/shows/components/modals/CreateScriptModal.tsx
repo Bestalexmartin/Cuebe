@@ -25,7 +25,6 @@ interface CreateScriptModalProps {
     onClose: () => void;
     showId: string;
     onScriptCreated: () => void;
-    onImportRequest?: (scriptName: string) => void; // New prop to handle import requests
 }
 
 const INITIAL_FORM_STATE: ScriptFormData = {
@@ -38,8 +37,7 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
     isOpen,
     onClose,
     showId,
-    onScriptCreated,
-    onImportRequest
+    onScriptCreated
 }) => {
     
     const form = useValidatedFormSchema<ScriptFormData>(
@@ -82,15 +80,6 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
         onClose();
     };
 
-    const handleImportScript = () => {
-        // Close create modal and trigger import request
-        onClose();
-        // Notify parent component to open import modal with script name
-        if (onImportRequest) {
-            onImportRequest(form.formData.script_name);
-        }
-    };
-
     const { canSubmit } = useStandardFormValidation(form, ['script_name']);
 
     return (
@@ -101,26 +90,17 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
             onClose={handleModalClose}
             onCloseComplete={form.resetForm}
             onSubmit={handleSubmit}
-            customActions={[
-                {
-                    label: "Cancel",
-                    variant: "secondary",
-                    onClick: handleModalClose
-                },
-                {
-                    label: "Import Script",
-                    variant: "primary",
-                    onClick: handleImportScript,
-                    isDisabled: !canSubmit
-                },
-                {
-                    label: "Create Script",
-                    variant: "primary",
-                    onClick: () => handleSubmit({} as React.FormEvent<HTMLFormElement>),
-                    isLoading: form.isSubmitting,
-                    isDisabled: !canSubmit
-                }
-            ]}
+            secondaryAction={{
+                label: "Cancel",
+                variant: "secondary",
+                onClick: handleModalClose
+            }}
+            primaryAction={{
+                label: "Create Script",
+                variant: "primary",
+                isLoading: form.isSubmitting,
+                isDisabled: !canSubmit
+            }}
             validationErrors={form.fieldErrors}
             showValidationErrors={form.fieldErrors.length > 0}
             errorBoundaryContext="CreateScriptModal"

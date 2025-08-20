@@ -23,6 +23,10 @@ export const useModalActions = ({ openModal, refetchShows, setRefreshKey }: UseM
     openModal(MODAL_TYPES.createScript, { showId });
   }, [openModal]);
 
+  const handleImportScript = useCallback((showId: string) => {
+    openModal(MODAL_TYPES.importScript, { showId });
+  }, [openModal]);
+
   const handleCreateVenue = useCallback(() => {
     openModal(MODAL_TYPES.createVenue);
   }, [openModal]);
@@ -39,6 +43,7 @@ export const useModalActions = ({ openModal, refetchShows, setRefreshKey }: UseM
     handleDataRefresh,
     handleCreateShow,
     handleCreateScript,
+    handleImportScript,
     handleCreateVenue,
     handleCreateDepartment,
     handleCreateCrew,

@@ -470,6 +470,27 @@ def create_script_for_show(
         # department_id intentionally left out (None/NULL)
     )
     db.add(show_start_cue)
+    
+    # Create automatic "Show End" cue if show has an end time
+    if show.show_end and show.show_date:
+        # Calculate runtime in milliseconds
+        runtime_delta = show.show_end - show.show_date
+        runtime_ms = int(runtime_delta.total_seconds() * 1000)
+        
+        show_end_cue = models.ScriptElement(
+            script_id=new_script.script_id,
+            element_type=models.ElementType.NOTE,
+            element_name="SHOW END",  # All caps title
+            offset_ms=runtime_ms,  # At calculated runtime
+            priority=models.PriorityLevel.CRITICAL,
+            custom_color="#EF4444",  # Matches frontend note preset red
+            sequence=2,
+            group_level=0,
+            created_by=user.user_id
+            # department_id intentionally left out (None/NULL)
+        )
+        db.add(show_end_cue)
+    
     db.commit()
 
     return new_script
