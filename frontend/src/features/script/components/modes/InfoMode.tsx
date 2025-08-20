@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { VStack, HStack } from '@chakra-ui/react';
-import { useValidatedForm } from '../../../../hooks/useValidatedForm';
+import { useValidatedFormSchema } from '../../../../components/forms/ValidatedForm';
 import { SCRIPT_STATUS_OPTIONS } from '../../constants';
 import { EditPageFormField } from '../../../../components/base/EditPageFormField';
 
@@ -15,7 +15,7 @@ interface ScriptFormData {
 }
 
 interface InfoModeProps {
-    form: ReturnType<typeof useValidatedForm<ScriptFormData>>;
+    form: ReturnType<typeof useValidatedFormSchema<ScriptFormData>>;
 }
 
 

@@ -9,35 +9,20 @@ import {
   Text,
   Badge
 } from '@chakra-ui/react';
-import { useValidatedForm } from '../../hooks/useValidatedForm';
-import { ValidationRules } from '../../types/validation';
+import { useValidatedFormSchema } from '../forms/ValidatedForm';
 import { FormInput, FormNumberInput } from '../form/FormField';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
 export const FormValidationTest: React.FC = () => {
   const { showSuccess, showError } = useEnhancedToast();
 
-  // Test form with validation
-  const form = useValidatedForm(
+  // Test form with validation using our new centralized validation system
+  const form = useValidatedFormSchema(
     { email: '', name: '', age: undefined as number | undefined },
+    'test',
+    'formTest',
+    undefined,
     {
-      validationConfig: {
-        email: {
-          required: true,
-          rules: [ValidationRules.email('Please enter a valid email address')]
-        },
-        name: {
-          required: true,
-          rules: [ValidationRules.minLength(4, 'Name must be at least 4 characters')]
-        },
-        age: {
-          required: false,
-          rules: [
-            ValidationRules.min(18, 'Must be at least 18 years old'),
-            ValidationRules.max(120, 'Age seems unrealistic')
-          ]
-        }
-      },
       validateOnBlur: true
     }
   );

@@ -10,8 +10,7 @@ import {
     VStack,
     HStack,
 } from '@chakra-ui/react';
-import { useValidatedForm } from '../../../../hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from '../../../../types/validation';
+import { useValidatedFormSchema } from '../../../../components/forms/ValidatedForm';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
 
@@ -41,43 +40,6 @@ const INITIAL_FORM_STATE: DepartmentFormData = {
     department_initials: '',
 };
 
-const VALIDATION_CONFIG: FormValidationConfig = {
-    department_name: {
-        required: false, // Handle required validation manually for button state
-        rules: [
-            {
-                validator: (value: string) => {
-                    if (!value || value.trim().length === 0) {
-                        return true; // Empty is valid
-                    }
-                    return value.trim().length >= 3; // Must have 3+ chars if not empty
-                },
-                message: 'Department name must be at least 3 characters',
-                code: 'MIN_LENGTH'
-            },
-            ValidationRules.maxLength(50, 'Department name must be no more than 50 characters')
-        ]
-    },
-    department_description: {
-        required: false,
-        rules: [
-            ValidationRules.maxLength(200, 'Description must be no more than 200 characters')
-        ]
-    },
-    department_color: {
-        required: false, // Handle required validation manually for button state
-        rules: [
-            ValidationRules.pattern(/^#[0-9A-F]{6}$/i, 'Please enter a valid hex color code')
-        ]
-    },
-    department_initials: {
-        required: false,
-        rules: [
-            ValidationRules.maxLength(5, 'Initials must be no more than 5 characters'),
-            ValidationRules.pattern(/^[A-Z]*$/i, 'Initials must contain only letters')
-        ]
-    }
-};
 
 const PRESET_COLORS: PresetColor[] = [
     { name: 'Blue', value: '#6495ED' },
@@ -95,11 +57,16 @@ export const CreateDepartmentModal: React.FC<CreateDepartmentModalProps> = ({
     onClose,
     onDepartmentCreated
 }) => {
-    const form = useValidatedForm<DepartmentFormData>(INITIAL_FORM_STATE, {
-        validationConfig: VALIDATION_CONFIG,
-        validateOnBlur: true,
-        showFieldErrorsInToast: false // Only show validation errors in red alert box
-    });
+    const form = useValidatedFormSchema<DepartmentFormData>(
+        INITIAL_FORM_STATE,
+        'department',
+        'department',
+        undefined,
+        {
+            validateOnBlur: true,
+            showFieldErrorsInToast: false // Only show validation errors in red alert box
+        }
+    );
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();

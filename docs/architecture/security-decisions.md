@@ -1,5 +1,9 @@
 # Security Architecture Decisions
 
+**Date:** December 2024  
+**Status:** Current  
+**Category:** Architecture & Security
+
 This document outlines key security design decisions made during Cuebe development, including the rationale and trade-offs considered.
 
 ## Script Sharing URL Authentication

@@ -9,8 +9,7 @@ import {
   VStack,
   Textarea,
 } from '@chakra-ui/react';
-import { useValidatedForm } from '../../../../hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from '../../../../types/validation';
+import { useValidatedFormSchema } from '../../../../components/forms/ValidatedForm';
 import { FormInput } from '../../../../components/form/FormField';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
@@ -45,38 +44,6 @@ const INITIAL_FORM_STATE: ShowFormData = {
   deadline: '',
 };
 
-const VALIDATION_CONFIG: FormValidationConfig = {
-  show_name: {
-    required: false, // Handle required validation manually for button state
-    rules: [
-      {
-        validator: (value: string) => {
-          if (!value || value.trim().length === 0) {
-            return true; // Empty is valid
-          }
-          return value.trim().length >= 4; // Must have 4+ chars if not empty
-        },
-        message: 'Show name must be at least 4 characters',
-        code: 'MIN_LENGTH'
-      },
-      ValidationRules.maxLength(100, 'Show name must be no more than 100 characters')
-    ]
-  },
-  show_notes: {
-    required: false,
-    rules: [
-      ValidationRules.maxLength(500, 'Notes must be no more than 500 characters')
-    ]
-  },
-  show_date: {
-    required: false,
-    rules: []
-  },
-  deadline: {
-    required: false,
-    rules: []
-  }
-};
 
 export const CreateShowModal: React.FC<CreateShowModalProps> = ({
   isOpen,
@@ -87,11 +54,16 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
   const [newVenueName, setNewVenueName] = useState<string>('');
 
   // Form management
-  const form = useValidatedForm<ShowFormData>(INITIAL_FORM_STATE, {
-    validationConfig: VALIDATION_CONFIG,
-    validateOnBlur: true,
-    showFieldErrorsInToast: false // Only show validation errors in red alert box
-  });
+  const form = useValidatedFormSchema<ShowFormData>(
+    INITIAL_FORM_STATE,
+    'show',
+    'show',
+    undefined,
+    {
+      validateOnBlur: true,
+      showFieldErrorsInToast: false // Only show validation errors in red alert box
+    }
+  );
 
   // Venue data management
   const {

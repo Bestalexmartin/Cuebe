@@ -228,7 +228,6 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
         show_id: showId
       };
 
-      console.log('DEBUG: Sending import request:', JSON.stringify(importRequest, null, 2));
 
       const response = await fetch('/api/scripts/import', {
         method: 'POST',

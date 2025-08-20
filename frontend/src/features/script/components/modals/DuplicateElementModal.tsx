@@ -10,8 +10,7 @@ import {
 } from '@chakra-ui/react';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { FormInput } from '../../../../components/form/FormField';
-import { useValidatedForm } from '../../../../hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from '../../../../types/validation';
+import { useValidatedFormSchema } from '../../../../components/forms/ValidatedForm';
 import { formatTimeOffset, parseTimeToMs } from '../../../../utils/timeUtils';
 
 interface DuplicateElementFormData {
@@ -28,28 +27,6 @@ interface DuplicateElementModalProps {
     isProcessing?: boolean;
 }
 
-const VALIDATION_CONFIG: FormValidationConfig = {
-    element_name: {
-        required: true,
-        rules: [
-            ValidationRules.minLength(3, 'Element name must be at least 3 characters'),
-            ValidationRules.maxLength(200, 'Element name must be no more than 200 characters')
-        ]
-    },
-    timeOffsetInput: {
-        required: true,
-        rules: [
-            {
-                validator: (value: string) => {
-                    const timePattern = /^(\d{1,2}):([0-5]\d)$/;
-                    return timePattern.test(value);
-                },
-                message: 'Time must be in MM:SS format (e.g., 5:30)',
-                code: 'INVALID_TIME_FORMAT'
-            }
-        ]
-    }
-};
 
 // Helper functions moved to shared utils
 
@@ -61,14 +38,15 @@ export const DuplicateElementModal: React.FC<DuplicateElementModalProps> = ({
     originalTimeOffset,
     isProcessing = false
 }) => {
-    const form = useValidatedForm<DuplicateElementFormData>(
+    const form = useValidatedFormSchema<DuplicateElementFormData>(
         {
             element_name: `${originalElementName} (Copy)`,
             timeOffsetInput: formatTimeOffset(originalTimeOffset) || ''
         },
+        'scriptElement',
+        'duplicateElement',
+        undefined,
         {
-            validationConfig: VALIDATION_CONFIG,
-            validateOnChange: true,
             validateOnBlur: true,
             showFieldErrorsInToast: false
         }

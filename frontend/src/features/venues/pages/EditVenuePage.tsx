@@ -8,8 +8,7 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useVenue } from "../hooks/useVenue";
-import { useValidatedForm } from '../../../hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from '../../../types/validation';
+import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm';
 import { BaseEditPage } from '../../../components/base/BaseEditPage';
 import { ActionItem } from '../../../components/ActionsMenu';
 import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfirmationModal';
@@ -71,52 +70,6 @@ const VENUE_TYPE_OPTIONS: VenueTypeOption[] = [
     { value: 'Other', label: 'Other' },
 ];
 
-const VALIDATION_CONFIG: FormValidationConfig = {
-    venue_name: {
-        required: false,
-        rules: [
-            {
-                validator: (value: string) => {
-                    if (!value || value.trim().length === 0) {
-                        return true; // Empty is valid
-                    }
-                    return value.trim().length >= 4; // Must have 4+ chars if not empty
-                },
-                message: 'Venue name must be at least 4 characters',
-                code: 'MIN_LENGTH'
-            },
-            ValidationRules.maxLength(100, 'Venue name must be no more than 100 characters')
-        ]
-    },
-    contact_email: {
-        required: false,
-        rules: [
-            ValidationRules.email('Please enter a valid email address')
-        ]
-    },
-    contact_phone: {
-        required: false,
-        rules: [
-            ValidationRules.phone('Please enter a valid phone number')
-        ]
-    },
-    capacity: {
-        required: false,
-        rules: [
-            {
-                validator: (value: string) => !value || (!isNaN(Number(value)) && Number(value) > 0),
-                message: 'Capacity must be a positive number',
-                code: 'INVALID_NUMBER'
-            }
-        ]
-    },
-    venue_notes: {
-        required: false,
-        rules: [
-            ValidationRules.maxLength(1000, 'Notes must be no more than 1000 characters')
-        ]
-    }
-};
 
 export const EditVenuePage: React.FC = () => {
     const { venueId } = useParams<{ venueId: string }>();
@@ -132,12 +85,16 @@ export const EditVenuePage: React.FC = () => {
     const { venue, isLoading: isLoadingVenue, error: venueError } = useVenue(venueId);
 
     // Form management
-    const form = useValidatedForm<VenueFormData>(INITIAL_FORM_STATE, {
-        validationConfig: VALIDATION_CONFIG,
-        validateOnChange: true,
-        validateOnBlur: true,
-        showFieldErrorsInToast: false
-    });
+    const form = useValidatedFormSchema<VenueFormData>(
+        INITIAL_FORM_STATE,
+        'venue',
+        'venueEdit',
+        undefined,
+        {
+            validateOnBlur: true,
+            showFieldErrorsInToast: false
+        }
+    );
 
     // Populate form when venue data loads
     useEffect(() => {

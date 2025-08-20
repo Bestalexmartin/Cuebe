@@ -1,5 +1,9 @@
 # Script Grouping Model Design
 
+**Date:** December 2024  
+**Status:** Implemented  
+**Category:** Architecture & Data Models
+
 ## Overview
 Design a comprehensive grouping system for theater scripts that works for both import and export, supporting hierarchical organization of script elements.
 

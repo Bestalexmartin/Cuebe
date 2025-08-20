@@ -12,7 +12,10 @@ import {
   Button,
   ModalContentProps,
   HStack,
-  Text
+  VStack,
+  Text,
+  Spinner,
+  Box
 } from '@chakra-ui/react';
 import { ErrorBoundary } from '../ErrorBoundary';
 import { ValidationErrors } from './ValidationErrors';
@@ -34,13 +37,29 @@ export interface BaseModalProps extends Omit<ModalContentProps, 'children'> {
   onClose: () => void;
   onCloseComplete?: () => void;
 
+  // Modal variants for common patterns
+  variant?: 'default' | 'warning' | 'danger' | 'processing';
+  warningLevel?: 'standard' | 'final';
+  
+  // Warning modal content (when variant is 'warning' or 'danger')
+  mainText?: string;
+  subText?: string | React.ReactNode;
+  bottomText?: string;
+
+  // Processing modal content (when variant is 'processing')
+  processingTitle?: string;
+  processingMessage?: string;
+  showSpinner?: boolean;
+  spinnerSize?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  spinnerColor?: string;
+
   // Header customization
   headerIcon?: IconName;
   headerIconColor?: string;
   showHeader?: boolean;
 
   // Content
-  children: React.ReactNode;
+  children?: React.ReactNode;
 
   // Form handling
   onSubmit?: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -74,6 +93,16 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
   isOpen,
   onClose,
   onCloseComplete,
+  variant = 'default',
+  warningLevel = 'standard',
+  mainText,
+  subText,
+  bottomText,
+  processingTitle = "Processing",
+  processingMessage = "Please wait while we process your request...",
+  showSpinner = true,
+  spinnerSize = 'xl',
+  spinnerColor = 'blue.400',
   headerIcon,
   headerIconColor,
   showHeader = true,
@@ -128,6 +157,154 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
   };
 
   const finalSecondaryAction = secondaryAction || defaultSecondaryAction;
+
+  // Get variant-specific styling and configuration
+  const getVariantConfig = () => {
+    switch (variant) {
+      case 'danger':
+        return {
+          modalBg: 'red.800',
+          borderColor: 'red.400',
+          textColor: 'white',
+          icon: headerIcon || 'warning',
+          iconColor: headerIconColor || 'red.300',
+          title: title || 'FINAL WARNING',
+          finalBottomText: bottomText || 'THIS ACTION CAN NOT BE UNDONE!',
+          showHeader: showHeader,
+          showFooter: showFooter,
+          closeOnOverlayClick: closeOnOverlayClick,
+          closeOnEsc: closeOnEsc
+        };
+      case 'warning':
+        return {
+          modalBg: 'orange.800',
+          borderColor: 'orange.400', 
+          textColor: 'white',
+          icon: headerIcon || 'warning',
+          iconColor: headerIconColor || 'orange.300',
+          title: title || 'Warning',
+          finalBottomText: bottomText || 'This action cannot be undone.',
+          showHeader: showHeader,
+          showFooter: showFooter,
+          closeOnOverlayClick: closeOnOverlayClick,
+          closeOnEsc: closeOnEsc
+        };
+      case 'processing':
+        return {
+          modalBg: 'page.background',
+          borderColor: 'gray.600',
+          textColor: 'inherit',
+          icon: headerIcon,
+          iconColor: headerIconColor,
+          title: title || processingTitle,
+          finalBottomText: bottomText,
+          showHeader: false, // Processing modals typically don't show headers
+          showFooter: false, // Processing modals don't have actions
+          closeOnOverlayClick: false, // Can't close processing modals
+          closeOnEsc: false // Can't close processing modals
+        };
+      default:
+        return {
+          modalBg: 'page.background',
+          borderColor: 'gray.600',
+          textColor: 'inherit',
+          icon: headerIcon,
+          iconColor: headerIconColor,
+          title: title,
+          finalBottomText: bottomText,
+          showHeader: showHeader,
+          showFooter: showFooter,
+          closeOnOverlayClick: closeOnOverlayClick,
+          closeOnEsc: closeOnEsc
+        };
+    }
+  };
+
+  const variantConfig = getVariantConfig();
+
+  // Render variant-specific content
+  const renderVariantContent = () => {
+    switch (variant) {
+      case 'warning':
+      case 'danger':
+        return (
+          <VStack spacing="4" align="center" width="100%">
+            {mainText && (
+              <Text fontSize="lg" textAlign="center" fontWeight="bold">
+                {mainText}
+              </Text>
+            )}
+            {subText && (
+              <Text 
+                fontSize="md" 
+                textAlign="center" 
+                color={variant === 'danger' ? 'red.200' : 'orange.200'} 
+                lineHeight="1.6"
+              >
+                {subText}
+              </Text>
+            )}
+            {variantConfig.finalBottomText && warningLevel === 'final' && (
+              <Text 
+                fontSize={variant === 'danger' ? 'md' : 'lg'} 
+                textAlign="center" 
+                color={variant === 'danger' ? 'red.300' : 'orange.300'} 
+                fontWeight="bold"
+              >
+                {variantConfig.finalBottomText}
+              </Text>
+            )}
+            {variantConfig.finalBottomText && warningLevel === 'standard' && (
+              <Text 
+                fontSize="md" 
+                textAlign="center" 
+                color={variant === 'danger' ? 'red.300' : 'orange.300'} 
+                fontWeight="bold"
+              >
+                {variantConfig.finalBottomText}
+              </Text>
+            )}
+          </VStack>
+        );
+      
+      case 'processing':
+        return (
+          <VStack spacing={6} align="center" py="8">
+            {showSpinner && (
+              <Box>
+                <Spinner
+                  size={spinnerSize}
+                  thickness="4px"
+                  speed="0.8s"
+                  color={spinnerColor}
+                />
+              </Box>
+            )}
+
+            <VStack spacing={2} textAlign="center">
+              <Text
+                fontSize="lg"
+                fontWeight="semibold"
+                color="gray.700"
+                _dark={{ color: "gray.200" }}
+              >
+                {processingTitle}
+              </Text>
+              <Text
+                fontSize="sm"
+                color="gray.600"
+                _dark={{ color: "gray.400" }}
+              >
+                {processingMessage}
+              </Text>
+            </VStack>
+          </VStack>
+        );
+      
+      default:
+        return children;
+    }
+  };
 
   const renderActions = () => {
     if (customActions) {
@@ -197,8 +374,8 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       onCloseComplete={onCloseComplete}
-      closeOnOverlayClick={closeOnOverlayClick}
-      closeOnEsc={closeOnEsc}
+      closeOnOverlayClick={variantConfig.closeOnOverlayClick}
+      closeOnEsc={variantConfig.closeOnEsc}
       isCentered={isCentered}
       size={size}
     >
@@ -206,30 +383,31 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
       <ModalContent
         as={onSubmit ? "form" : "div"}
         onSubmit={handleSubmit}
-        bg="page.background"
+        bg={variantConfig.modalBg}
         border="2px solid"
-        borderColor="gray.600"
+        borderColor={variantConfig.borderColor}
+        color={variantConfig.textColor}
         {...modalContentProps}
       >
-        {showHeader && (
+        {variantConfig.showHeader && (
           <ModalHeader>
-            {headerIcon && title ? (
+            {variantConfig.icon && variantConfig.title ? (
               <HStack spacing={3}>
-                <AppIcon name={headerIcon} boxSize="20px" color={headerIconColor} />
-                <Text>{title}</Text>
+                <AppIcon name={variantConfig.icon} boxSize="20px" color={variantConfig.iconColor} />
+                <Text>{variantConfig.title}</Text>
               </HStack>
             ) : (
-              title
+              variantConfig.title
             )}
           </ModalHeader>
         )}
         {showCloseButton && <ModalCloseButton />}
 
-        <ModalBody pb={showFooter ? 6 : 4}>
-          {children}
+        <ModalBody pb={variantConfig.showFooter ? 6 : 4}>
+          {renderVariantContent()}
         </ModalBody>
 
-        {showFooter && (
+        {variantConfig.showFooter && (
           <ModalFooter justifyContent={rightAlignActions === false ? "flex-start" : "flex-end"}>
             {renderActions()}
           </ModalFooter>
@@ -257,6 +435,16 @@ const areModalPropsEqual = (prevProps: BaseModalProps, nextProps: BaseModalProps
   if (
     prevProps.title !== nextProps.title ||
     prevProps.isOpen !== nextProps.isOpen ||
+    prevProps.variant !== nextProps.variant ||
+    prevProps.warningLevel !== nextProps.warningLevel ||
+    prevProps.mainText !== nextProps.mainText ||
+    prevProps.subText !== nextProps.subText ||
+    prevProps.bottomText !== nextProps.bottomText ||
+    prevProps.processingTitle !== nextProps.processingTitle ||
+    prevProps.processingMessage !== nextProps.processingMessage ||
+    prevProps.showSpinner !== nextProps.showSpinner ||
+    prevProps.spinnerSize !== nextProps.spinnerSize ||
+    prevProps.spinnerColor !== nextProps.spinnerColor ||
     prevProps.showValidationErrors !== nextProps.showValidationErrors ||
     prevProps.errorBoundaryContext !== nextProps.errorBoundaryContext ||
     prevProps.showHeader !== nextProps.showHeader ||

@@ -9,8 +9,7 @@ import {
     HStack,
 } from '@chakra-ui/react';
 import { useAuth } from '@clerk/clerk-react';
-import { useValidatedForm } from '../../../../hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from '../../../../types/validation';
+import { useValidatedFormSchema } from '../../../../components/forms/ValidatedForm';
 import { FormInput } from '../../../../components/form/FormField';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
@@ -44,46 +43,6 @@ const INITIAL_FORM_STATE: CrewFormData = {
     user_role: 'CREW',
 };
 
-const VALIDATION_CONFIG: FormValidationConfig = {
-    email_address: {
-        required: false, // Handle required validation manually for button state
-        rules: [
-            ValidationRules.email('Please enter a valid email address')
-        ]
-    },
-    fullname_first: {
-        required: false, // Handle required validation manually for button state
-        rules: [
-            {
-                validator: (value: string) => {
-                    if (!value || value.trim().length === 0) {
-                        return true; // Empty is valid
-                    }
-                    return value.trim().length >= 4; // Must have 4+ chars if not empty
-                },
-                message: 'First name must be at least 4 characters',
-                code: 'MIN_LENGTH'
-            },
-            ValidationRules.maxLength(50, 'First name must be no more than 50 characters')
-        ]
-    },
-    fullname_last: {
-        required: false, // Handle required validation manually for button state
-        rules: [
-            {
-                validator: (value: string) => {
-                    if (!value || value.trim().length === 0) {
-                        return true; // Empty is valid
-                    }
-                    return value.trim().length >= 4; // Must have 4+ chars if not empty
-                },
-                message: 'Last name must be at least 4 characters',
-                code: 'MIN_LENGTH'
-            },
-            ValidationRules.maxLength(50, 'Last name must be no more than 50 characters')
-        ]
-    }
-};
 
 
 export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
@@ -93,11 +52,16 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
 }) => {
     const { getToken } = useAuth();
 
-    const form = useValidatedForm<CrewFormData>(INITIAL_FORM_STATE, {
-        validationConfig: VALIDATION_CONFIG,
-        validateOnBlur: true,
-        showFieldErrorsInToast: false // Only show validation errors in red alert box
-    });
+    const form = useValidatedFormSchema<CrewFormData>(
+        INITIAL_FORM_STATE,
+        'crew',
+        'crew',
+        undefined,
+        {
+            validateOnBlur: true,
+            showFieldErrorsInToast: false // Only show validation errors in red alert box
+        }
+    );
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();

@@ -10,8 +10,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useDepartment } from "../hooks/useDepartment";
 import { formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
-import { useValidatedForm } from '../../../hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from '../../../types/validation';
+import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm';
 import { BaseEditPage } from '../../../components/base/BaseEditPage';
 import { ActionItem } from '../../../components/ActionsMenu';
 import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfirmationModal';
@@ -43,47 +42,6 @@ const INITIAL_FORM_STATE: DepartmentFormData = {
     department_initials: ''
 };
 
-const VALIDATION_CONFIG: FormValidationConfig = {
-    department_name: {
-        required: false,
-        rules: [
-            {
-                validator: (value: string) => {
-                    if (!value || value.trim().length === 0) {
-                        return true; // Empty is valid
-                    }
-                    return value.trim().length >= 3; // Must have 3+ chars if not empty
-                },
-                message: 'Department name must be at least 3 characters',
-                code: 'MIN_LENGTH'
-            },
-            ValidationRules.maxLength(100, 'Department name must be no more than 100 characters')
-        ]
-    },
-    department_description: {
-        required: false,
-        rules: [
-            ValidationRules.maxLength(500, 'Description must be no more than 500 characters')
-        ]
-    },
-    department_color: {
-        required: false,
-        rules: [
-            {
-                validator: (value: string) => !value || /^#[0-9A-Fa-f]{6}$/.test(value),
-                message: 'Please enter a valid color code (e.g., #3182CE)',
-                code: 'INVALID_COLOR'
-            }
-        ]
-    },
-    department_initials: {
-        required: false,
-        rules: [
-            ValidationRules.maxLength(5, 'Initials must be no more than 5 characters'),
-            ValidationRules.pattern(/^[A-Z]*$/i, 'Initials must contain only letters')
-        ]
-    }
-};
 
 // Predefined color options for quick selection (same as CreateDepartmentModal)
 const PRESET_COLORS: PresetColor[] = [
@@ -115,12 +73,16 @@ export const EditDepartmentPage: React.FC = () => {
     const { department, isLoading: isLoadingDepartment, error: departmentError } = useDepartment(departmentId);
 
     // Form management
-    const form = useValidatedForm<DepartmentFormData>(INITIAL_FORM_STATE, {
-        validationConfig: VALIDATION_CONFIG,
-        validateOnChange: true,
-        validateOnBlur: true,
-        showFieldErrorsInToast: false
-    });
+    const form = useValidatedFormSchema<DepartmentFormData>(
+        INITIAL_FORM_STATE,
+        'department',
+        'department',
+        undefined,
+        {
+            validateOnBlur: true,
+            showFieldErrorsInToast: false
+        }
+    );
 
     // Populate form when department data loads
     useEffect(() => {

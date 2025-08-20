@@ -65,7 +65,7 @@ const DEFAULT_COLUMN_MAPPINGS: Record<string, keyof CSVColumnMapping> = {
   'dept': 'department',
   'department_name': 'department',
   'team': 'department',
-  'group': 'department',
+  'dept_group': 'department',
   
   // Priority columns
   'priority': 'priority',
@@ -402,6 +402,7 @@ export const convertCSVToCleanImport = (
     const colorValue = columnMappings.color ? row[columnMappings.color] : '';
     const groupPathValue = columnMappings.group_path ? row[columnMappings.group_path] : '';
     
+    
     // Skip completely empty rows
     const hasAnyData = Object.values(row).some(value => value && value.trim() !== '');
     if (!hasAnyData) {
@@ -519,33 +520,35 @@ export const convertCSVToCleanImport = (
     const groupPath = parseGroupPath(groupPathValue);
     let groupLevel = 0;
     
-    if (groupPath.length > 0) {
-      // Only auto-generate groups for non-GROUP elements
-      if (typeResult.normalizedType !== 'GROUP') {
-        // Generate any missing GROUP elements
-        const groupElements = generateGroupElements(groupPath, timeResult.milliseconds!, existingGroups);
-        
-        // Add group elements to the results (they'll be inserted before this element)
-        groupElements.forEach(groupElement => {
-          elements.push(groupElement);
-        });
-        
-        // Set this element's group level
-        groupLevel = groupPath.length;
-      } else {
-        // For explicit GROUP elements, set group level based on path depth
-        groupLevel = groupPath.length - 1; // Groups are one level higher than their children
-        
-        // Add this group to the existing groups map
-        const fullPath = groupPath.join('/');
-        const groupElement: ScriptElementImport = {
-          element_type: 'GROUP',
-          element_name: nameValue.trim(),
-          offset_ms: timeResult.milliseconds!,
-          group_level: groupLevel
-        };
-        existingGroups.set(fullPath, groupElement);
-      }
+    // For GROUP elements, always process them even if Group Path is empty
+    if (typeResult.normalizedType === 'GROUP') {
+      // For explicit GROUP elements, use the element name as the group path
+      // This handles cases where Group Path column is empty for GROUP rows
+      const groupName = nameValue.trim();
+      const actualGroupPath = groupPath.length > 0 ? groupPath : [groupName];
+      groupLevel = actualGroupPath.length - 1; // Groups are one level higher than their children
+      
+      // Add this group to the existing groups map using the actual group name
+      const fullPath = actualGroupPath.join('/');
+      const groupElement: ScriptElementImport = {
+        element_type: 'GROUP',
+        element_name: groupName,
+        offset_ms: timeResult.milliseconds!,
+        group_level: groupLevel
+      };
+      existingGroups.set(fullPath, groupElement);
+    } else if (groupPath.length > 0) {
+      // Only auto-generate groups for non-GROUP elements that have a group path
+      // Generate any missing GROUP elements
+      const groupElements = generateGroupElements(groupPath, timeResult.milliseconds!, existingGroups);
+      
+      // Add group elements to the results (they'll be inserted before this element)
+      groupElements.forEach(groupElement => {
+        elements.push(groupElement);
+      });
+      
+      // Set this element's group level
+      groupLevel = groupPath.length;
     }
     
     // Determine custom color - use provided color, or default for GROUP elements
@@ -573,22 +576,47 @@ export const convertCSVToCleanImport = (
     elements.push(element);
   });
   
-  // Assign sequence numbers to all elements in order
-  elements.forEach((element, index) => {
+  // Sort elements to ensure group children follow their parents
+  // This ensures proper parent-child relationships in the backend
+  const sortedElements = [...elements].sort((a, b) => {
+    // First sort by offset time
+    if (a.offset_ms !== b.offset_ms) {
+      return a.offset_ms - b.offset_ms;
+    }
+    
+    // For elements at the same time, ensure GROUP elements come before their children
+    if (a.element_type === 'GROUP' && b.element_type !== 'GROUP' && b.group_level > 0) {
+      return -1; // GROUP comes first
+    }
+    if (b.element_type === 'GROUP' && a.element_type !== 'GROUP' && a.group_level > 0) {
+      return 1; // GROUP comes first
+    }
+    
+    // For non-group elements, higher group_level (more nested) comes after lower group_level
+    if (a.group_level !== b.group_level) {
+      return a.group_level - b.group_level;
+    }
+    
+    // Maintain original processing order for elements at same level
+    return 0;
+  });
+  
+  // Assign sequence numbers to all elements in sorted order
+  sortedElements.forEach((element, index) => {
     element.sequence = index + 1;
   });
   
   // Check if any group hierarchy was detected
-  const hasGroupHierarchy = elements.some(e => e.group_level > 0 || e.element_type === 'GROUP');
+  const hasGroupHierarchy = sortedElements.some(e => e.group_level > 0 || e.element_type === 'GROUP');
   
   // Create clean import object
   const cleanImport: CleanScriptImport = {
     script_metadata: scriptMetadata,
-    script_elements: elements,
+    script_elements: sortedElements,
     import_metadata: {
       source_file: sourceFileName,
       import_timestamp: new Date().toISOString(),
-      total_elements: elements.length,
+      total_elements: sortedElements.length,
       warnings: warnings.map(w => w.message),
       has_group_hierarchy: hasGroupHierarchy
     }

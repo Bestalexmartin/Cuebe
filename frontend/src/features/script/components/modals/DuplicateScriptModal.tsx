@@ -7,8 +7,7 @@ import {
     Select,
     VStack,
 } from '@chakra-ui/react';
-import { useValidatedForm } from '../../../../hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from '../../../../types/validation';
+import { useValidatedFormSchema } from '../../../../components/forms/ValidatedForm';
 import { FormInput } from '../../../../components/form/FormField';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
@@ -32,24 +31,6 @@ interface DuplicateScriptModalProps {
     onError?: () => void;
 }
 
-const VALIDATION_CONFIG: FormValidationConfig = {
-    script_name: {
-        required: false, // Handle required validation manually for button state
-        rules: [
-            {
-                validator: (value: string) => {
-                    if (!value || value.trim().length === 0) {
-                        return true; // Empty is valid
-                    }
-                    return value.trim().length >= 4; // Must have 4+ chars if not empty
-                },
-                message: 'Script name must be at least 4 characters',
-                code: 'MIN_LENGTH'
-            },
-            ValidationRules.maxLength(100, 'Script name must be no more than 100 characters')
-        ]
-    }
-};
 
 export const DuplicateScriptModal: React.FC<DuplicateScriptModalProps> = ({
     isOpen,
@@ -67,11 +48,16 @@ export const DuplicateScriptModal: React.FC<DuplicateScriptModalProps> = ({
         script_status: 'COPY',
     });
 
-    const form = useValidatedForm<ScriptFormData>(getInitialFormState(), {
-        validationConfig: VALIDATION_CONFIG,
-        validateOnBlur: true,
-        showFieldErrorsInToast: false // Only show validation errors in red alert box
-    });
+    const form = useValidatedFormSchema<ScriptFormData>(
+        getInitialFormState(),
+        'show',
+        'script',
+        undefined,
+        {
+            validateOnBlur: true,
+            showFieldErrorsInToast: false
+        }
+    );
 
     // Update form when originalScriptName changes
     useEffect(() => {

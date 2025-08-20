@@ -20,8 +20,7 @@ import { useShow } from "../features/shows/hooks/useShow";
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AppIcon } from '../components/AppIcon';
 import { ActionsMenu } from '../components/ActionsMenu';
-import { useValidatedForm } from '../hooks/useValidatedForm';
-import { ValidationRules, FormValidationConfig } from '../types/validation';
+import { useValidatedFormSchema } from '../components/forms/ValidatedForm';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { convertLocalToUTC } from '../utils/dateTimeUtils';
 import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
@@ -100,30 +99,6 @@ const INITIAL_FORM_STATE: ScriptFormData = {
     script_notes: ''
 };
 
-const VALIDATION_CONFIG: FormValidationConfig = {
-    script_name: {
-        required: true,
-        rules: [
-            {
-                validator: (value: string) => {
-                    if (!value || value.trim().length === 0) {
-                        return false; // Empty is invalid
-                    }
-                    return value.trim().length >= 4; // Must have 4+ chars if not empty
-                },
-                message: 'Script name is required and must be at least 4 characters',
-                code: 'requiredMinLength'
-            },
-            ValidationRules.maxLength(100, 'Script name must be no more than 100 characters')
-        ]
-    },
-    script_notes: {
-        required: false,
-        rules: [
-            ValidationRules.maxLength(500, 'Notes must be no more than 500 characters')
-        ]
-    }
-};
 
 
 export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, onMenuClose }) => {
@@ -136,13 +111,16 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     const isMobile = useBreakpointValue({ base: true, lg: false });
 
-    const formConfig = {
-        validationConfig: VALIDATION_CONFIG,
-        validateOnChange: true,
-        validateOnBlur: true,
-        showFieldErrorsInToast: false
-    };
-    const form = useValidatedForm<ScriptFormData>(INITIAL_FORM_STATE, formConfig);
+    const form = useValidatedFormSchema<ScriptFormData>(
+        INITIAL_FORM_STATE,
+        'scriptElement',
+        'scriptInfo',
+        undefined,
+        {
+            validateOnBlur: true,
+            showFieldErrorsInToast: false
+        }
+    );
 
     const modalState = useModalState(Object.values(MODAL_NAMES));
 
