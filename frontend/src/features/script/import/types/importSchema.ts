@@ -8,7 +8,7 @@ export interface CleanScriptImport {
 
 export interface ScriptMetadata {
   script_name: string;
-  script_status: 'DRAFT' | 'COPY' | 'WORKING' | 'FINAL';
+  script_status: 'DRAFT' | 'COPY' | 'WORKING' | 'FINAL' | 'IMPORTED' | 'BACKUP';
   start_time?: string; // ISO 8601 format
   end_time?: string;   // ISO 8601 format
   script_notes?: string;

@@ -47,6 +47,7 @@ interface ShowsViewProps {
     selectedScriptId: string | null;
     handleScriptClick: (scriptId: string) => void;
     onCreateScript: (showId: string) => void;
+    onImportScript: (showId: string) => void;
     onSaveNavigationState: () => void;
     sortBy: SortBy;
     sortDirection: SortDirection;
@@ -76,6 +77,7 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
     selectedScriptId,
     handleScriptClick,
     onCreateScript,
+    onImportScript,
     onSaveNavigationState,
     sortBy,
     sortDirection,
@@ -185,6 +187,7 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                                         selectedScriptId={selectedScriptId}
                                         onScriptClick={handleScriptClick}
                                         onCreateScriptClick={onCreateScript}
+                                        onImportScriptClick={onImportScript}
                                         onSaveNavigationState={onSaveNavigationState}
                                     />
                                 </div>

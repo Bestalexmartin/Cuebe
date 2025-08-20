@@ -67,6 +67,7 @@ const DashboardPage = React.memo<DashboardPageProps>(({ isMenuOpen, onMenuClose 
     handleDataRefresh,
     handleCreateShow,
     handleCreateScript,
+    handleImportScript,
     handleCreateVenue,
     handleCreateDepartment,
     handleCreateCrew,
@@ -138,6 +139,7 @@ const DashboardPage = React.memo<DashboardPageProps>(({ isMenuOpen, onMenuClose 
               handleScriptClick={handleScriptClick}
               onCreateShow={handleCreateShow}
               onCreateScript={handleCreateScript}
+              onImportScript={handleImportScript}
               selectedVenueId={selectedVenueId}
               handleVenueClick={handleVenueClick}
               onCreateVenue={handleCreateVenue}

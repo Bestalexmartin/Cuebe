@@ -24,12 +24,13 @@ class ScriptStatus(str, Enum):
     COPY = "COPY"
     WORKING = "WORKING"
     FINAL = "FINAL"
+    IMPORTED = "IMPORTED"
 
 # Import request schemas
 class ScriptMetadataImport(BaseModel):
     """Script metadata for import"""
     script_name: str = Field(..., min_length=1, max_length=200)
-    script_status: ScriptStatus = ScriptStatus.DRAFT
+    script_status: ScriptStatus = ScriptStatus.IMPORTED
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
     script_notes: Optional[str] = Field(None, max_length=1000)

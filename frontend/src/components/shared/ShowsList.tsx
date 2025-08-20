@@ -59,6 +59,7 @@ export const ShowsList: React.FC<ShowsListProps> = React.memo(({
               selectedScriptId={null}
               onScriptClick={onScriptClick}
               onCreateScriptClick={() => {}}
+              onImportScriptClick={() => {}}
               hideEditButton={true}
               hideCreateScriptButton={true}
               hideScriptBadges={true}

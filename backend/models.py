@@ -106,6 +106,7 @@ class ScriptStatus(enum.Enum):
     COPY = "COPY"
     WORKING = "WORKING"
     FINAL = "FINAL"
+    IMPORTED = "IMPORTED"
     BACKUP = "BACKUP"
 
 # =============================================================================

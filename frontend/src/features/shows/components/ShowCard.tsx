@@ -8,10 +8,15 @@ import {
   Text,
   Badge,
   Box,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { BaseCard, BaseCardAction } from "../../../components/base/BaseCard";
 import { formatDateFriendly, formatTimeLocal, formatDateTimeLocal } from "../../../utils/dateTimeUtils";
+import { AppIcon } from "../../../components/AppIcon";
 import { Show } from "../types";
 
 interface ShowCardProps {
@@ -23,6 +28,7 @@ interface ShowCardProps {
   onScriptClick: (scriptId: string) => void;
   onShowHover: (showId: string | null) => void;
   onCreateScriptClick: (showId: string) => void;
+  onImportScriptClick: (showId: string) => void;
   sortBy: "show_name" | "show_date" | "date_created" | "date_updated";
   sortDirection: "asc" | "desc";
   onSaveNavigationState?: () => void;
@@ -43,6 +49,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
   onScriptClick,
   onShowHover,
   onCreateScriptClick,
+  onImportScriptClick,
   sortBy,
   sortDirection,
   onSaveNavigationState,
@@ -146,17 +153,38 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
           Scripts
         </Text>
         {!hideCreateScriptButton && (
-          <Button
-            variant="primary"
-            size="xs"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              onCreateScriptClick(show.show_id);
-            }}
-            _focus={{ boxShadow: "none" }}
-          >
-            Create Script
-          </Button>
+          <Menu>
+            <MenuButton
+              as={Button}
+              variant="primary"
+              size="xs"
+              rightIcon={<AppIcon name="openmenu" />}
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+              }}
+              _focus={{ boxShadow: "none" }}
+            >
+              Script Actions
+            </MenuButton>
+            <MenuList>
+              <MenuItem
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  onCreateScriptClick(show.show_id);
+                }}
+              >
+                Create New Script
+              </MenuItem>
+              <MenuItem
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  onImportScriptClick(show.show_id);
+                }}
+              >
+                Import Script
+              </MenuItem>
+            </MenuList>
+          </Menu>
         )}
       </HStack>
       <Box>
