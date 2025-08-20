@@ -141,6 +141,42 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     } = editQueueHook;
 
     const [previewPreferences, setPreviewPreferences] = useState<UserPreferences | null>(null);
+    const [buttonShowsOpen, setButtonShowsOpen] = useState<boolean>(true);
+
+    const handleToggleAllGroups = useCallback(() => {
+        if (!allEditQueueElements) return;
+
+        const groupElements = allEditQueueElements.filter(element => element.element_type === 'GROUP');
+        
+        if (buttonShowsOpen) {
+            // OPEN ALL groups
+            groupElements.forEach(groupElement => {
+                const updateOperation = {
+                    type: 'UPDATE_ELEMENT' as const,
+                    element_id: groupElement.element_id,
+                    changes: {
+                        is_collapsed: { oldValue: groupElement.is_collapsed, newValue: false }
+                    }
+                };
+                applyLocalChange(updateOperation);
+            });
+        } else {
+            // CLOSE ALL groups
+            groupElements.forEach(groupElement => {
+                const updateOperation = {
+                    type: 'UPDATE_ELEMENT' as const,
+                    element_id: groupElement.element_id,
+                    changes: {
+                        is_collapsed: { oldValue: groupElement.is_collapsed, newValue: true }
+                    }
+                };
+                applyLocalChange(updateOperation);
+            });
+        }
+        
+        setButtonShowsOpen(!buttonShowsOpen);
+    }, [allEditQueueElements, buttonShowsOpen, applyLocalChange]);
+
     const {
         preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues },
         updatePreference,
@@ -322,7 +358,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         return undefined;
     }, [editQueueElements, elementActions.selectedElementIds]);
 
-    // Tool buttons configuration using extracted utility
     const toolbarContext = useMemo((): ToolbarContext => ({
         activeMode,
         scrollState,
@@ -331,9 +366,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         hasUnsavedChanges,
         pendingOperationsCount: pendingOperations.length,
         selectedElement,
-        isScriptShared
-    }), [activeMode, scrollState, elementActions.selectedElementIds.length, hasUnsavedChanges, pendingOperations.length, selectedElement, isScriptShared]);
-
+        isScriptShared,
+        groupsOpenToggle: buttonShowsOpen
+    }), [activeMode, scrollState, elementActions.selectedElementIds.length, hasUnsavedChanges, pendingOperations.length, selectedElement, isScriptShared, buttonShowsOpen]);
 
     const toolButtons = useMemo(() => getToolbarButtons(toolbarContext), [toolbarContext]);
 
@@ -346,6 +381,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     // Main mode change handler
     const handleModeChange = (modeId: string) => {
+        // Handle TOGGLE ALL GROUPS button
+        if (modeId === 'toggle-all-groups') {
+            handleToggleAllGroups();
+            return;
+        }
+
         // Handle EXIT button
         if (modeId === 'exit') {
             navigation.handleCancel();

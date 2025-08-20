@@ -17,6 +17,7 @@ export interface ToolbarContext {
     pendingOperationsCount: number;
     selectedElement?: any;
     isScriptShared?: boolean;
+    groupsOpenToggle?: boolean;
 }
 
 /**
@@ -86,7 +87,7 @@ export const getViewStateButtons = (activeMode: string, pendingOperationsCount: 
 /**
  * Action buttons for different modes
  */
-export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean, isScriptShared: boolean = false): ToolButton[] => {
+export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean, isScriptShared: boolean = false, groupsOpenToggle: boolean = true): ToolButton[] => {
     const buttons: ToolButton[] = [];
 
     // Exit button - available in all modes (replaces dashboard)
@@ -108,6 +109,16 @@ export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean,
             description: 'Performance Mode',
             isActive: false,
             isDisabled: true // Not implemented yet
+        });
+
+        // Add OPEN/CLOSE all groups toggle button
+        buttons.push({
+            id: 'toggle-all-groups',
+            icon: groupsOpenToggle ? 'ungroup' : 'group',
+            label: groupsOpenToggle ? 'OPEN' : 'CLOSE',
+            description: groupsOpenToggle ? 'Open All Groups' : 'Close All Groups',
+            isActive: false,
+            isDisabled: false
         });
         
         if (isScriptShared) {
@@ -202,7 +213,7 @@ export const getElementManagementButtons = (hasSelection: boolean, hasMultipleSe
  * Generates all toolbar buttons based on current context
  */
 export const getToolbarButtons = (context: ToolbarContext): ToolButton[] => {
-    const { activeMode, scrollState, hasSelection, hasMultipleSelection, hasUnsavedChanges, pendingOperationsCount, selectedElement, isScriptShared } = context;
+    const { activeMode, scrollState, hasSelection, hasMultipleSelection, hasUnsavedChanges, pendingOperationsCount, selectedElement, isScriptShared, groupsOpenToggle } = context;
     
     const buttons: ToolButton[] = [];
     
@@ -213,7 +224,7 @@ export const getToolbarButtons = (context: ToolbarContext): ToolButton[] => {
     buttons.push(...getViewStateButtons(activeMode, pendingOperationsCount));
     
     // Action buttons
-    buttons.push(...getActionButtons(activeMode, hasUnsavedChanges, isScriptShared || false));
+    buttons.push(...getActionButtons(activeMode, hasUnsavedChanges, isScriptShared || false, groupsOpenToggle ?? true));
     
     // Element management buttons (only in edit mode)
     if (activeMode === 'edit') {
@@ -230,7 +241,7 @@ export const groupToolbarButtons = (buttons: ToolButton[]) => {
     const groups = {
         navigation: buttons.filter(btn => ['jump-top', 'jump-bottom'].includes(btn.id)),
         modes: buttons.filter(btn => ['view', 'edit', 'info', 'history'].includes(btn.id)),
-        actions: buttons.filter(btn => ['exit', 'play', 'share', 'hide', 'clear-history'].includes(btn.id)),
+        actions: buttons.filter(btn => ['exit', 'play', 'toggle-all-groups', 'share', 'hide', 'clear-history'].includes(btn.id)),
         elements: buttons.filter(btn => ['add-element', 'edit-element', 'duplicate-element', 'group-elements', 'ungroup-elements', 'delete-element'].includes(btn.id))
     };
     
