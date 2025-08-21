@@ -137,45 +137,33 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         applyLocalChange,
         discardChanges,
         saveChanges,
-        toggleGroupCollapse
+        toggleGroupCollapse,
+        expandAllGroups,
+        collapseAllGroups
     } = editQueueHook;
 
     const [previewPreferences, setPreviewPreferences] = useState<UserPreferences | null>(null);
     const [buttonShowsOpen, setButtonShowsOpen] = useState<boolean>(true);
+    const [groupOverrides, setGroupOverrides] = useState<Record<string, boolean>>({});
 
     const handleToggleAllGroups = useCallback(() => {
         if (!allEditQueueElements) return;
-
-        const groupElements = allEditQueueElements.filter(element => element.element_type === 'GROUP');
         
+        // Use the new batch operations that will be saved to the edit queue
         if (buttonShowsOpen) {
-            // OPEN ALL groups
-            groupElements.forEach(groupElement => {
-                const updateOperation = {
-                    type: 'UPDATE_ELEMENT' as const,
-                    element_id: groupElement.element_id,
-                    changes: {
-                        is_collapsed: { oldValue: groupElement.is_collapsed, newValue: false }
-                    }
-                };
-                applyLocalChange(updateOperation);
-            });
+            // Button shows "Open All" so we want to expand all groups
+            expandAllGroups();
         } else {
-            // CLOSE ALL groups
-            groupElements.forEach(groupElement => {
-                const updateOperation = {
-                    type: 'UPDATE_ELEMENT' as const,
-                    element_id: groupElement.element_id,
-                    changes: {
-                        is_collapsed: { oldValue: groupElement.is_collapsed, newValue: true }
-                    }
-                };
-                applyLocalChange(updateOperation);
-            });
+            // Button shows "Close All" so we want to collapse all groups  
+            collapseAllGroups();
         }
         
+        // Update the button state to reflect the new state
         setButtonShowsOpen(!buttonShowsOpen);
-    }, [allEditQueueElements, buttonShowsOpen, applyLocalChange]);
+        
+        // Clear group overrides since we're now using the edit queue
+        setGroupOverrides({});
+    }, [allEditQueueElements, buttonShowsOpen, expandAllGroups, collapseAllGroups]);
 
     const {
         preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues },
@@ -847,7 +835,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
                                 {activeMode === 'view' && (
-                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} allElements={allEditQueueElements} script={script} onToggleGroupCollapse={toggleGroupCollapse} />
+                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} allElements={allEditQueueElements} script={script} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} />
                                 )}
                                 {activeMode === 'edit' && (
                                     <EditMode

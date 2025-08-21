@@ -23,6 +23,9 @@ import { useEnhancedToast } from '../../../../utils/toastUtils';
 import { parseCSVFile, convertCSVToCleanImport, detectColumnMappings } from '../utils/csvParser';
 import { CSVParseResult, CleanScriptImport, CSVColumnMapping, ImportValidationResult } from '../types/importSchema';
 import { formatTimeFromMs } from '../utils/timeConverter';
+import { matchDepartment } from '../utils/departmentMatcher';
+import { loadSavedDepartmentMappings, saveDepartmentMappings } from '../utils/departmentMappingStorage';
+import { DepartmentMappingStep } from './DepartmentMappingStep';
 
 interface ScriptImportModalProps {
   isOpen: boolean;
@@ -32,7 +35,12 @@ interface ScriptImportModalProps {
   initialScriptName?: string;
 }
 
-type ImportStep = 'upload' | 'preview' | 'importing';
+type ImportStep = 'upload' | 'preview' | 'department-mapping' | 'importing';
+
+interface DepartmentMapping {
+  incomingName: string;
+  mappedTo: { department_id: string; department_name: string; department_color?: string } | null;
+}
 
 interface ImportState {
   step: ImportStep;
@@ -40,6 +48,8 @@ interface ImportState {
   csvData: CSVParseResult | null;
   columnMappings: CSVColumnMapping | null;
   validationResult: ImportValidationResult | null;
+  departmentMappings: DepartmentMapping[];
+  unmappedDepartments: string[];
   scriptMetadata: {
     script_name: string;
     script_status: 'DRAFT' | 'COPY' | 'WORKING' | 'FINAL' | 'IMPORTED' | 'BACKUP';
@@ -64,6 +74,8 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
     csvData: null,
     columnMappings: null,
     validationResult: null,
+    departmentMappings: [],
+    unmappedDepartments: [],
     scriptMetadata: {
       script_name: initialScriptName || '',
       script_status: 'IMPORTED',
@@ -73,6 +85,83 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [existingDepartments, setExistingDepartments] = useState<any[]>([]);
+
+  // Function to detect unmapped departments from the validation result
+  const detectUnmappedDepartments = useCallback(() => {
+    if (!importState.validationResult?.cleanImport) return [];
+
+    const departmentCounts = new Map<string, number>();
+    
+    // Count department usage in script elements
+    importState.validationResult.cleanImport.script_elements.forEach(element => {
+      if (element.department_name && element.department_name.trim()) {
+        const deptName = element.department_name.trim();
+        departmentCounts.set(deptName, (departmentCounts.get(deptName) || 0) + 1);
+      }
+    });
+
+    const unmappedDepartments: Array<{
+      name: string;
+      count: number;
+      suggestedMatches: any[];
+    }> = [];
+
+    // Check each department against existing departments
+    departmentCounts.forEach((count, departmentName) => {
+      const matchResult = matchDepartment(departmentName, existingDepartments);
+      
+      if (!matchResult.matched) {
+        // Find potential matches using fuzzy matching for suggestions
+        const suggestions = existingDepartments
+          .map(dept => ({
+            ...dept,
+            similarity: calculateSimilarity(departmentName.toLowerCase(), dept.department_name.toLowerCase())
+          }))
+          .filter(dept => dept.similarity > 0.3) // Only include reasonably similar matches
+          .sort((a, b) => b.similarity - a.similarity)
+          .slice(0, 3); // Top 3 suggestions
+
+        unmappedDepartments.push({
+          name: departmentName,
+          count,
+          suggestedMatches: suggestions
+        });
+      }
+    });
+
+    return unmappedDepartments;
+  }, [importState.validationResult, existingDepartments]);
+
+  // Simple similarity calculation for department matching suggestions
+  const calculateSimilarity = (str1: string, str2: string): number => {
+    // Simple Levenshtein distance-based similarity
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    
+    if (longer.length === 0) return 1.0;
+    
+    const distance = levenshteinDistance(longer, shorter);
+    return (longer.length - distance) / longer.length;
+  };
+
+  // Levenshtein distance implementation
+  const levenshteinDistance = (str1: string, str2: string): number => {
+    const matrix = Array.from({ length: str2.length + 1 }, (_, i) => [i]);
+    matrix[0] = Array.from({ length: str1.length + 1 }, (_, i) => i);
+
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        const cost = str1[j - 1] === str2[i - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,     // deletion
+          matrix[i][j - 1] + 1,     // insertion
+          matrix[i - 1][j - 1] + cost // substitution
+        );
+      }
+    }
+
+    return matrix[str2.length][str1.length];
+  };
 
   // Fetch existing departments when modal opens
   React.useEffect(() => {
@@ -101,12 +190,15 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
   // Reset state when modal opens/closes
   React.useEffect(() => {
     if (isOpen) {
+      const savedMappings = loadSavedDepartmentMappings();
       setImportState({
         step: 'upload',
         file: null,
         csvData: null,
         columnMappings: null,
         validationResult: null,
+        departmentMappings: savedMappings,
+        unmappedDepartments: [],
         scriptMetadata: {
           script_name: initialScriptName || '',
           script_status: 'IMPORTED',
@@ -215,6 +307,35 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
     }
   }, [importState.step, importState.csvData, importState.columnMappings, importState.scriptMetadata, validateAndPreview]);
 
+  // Apply department mappings to the clean import data
+  const applyDepartmentMappings = useCallback((cleanImport: CleanScriptImport, mappings: DepartmentMapping[]) => {
+    const mappingLookup = new Map<string, string>();
+    
+    // Create a lookup map from incoming department names to mapped department names
+    mappings.forEach(mapping => {
+      if (mapping.mappedTo) {
+        mappingLookup.set(mapping.incomingName, mapping.mappedTo.department_name);
+      }
+      // If mappedTo is null, the department will be created as-is (no mapping needed)
+    });
+
+    // Apply mappings to script elements
+    const updatedElements = cleanImport.script_elements.map(element => {
+      if (element.department_name && mappingLookup.has(element.department_name)) {
+        return {
+          ...element,
+          department_name: mappingLookup.get(element.department_name)!
+        };
+      }
+      return element;
+    });
+
+    return {
+      ...cleanImport,
+      script_elements: updatedElements
+    };
+  }, []);
+
   const handleImportConfirm = useCallback(async () => {
     if (!importState.validationResult?.cleanImport) return;
 
@@ -222,9 +343,15 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
     setIsProcessing(true);
 
     try {
+      // Apply department mappings to the clean import data
+      const mappedImportData = applyDepartmentMappings(
+        importState.validationResult.cleanImport,
+        importState.departmentMappings
+      );
+
       // Prepare the import request with showId
       const importRequest = {
-        ...importState.validationResult.cleanImport,
+        ...mappedImportData,
         show_id: showId
       };
 
@@ -259,7 +386,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
     } finally {
       setIsProcessing(false);
     }
-  }, [importState.validationResult, showId, showSuccess, showError, onImportSuccess, onClose]);
+  }, [importState.validationResult, importState.departmentMappings, applyDepartmentMappings, showId, showSuccess, showError, onImportSuccess, onClose]);
 
   const renderUploadStep = () => (
     <VStack spacing={6} align="stretch">
@@ -269,8 +396,8 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
 
       <Box
         border="2px dashed"
-        borderColor="gray.300"
-        _dark={{ borderColor: "gray.600" }}
+        borderColor="blue.400"
+        _dark={{ borderColor: "blue.400" }}
         borderRadius="md"
         p={8}
         textAlign="center"
@@ -403,6 +530,26 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
     );
   };
 
+  const renderDepartmentMappingStep = () => {
+    const unmappedDepartments = detectUnmappedDepartments();
+
+    return (
+      <DepartmentMappingStep
+        unmappedDepartments={unmappedDepartments}
+        existingDepartments={existingDepartments}
+        onMappingsChange={(mappings) => {
+          setImportState(prev => ({ 
+            ...prev, 
+            departmentMappings: mappings 
+          }));
+          // Save mappings to session storage
+          saveDepartmentMappings(mappings);
+        }}
+        initialMappings={importState.departmentMappings}
+      />
+    );
+  };
+
   const renderImportingStep = () => (
     <VStack spacing={6} align="center">
       <AppIcon name="script" boxSize="48px" color="blue.400" />
@@ -422,6 +569,8 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
         return renderUploadStep();
       case 'preview':
         return renderPreviewStep();
+      case 'department-mapping':
+        return renderDepartmentMappingStep();
       case 'importing':
         return renderImportingStep();
       default:
@@ -446,17 +595,37 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
           }
         };
       case 'preview':
+        const unmappedDepartments = detectUnmappedDepartments();
+        const hasUnmappedDepartments = unmappedDepartments.length > 0;
+        
+        return {
+          primaryAction: {
+            label: hasUnmappedDepartments ? 'Next: Map Departments' : 'Import Script',
+            onClick: hasUnmappedDepartments 
+              ? () => setImportState(prev => ({ ...prev, step: 'department-mapping' }))
+              : handleImportConfirm,
+            variant: 'primary' as const,
+            isDisabled: !importState.validationResult?.isValid,
+            isLoading: !hasUnmappedDepartments && isProcessing
+          },
+          secondaryAction: {
+            label: 'Cancel',
+            onClick: onClose,
+            variant: 'outline' as const
+          }
+        };
+      case 'department-mapping':
         return {
           primaryAction: {
             label: 'Import Script',
             onClick: handleImportConfirm,
             variant: 'primary' as const,
-            isDisabled: !importState.validationResult?.isValid || isProcessing,
+            isDisabled: isProcessing,
             isLoading: isProcessing
           },
           secondaryAction: {
-            label: 'Cancel',
-            onClick: onClose,
+            label: 'Back',
+            onClick: () => setImportState(prev => ({ ...prev, step: 'preview' })),
             variant: 'outline' as const
           }
         };
@@ -473,6 +642,8 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
         return 'Import Script from CSV';
       case 'preview':
         return 'Preview & Confirm Import';
+      case 'department-mapping':
+        return 'Map Departments';
       case 'importing':
         return 'Importing Script';
       default:

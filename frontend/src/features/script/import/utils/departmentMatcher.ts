@@ -208,7 +208,7 @@ export const validateDepartmentName = (
       return {
         isValid: false,
         matchResult,
-        message: `Department "${departmentName}" not found.${suggestion} It will be created as a new department.`
+        message: `Department "${departmentName}" not found.${suggestion}`
       };
   }
 };

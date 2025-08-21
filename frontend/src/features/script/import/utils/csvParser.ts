@@ -505,13 +505,8 @@ export const convertCSVToCleanImport = (
         }
       } else {
         departmentName = departmentValue.trim();
-        warnings.push({
-          row: rowNumber,
-          field: 'department',
-          value: departmentValue,
-          message: `Department "${departmentValue}" not found, will be created`,
-          severity: 'warning'
-        });
+        // Note: No warning needed here since unmapped departments will be handled 
+        // in the department mapping step of the import workflow
       }
     }
     // NOTEs and GROUPs with department data are silently ignored - no warning needed

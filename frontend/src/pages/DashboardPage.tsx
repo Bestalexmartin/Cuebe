@@ -11,6 +11,8 @@ import { useShows } from "../features/shows/hooks/useShows";
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useModalManager } from '../hooks/useModalManager';
 import { useModalActions } from '../hooks/useModalActions';
+import { clearSavedDepartmentMappings } from '../features/script/import/utils/departmentMappingStorage';
+import { useEnhancedToast } from '../utils/toastUtils';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ModalRenderer } from '../components/dashboard/ModalRenderer';
 import { ViewRenderer } from '../components/dashboard/ViewRenderer';
@@ -32,6 +34,7 @@ const DashboardPage = React.memo<DashboardPageProps>(({ isMenuOpen, onMenuClose 
   const location = useLocation();
   const { shows, isLoading, error, refetchShows } = useShows();
   const { activeModal, modalData, isOpen, openModal, closeModal } = useModalManager();
+  const { showSuccess } = useEnhancedToast();
 
   // Simple refresh key to force re-mounting/re-fetching
   const [refreshKey, setRefreshKey] = useState(0);
@@ -72,6 +75,12 @@ const DashboardPage = React.memo<DashboardPageProps>(({ isMenuOpen, onMenuClose 
     handleCreateDepartment,
     handleCreateCrew,
   } = useModalActions({ openModal, refetchShows, setRefreshKey });
+
+  // Handle clearing department mappings
+  const handleClearDepartmentMapping = useCallback((showId: string) => {
+    clearSavedDepartmentMappings();
+    showSuccess('Department Mappings Cleared', 'Saved department mappings have been cleared for future imports');
+  }, [showSuccess]);
 
   // Memoized sort change handlers (after useDashboardState)
   const handleShowsSortChange = useCallback((sortBy: string, sortDirection: string) => {
@@ -140,6 +149,7 @@ const DashboardPage = React.memo<DashboardPageProps>(({ isMenuOpen, onMenuClose 
               onCreateShow={handleCreateShow}
               onCreateScript={handleCreateScript}
               onImportScript={handleImportScript}
+              onClearDepartmentMappingClick={handleClearDepartmentMapping}
               selectedVenueId={selectedVenueId}
               handleVenueClick={handleVenueClick}
               onCreateVenue={handleCreateVenue}

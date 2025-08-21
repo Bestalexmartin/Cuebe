@@ -1,0 +1,34 @@
+Time,Type,Element Name,Description,Group Path,Department,Priority
+0:00,GROUP,Preshow 1,Preshow 1 content,Preshow 1,,NORMAL
+0:06,CUE,Safety check 1,Safety check ready - cue 1,Preshow 1,Rigging,CRITICAL
+0:14,CUE,Iris 2,Iris clear - cue 2,Preshow 1,Follow Spot,HIGH
+0:23,CUE,Dress 3,Dress clear - cue 3,Preshow 1,Costumes,NORMAL
+0:27,CUE,Music 4,Music hold - cue 4,Preshow 1,Orchestra,NORMAL
+0:33,CUE,Haze 5,Haze hold - cue 5,Preshow 1,Lights,CRITICAL
+0:42,CUE,Graphics 6,Graphics execute - cue 6,Preshow 1,Projection,HIGH
+0:44,CUE,Ambience 7,Ambience reset - cue 7,Preshow 1,SFX,LOW
+0:50,CUE,Strobe 8,Strobe go - cue 8,Preshow 1,LX,LOW
+1:08,GROUP,Intermission 2,Intermission 2 content,Intermission 2,,NORMAL
+1:14,CUE,Flash 9,Flash execute - cue 9,Intermission 2,Special Effects,CRITICAL
+1:16,CUE,Blackout 10,Blackout check - cue 10,Intermission 2,Lighting,NORMAL
+1:17,CUE,Costume 11,Costume go - cue 11,Intermission 2,Costumes,HIGH
+1:20,CUE,Live mix 12,Live mix execute - cue 12,Intermission 2,Audio,HIGH
+1:21,CUE,Clear 13,Clear execute - cue 13,Intermission 2,SM,LOW
+1:37,GROUP,Intermission 3,Intermission 3 content,Intermission 3,,NORMAL
+1:40,CUE,Fly 14,Fly hold - cue 14,Intermission 3,Scenery,CRITICAL
+1:43,CUE,Music 15,Music stop - cue 15,Intermission 3,Audio,LOW
+1:54,CUE,Effects 16,Effects ready - cue 16,Intermission 3,SFX,LOW
+1:55,CUE,Display 17,Display go - cue 17,Intermission 3,Projection,CRITICAL
+2:02,CUE,Music 18,Music hold - cue 18,Intermission 3,Audio,LOW
+2:05,CUE,Fly 19,Fly stop - cue 19,Intermission 3,Scenery,CRITICAL
+2:08,CUE,Graphics 20,Graphics hold - cue 20,Intermission 3,Video,CRITICAL
+2:18,CUE,Fade 21,Fade check - cue 21,Intermission 3,Follow Spot,NORMAL
+2:21,CUE,Ambience 22,Ambience clear - cue 22,Intermission 3,Audio,CRITICAL
+2:33,CUE,Blackout 23,Blackout go - cue 23,Intermission 3,Lights,NORMAL
+2:45,CUE,Playback 24,Playback go - cue 24,Intermission 3,SFX,HIGH
+2:50,CUE,Safety check 25,Safety check check - cue 25,Intermission 3,Rigging,HIGH
+3:01,CUE,Solo 26,Solo start - cue 26,Intermission 3,Orchestra,CRITICAL
+3:05,CUE,Screen 27,Screen go - cue 27,Intermission 3,Projection,CRITICAL
+3:07,CUE,Wig 28,Wig go - cue 28,Intermission 3,Costume,LOW
+3:15,CUE,Smoke 29,Smoke ready - cue 29,Intermission 3,Special Effects,LOW
+3:17,CUE,Costume 30,Costume start - cue 30,Intermission 3,Properties,NORMAL

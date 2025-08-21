@@ -29,6 +29,7 @@ interface ShowCardProps {
   onShowHover: (showId: string | null) => void;
   onCreateScriptClick: (showId: string) => void;
   onImportScriptClick: (showId: string) => void;
+  onClearDepartmentMappingClick?: (showId: string) => void;
   sortBy: "show_name" | "show_date" | "date_created" | "date_updated";
   sortDirection: "asc" | "desc";
   onSaveNavigationState?: () => void;
@@ -50,6 +51,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
   onShowHover,
   onCreateScriptClick,
   onImportScriptClick,
+  onClearDepartmentMappingClick,
   sortBy,
   sortDirection,
   onSaveNavigationState,
@@ -183,6 +185,16 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
               >
                 Import Script
               </MenuItem>
+              {onClearDepartmentMappingClick && (
+                <MenuItem
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    onClearDepartmentMappingClick(show.show_id);
+                  }}
+                >
+                  Clear Department Mapping
+                </MenuItem>
+              )}
             </MenuList>
           </Menu>
         )}

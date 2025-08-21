@@ -104,6 +104,8 @@ def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, 
         if temp_id_mapping and element_id and element_id in temp_id_mapping:
             element_id = temp_id_mapping[element_id]
         return _process_toggle_group_collapse_operation(db, element_id, operation_data, user)
+    elif operation_type == "BATCH_COLLAPSE_GROUPS":
+        return _process_batch_collapse_groups_operation(db, operation_data, user)
     elif operation_type == "UNGROUP_ELEMENTS":
         return _process_ungroup_elements_operation(db, script_id, operation_data, user)
     else:
@@ -392,6 +394,56 @@ def _process_toggle_group_collapse_operation(db: Session, element_id: str, opera
     element.date_updated = datetime.now(timezone.utc)
     
     return {"element_id": element_id, "is_collapsed": element.is_collapsed}
+
+
+def _process_batch_collapse_groups_operation(db: Session, operation_data: dict, user: models.User):
+    """Process a batch group collapse operation."""
+    
+    group_element_ids = operation_data.get("group_element_ids", [])
+    target_collapsed_state = operation_data.get("target_collapsed_state", False)
+    
+    if not group_element_ids:
+        return {"updated_count": 0, "message": "No groups to update"}
+    
+    updated_count = 0
+    results = []
+    
+    for group_id in group_element_ids:
+        try:
+            element = db.query(models.ScriptElement).filter(
+                models.ScriptElement.element_id == UUID(group_id)
+            ).first()
+            
+            if element and element.element_type == models.ElementType.GROUP:
+                element.is_collapsed = target_collapsed_state
+                element.updated_by = user.user_id
+                element.date_updated = datetime.now(timezone.utc)
+                updated_count += 1
+                results.append({
+                    "element_id": group_id,
+                    "is_collapsed": target_collapsed_state,
+                    "success": True
+                })
+            else:
+                results.append({
+                    "element_id": group_id,
+                    "success": False,
+                    "error": "Group element not found"
+                })
+        except Exception as e:
+            logger.error(f"Failed to update group {group_id}: {e}")
+            results.append({
+                "element_id": group_id,
+                "success": False,
+                "error": str(e)
+            })
+    
+    return {
+        "updated_count": updated_count,
+        "total_count": len(group_element_ids),
+        "target_collapsed_state": target_collapsed_state,
+        "results": results
+    }
 
 
 def _process_create_element_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):

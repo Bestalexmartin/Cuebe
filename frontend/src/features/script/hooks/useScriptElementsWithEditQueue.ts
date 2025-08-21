@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { ScriptElement } from '../types/scriptElements';
-import { EditOperation, ToggleGroupCollapseOperation } from '../types/editQueue';
+import { EditOperation, ToggleGroupCollapseOperation, BatchCollapseGroupsOperation } from '../types/editQueue';
 import { useEditQueue } from './useEditQueue';
 
 interface UseScriptElementsWithEditQueueReturn {
@@ -36,6 +36,8 @@ interface UseScriptElementsWithEditQueueReturn {
     
     // Group operations
     toggleGroupCollapse: (elementId: string) => void;
+    expandAllGroups: () => void;
+    collapseAllGroups: () => void;
     
     // Revert
     revertToPoint: (targetIndex: number) => void;
@@ -274,6 +276,40 @@ export const useScriptElementsWithEditQueue = (
             target_collapsed_state: targetState
         } as Omit<ToggleGroupCollapseOperation, 'id' | 'timestamp' | 'description'>);
     }, [applyLocalChange, allElements]);
+
+    const expandAllGroups = useCallback(() => {
+        // Find all group elements that are currently collapsed
+        const collapsedGroups = allElements.filter(el => 
+            el.element_type === 'GROUP' && 
+            el.is_collapsed === true
+        );
+        
+        if (collapsedGroups.length === 0) return;
+        
+        applyLocalChange({
+            type: 'BATCH_COLLAPSE_GROUPS',
+            element_id: 'batch_expand_all',
+            group_element_ids: collapsedGroups.map(el => el.element_id),
+            target_collapsed_state: false
+        } as Omit<BatchCollapseGroupsOperation, 'id' | 'timestamp' | 'description'>);
+    }, [applyLocalChange, allElements]);
+
+    const collapseAllGroups = useCallback(() => {
+        // Find all group elements that are currently expanded
+        const expandedGroups = allElements.filter(el => 
+            el.element_type === 'GROUP' && 
+            (el.is_collapsed === false || el.is_collapsed === undefined)
+        );
+        
+        if (expandedGroups.length === 0) return;
+        
+        applyLocalChange({
+            type: 'BATCH_COLLAPSE_GROUPS',
+            element_id: 'batch_collapse_all',
+            group_element_ids: expandedGroups.map(el => el.element_id),
+            target_collapsed_state: true
+        } as Omit<BatchCollapseGroupsOperation, 'id' | 'timestamp' | 'description'>);
+    }, [applyLocalChange, allElements]);
     
     useEffect(() => {
         fetchElements();
@@ -309,6 +345,8 @@ export const useScriptElementsWithEditQueue = (
         
         // Group operations
         toggleGroupCollapse,
+        expandAllGroups,
+        collapseAllGroups,
         
         // Revert
         revertToPoint: editQueueRef.current.revertToPoint
@@ -327,7 +365,10 @@ export const useScriptElementsWithEditQueue = (
         undoOperation,
         redoOperation,
         canUndo,
-        canRedo
+        canRedo,
+        toggleGroupCollapse,
+        expandAllGroups,
+        collapseAllGroups
     ]);
 };
 
@@ -788,6 +829,15 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             return elements.map(el => 
                 el.element_id === operation.element_id 
                     ? { ...el, is_collapsed: toggleOp.target_collapsed_state }
+                    : el
+            );
+
+        case 'BATCH_COLLAPSE_GROUPS':
+            const batchOp = operation as any;
+            const targetGroupIds = batchOp.group_element_ids || [];
+            return elements.map(el => 
+                targetGroupIds.includes(el.element_id)
+                    ? { ...el, is_collapsed: batchOp.target_collapsed_state }
                     : el
             );
             
