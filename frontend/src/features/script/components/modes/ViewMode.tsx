@@ -22,6 +22,7 @@ interface ViewModeProps {
         allElementsFitOnScreen: boolean;
     }) => void;
     onToggleGroupCollapse?: (elementId: string) => void;
+    groupOverrides?: Record<string, boolean>; // UI-only group collapse overrides
 }
 
 export interface ViewModeRef {

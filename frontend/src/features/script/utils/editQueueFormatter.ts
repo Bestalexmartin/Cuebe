@@ -85,6 +85,12 @@ export class EditQueueFormatter {
                 const action = currentlyCollapsed ? 'Collapsed' : 'Expanded';
                 return `${action} group "${elementName}"`;
             
+            case 'BATCH_COLLAPSE_GROUPS':
+                const batchTargetCollapsed = (operation as any).target_collapsed_state;
+                const groupCount = (operation as any).group_element_ids?.length || 0;
+                const batchAction = batchTargetCollapsed ? 'Collapsed' : 'Expanded';
+                return `${batchAction} all ${groupCount} groups`;
+            
             default:
                 return `Unknown operation on "${elementName}"`;
         }
@@ -465,7 +471,8 @@ export class EditQueueFormatter {
             'UPDATE_SCRIPT_INFO': 'script info updates',
             'CREATE_GROUP': 'group creations',
             'UNGROUP_ELEMENTS': 'group dissolutions',
-            'TOGGLE_GROUP_COLLAPSE': 'group toggles'
+            'TOGGLE_GROUP_COLLAPSE': 'group toggles',
+            'BATCH_COLLAPSE_GROUPS': 'batch group toggles'
         };
         
         const parts = Object.entries(types).map(([type, count]) => {

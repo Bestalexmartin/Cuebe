@@ -48,6 +48,7 @@ interface ShowsViewProps {
     handleScriptClick: (scriptId: string) => void;
     onCreateScript: (showId: string) => void;
     onImportScript: (showId: string) => void;
+    onClearDepartmentMappingClick?: (showId: string) => void;
     onSaveNavigationState: () => void;
     sortBy: SortBy;
     sortDirection: SortDirection;
@@ -78,6 +79,7 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
     handleScriptClick,
     onCreateScript,
     onImportScript,
+    onClearDepartmentMappingClick,
     onSaveNavigationState,
     sortBy,
     sortDirection,
@@ -188,6 +190,7 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
                                         onScriptClick={handleScriptClick}
                                         onCreateScriptClick={onCreateScript}
                                         onImportScriptClick={onImportScript}
+                                        onClearDepartmentMappingClick={onClearDepartmentMappingClick}
                                         onSaveNavigationState={onSaveNavigationState}
                                     />
                                 </div>

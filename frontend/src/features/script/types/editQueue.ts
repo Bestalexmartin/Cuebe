@@ -108,6 +108,12 @@ export interface ToggleGroupCollapseOperation extends BaseEditOperation {
     target_collapsed_state: boolean;
 }
 
+export interface BatchCollapseGroupsOperation extends BaseEditOperation {
+    type: 'BATCH_COLLAPSE_GROUPS';
+    group_element_ids: string[];
+    target_collapsed_state: boolean;
+}
+
 export interface CreateGroupOperation extends BaseEditOperation {
     type: 'CREATE_GROUP';
     group_name: string;
@@ -132,6 +138,7 @@ export type EditOperation =
     | UpdateScriptInfoOperation
     | UpdateElementOperation
     | ToggleGroupCollapseOperation
+    | BatchCollapseGroupsOperation
     | CreateGroupOperation
     | UngroupElementsOperation
     | UpdateGroupWithPropagationOperation;

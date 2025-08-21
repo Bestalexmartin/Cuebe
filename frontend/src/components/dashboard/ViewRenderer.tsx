@@ -20,6 +20,7 @@ interface ViewRendererProps {
   onCreateShow: () => void;
   onCreateScript: (showId: string) => void;
   onImportScript: (showId: string) => void;
+  onClearDepartmentMappingClick?: (showId: string) => void;
   
   // Venue-related props
   selectedVenueId: string | null;
@@ -57,6 +58,7 @@ export const ViewRenderer: React.FC<ViewRendererProps> = React.memo(({
   onCreateShow,
   onCreateScript,
   onImportScript,
+  onClearDepartmentMappingClick,
   selectedVenueId,
   handleVenueClick,
   onCreateVenue,
@@ -92,6 +94,7 @@ export const ViewRenderer: React.FC<ViewRendererProps> = React.memo(({
           handleScriptClick={handleScriptClick}
           onCreateScript={onCreateScript}
           onImportScript={onImportScript}
+          onClearDepartmentMappingClick={onClearDepartmentMappingClick}
           onSaveNavigationState={saveCurrentNavigationState}
           sortBy={sortState.shows.sortBy}
           sortDirection={sortState.shows.sortDirection}
