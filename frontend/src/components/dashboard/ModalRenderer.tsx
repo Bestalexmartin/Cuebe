@@ -14,7 +14,7 @@ interface ModalRendererProps {
   modalData: any;
   onClose: () => void;
   onDataRefresh: () => void;
-  openModal: (modalType: string, data?: any) => void;
+  openModal: (modalType: typeof MODAL_TYPES[keyof typeof MODAL_TYPES], data?: any) => void;
 }
 
 export const ModalRenderer: React.FC<ModalRendererProps> = React.memo(({

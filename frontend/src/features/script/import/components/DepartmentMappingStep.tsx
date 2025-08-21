@@ -8,8 +8,7 @@ import {
   Text,
   Badge,
   Flex,
-  Divider,
-  Icon
+  Divider
 } from '@chakra-ui/react';
 import { AppIcon } from '../../../../components/AppIcon';
 
@@ -146,14 +145,11 @@ export const DepartmentMappingStep: React.FC<DepartmentMappingStepProps> = ({
           <Box
             border="2px dashed"
             borderColor={dropZone === 'left' ? 'orange.400' : 'red.400'}
-            _dark={{ borderColor: dropZone === 'left' ? 'orange.400' : 'red.400' }}
             borderRadius="md"
             p={4}
             height="400px"
             overflowY="auto"
             className="hide-scrollbar"
-            bg={undefined}
-            _dark={{ bg: undefined }}
             onDragOver={handleDragOver}
             onDragEnter={(e) => handleDragEnter(e, 'left')}
             onDragLeave={handleDragLeave}
@@ -260,7 +256,7 @@ export const DepartmentMappingStep: React.FC<DepartmentMappingStepProps> = ({
                         </Badge>
                       )}
                       {isDropTarget && (
-                        <AppIcon name="arrow-down" boxSize="16px" color="blue.500" />
+                        <AppIcon name="triangle-down" boxSize="16px" color="blue.500" />
                       )}
                     </HStack>
                   </HStack>
