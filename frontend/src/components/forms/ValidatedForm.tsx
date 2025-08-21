@@ -2,11 +2,11 @@
 
 import React, { ReactNode } from 'react';
 import { VStack, StackProps } from '@chakra-ui/react';
-import { useValidatedForm } from '../../hooks/useValidatedForm';
+import { useValidatedForm, UseValidatedFormReturn } from '../../hooks/useValidatedForm';
 import { FormValidationConfig } from '../../types/validation';
 import { getValidationSchema } from '../../validation/schemas';
 
-interface ValidatedFormProps<T extends Record<string, any>> extends Omit<StackProps, 'onSubmit'> {
+interface ValidatedFormProps<T extends Record<string, any>> extends Omit<StackProps, 'onSubmit' | 'children'> {
   // Form configuration
   initialData: T;
   validationDomain?: string;
@@ -19,8 +19,8 @@ interface ValidatedFormProps<T extends Record<string, any>> extends Omit<StackPr
   showFieldErrorsInToast?: boolean;
   
   // Form content and actions
-  children: (form: ReturnType<typeof useValidatedForm<T>>) => ReactNode;
-  onSubmit?: (data: T, form: ReturnType<typeof useValidatedForm<T>>) => Promise<void> | void;
+  children: (form: UseValidatedFormReturn<T>) => ReactNode;
+  onSubmit?: (data: T, form: UseValidatedFormReturn<T>) => Promise<void> | void;
   
   // Container styling
   spacing?: StackProps['spacing'];
@@ -105,7 +105,7 @@ export function ValidatedForm<T extends Record<string, any>>({
   return (
     <VStack
       as="form"
-      onSubmit={handleSubmit}
+      onSubmit={handleSubmit as any}
       spacing={spacing}
       align="stretch"
       {...stackProps}

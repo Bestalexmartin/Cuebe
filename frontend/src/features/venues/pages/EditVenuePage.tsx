@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import {
-    Box, VStack, HStack, Text, Spinner, Flex,
-    FormControl, FormLabel, Input, Textarea, Select
+    VStack, HStack, Text, Spinner, Flex
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';

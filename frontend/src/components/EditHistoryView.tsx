@@ -301,45 +301,4 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
     );
 };
 
-function getOperationColor(operationType: string): string {
-    switch (operationType) {
-        // Structural/Organization Changes
-        case 'REORDER':
-        case 'BULK_REORDER':
-            return 'purple';
 
-        // Content Updates/Modifications
-        case 'UPDATE_FIELD':
-        case 'UPDATE_TIME_OFFSET':
-            return 'blue';
-
-        // Creation/Addition
-        case 'CREATE_ELEMENT':
-        case 'DUPLICATE_ELEMENT':
-            return 'green';
-
-        // Deletion/Removal
-        case 'DELETE_ELEMENT':
-        case 'REMOVE_ELEMENT':
-            return 'red';
-
-        // Complex Operations
-        case 'BATCH_UPDATE':
-        case 'MERGE_ELEMENTS':
-            return 'orange';
-
-        // Import/Export/System
-        case 'IMPORT_ELEMENTS':
-        case 'EXPORT_ELEMENTS':
-        case 'SYNC_ELEMENTS':
-            return 'teal';
-
-        // Caution/Review Operations
-        case 'VALIDATE_ELEMENTS':
-        case 'REVIEW_CHANGES':
-            return 'yellow';
-
-        default:
-            return 'gray';
-    }
-}

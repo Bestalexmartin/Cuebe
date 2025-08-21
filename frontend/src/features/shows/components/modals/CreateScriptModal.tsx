@@ -1,6 +1,6 @@
 // frontend/src/features/shows/components/modals/CreateScriptModal.tsx
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
     FormControl,
     FormLabel,
@@ -25,6 +25,7 @@ interface CreateScriptModalProps {
     onClose: () => void;
     showId: string;
     onScriptCreated: () => void;
+    onImportRequest?: (scriptName: string) => void;
 }
 
 const INITIAL_FORM_STATE: ScriptFormData = {
@@ -99,7 +100,8 @@ export const CreateScriptModal: React.FC<CreateScriptModalProps> = ({
                 label: "Create Script",
                 variant: "primary",
                 isLoading: form.isSubmitting,
-                isDisabled: !canSubmit
+                isDisabled: !canSubmit,
+                onClick: () => {}
             }}
             validationErrors={form.fieldErrors}
             showValidationErrors={form.fieldErrors.length > 0}

@@ -77,7 +77,7 @@ const DashboardPage = React.memo<DashboardPageProps>(({ isMenuOpen, onMenuClose 
   } = useModalActions({ openModal, refetchShows, setRefreshKey });
 
   // Handle clearing department mappings
-  const handleClearDepartmentMapping = useCallback((showId: string) => {
+  const handleClearDepartmentMapping = useCallback((_showId: string) => {
     clearSavedDepartmentMappings();
     showSuccess('Department Mappings Cleared', 'Saved department mappings have been cleared for future imports');
   }, [showSuccess]);

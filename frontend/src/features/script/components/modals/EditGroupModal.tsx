@@ -133,8 +133,8 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
 
         const { changes, offsetDelta } = calculateChanges();
 
-        if (Object.keys(changes).length > 0) {
-            onSave(changes, offsetDelta!, childrenIds);
+        if (changes && Object.keys(changes).length > 0) {
+            onSave(changes, offsetDelta || 0, childrenIds);
         }
 
         handleClose();

@@ -1,20 +1,19 @@
 // frontend/src/features/script/import/components/ScriptImportModal.tsx
 
 import React, { useState, useCallback, useRef } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import {
   VStack,
   HStack,
   Text,
   Box,
   Input,
-  FormLabel,
   Alert,
   AlertIcon,
   AlertTitle,
   AlertDescription,
   Progress,
   Badge,
-  Divider,
   useBreakpointValue
 } from '@chakra-ui/react';
 import { BaseModal } from '../../../../components/base/BaseModal';
@@ -65,6 +64,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
   initialScriptName
 }) => {
   const { showSuccess, showError } = useEnhancedToast();
+  const { getToken } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useBreakpointValue({ base: true, md: false });
 
@@ -168,9 +168,10 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
     if (isOpen) {
       const fetchDepartments = async () => {
         try {
+          const token = await getToken();
           const response = await fetch('/api/me/departments', {
             headers: {
-              'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`
+              'Authorization': `Bearer ${token}`
             }
           });
           if (response.ok) {
@@ -360,7 +361,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await window.Clerk?.session?.getToken()}`
+          'Authorization': `Bearer ${await getToken()}`
         },
         body: JSON.stringify(importRequest)
       });
@@ -410,7 +411,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
         onClick={() => fileInputRef.current?.click()}
       >
         <VStack spacing={4}>
-          <AppIcon name="upload" boxSize="48px" color="gray.400" />
+          <AppIcon name="add" boxSize="48px" color="gray.400" />
           <VStack spacing={2}>
             <Text fontWeight="medium">Drop CSV file here or click to browse</Text>
             <Text fontSize="sm" opacity="0.7">
@@ -656,7 +657,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={getStepTitle()}
-      headerIcon="upload"
+      headerIcon="add"
       size={isMobile ? 'full' : 'xl'}
       closeOnOverlayClick={importState.step === 'upload'}
       closeOnEsc={importState.step === 'upload'}

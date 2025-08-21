@@ -18,13 +18,10 @@ import { matchDepartment, type Department } from './departmentMatcher';
 const PAPA_CONFIG: Papa.ParseConfig = {
   header: true,                    // Use first row as column names
   skipEmptyLines: 'greedy',        // Skip completely empty rows
-  trimHeaders: true,               // Remove whitespace from headers
   dynamicTyping: false,            // Keep as strings for custom parsing
-  encoding: 'UTF-8',               // Handle special characters
   delimitersToGuess: [',', ';', '\t'], // Common export formats
   fastMode: false,                 // More careful parsing
-  preview: 0,                      // Parse entire file
-  worker: false                    // Keep on main thread
+  preview: 0                       // Parse entire file
 };
 
 /**
@@ -554,12 +551,12 @@ export const convertCSVToCleanImport = (
     
     // Create element
     const element: ScriptElementImport = {
-      element_type: typeResult.normalizedType!,
+      element_type: typeResult.normalizedType as 'CUE' | 'NOTE' | 'GROUP',
       element_name: nameValue.trim(),
       offset_ms: timeResult.milliseconds!,
       cue_notes: descriptionValue?.trim() || undefined,
       department_name: departmentName,
-      priority: priorityResult.normalizedPriority || 'NORMAL',
+      priority: (priorityResult.normalizedPriority as 'SAFETY' | 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW' | 'OPTIONAL') || 'NORMAL',
       location_details: locationValue?.trim() || undefined,
       duration_ms: durationMs,
       custom_color: customColor,
@@ -580,16 +577,18 @@ export const convertCSVToCleanImport = (
     }
     
     // For elements at the same time, ensure GROUP elements come before their children
-    if (a.element_type === 'GROUP' && b.element_type !== 'GROUP' && b.group_level > 0) {
+    if (a.element_type === 'GROUP' && b.element_type !== 'GROUP' && (b.group_level ?? 0) > 0) {
       return -1; // GROUP comes first
     }
-    if (b.element_type === 'GROUP' && a.element_type !== 'GROUP' && a.group_level > 0) {
+    if (b.element_type === 'GROUP' && a.element_type !== 'GROUP' && (a.group_level ?? 0) > 0) {
       return 1; // GROUP comes first
     }
     
     // For non-group elements, higher group_level (more nested) comes after lower group_level
-    if (a.group_level !== b.group_level) {
-      return a.group_level - b.group_level;
+    const aLevel = a.group_level ?? 0;
+    const bLevel = b.group_level ?? 0;
+    if (aLevel !== bLevel) {
+      return aLevel - bLevel;
     }
     
     // Maintain original processing order for elements at same level
@@ -602,7 +601,7 @@ export const convertCSVToCleanImport = (
   });
   
   // Check if any group hierarchy was detected
-  const hasGroupHierarchy = sortedElements.some(e => e.group_level > 0 || e.element_type === 'GROUP');
+  const hasGroupHierarchy = sortedElements.some(e => (e.group_level ?? 0) > 0 || e.element_type === 'GROUP');
   
   // Create clean import object
   const cleanImport: CleanScriptImport = {
