@@ -43,6 +43,7 @@ interface ScriptModalsProps {
     colorizeDepNames: boolean;
     showClockTimes: boolean;
     autoSortCues: boolean;
+    useMilitaryTime: boolean;
 
     // Event handlers
     onDeleteCancel: () => void;
@@ -107,6 +108,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     colorizeDepNames,
     showClockTimes,
     autoSortCues,
+    useMilitaryTime,
     scriptName,
     crewCount,
     shareCount,
@@ -238,7 +240,8 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                     darkMode,
                     colorizeDepNames,
                     autoSortCues,
-                    showClockTimes
+                    showClockTimes,
+                    useMilitaryTime
                 }}
                 onPreview={onOptionsPreview}
                 onSave={async (preferences) => { onOptionsSave(preferences); }}

@@ -2,6 +2,8 @@
 
 import { EditOperation } from '../types/editQueue';
 import { ScriptElement } from '../types/scriptElements';
+import { formatTimeOffset, formatDuration } from '../../../utils/timeUtils';
+import { formatTimeLocal } from '../../../utils/dateTimeUtils';
 
 /**
  * Formats edit operations into human-readable descriptions for the UI
@@ -29,8 +31,8 @@ export class EditQueueFormatter {
                 return this.formatFieldUpdate(operation, elementName);
             
             case 'UPDATE_TIME_OFFSET':
-                const oldTime = this.formatTime(operation.old_offset_ms);
-                const newTime = this.formatTime(operation.new_offset_ms);
+                const oldTime = formatTimeOffset(operation.old_offset_ms, false); // Use 12-hour for edit history
+                const newTime = formatTimeOffset(operation.new_offset_ms, false);
                 return `Updated "${elementName}" time from ${oldTime} to ${newTime}`;
             
             case 'CREATE_ELEMENT':
@@ -221,7 +223,7 @@ export class EditQueueFormatter {
             
             if (field === 'offset_ms' && affectedChildren.length > 0) {
                 const offsetDelta = operation.offset_delta_ms || 0;
-                const timeChange = offsetDelta > 0 ? `+${this.formatTime(Math.abs(offsetDelta))}` : `-${this.formatTime(Math.abs(offsetDelta))}`;
+                const timeChange = offsetDelta > 0 ? `+${formatTimeOffset(Math.abs(offsetDelta), false)}` : `-${formatTimeOffset(Math.abs(offsetDelta), false)}`;
                 return `Updated group "${elementName}" ${fieldName} (${timeChange}, ${affectedChildren.length} children affected)`;
             }
             
@@ -256,14 +258,7 @@ export class EditQueueFormatter {
             case 'end_time':
                 // Format ISO date string to readable format
                 try {
-                    const date = new Date(value);
-                    return date.toLocaleString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                    });
+                    return formatTimeLocal(value, false); // Use 12-hour for edit history
                 } catch {
                     return String(value);
                 }
@@ -335,14 +330,14 @@ export class EditQueueFormatter {
             case 'offset_ms':
                 // Handle numeric time values, including 0
                 if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
-                    return this.formatTime(Number(value));
+                    return formatTimeOffset(Number(value), false) || '0:00'; // Use 12-hour for edit history
                 }
                 return '(empty)';
             
             case 'duration_ms':
                 // Handle numeric duration values, including 0  
                 if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
-                    return this.formatDuration(Number(value));
+                    return formatDuration(Number(value));
                 }
                 return '(empty)';
             
@@ -363,44 +358,7 @@ export class EditQueueFormatter {
         }
     }
     
-    /**
-     * Format time in milliseconds to readable format
-     */
-    private static formatTime(timeMs: number): string {
-        // Handle negative times and edge cases
-        const isNegative = timeMs < 0;
-        const absTimeMs = Math.abs(timeMs);
-        const totalSeconds = Math.round(absTimeMs / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        
-        let timeString;
-        if (hours > 0) {
-            timeString = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        } else {
-            timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }
-        
-        return isNegative ? `-${timeString}` : timeString;
-    }
     
-    /**
-     * Format duration in seconds to readable format
-     */
-    private static formatDuration(durationSeconds: number): string {
-        if (!durationSeconds) return '0:00';
-        
-        const hours = Math.floor(durationSeconds / 3600);
-        const minutes = Math.floor((durationSeconds % 3600) / 60);
-        const seconds = durationSeconds % 60;
-        
-        if (hours > 0) {
-            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        } else {
-            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }
-    }
     
     /**
      * Get a date and time stamp for display
@@ -414,29 +372,14 @@ export class EditQueueFormatter {
         // Check if it's today, yesterday, or another date
         if (date.toDateString() === today.toDateString()) {
             // Today - show just time
-            return date.toLocaleTimeString('en-US', { 
-                hour12: false, 
-                hour: '2-digit', 
-                minute: '2-digit',
-                second: '2-digit'
-            });
+            return formatTimeLocal(date.toISOString(), false).replace(/^.*\s/, ''); // Extract time part only
         } else if (date.toDateString() === yesterday.toDateString()) {
             // Yesterday - show "Yesterday HH:MM:SS"
-            const time = date.toLocaleTimeString('en-US', { 
-                hour12: false, 
-                hour: '2-digit', 
-                minute: '2-digit',
-                second: '2-digit'
-            });
+            const time = formatTimeLocal(date.toISOString(), false).replace(/^.*\s/, ''); // Extract time part only
             return `Yesterday ${time}`;
         } else {
             // Other dates - show "Mon DD HH:MM:SS"
-            const time = date.toLocaleTimeString('en-US', { 
-                hour12: false, 
-                hour: '2-digit', 
-                minute: '2-digit',
-                second: '2-digit'
-            });
+            const time = formatTimeLocal(date.toISOString(), false).replace(/^.*\s/, ''); // Extract time part only
             const dateStr = date.toLocaleDateString('en-US', { 
                 month: 'short', 
                 day: 'numeric'

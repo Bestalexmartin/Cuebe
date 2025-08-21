@@ -40,11 +40,13 @@ interface SharedShow {
 interface SharedShowCardProps {
   show: SharedShow;
   onClick: () => void;
+  useMilitaryTime?: boolean;
 }
 
 export const SharedShowCard: React.FC<SharedShowCardProps> = ({
   show,
-  onClick
+  onClick,
+  useMilitaryTime = false
 }) => {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
@@ -117,7 +119,7 @@ export const SharedShowCard: React.FC<SharedShowCardProps> = ({
               </Text>
               {show.show_end && (
                 <Text fontSize="xs" color={mutedTextColor}>
-                  {formatTimeLocal(show.show_date)} - {formatTimeLocal(show.show_end)}
+                  {formatTimeLocal(show.show_date, useMilitaryTime)} - {formatTimeLocal(show.show_end, useMilitaryTime)}
                 </Text>
               )}
             </VStack>

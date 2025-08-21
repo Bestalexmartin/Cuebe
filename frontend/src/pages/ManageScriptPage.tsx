@@ -166,7 +166,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     }, [allEditQueueElements, buttonShowsOpen, expandAllGroups, collapseAllGroups]);
 
     const {
-        preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues },
+        preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues, useMilitaryTime },
         updatePreference,
         updatePreferences
     } = useUserPreferences();
@@ -183,11 +183,14 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     }, [autoSortCues, pendingOperations]);
 
     // Use preview preferences when options modal is open, otherwise use saved preferences  
-    const activePreferences = useMemo(() =>
-        modalState.isOpen(MODAL_NAMES.OPTIONS) && previewPreferences
+    const activePreferences = useMemo(() => {
+        const result = modalState.isOpen(MODAL_NAMES.OPTIONS) && previewPreferences
             ? previewPreferences
-            : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState }
-        , [modalState, previewPreferences, darkMode, colorizeDepNames, showClockTimes, currentAutoSortState]);
+            : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState, useMilitaryTime };
+        
+        
+        return result;
+    }, [modalState, previewPreferences, darkMode, colorizeDepNames, showClockTimes, currentAutoSortState, useMilitaryTime]);
 
     const { insertElement } = useElementActions(
         editQueueElements,
@@ -835,7 +838,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
                                 {activeMode === 'view' && (
-                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} allElements={allEditQueueElements} script={script} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} />
+                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} useMilitaryTime={activePreferences.useMilitaryTime} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} allElements={allEditQueueElements} script={script} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} />
                                 )}
                                 {activeMode === 'edit' && (
                                     <EditMode
@@ -844,6 +847,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                         colorizeDepNames={activePreferences.colorizeDepNames}
                                         showClockTimes={activePreferences.showClockTimes}
                                         autoSortCues={activePreferences.autoSortCues}
+                                        useMilitaryTime={activePreferences.useMilitaryTime}
                                         onAutoSortChange={handleAutoSortToggle}
                                         onScrollStateChange={handleScrollStateChange}
                                         onSelectionChange={setCurrentSelectedElementIds}
@@ -908,6 +912,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 colorizeDepNames={activePreferences.colorizeDepNames}
                 showClockTimes={activePreferences.showClockTimes}
                 autoSortCues={activePreferences.autoSortCues}
+                useMilitaryTime={activePreferences.useMilitaryTime}
                 onDeleteCancel={modalHandlers.handleDeleteCancel}
                 onInitialDeleteConfirm={modalHandlers.handleInitialDeleteConfirm}
                 onFinalDeleteConfirm={modalHandlers.handleFinalDeleteConfirm}

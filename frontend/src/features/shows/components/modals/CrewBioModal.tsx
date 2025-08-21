@@ -62,7 +62,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
   // State for the actual share token and URL
   const [shareUrl, setShareUrl] = useState('');
   const [isLoadingShare, setIsLoadingShare] = useState(false);
-  
+
   // Get the share token when modal opens
   useEffect(() => {
     if (isOpen && showId && crewMember) {
@@ -74,7 +74,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
             console.warn('No auth token available for share URL');
             return;
           }
-          
+
           const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
             method: 'POST',
             headers: {
@@ -82,7 +82,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
               'Content-Type': 'application/json',
             },
           });
-          
+
           if (response.ok) {
             const shareData = await response.json();
             setShareUrl(`${window.location.origin}${shareData.share_url}`);
@@ -95,7 +95,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
           setIsLoadingShare(false);
         }
       };
-      
+
       getShareUrl();
     }
   }, [isOpen, showId, crewMember, getToken]);
@@ -116,7 +116,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
       }
 
       // Create or refresh the show-level share
-      const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
+      const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share?force_refresh=true`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -129,12 +129,12 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
       }
 
       const shareData = await response.json();
-      
+
       // Update the URL with the new token
       setShareUrl(`${window.location.origin}${shareData.share_url}`);
 
       showSuccess(
-        "Link Refreshed", 
+        "Link Refreshed",
         `A new sharing link has been ${shareData.action}`
       );
     } catch (error) {
@@ -151,7 +151,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
       customActions={[
         {
           label: "Close",
-          variant: "outline", 
+          variant: "outline",
           onClick: onClose
         }
       ]}
@@ -165,12 +165,12 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
             src={crewMember.profile_img_url}
             flexShrink={0}
           />
-          
+
           <VStack spacing={2} align="center" flex={1} justify="center">
             <Text fontSize="xl" fontWeight="bold" textAlign="center">
               {getFullName()}
             </Text>
-            
+
             <HStack spacing={2} justify="center">
               <Badge variant="outline" colorScheme="blue" size="md">
                 {formatRole(crewMember.user_role || '')}
@@ -192,7 +192,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
           <Text fontSize="md" fontWeight="semibold">
             Contact Information
           </Text>
-          
+
           {crewMember.email_address && (
             <HStack justify="space-between">
               <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
@@ -203,7 +203,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
               </Text>
             </HStack>
           )}
-          
+
           {crewMember.phone_number && (
             <HStack justify="space-between">
               <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
@@ -263,7 +263,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
                   opacity={isLoadingShare ? 0.6 : 1}
                 />
               </Box>
-              
+
               {shareUrl && !isLoadingShare && (
                 <Box
                   alignSelf="center"
@@ -291,9 +291,9 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
                     left="50%"
                     transform="translate(-50%, -50%)"
                     bg="white"
-                    borderRadius="md"
-                    width="50px"
-                    height="50px"
+                    borderRadius="0"
+                    width="64px"
+                    height="64px"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
@@ -302,8 +302,8 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
                       src="/cuebe-qr.svg"
                       alt="Cuebe"
                       style={{
-                        width: '60px',
-                        height: '60px',
+                        width: '64px',
+                        height: '64px',
                         display: 'block'
                       }}
                     />

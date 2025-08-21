@@ -27,6 +27,7 @@ import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm'
 import { ScriptElementCreate, ElementType, PriorityLevel } from '../types/scriptElements';
 import { formatTimeOffset, parseTimeToMs } from '../../../utils/timeUtils';
 import { ColorSelector, PRESET_COLORS } from './ColorSelector';
+import { useUserPreferences } from '../../../hooks/useUserPreferences';
 
 // TypeScript interfaces
 interface Department {
@@ -80,6 +81,8 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
     onElementCreated,
     autoSortCues
 }) => {
+    const { preferences } = useUserPreferences();
+    
     // Separate state for time input to allow free typing
     const [timeInputValue, setTimeInputValue] = useState('00:00');
     
@@ -212,7 +215,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                             onBlur={(e) => {
                                 // Auto-format, update form data, and validate on blur
                                 const ms = parseTimeToMs(e.target.value);
-                                const formatted = formatTimeOffset(ms);
+                                const formatted = formatTimeOffset(ms, preferences.useMilitaryTime);
                                 setTimeInputValue(formatted || "0:00");
                                 form.updateField('offset_ms', ms);
                                 form.validateField('offset_ms');

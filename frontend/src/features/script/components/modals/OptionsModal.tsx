@@ -20,6 +20,7 @@ interface OptionsModalProps {
     onAutoSortChange?: (value: boolean) => Promise<void>;
     onColorizeChange?: (value: boolean) => Promise<void>;
     onClockTimesChange?: (value: boolean) => Promise<void>;
+    onMilitaryTimeChange?: (value: boolean) => Promise<void>;
 }
 
 export const OptionsModal: React.FC<OptionsModalProps> = ({
@@ -30,7 +31,8 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
     onPreview,
     onAutoSortChange,
     onColorizeChange,
-    onClockTimesChange
+    onClockTimesChange,
+    onMilitaryTimeChange
 }) => {
     const [localPreferences, setLocalPreferences] = useState<UserPreferences>(initialOptions);
 
@@ -72,6 +74,17 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
         // Trigger immediate auto-sort if callback is provided
         if (onAutoSortChange) {
             await onAutoSortChange(checked);
+        }
+    };
+
+    const handleMilitaryTimeChange = async (checked: boolean) => {
+        const newPreferences = { ...localPreferences, useMilitaryTime: checked };
+        setLocalPreferences(newPreferences);
+        onPreview?.(newPreferences);
+        
+        // Trigger immediate update if callback is provided
+        if (onMilitaryTimeChange) {
+            await onMilitaryTimeChange(checked);
         }
     };
 
@@ -149,6 +162,25 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                             htmlFor="clocktimes-switch"
                         >
                             Show Clock Times
+                        </FormLabel>
+                    </HStack>
+                </FormControl>
+
+                <FormControl>
+                    <HStack align="center" spacing={5}>
+                        <Switch
+                            id="militarytime-switch"
+                            isChecked={localPreferences.useMilitaryTime}
+                            onChange={(e) => handleMilitaryTimeChange(e.target.checked)}
+                            colorScheme="blue"
+                            size="md"
+                        />
+                        <FormLabel
+                            mb="0"
+                            fontSize="md"
+                            htmlFor="militarytime-switch"
+                        >
+                            Use Military Time
                         </FormLabel>
                     </HStack>
                 </FormControl>

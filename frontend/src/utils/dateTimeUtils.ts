@@ -31,10 +31,12 @@ export const formatDateTimeLocal = (
 /**
  * Formats a UTC datetime to show only the time portion in local timezone
  * @param utcDateTime - ISO string from backend or Date object (stored in UTC)
- * @returns Time string in local timezone (e.g., "6:00 PM")
+ * @param useMilitaryTime - Whether to use 24-hour format
+ * @returns Time string in local timezone (e.g., "6:00 PM" or "18:00")
  */
 export const formatTimeLocal = (
-  utcDateTime: string | Date | null | undefined
+  utcDateTime: string | Date | null | undefined,
+  useMilitaryTime: boolean = false
 ): string => {
   if (!utcDateTime) return 'Not set';
   
@@ -48,7 +50,8 @@ export const formatTimeLocal = (
   }
   return utcDate.toLocaleTimeString([], {
     hour: 'numeric',
-    minute: '2-digit'
+    minute: '2-digit',
+    hour12: !useMilitaryTime
   });
 };
 
@@ -132,10 +135,12 @@ export const convertUTCToLocal = (
 /**
  * Formats a UTC datetime string for human-readable display with day and time
  * @param utcDateTime - ISO string from backend or Date object (stored in UTC)
- * @returns Formatted string like "Sunday, July 2 @ 7:30 PM"
+ * @param useMilitaryTime - Whether to use 24-hour format
+ * @returns Formatted string like "Sunday, July 2 @ 7:30 PM" or "Sunday, July 2 @ 19:30"
  */
 export const formatShowDateTime = (
-  utcDateTime: string | Date | null | undefined
+  utcDateTime: string | Date | null | undefined,
+  useMilitaryTime: boolean = false
 ): string => {
   if (!utcDateTime) return 'TBD';
   
@@ -157,7 +162,7 @@ export const formatShowDateTime = (
   const timeOptions: Intl.DateTimeFormatOptions = {
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true
+    hour12: !useMilitaryTime
   };
   
   const datePart = utcDate.toLocaleDateString('en-US', dateOptions);

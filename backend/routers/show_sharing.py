@@ -1,6 +1,6 @@
 # backend/routers/show_sharing.py
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
 from uuid import UUID
 import secrets
@@ -30,11 +30,13 @@ def generate_share_token(length: int = 32) -> str:
 async def create_or_get_show_share(
     show_id: UUID,
     user_id: UUID,
-    force_refresh: bool = False,
+    force_refresh: bool = Query(False),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
 ):
     """Create or retrieve a show-level sharing link for a crew member"""
+    
+    logger.info(f"🔄 create_or_get_show_share called with force_refresh={force_refresh}")
     
     # Get the show and verify ownership
     show = db.query(models.Show).filter(models.Show.show_id == show_id).first()

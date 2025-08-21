@@ -9,14 +9,16 @@ const FIELD_MAPPING = {
     darkMode: 'dark_mode',
     colorizeDepNames: 'colorize_dep_names',
     autoSortCues: 'auto_sort_cues',
-    showClockTimes: 'show_clock_times'
+    showClockTimes: 'show_clock_times',
+    useMilitaryTime: 'use_military_time'
 } as const;
 
 const REVERSE_FIELD_MAPPING = {
     dark_mode: 'darkMode',
     colorize_dep_names: 'colorizeDepNames',
     auto_sort_cues: 'autoSortCues',
-    show_clock_times: 'showClockTimes'
+    show_clock_times: 'showClockTimes',
+    use_military_time: 'useMilitaryTime'
 } as const;
 
 // Helper functions to convert between frontend and backend field names
@@ -47,13 +49,15 @@ export interface UserPreferences {
     colorizeDepNames: boolean;
     autoSortCues: boolean;
     showClockTimes: boolean;
+    useMilitaryTime: boolean;
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
     darkMode: false,
     colorizeDepNames: true,
     autoSortCues: true,
-    showClockTimes: false
+    showClockTimes: false,
+    useMilitaryTime: false
 };
 
 const STORAGE_KEY = 'userPreferences';
@@ -77,7 +81,8 @@ const loadPreferencesFromStorage = (): UserPreferences | null => {
                 typeof parsed.darkMode === 'boolean' &&
                 typeof parsed.colorizeDepNames === 'boolean' &&
                 typeof parsed.autoSortCues === 'boolean' &&
-                typeof parsed.showClockTimes === 'boolean'
+                typeof parsed.showClockTimes === 'boolean' &&
+                typeof parsed.useMilitaryTime === 'boolean'
             ) {
                 return parsed;
             }
