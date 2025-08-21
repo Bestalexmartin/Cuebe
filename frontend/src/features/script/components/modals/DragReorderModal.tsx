@@ -8,6 +8,8 @@ import {
     Box
 } from '@chakra-ui/react';
 import { BaseModal } from '../../../../components/base/BaseModal';
+import { formatTimeOffset } from '../../../../utils/timeUtils';
+import { useUserPreferences } from '../../../../hooks/useUserPreferences';
 
 interface DraggedElement {
     element_id: string;
@@ -27,19 +29,6 @@ interface DragReorderModalProps {
     onCancel: () => void;
 }
 
-// Helper function to format time offset
-const formatTimeOffset = (offset_ms: number): string => {
-    const totalSeconds = Math.round(offset_ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    if (hours > 0) {
-        return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    } else {
-        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    }
-};
 
 export const DragReorderModal: React.FC<DragReorderModalProps> = ({
     isOpen,
@@ -52,6 +41,8 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
     onMatchAfter,
     onCancel
 }) => {
+    const { preferences } = useUserPreferences();
+    
     if (!draggedElement) return null;
 
     const getButtonStyle = (actionType: string) => {
@@ -125,7 +116,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
             <VStack spacing={6} align="stretch">
                 <Box>
                     <Text fontSize="md">
-                        <Text as="span" fontWeight="bold">Moved Cue:</Text> "{draggedElement.element_name}" at {formatTimeOffset(draggedElement.offset_ms)}
+                        <Text as="span" fontWeight="bold">Moved Cue:</Text> "{draggedElement.element_name}" at {formatTimeOffset(draggedElement.offset_ms, preferences.useMilitaryTime)}
                     </Text>
                 </Box>
 
@@ -163,7 +154,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
                             <VStack spacing={1}>
                                 <Text fontWeight="semibold">Match Time of Cue Before</Text>
                                 <Text fontSize="xs" color="gray.500">
-                                    Change offset to {formatTimeOffset(elementAbove.offset_ms)} ("{elementAbove.element_name}")
+                                    Change offset to {formatTimeOffset(elementAbove.offset_ms, preferences.useMilitaryTime)} ("{elementAbove.element_name}")
                                 </Text>
                             </VStack>
                         </Button>
@@ -183,7 +174,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
                             <VStack spacing={1}>
                                 <Text fontWeight="semibold">Match Time of Cue After</Text>
                                 <Text fontSize="xs" color="gray.500">
-                                    Change offset to {formatTimeOffset(elementBelow.offset_ms)} ("{elementBelow.element_name}")
+                                    Change offset to {formatTimeOffset(elementBelow.offset_ms, preferences.useMilitaryTime)} ("{elementBelow.element_name}")
                                 </Text>
                             </VStack>
                         </Button>

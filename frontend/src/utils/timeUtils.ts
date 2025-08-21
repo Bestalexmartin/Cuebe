@@ -6,8 +6,10 @@
 
 /**
  * Format a time offset in milliseconds to a readable string
+ * @param timeOffsetMs - Time offset in milliseconds from show start
+ * @param useMilitaryTime - Whether to use 24-hour format (affects hour display in 12+ hour ranges)
  */
-export const formatTimeOffset = (timeOffsetMs: number | null): string | null => {
+export const formatTimeOffset = (timeOffsetMs: number | null, useMilitaryTime: boolean = false): string | null => {
     if (timeOffsetMs === null || timeOffsetMs === undefined) {
         return null;
     }
@@ -24,11 +26,18 @@ export const formatTimeOffset = (timeOffsetMs: number | null): string | null => 
     const minutes = Math.floor((totalSeconds % 3600) / 60);
     const seconds = totalSeconds % 60;
 
-    // Format based on duration
+    // Format based on duration and preference
     let formatted = '';
     
     if (hours > 0) {
-        formatted = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        if (useMilitaryTime) {
+            // 24-hour format: always show 2-digit hours
+            formatted = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        } else {
+            // 12-hour format without AM/PM (script times): 1-digit hours when possible
+            const displayHours = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
+            formatted = `${displayHours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
     } else if (minutes > 0) {
         formatted = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     } else {
@@ -115,16 +124,26 @@ export const addTimeOffset = (baseDate: Date, offsetMs: number): Date => {
 };
 
 /**
- * Format absolute time from start time + offset
+ * Format absolute time from start time + offset (for script elements - never shows AM/PM)
+ * @param startTime - Show start time
+ * @param offsetMs - Time offset in milliseconds
+ * @param useMilitaryTime - Whether to use 24-hour format
  */
-export const formatAbsoluteTime = (startTime: Date | string, offsetMs: number): string => {
+export const formatAbsoluteTime = (startTime: Date | string, offsetMs: number, useMilitaryTime: boolean = false): string => {
     const baseTime = typeof startTime === 'string' ? new Date(startTime) : startTime;
     const absoluteTime = addTimeOffset(baseTime, offsetMs);
     
-    return absoluteTime.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-    });
+    const hours = absoluteTime.getHours();
+    const minutes = absoluteTime.getMinutes();
+    const seconds = absoluteTime.getSeconds();
+    
+    if (useMilitaryTime) {
+        // 24-hour format: always show 2-digit hours (13:00:00)
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    } else {
+        // 12-hour format without AM/PM: 1-digit hours when possible (1:00:00)
+        const displayHours = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
+        return `${displayHours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
 };
+

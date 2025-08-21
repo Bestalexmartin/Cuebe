@@ -8,6 +8,8 @@ import { BiSolidRightArrow } from "react-icons/bi";
 import { ScriptElement } from '../types/scriptElements';
 import { getTextColorForBackground } from '../../../utils/colorUtils';
 import { AppIcon } from '../../../components/AppIcon';
+import { formatTimeOffset, formatAbsoluteTime } from '../../../utils/timeUtils';
+import { useUserPreferences } from '../../../hooks/useUserPreferences';
 
 interface CueElementProps {
     element: ScriptElement;
@@ -16,6 +18,7 @@ interface CueElementProps {
     isSelected?: boolean;
     colorizeDepNames?: boolean;
     showClockTimes?: boolean;
+    useMilitaryTime?: boolean;
     scriptStartTime?: string;
     scriptEndTime?: string;
     isDragEnabled?: boolean;
@@ -32,6 +35,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo((props: CueEleme
         isSelected = false,
         colorizeDepNames = false,
         showClockTimes = false,
+        useMilitaryTime = false,
         scriptStartTime,
         scriptEndTime,
         isDragEnabled = false,
@@ -39,6 +43,13 @@ export const CueElement: React.FC<CueElementProps> = React.memo((props: CueEleme
         onEdit,
         onToggleGroupCollapse
     } = props;
+    const { preferences } = useUserPreferences();
+    
+    // Use useMilitaryTime directly like colorizeDepNames and showClockTimes
+    // All preferences are now passed as props from parent components
+    const effectiveUseMilitaryTime = useMilitaryTime;
+    
+
     // Drag functionality
     const dragTimeoutRef = useRef<number | null>(null);
     const isDragStartedRef = useRef(false);
@@ -206,39 +217,17 @@ export const CueElement: React.FC<CueElementProps> = React.memo((props: CueEleme
     const timeDisplay = useMemo(() => {
         const timeValue = element.offset_ms || 0;
 
-        // If clock times are requested but we don't have script start time yet, show placeholder
+        // If clock times are requested, use absolute time formatting
         if (showClockTimes) {
             if (!scriptStartTime) {
                 return '--:--:--'; // Placeholder to prevent offset time from showing
             }
-
-            // Calculate clock time directly
-            const showStartTime = new Date(scriptStartTime);
-            const clockTime = new Date(showStartTime.getTime() + timeValue);
-
-            let hours = clockTime.getHours();
-            if (hours === 0) hours = 12;
-            else if (hours > 12) hours = hours - 12;
-
-            const minutes = clockTime.getMinutes().toString().padStart(2, '0');
-            const seconds = clockTime.getSeconds().toString().padStart(2, '0');
-            return `${hours}:${minutes}:${seconds}`;
+            return formatAbsoluteTime(scriptStartTime, timeValue, effectiveUseMilitaryTime);
         }
 
         // Show offset time when clock times are not requested
-        const isNegative = timeValue < 0;
-        const absTimeValue = Math.abs(timeValue);
-        const totalSeconds = Math.round(absTimeValue / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-
-        const timeString = hours > 0
-            ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-            : `${minutes}:${seconds.toString().padStart(2, '0')}`;
-
-        return isNegative ? `-${timeString}` : timeString;
-    }, [element.offset_ms, showClockTimes, scriptStartTime]);
+        return formatTimeOffset(timeValue, effectiveUseMilitaryTime);
+    }, [element.offset_ms, showClockTimes, scriptStartTime, effectiveUseMilitaryTime]);
 
     const durationDisplay = useMemo(() => {
         // For SHOW START elements, always calculate from script times if available
@@ -249,49 +238,17 @@ export const CueElement: React.FC<CueElementProps> = React.memo((props: CueEleme
             const durationMs = endTime.getTime() - startTime.getTime();
 
             if (durationMs > 0) {
-                const totalSeconds = Math.round(durationMs / 1000);
-                const days = Math.floor(totalSeconds / 86400);
-                const hours = Math.floor((totalSeconds % 86400) / 3600);
-                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                const seconds = totalSeconds % 60;
-
-                if (days > 0) {
-                    return `${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                } else if (hours > 0) {
-                    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                } else {
-                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                }
+                return formatTimeOffset(durationMs, effectiveUseMilitaryTime);
             }
         }
 
         if (element.duration_ms) {
-            const totalSeconds = Math.round(element.duration_ms / 1000);
-            const days = Math.floor(totalSeconds / 86400);
-            const hours = Math.floor((totalSeconds % 86400) / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-
-            if (element.element_name?.toUpperCase() === 'SHOW START') {
-                if (days > 0) {
-                    return `${days}:${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                } else if (hours > 0) {
-                    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                } else {
-                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                }
-            } else {
-                if (hours > 0) {
-                    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                } else {
-                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                }
-            }
+            return formatTimeOffset(element.duration_ms, effectiveUseMilitaryTime);
         }
 
 
         return '-';
-    }, [element.duration_ms, element.element_name, scriptStartTime, scriptEndTime]);
+    }, [element.duration_ms, element.element_name, scriptStartTime, scriptEndTime, effectiveUseMilitaryTime]);
 
     const dragStyle = {
         transform: CSS.Transform.toString(transform),

@@ -13,6 +13,7 @@ interface ViewModeProps {
     colorizeDepNames?: boolean;
     showClockTimes?: boolean;
     autoSortCues?: boolean;
+    useMilitaryTime?: boolean;
     elements?: ScriptElement[]; // Optional prop to override default fetching
     allElements?: ScriptElement[]; // All elements including collapsed children for group calculations
     script?: any; // Optional cached script to prevent refetching
@@ -34,12 +35,14 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     colorizeDepNames = false, 
     showClockTimes = false,
     autoSortCues = false,
+    useMilitaryTime = false,
     elements: providedElements,
     allElements: providedAllElements,
     script: providedScript,
     onScrollStateChange,
     onToggleGroupCollapse
 }, ref) => {
+    
     // Only fetch elements if none are provided
     const shouldFetchElements = !providedElements;
     const { elements: fetchedElements, isLoading, error, refetchElements } = useScriptElements(
@@ -195,6 +198,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                                     allElements={allElementsForGroupCalculations}
                                     colorizeDepNames={colorizeDepNames}
                                     showClockTimes={shouldShowClockTimes}
+                                    useMilitaryTime={useMilitaryTime}
                                     scriptStartTime={script?.start_time}
                                     scriptEndTime={script?.end_time}
                                     onToggleGroupCollapse={onToggleGroupCollapse}
@@ -216,6 +220,7 @@ const areEqual = (prevProps: ViewModeProps, nextProps: ViewModeProps) => {
         prevProps.colorizeDepNames === nextProps.colorizeDepNames &&
         prevProps.showClockTimes === nextProps.showClockTimes &&
         prevProps.autoSortCues === nextProps.autoSortCues &&
+        prevProps.useMilitaryTime === nextProps.useMilitaryTime &&
         prevProps.elements === nextProps.elements &&
         prevProps.allElements === nextProps.allElements &&
         prevProps.script === nextProps.script

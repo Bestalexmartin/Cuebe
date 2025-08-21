@@ -24,8 +24,9 @@ import { BaseModal } from '../../../../components/base/BaseModal';
 import { ScriptElement } from '../../types/scriptElements';
 import { useDepartments } from '../../../departments/hooks/useDepartments';
 import { FieldError } from '../../../../types/validation';
-import { parseTimeToMs } from '../../../../utils/timeUtils';
+import { parseTimeToMs, formatTimeOffset } from '../../../../utils/timeUtils';
 import { ColorSelector, PRESET_COLORS } from '../ColorSelector';
+import { useUserPreferences } from '../../../../hooks/useUserPreferences';
 
 
 interface EditElementModalProps {
@@ -58,6 +59,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
     onSave
 }) => {
     const { departments, isLoading: departmentsLoading } = useDepartments();
+    const { preferences } = useUserPreferences();
     const [formData, setFormData] = useState<FormData>({
         element_name: '',
         cue_notes: '',
@@ -93,12 +95,12 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
 
         setFormData(newFormData);
         setTimeInputs({
-            timeOffsetInput: formatTimeWithHours(newFormData.offset_ms),
-            durationInput: formatTimeWithHours(newFormData.duration_ms)
+            timeOffsetInput: formatTimeOffset(newFormData.offset_ms, preferences.useMilitaryTime) || '0:00',
+            durationInput: formatTimeOffset(newFormData.duration_ms, preferences.useMilitaryTime) || '0:00'
         });
         setHasChanges(false);
         setValidationErrors([]);
-    }, [element]);
+    }, [element, preferences.useMilitaryTime]);
 
     // Track changes
     const originalData = useMemo(() => {
@@ -204,21 +206,6 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         }
     };
 
-    // Enhanced time formatting to support both MM:SS and HH:MM:SS formats with negative values
-    const formatTimeWithHours = (timeMs: number): string => {
-        const isNegative = timeMs < 0;
-        const absTimeMs = Math.abs(timeMs);
-        const totalSeconds = Math.round(absTimeMs / 1000);
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
-        
-        const timeString = hours > 0 
-            ? `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-            : `${minutes}:${seconds.toString().padStart(2, '0')}`;
-            
-        return isNegative ? `-${timeString}` : timeString;
-    };
 
     const parseTimeWithHours = (timeString: string): number => {
         if (!timeString || timeString.trim() === '') return 0;
@@ -253,7 +240,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
 
     const handleTimeOffsetBlur = () => {
         const timeOffsetMs = parseTimeWithHours(timeInputs.timeOffsetInput);
-        const formatted = formatTimeWithHours(timeOffsetMs);
+        const formatted = formatTimeOffset(timeOffsetMs, preferences.useMilitaryTime) || '0:00';
         setTimeInputs(prev => ({ ...prev, timeOffsetInput: formatted }));
         setFormData(prev => ({ ...prev, offset_ms: timeOffsetMs }));
     };
@@ -264,7 +251,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
 
     const handleDurationBlur = () => {
         const durationMs = parseTimeWithHours(timeInputs.durationInput);
-        const formatted = formatTimeWithHours(durationMs);
+        const formatted = formatTimeOffset(durationMs, preferences.useMilitaryTime) || '0:00';
         setTimeInputs(prev => ({ ...prev, durationInput: formatted }));
         setFormData(prev => ({ ...prev, duration_ms: durationMs }));
     };

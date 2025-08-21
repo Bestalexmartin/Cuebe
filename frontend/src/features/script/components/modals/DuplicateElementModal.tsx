@@ -12,6 +12,7 @@ import { BaseModal } from '../../../../components/base/BaseModal';
 import { FormInput } from '../../../../components/form/FormField';
 import { useValidatedFormSchema } from '../../../../components/forms/ValidatedForm';
 import { formatTimeOffset, parseTimeToMs } from '../../../../utils/timeUtils';
+import { useUserPreferences } from '../../../../hooks/useUserPreferences';
 
 interface DuplicateElementFormData {
     element_name: string;
@@ -38,10 +39,11 @@ export const DuplicateElementModal: React.FC<DuplicateElementModalProps> = ({
     originalTimeOffset,
     isProcessing = false
 }) => {
+    const { preferences } = useUserPreferences();
     const form = useValidatedFormSchema<DuplicateElementFormData>(
         {
             element_name: `${originalElementName} (Copy)`,
-            timeOffsetInput: formatTimeOffset(originalTimeOffset) || ''
+            timeOffsetInput: formatTimeOffset(originalTimeOffset, preferences.useMilitaryTime) || ''
         },
         'scriptElement',
         'duplicateElement',
@@ -57,10 +59,10 @@ export const DuplicateElementModal: React.FC<DuplicateElementModalProps> = ({
         if (isOpen) {
             form.setFormData({
                 element_name: `${originalElementName} (Copy)`,
-                timeOffsetInput: formatTimeOffset(originalTimeOffset) || ''
+                timeOffsetInput: formatTimeOffset(originalTimeOffset, preferences.useMilitaryTime) || ''
             });
         }
-    }, [isOpen, originalElementName, originalTimeOffset, form.setFormData]);
+    }, [isOpen, originalElementName, originalTimeOffset, form.setFormData, preferences.useMilitaryTime]);
 
     const handleSubmit = () => {
         if (form.isValid && !isProcessing) {

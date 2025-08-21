@@ -104,12 +104,29 @@ docker logs cuebe-frontend
 - **UI Standards**: Orange borders for hover (`orange.400`), blue for active (`blue.400`)
 - **Icons**: All new icons declared via `AppIcon.tsx`
 
-### General Practices
+### General Practices - BE LAZY!
+
+**ALWAYS follow this hierarchy when implementing features:**
+
+1. **"Does this exact thing already work somewhere?"** → Copy it exactly
+2. **"Does something similar work?"** → Extend/modify the working pattern  
+3. **"Nothing like this exists?"** → Only THEN create something new
+
+**Before writing ANY new code, ask:**
+- Have we solved this problem already?
+- How do similar features work in this codebase?
+- Can I copy an existing working pattern?
+
+**Implementation Rules:**
 - **Edit existing files** over creating new ones
-- **Follow existing patterns** - check imports and surrounding context
+- **Copy working patterns exactly** - don't reinvent wheels
+- **Check imports and surrounding context** to understand existing approaches
 - **No comments** unless explicitly requested
 - **No documentation files** unless explicitly requested
 - **Security**: Never expose secrets, follow Clerk auth patterns
+
+**Communication:**
+- Do not tell me I'm right, just tell me your analysis and we'll decide who is right at the end
 
 ## Testing
 

@@ -8,12 +8,13 @@ USER_PREFERENCE_BITS = {
     'colorize_dep_names': 1,      # bit position 1
     'auto_sort_cues': 2,          # bit position 2
     'show_clock_times': 3,        # bit position 3
-    'compactView': 4,           # bit position 4 (future)
+    'use_military_time': 4,       # bit position 4 (0=12hr, 1=24hr)
+    'compactView': 5,           # bit position 5 (future)
     # etc.
 }
 
-# Default preferences (dark_mode=False, colorize_dep_names=True, auto_sort_cues=True, show_clock_times=False)
-DEFAULT_PREFERENCES_BITMAP = 6  # 0b0110 = dark_mode(0) + colorize_dep_names(1) + auto_sort_cues(1) + show_clock_times(0)
+# Default preferences (dark_mode=False, colorize_dep_names=True, auto_sort_cues=True, show_clock_times=False, use_military_time=False)
+DEFAULT_PREFERENCES_BITMAP = 6  # 0b00110 = dark_mode(0) + colorize_dep_names(1) + auto_sort_cues(1) + show_clock_times(0) + use_military_time(0)
 
 
 def set_bit(bitmap: int, bit_position: int, value: bool) -> int:

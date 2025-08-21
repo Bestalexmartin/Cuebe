@@ -4,6 +4,11 @@
  * Utility functions for working with script elements in shared views
  */
 
+import { formatTimeOffset as formatTimeOffsetUtil } from './timeUtils';
+
+// Re-export formatTimeOffset from timeUtils for backwards compatibility
+export const formatTimeOffset = formatTimeOffsetUtil;
+
 // Utility icons available for export if needed
 // import { FiClock, FiPlayCircle, FiSquare, FiTarget, FiArrowRight, FiPause } from 'react-icons/fi';
 
@@ -30,39 +35,6 @@ export const getPriorityColor = (priority: string | null): string => {
 };
 
 
-/**
- * Format a time offset in milliseconds to a readable string
- */
-export const formatTimeOffset = (timeOffsetMs: number | null): string | null => {
-    if (timeOffsetMs === null || timeOffsetMs === undefined) {
-        return null;
-    }
-
-    // Handle negative values (cues before start time)
-    const isNegative = timeOffsetMs < 0;
-    const absoluteMs = Math.abs(timeOffsetMs);
-
-    // Convert to total seconds
-    const totalSeconds = Math.floor(absoluteMs / 1000);
-    
-    // Calculate hours, minutes, seconds
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    // Format based on duration
-    let formatted = '';
-    
-    if (hours > 0) {
-        formatted = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    } else if (minutes > 0) {
-        formatted = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    } else {
-        formatted = `0:${seconds.toString().padStart(2, '0')}`;
-    }
-
-    return isNegative ? `-${formatted}` : formatted;
-};
 
 /**
  * Get the color scheme for an element type

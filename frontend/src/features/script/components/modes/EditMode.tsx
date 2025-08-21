@@ -30,6 +30,7 @@ interface EditModeProps {
     colorizeDepNames?: boolean;
     showClockTimes?: boolean;
     autoSortCues?: boolean;
+    useMilitaryTime?: boolean;
     onAutoSortChange?: (value: boolean) => void;
     onScrollStateChange?: (state: {
         isAtTop: boolean;
@@ -56,6 +57,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     colorizeDepNames = false,
     showClockTimes = false,
     autoSortCues = false,
+    useMilitaryTime = false,
     onAutoSortChange,
     onScrollStateChange,
     onSelectionChange,
@@ -700,6 +702,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                                                 allElements={allElementsForGroupCalculations}
                                                 colorizeDepNames={colorizeDepNames}
                                                 showClockTimes={shouldShowClockTimes}
+                                                useMilitaryTime={useMilitaryTime}
                                                 scriptStartTime={script?.start_time instanceof Date ? script.start_time.toISOString() : script?.start_time}
                                                 scriptEndTime={script?.end_time instanceof Date ? script.end_time.toISOString() : script?.end_time}
                                                 isDragEnabled={true}
@@ -751,6 +754,7 @@ const areEqual = (prevProps: EditModeProps, nextProps: EditModeProps) => {
         prevProps.colorizeDepNames === nextProps.colorizeDepNames &&
         prevProps.showClockTimes === nextProps.showClockTimes &&
         prevProps.autoSortCues === nextProps.autoSortCues &&
+        prevProps.useMilitaryTime === nextProps.useMilitaryTime &&
         prevProps.elements === nextProps.elements &&
         prevProps.script === nextProps.script
         // Deliberately ignoring onAutoSortChange, onScrollStateChange, onToggleGroupCollapse, and onApplyLocalChange

@@ -40,6 +40,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
   const { getToken } = useAuth();
   const [selectedAssignments, setSelectedAssignments] = useState<Set<string>>(new Set());
   const [shareTokens, setShareTokens] = useState<Map<string, string>>(new Map()); // user_id -> share_token
+  const [recentlyRefreshedTokens, setRecentlyRefreshedTokens] = useState<Set<string>>(new Set()); // user_ids that were recently refreshed
 
   // Modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -100,14 +101,24 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
           })
         );
         
-        setShareTokens(tokenMap);
+        // Merge with existing tokens, but respect recently refreshed ones
+        setShareTokens(prev => {
+          const mergedMap = new Map(prev);
+          tokenMap.forEach((token, userId) => {
+            // Only update if this token wasn't recently manually refreshed
+            if (!recentlyRefreshedTokens.has(userId)) {
+              mergedMap.set(userId, token);
+            }
+          });
+          return mergedMap;
+        });
       } catch (error) {
         console.error('💥 Error in fetchShareTokens:', error);
       }
     };
     
     fetchShareTokens();
-  }, [assignments, crews, showId, getToken]);
+  }, [assignments, crews, showId, getToken, recentlyRefreshedTokens]);
 
 
   // Handle crew assignment from modal - call API immediately
@@ -311,7 +322,10 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
           }
 
           // Refresh the show-level share (generates new token)
-          const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share?force_refresh=true`, {
+          const refreshUrl = `/api/shows/${showId}/crew/${crewMember.user_id}/share?force_refresh=true`;
+          console.log('🔄 Making refresh request to:', refreshUrl);
+          
+          const response = await fetch(refreshUrl, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -324,9 +338,26 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
           }
 
           const shareData = await response.json();
+          console.log('✅ Received share data from server:', shareData);
+          
+          // Mark this user as recently refreshed to prevent the useEffect from overriding
+          setRecentlyRefreshedTokens(prev => new Set(prev).add(crewMember.user_id));
           
           // Update the local share token
-          setShareTokens(prev => new Map(prev).set(crewMember.user_id, shareData.share_token));
+          setShareTokens(prev => {
+            const newMap = new Map(prev);
+            newMap.set(crewMember.user_id, shareData.share_token);
+            return newMap;
+          });
+          
+          // Clear the "recently refreshed" flag after 5 seconds to allow future useEffect updates
+          setTimeout(() => {
+            setRecentlyRefreshedTokens(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(crewMember.user_id);
+              return newSet;
+            });
+          }, 5000);
           
           showSuccess(
             "Link Refreshed", 
@@ -716,7 +747,12 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                           </Text>
                         )}
                         {crewMember && (
-                          <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }} fontFamily="monospace">
+                          <Text 
+                            fontSize="xs" 
+                            color="gray.600" 
+                            _dark={{ color: "gray.300" }} 
+                            fontFamily="monospace"
+                              >
                             {getShareUrlSuffix(shareTokens.get(crewMember.user_id))}
                           </Text>
                         )}

@@ -18,6 +18,7 @@ import { BaseCard, BaseCardAction } from "../../../components/base/BaseCard";
 import { formatDateFriendly, formatTimeLocal, formatDateTimeLocal } from "../../../utils/dateTimeUtils";
 import { AppIcon } from "../../../components/AppIcon";
 import { Show } from "../types";
+import { useUserPreferences } from "../../../hooks/useUserPreferences";
 
 interface ShowCardProps {
   show: Show;
@@ -61,6 +62,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
   hideScriptBadges = false,
   disableInternalNavigation = false,
 }) => {
+  const { preferences } = useUserPreferences();
   const navigate = useNavigate();
 
   const sortedScripts = useMemo(() => {
@@ -131,7 +133,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
       </HStack>
       <HStack justify="space-between" fontSize="sm" color="cardText" mt={1}>
         <Text>
-          Start Time: {show.show_date ? formatTimeLocal(show.show_date) : 'Not set'}
+          Start Time: {show.show_date ? formatTimeLocal(show.show_date, preferences.useMilitaryTime) : 'Not set'}
         </Text>
         <Text fontSize="xs">
           Created: {formatDateTimeLocal(show.date_created)}
@@ -139,7 +141,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
       </HStack>
       <HStack justify="space-between" fontSize="sm" color="cardText" mt={1}>
         <Text>
-          End Time: {show.show_end ? formatTimeLocal(show.show_end) : 'Not set'}
+          End Time: {show.show_end ? formatTimeLocal(show.show_end, preferences.useMilitaryTime) : 'Not set'}
         </Text>
         <Text fontSize="xs">
           Updated: {formatDateTimeLocal(show.date_updated)}
@@ -250,7 +252,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                   >
                     <Text>
                       Start Time:{" "}
-                      {script.start_time ? formatTimeLocal(script.start_time) : 'Not set'}
+                      {script.start_time ? formatTimeLocal(script.start_time, preferences.useMilitaryTime) : 'Not set'}
                     </Text>
                     <Text fontSize="xs">
                       Created:{" "}
@@ -264,7 +266,7 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                   >
                     <Text>
                       End Time:{" "}
-                      {script.end_time ? formatTimeLocal(script.end_time) : 'Not set'}
+                      {script.end_time ? formatTimeLocal(script.end_time, preferences.useMilitaryTime) : 'Not set'}
                     </Text>
                     <Text fontSize="xs">
                       Updated:{" "}
