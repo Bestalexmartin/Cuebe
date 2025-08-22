@@ -207,39 +207,13 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
     };
 
 
-    const parseTimeWithHours = (timeString: string): number => {
-        if (!timeString || timeString.trim() === '') return 0;
-        
-        const isNegative = timeString.trim().startsWith('-');
-        const cleanTimeString = timeString.replace(/^-/, '').trim();
-        
-        const parts = cleanTimeString.split(':').map(part => parseInt(part, 10) || 0);
-        let ms = 0;
-        
-        if (parts.length === 1) {
-            // Just seconds - treat as MM:SS with M=0
-            ms = parts[0] * 1000;
-        } else if (parts.length === 2) {
-            // MM:SS format - use existing utility (but clean string without negative)
-            const parsedMs = parseTimeToMs(cleanTimeString);
-            ms = parsedMs !== null ? parsedMs : 0;
-        } else if (parts.length === 3) {
-            // HH:MM:SS format
-            ms = (parts[0] * 3600 + parts[1] * 60 + parts[2]) * 1000;
-        } else {
-            // Invalid format - return 0
-            return 0;
-        }
-        
-        return isNegative ? -ms : ms;
-    };
 
     const handleTimeOffsetChange = (value: string) => {
         setTimeInputs(prev => ({ ...prev, timeOffsetInput: value }));
     };
 
     const handleTimeOffsetBlur = () => {
-        const timeOffsetMs = parseTimeWithHours(timeInputs.timeOffsetInput);
+        const timeOffsetMs = parseTimeToMs(timeInputs.timeOffsetInput) || 0;
         const formatted = formatTimeOffset(timeOffsetMs, preferences.useMilitaryTime) || '0:00';
         setTimeInputs(prev => ({ ...prev, timeOffsetInput: formatted }));
         setFormData(prev => ({ ...prev, offset_ms: timeOffsetMs }));
@@ -250,7 +224,8 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
     };
 
     const handleDurationBlur = () => {
-        const durationMs = parseTimeWithHours(timeInputs.durationInput);
+        const parsedMs = parseTimeToMs(timeInputs.durationInput) || 0;
+        const durationMs = Math.max(0, parsedMs); // Ensure duration is never negative
         const formatted = formatTimeOffset(durationMs, preferences.useMilitaryTime) || '0:00';
         setTimeInputs(prev => ({ ...prev, durationInput: formatted }));
         setFormData(prev => ({ ...prev, duration_ms: durationMs }));

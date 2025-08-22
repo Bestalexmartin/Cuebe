@@ -59,11 +59,11 @@ export const UtilitiesMenu: React.FC<UtilitiesMenuProps> = ({ onSaveNavigationSt
         </MenuItem>
         <MenuDivider />
         <MenuItem
-          onClick={() => handleNavigateToPage('/tutorial')}
+          onClick={() => handleNavigateToPage('/tutorials')}
           icon={<AppIcon name="compass" boxSize="16px" />}
-          {...getMenuItemStyle('/tutorial')}
+          {...getMenuItemStyle('/tutorials')}
         >
-          Tutorial
+          Tutorials
         </MenuItem>
         <MenuItem
           onClick={() => handleNavigateToPage('/test-tools')}

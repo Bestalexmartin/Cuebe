@@ -22,6 +22,9 @@ import {
   Tr,
   Th,
   Td,
+  Input,
+  InputGroup,
+  InputRightElement,
   useColorModeValue
 } from '@chakra-ui/react';
 import ReactMarkdown from 'react-markdown';
@@ -261,6 +264,15 @@ interface DocumentationPageProps {
   onMenuClose: () => void;
 }
 
+interface SearchResult {
+  file_path: string;
+  title: string;
+  category: string;
+  url: string;
+  snippet: string;
+  relevance_score: number;
+}
+
 export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen, onMenuClose }) => {
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -268,6 +280,9 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
   const [isLoading, setIsLoading] = useState(false);
   const [documentFiles, setDocumentFiles] = useState<DocFile[]>([]);
   const [isLoadingDocs, setIsLoadingDocs] = useState(true);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Chakra UI styled components for markdown
   const codeBlockBg = useColorModeValue('gray.100', 'gray.700');
@@ -308,6 +323,50 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
 
     loadDocumentationFiles();
   }, [getToken]);
+
+  // Search function
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const headers: Record<string, string> = {};
+      const authToken = await getToken();
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+
+      const response = await fetch(`/api/docs/search?q=${encodeURIComponent(query)}`, { headers });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setSearchResults(data.results);
+    } catch (error) {
+      console.error('Error searching documentation:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Handle search result click
+  const handleSearchResultClick = (result: SearchResult) => {
+    // Find the doc by title or path
+    const doc = documentFiles.find(d => d.title === result.title || d.path === result.file_path);
+    if (doc) {
+      setSearchQuery(''); // Clear search
+      setSearchResults([]);
+      loadDocument(doc.name);
+    } else {
+      console.log('No matching document found for search result:', result);
+      console.log('Available documents:', documentFiles.map(d => ({ name: d.name, title: d.title, path: d.path })));
+    }
+  };
 
   const markdownComponents = {
     h1: ({ children }: any) => (
@@ -411,6 +470,9 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
     setSelectedCategory(category);
     setSelectedDoc(null);
     setContent('');
+    // Clear search when navigating to category
+    setSearchQuery('');
+    setSearchResults([]);
   };
 
   // Quick Access items for documentation categories
@@ -529,8 +591,55 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
   // Default overview content with enhanced navigation
   const defaultContent = (
     <VStack spacing={4} align="stretch">
-      {/* Documentation Overview Cards */}
-      {isLoadingDocs ? (
+      {/* Show search results if searching, otherwise show documentation overview */}
+      {searchResults.length > 0 ? (
+        <VStack spacing={4} align="stretch">
+          {searchResults.map((result, index) => (
+            <Box
+              key={index}
+              p={3}
+              rounded="md"
+              shadow="sm"
+              bg="card.background"
+              borderWidth="2px"
+              borderColor="gray.600"
+              cursor="pointer"
+              _hover={{ borderColor: "orange.400" }}
+              onClick={() => handleSearchResultClick(result)}
+            >
+              <VStack align="start" spacing={1}>
+                <HStack justify="space-between" width="100%">
+                  <HStack spacing={2} align="center">
+                    <Box px={1} pt="2px">
+                      <AppIcon 
+                        name={documentFiles.find(d => d.name === result.title)?.icon || 'docs'} 
+                        boxSize="14px" 
+                      />
+                    </Box>
+                    <Text fontSize="sm" color="white" textTransform="uppercase" fontWeight="bold">
+                      {result.category}
+                    </Text>
+                    <Text fontSize="sm" color="cardText" fontWeight="bold">
+                      •
+                    </Text>
+                    <Text fontWeight="medium" fontSize="sm" color="cardText">
+                      {result.title}
+                    </Text>
+                  </HStack>
+                  <Text fontSize="xs" color="gray.400">
+                    {result.relevance_score.toFixed(1)}
+                  </Text>
+                </HStack>
+                {result.snippet && (
+                  <Text fontSize="xs" color="cardText" opacity={0.8} noOfLines={2} ml={6}>
+                    {result.snippet}
+                  </Text>
+                )}
+              </VStack>
+            </Box>
+          ))}
+        </VStack>
+      ) : isLoadingDocs ? (
         <Text>Loading documentation...</Text>
       ) : (
         groupAndSortDocuments(
@@ -562,6 +671,47 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
       }}
     />
   ) : null;
+
+  // Search UI component  
+  const searchUI = (
+    <HStack spacing={2}>
+        <Input
+        value={searchQuery}
+        onChange={(e) => {
+          setSearchQuery(e.target.value);
+          if (!e.target.value.trim()) {
+            setSearchResults([]);
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            handleSearch(searchQuery);
+          } else if (e.key === 'Escape') {
+            setSearchQuery('');
+            setSearchResults([]);
+          }
+        }}
+        size="xs"
+        width={{ base: "125px", md: "150px", lg: "200px" }}
+        borderRadius="md"
+        borderColor="gray.700"
+        _hover={{ borderColor: "container.border" }}
+      />
+      <Button
+        size="xs"
+        bg="blue.400"
+        color="white"
+        _hover={{ bg: 'orange.400' }}
+        _active={{ bg: 'orange.400' }}
+        onClick={() => handleSearch(searchQuery)}
+        isDisabled={!searchQuery.trim()}
+        isLoading={isSearching}
+      >
+        Search
+      </Button>
+    </HStack>
+  );
+
 
   // Selected document content
   const selectedContent = selectedDoc ? (
@@ -622,15 +772,21 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
     </VStack>
   ) : null;
 
+  // Dynamic page title with search results count
+  const pageTitle = searchResults.length > 0 
+    ? `Documentation • ${searchResults.length} Result${searchResults.length !== 1 ? 's' : ''}`
+    : "Documentation";
+
   return (
     <ErrorBoundary context="Documentation Page">
       <BaseUtilityPage
-        pageTitle="Documentation"
+        pageTitle={pageTitle}
         pageIcon="docs"
         defaultContent={defaultContent}
         selectedContent={selectedDoc ? selectedContent : categoryContent}
         quickAccessItems={quickAccessItems}
         activeItemId={selectedCategory ? selectedCategory.toLowerCase().replace(' ', '-') : undefined}
+        headerActions={searchUI}
         isMenuOpen={isMenuOpen}
         onMenuClose={onMenuClose}
       />

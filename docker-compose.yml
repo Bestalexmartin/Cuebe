@@ -12,6 +12,7 @@ services:
     volumes:
       - ./backend:/app # Mounts your local ./backend folder into the container's /app folder for live-reloading
       - ./docs:/docs # Mount docs directory for markdown serving
+      - ./tutorials:/tutorials # Mount tutorials directory for markdown serving
     env_file: # <-- ADD THIS SECTION
       - ./.env
     environment:
