@@ -131,19 +131,21 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
           {venueName} • {formatDateFriendly(show.show_date)}
         </Text>
       </HStack>
-      <HStack justify="space-between" fontSize="sm" color="cardText" mt={1}>
+      <HStack justify="space-between" fontSize="sm" mt={1}>
         <Text>
-          Start Time: {show.show_date ? formatAbsoluteTimeStandard(show.show_date, preferences.useMilitaryTime) : 'Not set'}
+          <Text as="span" color="gray.700" _dark={{ color: "gray.200" }}>Start Time:</Text>{" "}
+          <Text as="span" color="cardText">{show.show_date ? formatAbsoluteTimeStandard(show.show_date, preferences.useMilitaryTime) : 'Not set'}</Text>
         </Text>
-        <Text fontSize="xs">
+        <Text fontSize="xs" color="cardText">
           Created: {formatDateTimeLocal(show.date_created)}
         </Text>
       </HStack>
-      <HStack justify="space-between" fontSize="sm" color="cardText" mt={1}>
+      <HStack justify="space-between" fontSize="sm" mt={1}>
         <Text>
-          End Time: {show.show_end ? formatAbsoluteTimeStandard(show.show_end, preferences.useMilitaryTime) : 'Not set'}
+          <Text as="span" color="gray.700" _dark={{ color: "gray.200" }}>End Time:</Text>{" "}
+          <Text as="span" color="cardText">{show.show_end ? formatAbsoluteTimeStandard(show.show_end, preferences.useMilitaryTime) : 'Not set'}</Text>
         </Text>
-        <Text fontSize="xs">
+        <Text fontSize="xs" color="cardText">
           Updated: {formatDateTimeLocal(show.date_updated)}
         </Text>
       </HStack>
@@ -248,13 +250,12 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                   <HStack
                     justify="space-between"
                     fontSize="sm"
-                    color="cardText"
                   >
                     <Text>
-                      Start Time:{" "}
-                      {script.start_time ? formatAbsoluteTimeStandard(script.start_time, preferences.useMilitaryTime) : 'Not set'}
+                      <Text as="span" color="gray.700" _dark={{ color: "gray.200" }}>Start Time:</Text>{" "}
+                      <Text as="span" color="cardText">{script.start_time ? formatAbsoluteTimeStandard(script.start_time, preferences.useMilitaryTime) : 'Not set'}</Text>
                     </Text>
-                    <Text fontSize="xs">
+                    <Text fontSize="xs" color="cardText">
                       Created:{" "}
                       {formatDateTimeLocal(script.date_created)}
                     </Text>
@@ -262,13 +263,12 @@ const ShowCardComponent: React.FC<ShowCardProps> = ({
                   <HStack
                     justify="space-between"
                     fontSize="sm"
-                    color="cardText"
                   >
                     <Text>
-                      End Time:{" "}
-                      {script.end_time ? formatAbsoluteTimeStandard(script.end_time, preferences.useMilitaryTime) : 'Not set'}
+                      <Text as="span" color="gray.700" _dark={{ color: "gray.200" }}>End Time:</Text>{" "}
+                      <Text as="span" color="cardText">{script.end_time ? formatAbsoluteTimeStandard(script.end_time, preferences.useMilitaryTime) : 'Not set'}</Text>
                     </Text>
-                    <Text fontSize="xs">
+                    <Text fontSize="xs" color="cardText">
                       Updated:{" "}
                       {formatDateTimeLocal(script.date_updated)}
                     </Text>

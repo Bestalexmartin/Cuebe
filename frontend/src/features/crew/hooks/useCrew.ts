@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@clerk/clerk-react";
 
+
 // TypeScript interfaces
 interface UserDepartmentAssignment {
   assignment_id: string;
@@ -42,18 +43,21 @@ interface UseCrewReturn {
   crew: Crew | null;
   isLoading: boolean;
   error: string | null;
+  fetchCrew: () => Promise<void>;
+  refetchCrew: () => Promise<void>;
 }
 
-export const useCrew = (crewId: string | undefined): UseCrewReturn => {
+export const useCrew = (crewId: string | undefined, autoFetch: boolean = true): UseCrewReturn => {
   const { getToken } = useAuth();
   const [crew, setCrew] = useState<Crew | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(autoFetch);
   const [error, setError] = useState<string | null>(null);
 
   const fetchCrew = useCallback(async () => {
     if (!crewId) return;
 
     setIsLoading(true);
+    setError(null);
     try {
       const token = await getToken();
       if (!token) {
@@ -80,8 +84,14 @@ export const useCrew = (crewId: string | undefined): UseCrewReturn => {
   }, [crewId, getToken]);
 
   useEffect(() => {
-    fetchCrew();
+    if (autoFetch) {
+      fetchCrew();
+    }
+  }, [fetchCrew, autoFetch]);
+
+  const refetchCrew = useCallback(async () => {
+    await fetchCrew();
   }, [fetchCrew]);
 
-  return useMemo(() => ({ crew, isLoading, error }), [crew, isLoading, error]);
+  return useMemo(() => ({ crew, isLoading, error, fetchCrew, refetchCrew }), [crew, isLoading, error, fetchCrew, refetchCrew]);
 };

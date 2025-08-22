@@ -127,7 +127,7 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
             {department.department_color && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Department Color</Text>
-                    <HStack spacing="3" align="center">
+                    <HStack spacing="3" align="center" pl="20px">
                         <Box
                             w="40px"
                             h="40px"

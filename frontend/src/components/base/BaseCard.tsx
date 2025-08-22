@@ -1,6 +1,6 @@
 // frontend/src/components/base/BaseCard.tsx
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Box,
   Flex,
@@ -45,6 +45,7 @@ export interface BaseCardProps extends Omit<BoxProps, 'onClick'> {
   
   // Expandable content (shown when selected)
   expandedContent?: React.ReactNode;
+  onExpand?: () => void;
   
   // Styling overrides
   borderColorOverride?: string;
@@ -63,6 +64,7 @@ const BaseCardComponent: React.FC<BaseCardProps> = ({
   headerActions,
   quickInfo,
   expandedContent,
+  onExpand,
   borderColorOverride,
   children,
   ...boxProps
@@ -71,6 +73,15 @@ const BaseCardComponent: React.FC<BaseCardProps> = ({
     if (borderColorOverride) return borderColorOverride;
     return isHovered ? 'orange.400' : isSelected ? 'blue.400' : 'gray.600';
   };
+
+  // Track when card expands (isSelected changes from false to true)
+  const prevIsSelected = useRef(isSelected);
+  useEffect(() => {
+    if (isSelected && !prevIsSelected.current && onExpand) {
+      onExpand();
+    }
+    prevIsSelected.current = isSelected;
+  }, [isSelected, onExpand]);
 
   const handleCardClick = () => {
     onCardClick();

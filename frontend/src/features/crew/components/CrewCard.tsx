@@ -1,18 +1,20 @@
 // frontend/src/features/crew/components/CrewCard.tsx
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
     HStack,
     VStack,
     Text,
     Badge,
     Box,
-    Avatar
+    Avatar,
+    Spinner
 } from "@chakra-ui/react";
 import { useUser } from '@clerk/clerk-react';
 import { BaseCard, BaseCardAction } from '../../../components/base/BaseCard';
 import { formatDateTimeLocal } from '../../../utils/timeUtils';
 import { formatRole } from '../../../constants/userRoles';
+import { useCrew } from '../hooks/useCrew';
 
 // TypeScript interfaces
 interface CrewMember {
@@ -54,6 +56,60 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
     isLoading = false,
 }) => {
     const { user: clerkUser } = useUser();
+    const { crew: crewWithAssignments, isLoading: assignmentsLoading, fetchCrew, refetchCrew } = useCrew(crewMember.user_id, false);
+
+    // Calculate assignment info
+    const assignments = crewWithAssignments?.department_assignments || [];
+    const currentAssignmentsCount = assignments.length;
+    
+    // Find relevant show assignments
+    const showAssignments = React.useMemo(() => {
+        if (assignments.length === 0) return { upcoming: null, recent: null };
+
+        const now = new Date();
+        
+        // Find upcoming shows
+        const upcomingShows = assignments
+            .filter(assignment => {
+                if (!assignment.show_date) return false;
+                const showDate = new Date(assignment.show_date);
+                return showDate > now;
+            })
+            .sort((a, b) => {
+                const dateA = new Date(a.show_date!);
+                const dateB = new Date(b.show_date!);
+                return dateA.getTime() - dateB.getTime();
+            });
+
+        // Find past shows
+        const pastShows = assignments
+            .filter(assignment => {
+                if (!assignment.show_date) return false;
+                const showDate = new Date(assignment.show_date);
+                return showDate <= now;
+            })
+            .sort((a, b) => {
+                const dateA = new Date(a.show_date!);
+                const dateB = new Date(b.show_date!);
+                return dateB.getTime() - dateA.getTime(); // Most recent first
+            });
+
+        const upcoming = upcomingShows.length > 0 ? {
+            show_name: upcomingShows[0].show_name,
+            department_name: upcomingShows[0].department_name,
+            role: upcomingShows[0].role || 'Crew',
+            show_date: upcomingShows[0].show_date!
+        } : null;
+
+        const recent = pastShows.length > 0 ? {
+            show_name: pastShows[0].show_name,
+            department_name: pastShows[0].department_name,
+            role: pastShows[0].role || 'Crew',
+            show_date: pastShows[0].show_date!
+        } : null;
+
+        return { upcoming, recent };
+    }, [assignments]);
 
     const handleEditClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -200,14 +256,93 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
         </VStack>
     );
 
-    const expandedContent = getNotesToShow() ? (
-        <Box>
-            <Text fontWeight="semibold" mb={2}>Notes</Text>
-            <Text fontSize="sm" color="cardText">
-                {getNotesToShow()}
-            </Text>
-        </Box>
-    ) : undefined;
+    const expandedContent = (
+        <VStack align="stretch" spacing={4}>
+            {/* Assignment Information */}
+            <Box>
+                <Text fontWeight="semibold" mb={2}>Show Assignments</Text>
+                {assignmentsLoading ? (
+                    <HStack spacing={2}>
+                        <Spinner size="sm" />
+                        <Text fontSize="sm" color="cardText">Loading assignments...</Text>
+                    </HStack>
+                ) : (
+                    <VStack align="stretch" spacing={2} pl="20px">
+                        <Text fontSize="sm" color="gray.700" _dark={{ color: "gray.200" }}>
+                            Current Assignments: <Text as="span" fontWeight="medium" color="cardText">{currentAssignmentsCount}</Text>
+                        </Text>
+                        {(showAssignments.upcoming || showAssignments.recent) ? (
+                            <VStack align="stretch" spacing={1}>
+                                {showAssignments.upcoming && (
+                                    <HStack spacing={2} align="center" wrap="wrap">
+                                        <Text fontSize="sm" color="gray.700" _dark={{ color: "gray.200" }}>
+                                            Upcoming Show: <Text as="span" fontWeight="medium" color="cardText">{showAssignments.upcoming.show_name}</Text> • <Text as="span" color="cardText">{formatDateTimeLocal(showAssignments.upcoming.show_date)}</Text>
+                                        </Text>
+                                        <Badge variant="outline" colorScheme="blue" size="sm">
+                                            {showAssignments.upcoming.department_name.replace(/_/g, ' ')}
+                                        </Badge>
+                                        <Badge variant="outline" colorScheme="green" size="sm">
+                                            {showAssignments.upcoming.role.replace(/_/g, ' ')}
+                                        </Badge>
+                                    </HStack>
+                                )}
+                                {showAssignments.recent && (
+                                    <HStack spacing={2} align="center" wrap="wrap">
+                                        <Text fontSize="sm" color="gray.700" _dark={{ color: "gray.200" }}>
+                                            Recent Show: <Text as="span" fontWeight="medium" color="cardText">{showAssignments.recent.show_name}</Text> • <Text as="span" color="cardText">{formatDateTimeLocal(showAssignments.recent.show_date)}</Text>
+                                        </Text>
+                                        <Badge variant="outline" colorScheme="blue" size="sm">
+                                            {showAssignments.recent.department_name.replace(/_/g, ' ')}
+                                        </Badge>
+                                        <Badge variant="outline" colorScheme="green" size="sm">
+                                            {showAssignments.recent.role.replace(/_/g, ' ')}
+                                        </Badge>
+                                    </HStack>
+                                )}
+                            </VStack>
+                        ) : currentAssignmentsCount > 0 ? (
+                            <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
+                                No show dates available
+                            </Text>
+                        ) : (
+                            <Text fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
+                                No current assignments
+                            </Text>
+                        )}
+                    </VStack>
+                )}
+            </Box>
+            
+            {/* Notes Section */}
+            {getNotesToShow() && (
+                <Box>
+                    <Text fontWeight="semibold" mb={2}>Notes</Text>
+                    <Text fontSize="sm" color="cardText" pl="20px">
+                        {getNotesToShow()}
+                    </Text>
+                </Box>
+            )}
+        </VStack>
+    );
+
+    // Handle the edge case where card is already selected when component mounts
+    useEffect(() => {
+        if (isSelected && !crewWithAssignments && !assignmentsLoading) {
+            fetchCrew();
+        }
+    }, []); // Only run on mount
+
+    const handleCardExpand = () => {
+        if (!assignmentsLoading) {
+            if (!crewWithAssignments) {
+                // First time opening - fetch data
+                fetchCrew();
+            } else {
+                // Card already has data - refresh it to ensure it's current
+                refetchCrew();
+            }
+        }
+    };
 
     return (
         <BaseCard
@@ -221,6 +356,7 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
             headerActions={headerActions}
             quickInfo={quickInfo}
             expandedContent={expandedContent}
+            onExpand={handleCardExpand}
             isLoading={isLoading}
             skeletonVariant="crew"
         />

@@ -450,6 +450,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         if (activeMode === 'edit') {
             switch (modeId) {
                 case 'add-element':
+                    // Clear any selected elements before opening add modal
+                    editModeRef.current?.clearSelection();
+                    setCurrentSelectedElementIds([]);
                     modalState.openModal(MODAL_NAMES.ADD_ELEMENT);
                     return;
                 case 'edit-element':
