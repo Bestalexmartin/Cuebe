@@ -20,6 +20,7 @@ interface AssignmentData {
     phone_number?: string;
     profile_img_url?: string;
     role?: string;
+    share_url?: string;
     // Show info
     show_name?: string;
     show_date?: string;
@@ -40,7 +41,6 @@ interface ResponsiveAssignmentListProps {
     showDepartmentInfo?: boolean; // When true, shows department circle and info (for crew page)
     showCrewInfo?: boolean; // When true, shows crew avatar and info (for department page)
     formatRoleBadge: (role: string) => string;
-    getShareUrlSuffix: () => string;
     formatDateTime?: (date: string) => string;
 }
 
@@ -51,12 +51,22 @@ export const ResponsiveAssignmentList: React.FC<ResponsiveAssignmentListProps> =
     showDepartmentInfo = false,
     showCrewInfo = false,
     formatRoleBadge,
-    getShareUrlSuffix,
     formatDateTime
 }) => {
     if (!assignments || assignments.length === 0) {
         return null;
     }
+
+    // Helper function to extract last 12 characters from share URL for LinkID display
+    const getLinkId = (shareUrl?: string): string => {
+        if (!shareUrl) {
+            return 'LinkID: Loading...';
+        }
+        // Extract last 12 characters from URL path (after /share/)
+        const urlParts = shareUrl.split('/');
+        const token = urlParts[urlParts.length - 1];
+        return `LinkID: ${token.slice(-12)}`;
+    };
 
     return (
         <Box>
@@ -122,7 +132,7 @@ export const ResponsiveAssignmentList: React.FC<ResponsiveAssignmentListProps> =
 
                                     {/* Crew Info (for department assignments) */}
                                     {showCrewInfo && (
-                                        <Box flex={1} display="flex" alignItems="center" gap={2}>
+                                        <Box flex="1.2" minWidth="150px" display="flex" alignItems="center" gap={2}>
                                             <Avatar
                                                 size="sm"
                                                 name={crewName}
@@ -146,7 +156,8 @@ export const ResponsiveAssignmentList: React.FC<ResponsiveAssignmentListProps> =
                                         <Text 
                                             fontSize="sm" 
                                             fontWeight="medium" 
-                                            flex={1}
+                                            flex="0.7"
+                                            minWidth="100px"
                                             isTruncated
                                         >
                                             {assignment.department_name || 'Unknown Dept'}
@@ -160,7 +171,8 @@ export const ResponsiveAssignmentList: React.FC<ResponsiveAssignmentListProps> =
                                             color="gray.700" 
                                             _dark={{ color: "gray.300" }} 
                                             display={{ base: "none", md: "block" }}
-                                            flex={1}
+                                            flex="1.3"
+                                            minWidth="160px"
                                             isTruncated
                                         >
                                             {assignment.email_address || ''}
@@ -174,7 +186,8 @@ export const ResponsiveAssignmentList: React.FC<ResponsiveAssignmentListProps> =
                                             color="gray.700" 
                                             _dark={{ color: "gray.300" }} 
                                             display={{ base: "none", md: "block" }}
-                                            flex={1}
+                                            flex="1.0"
+                                            minWidth="115px"
                                             isTruncated
                                         >
                                             {assignment.phone_number || 'No phone'}
@@ -185,7 +198,8 @@ export const ResponsiveAssignmentList: React.FC<ResponsiveAssignmentListProps> =
                                     <Text 
                                         fontSize="sm" 
                                         display={{ base: "none", xl: "block" }}
-                                        flex={1}
+                                        flex="1.5"
+                                        minWidth="130px"
                                         isTruncated
                                     >
                                         <Text as="span" fontWeight="medium">Show:</Text>
@@ -201,7 +215,8 @@ export const ResponsiveAssignmentList: React.FC<ResponsiveAssignmentListProps> =
                                             color="gray.700" 
                                             _dark={{ color: "gray.300" }} 
                                             display={{ base: "none", md: "block" }}
-                                            flex={1}
+                                            flex="1.3"
+                                            minWidth="160px"
                                             isTruncated
                                         >
                                             {assignment.venue_name ? (
@@ -217,7 +232,8 @@ export const ResponsiveAssignmentList: React.FC<ResponsiveAssignmentListProps> =
                                             color="gray.700" 
                                             _dark={{ color: "gray.300" }} 
                                             display={{ base: "none", xl: "block" }}
-                                            flex={1}
+                                            flex="1.2"
+                                            minWidth="120px"
                                             isTruncated
                                         >
                                             {formatDateTime(assignment.show_date || '')}
@@ -230,17 +246,19 @@ export const ResponsiveAssignmentList: React.FC<ResponsiveAssignmentListProps> =
                                         color="gray.700" 
                                         _dark={{ color: "gray.300" }} 
                                         display={{ base: "none", lg: "block" }}
-                                        flex={1}
+                                        flex="1.3"
+                                        minWidth="80px"
                                         isTruncated
                                         fontFamily="monospace"
                                     >
-                                        {getShareUrlSuffix()}
+                                        {getLinkId(assignment.share_url)}
                                     </Text>
 
                                     {/* Role Badge */}
                                     <Box 
-                                        minWidth={{ base: "80px", md: "100px", lg: "120px" }} 
-                                        maxWidth={{ base: "120px", md: "140px", lg: "160px" }}
+                                        flex="1"
+                                        minWidth="120px"
+                                        maxWidth="140px"
                                         display="flex" 
                                         justifyContent="flex-end"
                                         flexShrink={0}
@@ -349,7 +367,7 @@ export const ResponsiveAssignmentList: React.FC<ResponsiveAssignmentListProps> =
                                                 </>
                                             )}
                                             <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }} fontFamily="monospace">
-                                                {getShareUrlSuffix()}
+                                                {getLinkId(assignment.share_url)}
                                             </Text>
                                         </VStack>
                                     </HStack>

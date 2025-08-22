@@ -547,14 +547,15 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                     <Text 
                       fontSize="sm" 
                       fontWeight="medium" 
-                      flex={1}
+                      flex="0.8"
+                      minWidth="110px"
                       isTruncated
                     >
                       {department?.department_name || 'Unknown Dept'}
                     </Text>
 
                     {/* Crew Profile Icon + Name - clickable for bio */}
-                    <Box flex={1} display="flex" alignItems="center" gap={2}>
+                    <Box flex="1.2" minWidth="150px" display="flex" alignItems="center" gap={2}>
                       <Avatar
                         size="sm"
                         name={crewName}
@@ -597,7 +598,8 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                       color="gray.700" 
                       _dark={{ color: "gray.300" }} 
                       display={{ base: "none", md: "block" }}
-                      flex={1}
+                      flex="1.5"
+                      minWidth="170px"
                       isTruncated
                     >
                       {crewMember?.email_address || ''}
@@ -609,7 +611,8 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                       color="gray.700" 
                       _dark={{ color: "gray.300" }} 
                       display={{ base: "none", lg: "block" }}
-                      flex={1}
+                      flex="0.8"
+                      minWidth="90px"
                       isTruncated
                     >
                       {crewMember?.phone_number || ''}
@@ -622,7 +625,8 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                         color="gray.700" 
                         _dark={{ color: "gray.300" }} 
                         display={{ base: "none", lg: "block" }}
-                        flex={1}
+                        flex="1.5"
+                        minWidth="120px"
                         isTruncated
                         fontFamily="monospace"
                       >
@@ -630,10 +634,11 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                       </Text>
                     )}
 
-                    {/* Role Badge - Aligned to right edge */}
+                    {/* Role Badge - Fixed width to prevent shifting */}
                     <Box 
-                      minWidth={{ base: "80px", md: "100px", lg: "120px" }} 
-                      maxWidth={{ base: "120px", md: "140px", lg: "160px" }}
+                      flex="1"
+                      minWidth="120px"
+                      maxWidth="140px"
                       display="flex" 
                       justifyContent="flex-end"
                       flexShrink={0}

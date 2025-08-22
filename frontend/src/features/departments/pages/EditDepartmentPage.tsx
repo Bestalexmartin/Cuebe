@@ -8,7 +8,7 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useDepartment } from "../hooks/useDepartment";
-import { formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
+import { formatRoleBadge } from '../../../constants/userRoles';
 import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm';
 import { BaseEditPage } from '../../../components/base/BaseEditPage';
 import { ActionItem } from '../../../components/ActionsMenu';
@@ -371,7 +371,6 @@ export const EditDepartmentPage: React.FC = () => {
                                 onAssignmentClick={handleCrewBioClick}
                                 showCrewInfo={true}
                                 formatRoleBadge={formatRoleBadge}
-                                getShareUrlSuffix={getShareUrlSuffix}
                             />
                         )}
                     </VStack>

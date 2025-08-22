@@ -16,7 +16,7 @@ import { FinalDeleteConfirmationModal } from '../../../components/modals/FinalDe
 import { useEnhancedToast } from '../../../utils/toastUtils';
 import { useChangeDetection } from '../../../hooks/useChangeDetection';
 import { ErrorBoundary } from '../../../components/ErrorBoundary';
-import { USER_ROLE_OPTIONS, formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
+import { USER_ROLE_OPTIONS, formatRoleBadge } from '../../../constants/userRoles';
 import { CrewBioModal } from '../../shows/components/modals/CrewBioModal';
 import { formatShowDateTime } from '../../../utils/timeUtils';
 import { FloatingValidationErrorPanel } from '../../../components/base/FloatingValidationErrorPanel';
@@ -442,7 +442,6 @@ export const EditCrewPage: React.FC = () => {
                                 onAssignmentClick={handleCrewBioClick}
                                 showDepartmentInfo={true}
                                 formatRoleBadge={formatRoleBadge}
-                                getShareUrlSuffix={getShareUrlSuffix}
                                 formatDateTime={formatShowDateTime}
                             />
                         )}
