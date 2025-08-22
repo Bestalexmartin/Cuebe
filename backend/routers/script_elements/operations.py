@@ -10,6 +10,7 @@ import logging
 import models
 import schemas
 from .helpers import _auto_populate_show_start_duration
+from utils.datetime_utils import parse_iso_datetime
 
 logger = logging.getLogger(__name__)
 
@@ -275,8 +276,7 @@ def _process_update_element_operation(db: Session, element_id: str, operation_da
     
     # Apply each field change
     for field, change_data in changes.items():
-        # Handle both camelCase (from frontend) and snake_case (internal)
-        new_value = change_data.get("newValue") or change_data.get("new_value")
+        new_value = change_data.get("new_value")
         
         if hasattr(element, field):
             # Handle special cases for enum fields
@@ -685,8 +685,7 @@ def _process_update_script_info_operation(db: Session, script_id: UUID, operatio
     
     # Apply each field change
     for field, change_data in changes.items():
-        # Handle both camelCase (from frontend) and snake_case (internal)
-        new_value = change_data.get("newValue") or change_data.get("new_value")
+        new_value = change_data.get("new_value")
         
         if field == "script_name":
             script.script_name = new_value
@@ -695,18 +694,12 @@ def _process_update_script_info_operation(db: Session, script_id: UUID, operatio
             script.script_status = new_value
             updated_fields.append("script_status")
         elif field == "start_time":
-            # Convert from string to datetime if needed
-            if isinstance(new_value, str):
-                script.start_time = datetime.fromisoformat(new_value.replace('Z', '+00:00'))
-            else:
-                script.start_time = new_value
+            # Convert from string to datetime using central utility
+            script.start_time = parse_iso_datetime(new_value)
             updated_fields.append("start_time")
         elif field == "end_time":
-            # Convert from string to datetime if needed
-            if isinstance(new_value, str):
-                script.end_time = datetime.fromisoformat(new_value.replace('Z', '+00:00'))
-            else:
-                script.end_time = new_value
+            # Convert from string to datetime using central utility
+            script.end_time = parse_iso_datetime(new_value)
             updated_fields.append("end_time")
         elif field == "script_notes":
             script.script_notes = new_value

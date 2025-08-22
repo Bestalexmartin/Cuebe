@@ -1,12 +1,12 @@
 // frontend/src/features/script/hooks/useScriptFormSync.ts
 
 import { useMemo, useEffect, useCallback } from 'react';
-import { convertUTCToLocal, convertLocalToUTC } from '../../../utils/dateTimeUtils';
+import { convertUTCToLocal, convertLocalToUTC } from '../../../utils/timeUtils';
 import { useChangeDetection } from '../../../hooks/useChangeDetection';
 import { ScriptMode } from './useScriptModes';
 
 interface UseScriptFormSyncParams {
-    script: any;
+    sourceScript: any;
     pendingOperations: any[];
     form: any;
     activeMode: ScriptMode;
@@ -15,7 +15,7 @@ interface UseScriptFormSyncParams {
 }
 
 export const useScriptFormSync = ({
-    script,
+    sourceScript,
     pendingOperations,
     form,
     activeMode,
@@ -25,55 +25,56 @@ export const useScriptFormSync = ({
 
     // Calculate current script including all edit queue changes
     const currentScript = useMemo(() => {
-        if (!script) return null;
+        if (!sourceScript) return null;
         
-        let current = { ...script };
+        let current = { ...sourceScript };
         
         for (const operation of pendingOperations) {
             if (operation.type === 'UPDATE_SCRIPT_INFO') {
                 const changes = (operation as any).changes;
                 for (const [field, change] of Object.entries(changes)) {
-                    const changeData = change as { oldValue: any; newValue: any };
+                    const changeData = change as { old_value: any; new_value: any };
                     if (field === 'script_name') {
-                        current.script_name = changeData.newValue;
+                        current.script_name = changeData.new_value;
                     } else if (field === 'script_status') {
-                        current.script_status = changeData.newValue;
+                        current.script_status = changeData.new_value;
                     } else if (field === 'start_time') {
-                        current.start_time = typeof changeData.newValue === 'string' 
-                            ? new Date(changeData.newValue) 
-                            : changeData.newValue;
+                        // Keep start_time as ISO string - don't convert to Date object
+                        current.start_time = changeData.new_value;
                     } else if (field === 'end_time') {
-                        current.end_time = typeof changeData.newValue === 'string' 
-                            ? new Date(changeData.newValue) 
-                            : changeData.newValue;
+                        // Keep end_time as ISO string - don't convert to Date object
+                        current.end_time = changeData.new_value;
                     } else if (field === 'script_notes') {
-                        current.script_notes = changeData.newValue;
+                        current.script_notes = changeData.new_value;
                     }
                 }
             }
         }
         
         return current;
-    }, [script, pendingOperations]);
+    }, [sourceScript, pendingOperations]);
 
     // Data for change detection
     const changeDetectionBaseData = currentScript ? {
         script_name: currentScript.script_name,
         script_status: currentScript.script_status,
-        start_time: convertLocalToUTC(convertUTCToLocal(currentScript.start_time)),
-        end_time: convertLocalToUTC(convertUTCToLocal(currentScript.end_time)),
+        start_time: currentScript.start_time ? convertLocalToUTC(convertUTCToLocal(currentScript.start_time)) : null,
+        end_time: currentScript.end_time ? convertLocalToUTC(convertUTCToLocal(currentScript.end_time)) : null,
         script_notes: currentScript.script_notes || ''
     } : null;
 
+    const currentFormData = {
+        script_name: form.formData.script_name,
+        script_status: form.formData.script_status,
+        start_time: convertLocalToUTC(form.formData.start_time),
+        end_time: convertLocalToUTC(form.formData.end_time),
+        script_notes: form.formData.script_notes
+    };
+    
+
     const { hasChanges, updateOriginalData } = useChangeDetection(
         changeDetectionBaseData,
-        {
-            script_name: form.formData.script_name,
-            script_status: form.formData.script_status,
-            start_time: convertLocalToUTC(form.formData.start_time),
-            end_time: convertLocalToUTC(form.formData.end_time),
-            script_notes: form.formData.script_notes
-        },
+        currentFormData,
         activeMode === 'info'
     );
 
@@ -83,10 +84,11 @@ export const useScriptFormSync = ({
             const formData = {
                 script_name: currentScript.script_name || '',
                 script_status: currentScript.script_status || 'DRAFT',
-                start_time: convertUTCToLocal(currentScript.start_time),
-                end_time: convertUTCToLocal(currentScript.end_time),
+                start_time: currentScript.start_time ? convertUTCToLocal(currentScript.start_time) : '',
+                end_time: currentScript.end_time ? convertUTCToLocal(currentScript.end_time) : '',
                 script_notes: currentScript.script_notes || ''
             };
+            
             form.setFormData(formData);
         }
     }, [currentScript, form.setFormData]);

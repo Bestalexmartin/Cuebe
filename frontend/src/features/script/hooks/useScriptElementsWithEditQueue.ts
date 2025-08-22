@@ -48,6 +48,7 @@ interface UseScriptElementsOptions {
     departmentId?: string;
     skip?: number;
     limit?: number;
+    onAfterSave?: () => Promise<void>;
 }
 
 export const useScriptElementsWithEditQueue = (
@@ -239,6 +240,11 @@ export const useScriptElementsWithEditQueue = (
             // Clear the edit queue and fetch fresh data
             editQueueRef.current.clearQueue();
             await fetchElements();
+            
+            // Refetch script data if callback provided
+            if (options.onAfterSave) {
+                await options.onAfterSave();
+            }
             
             // Clear saving flag to allow normal rendering
             setIsSaving(false);
@@ -731,10 +737,9 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
             
             // Handle group parent time offset changes specially
             if (isUpdatingGroupParent && timeOffsetChange) {
-                const oldTime = timeOffsetChange.oldValue;
-                const newTime = timeOffsetChange.newValue;
+                const oldTime = timeOffsetChange.old_value;
+                const newTime = timeOffsetChange.new_value;
                 const timeDelta = newTime - oldTime;
-                
                 
                 // Apply the same delta to all children
                 return elements.map(el => {
@@ -742,7 +747,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                         // Update the group parent
                         const updatedElement = { ...el };
                         Object.entries(updateElementOp.changes).forEach(([field, change]: [string, any]) => {
-                            (updatedElement as any)[field] = change.newValue || change.new_value;
+                            (updatedElement as any)[field] = change.new_value;
                         });
                         return updatedElement;
                     } else if (el.parent_element_id === operation.element_id) {
@@ -762,7 +767,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                     const updatedElement = { ...el };
                     // Apply all field changes from the operation
                     Object.entries(updateElementOp.changes).forEach(([field, change]: [string, any]) => {
-                        (updatedElement as any)[field] = change.newValue || change.new_value;
+                        (updatedElement as any)[field] = change.new_value;
                     });
                     return updatedElement;
                 }

@@ -10,7 +10,7 @@ import {
   useColorModeValue
 } from '@chakra-ui/react';
 import { AppIcon } from '../AppIcon';
-import { formatTimeLocal, formatDateTimeLocal } from '../../utils/dateTimeUtils';
+import { formatAbsoluteTimeStandard, formatDateTimeLocal } from '../../utils/timeUtils';
 
 // TypeScript interfaces
 interface SharedScript {
@@ -162,13 +162,13 @@ export const SharedScriptCard: React.FC<SharedScriptCardProps> = ({
             <HStack spacing={2} align="center">
               <AppIcon name="time" boxSize="14px" color="blue.400" />
               <Text fontSize="sm" color={textColor}>
-                Start: {formatTimeLocal(script.start_time)}
+                Start: {formatAbsoluteTimeStandard(script.start_time)}
               </Text>
             </HStack>
             
             {script.end_time && (
               <Text fontSize="sm" color={textColor}>
-                End: {formatTimeLocal(script.end_time)}
+                End: {formatAbsoluteTimeStandard(script.end_time)}
               </Text>
             )}
             

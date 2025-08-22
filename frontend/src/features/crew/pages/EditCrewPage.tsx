@@ -18,7 +18,7 @@ import { useChangeDetection } from '../../../hooks/useChangeDetection';
 import { ErrorBoundary } from '../../../components/ErrorBoundary';
 import { USER_ROLE_OPTIONS, formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
 import { CrewBioModal } from '../../shows/components/modals/CrewBioModal';
-import { formatShowDateTime } from '../../../utils/dateTimeUtils';
+import { formatShowDateTime } from '../../../utils/timeUtils';
 import { FloatingValidationErrorPanel } from '../../../components/base/FloatingValidationErrorPanel';
 import { EditPageFormField } from '../../../components/base/EditPageFormField';
 import { ResponsiveAssignmentList } from '../../../components/base/ResponsiveAssignmentList';

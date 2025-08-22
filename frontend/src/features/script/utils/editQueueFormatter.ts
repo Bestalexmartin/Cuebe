@@ -2,8 +2,7 @@
 
 import { EditOperation } from '../types/editQueue';
 import { ScriptElement } from '../types/scriptElements';
-import { formatTimeOffset, formatDuration } from '../../../utils/timeUtils';
-import { formatTimeLocal } from '../../../utils/dateTimeUtils';
+import { formatTimeOffset, formatDuration, formatAbsoluteTimeStandard } from '../../../utils/timeUtils';
 
 /**
  * Formats edit operations into human-readable descriptions for the UI
@@ -13,7 +12,7 @@ export class EditQueueFormatter {
     /**
      * Format a single edit operation into a human-readable string
      */
-    static formatOperation(operation: EditOperation, allElements: ScriptElement[]): string {
+    static formatOperation(operation: EditOperation, allElements: ScriptElement[], useMilitaryTime: boolean = false): string {
         const element = allElements.find(el => el.element_id === operation.element_id);
         const elementName = element?.element_name || `Element ${operation.element_id?.slice(-6) || 'Unknown'}`;
         
@@ -28,11 +27,11 @@ export class EditQueueFormatter {
                 }
             
             case 'UPDATE_FIELD':
-                return this.formatFieldUpdate(operation, elementName);
+                return this.formatFieldUpdate(operation, elementName, useMilitaryTime);
             
             case 'UPDATE_TIME_OFFSET':
-                const oldTime = formatTimeOffset(operation.old_offset_ms, false); // Use 12-hour for edit history
-                const newTime = formatTimeOffset(operation.new_offset_ms, false);
+                const oldTime = formatTimeOffset(operation.old_offset_ms, useMilitaryTime);
+                const newTime = formatTimeOffset(operation.new_offset_ms, useMilitaryTime);
                 return `Updated "${elementName}" time from ${oldTime} to ${newTime}`;
             
             case 'CREATE_ELEMENT':
@@ -56,13 +55,13 @@ export class EditQueueFormatter {
                 return `Auto-sort disabled`;
             
             case 'UPDATE_SCRIPT_INFO':
-                return this.formatScriptInfoUpdate(operation);
+                return this.formatScriptInfoUpdate(operation, useMilitaryTime);
             
             case 'UPDATE_ELEMENT':
-                return this.formatElementUpdate(operation, elementName);
+                return this.formatElementUpdate(operation, elementName, useMilitaryTime);
             
             case 'UPDATE_GROUP_WITH_PROPAGATION':
-                return this.formatGroupUpdate(operation, elementName);
+                return this.formatGroupUpdate(operation, elementName, useMilitaryTime);
             
             case 'CREATE_GROUP':
                 const groupName = operation.group_name || 'Untitled Group';
@@ -101,7 +100,7 @@ export class EditQueueFormatter {
     /**
      * Format script info updates with appropriate descriptions
      */
-    private static formatScriptInfoUpdate(operation: any): string {
+    private static formatScriptInfoUpdate(operation: any, useMilitaryTime: boolean = false): string {
         const changes = operation.changes || {};
         const changedFields = Object.keys(changes);
         
@@ -121,8 +120,8 @@ export class EditQueueFormatter {
             };
             
             const fieldName = fieldDisplayNames[field] || field;
-            const oldValue = this.formatScriptValue(field, change.old_value);
-            const newValue = this.formatScriptValue(field, change.new_value);
+            const oldValue = this.formatScriptValue(field, change.old_value, useMilitaryTime);
+            const newValue = this.formatScriptValue(field, change.new_value, useMilitaryTime);
             
             return `Updated ${fieldName} from "${oldValue}" to "${newValue}"`;
         }
@@ -143,7 +142,7 @@ export class EditQueueFormatter {
     /**
      * Format element updates with appropriate descriptions
      */
-    private static formatElementUpdate(operation: any, elementName: string): string {
+    private static formatElementUpdate(operation: any, elementName: string, useMilitaryTime: boolean = false): string {
         const changes = operation.changes || {};
         const changedFields = Object.keys(changes);
         
@@ -169,9 +168,9 @@ export class EditQueueFormatter {
             };
             
             const fieldName = fieldDisplayNames[field] || this.formatFieldName(field);
-            // Handle both oldValue/newValue and old_value/new_value formats
-            const oldValue = this.formatValue(field, change.oldValue ?? change.old_value);
-            const newValue = this.formatValue(field, change.newValue ?? change.new_value);
+            // Handle old_value/new_value format (with fallback for legacy oldValue/newValue)
+            const oldValue = this.formatValue(field, change.old_value ?? change.oldValue);
+            const newValue = this.formatValue(field, change.new_value ?? change.newValue);
             
             return `Updated "${elementName}" ${fieldName} from "${oldValue}" to "${newValue}"`;
         }
@@ -198,7 +197,7 @@ export class EditQueueFormatter {
     /**
      * Format group updates with appropriate descriptions
      */
-    private static formatGroupUpdate(operation: any, elementName: string): string {
+    private static formatGroupUpdate(operation: any, elementName: string, useMilitaryTime: boolean = false): string {
         const fieldUpdates = operation.field_updates || {};
         const changedFields = Object.keys(fieldUpdates);
         const affectedChildren = operation.affected_children || [];
@@ -223,12 +222,12 @@ export class EditQueueFormatter {
             
             if (field === 'offset_ms' && affectedChildren.length > 0) {
                 const offsetDelta = operation.offset_delta_ms || 0;
-                const timeChange = offsetDelta > 0 ? `+${formatTimeOffset(Math.abs(offsetDelta), false)}` : `-${formatTimeOffset(Math.abs(offsetDelta), false)}`;
+                const timeChange = offsetDelta > 0 ? `+${formatTimeOffset(Math.abs(offsetDelta), useMilitaryTime)}` : `-${formatTimeOffset(Math.abs(offsetDelta), useMilitaryTime)}`;
                 return `Updated group "${elementName}" ${fieldName} (${timeChange}, ${affectedChildren.length} children affected)`;
             }
             
-            const formattedOldValue = this.formatValue(field, oldValue);
-            const formattedNewValue = this.formatValue(field, newValue);
+            const formattedOldValue = this.formatValue(field, oldValue, useMilitaryTime);
+            const formattedNewValue = this.formatValue(field, newValue, useMilitaryTime);
             return `Updated group "${elementName}" ${fieldName} from "${formattedOldValue}" to "${formattedNewValue}"`;
         }
         
@@ -248,7 +247,7 @@ export class EditQueueFormatter {
     /**
      * Format script-specific values for display
      */
-    private static formatScriptValue(field: string, value: any): string {
+    private static formatScriptValue(field: string, value: any, useMilitaryTime: boolean = false): string {
         if (value === null || value === undefined || value === '') {
             return '(empty)';
         }
@@ -258,7 +257,7 @@ export class EditQueueFormatter {
             case 'end_time':
                 // Format ISO date string to readable format
                 try {
-                    return formatTimeLocal(value, false); // Use 12-hour for edit history
+                    return formatAbsoluteTimeStandard(value, useMilitaryTime);
                 } catch {
                     return String(value);
                 }
@@ -279,8 +278,8 @@ export class EditQueueFormatter {
     /**
      * Format field-specific updates with appropriate value formatting
      */
-    private static formatFieldUpdate(operation: any, elementName: string): string {
-        const { field, oldValue, newValue } = operation;
+    private static formatFieldUpdate(operation: any, elementName: string, useMilitaryTime: boolean = false): string {
+        const { field, old_value, new_value } = operation;
         
         const fieldDisplayNames: Record<string, string> = {
             'element_name': 'description',
@@ -299,8 +298,8 @@ export class EditQueueFormatter {
         };
         
         const fieldName = fieldDisplayNames[field] || this.formatFieldName(field);
-        const formattedOldValue = this.formatValue(field, oldValue);
-        const formattedNewValue = this.formatValue(field, newValue);
+        const formattedOldValue = this.formatValue(field, old_value);
+        const formattedNewValue = this.formatValue(field, new_value);
         
         return `Updated "${elementName}" ${fieldName} from "${formattedOldValue}" to "${formattedNewValue}"`;
     }
@@ -321,7 +320,7 @@ export class EditQueueFormatter {
     /**
      * Format values based on field type for better readability
      */
-    private static formatValue(field: string, value: any): string {
+    private static formatValue(field: string, value: any, useMilitaryTime: boolean = false): string {
         if (value === null || value === undefined) {
             return '(empty)';
         }
@@ -330,7 +329,7 @@ export class EditQueueFormatter {
             case 'offset_ms':
                 // Handle numeric time values, including 0
                 if (typeof value === 'number' || (typeof value === 'string' && !isNaN(Number(value)))) {
-                    return formatTimeOffset(Number(value), false) || '0:00'; // Use 12-hour for edit history
+                    return formatTimeOffset(Number(value), useMilitaryTime) || '0:00';
                 }
                 return '(empty)';
             
@@ -363,7 +362,7 @@ export class EditQueueFormatter {
     /**
      * Get a date and time stamp for display
      */
-    static formatTimestamp(timestamp: number): string {
+    static formatTimestamp(timestamp: number, useMilitaryTime: boolean = false): string {
         const date = new Date(timestamp);
         const today = new Date();
         const yesterday = new Date(today);
@@ -372,14 +371,14 @@ export class EditQueueFormatter {
         // Check if it's today, yesterday, or another date
         if (date.toDateString() === today.toDateString()) {
             // Today - show just time
-            return formatTimeLocal(date.toISOString(), false).replace(/^.*\s/, ''); // Extract time part only
+            return formatAbsoluteTimeStandard(date.toISOString(), useMilitaryTime);
         } else if (date.toDateString() === yesterday.toDateString()) {
             // Yesterday - show "Yesterday HH:MM:SS"
-            const time = formatTimeLocal(date.toISOString(), false).replace(/^.*\s/, ''); // Extract time part only
+            const time = formatAbsoluteTimeStandard(date.toISOString(), useMilitaryTime);
             return `Yesterday ${time}`;
         } else {
             // Other dates - show "Mon DD HH:MM:SS"
-            const time = formatTimeLocal(date.toISOString(), false).replace(/^.*\s/, ''); // Extract time part only
+            const time = formatAbsoluteTimeStandard(date.toISOString(), useMilitaryTime);
             const dateStr = date.toLocaleDateString('en-US', { 
                 month: 'short', 
                 day: 'numeric'

@@ -9,7 +9,7 @@ import {
   ValidationError,
   ImportValidationResult
 } from '../types/importSchema';
-import { convertTimeToMs } from './timeConverter';
+import { parseTimeToMs } from '../../../../utils/timeUtils';
 import { matchDepartment, type Department } from './departmentMatcher';
 
 /**
@@ -419,13 +419,13 @@ export const convertCSVToCleanImport = (
     }
     
     // Validate and convert time
-    const timeResult = convertTimeToMs(timeValue);
-    if (!timeResult.success) {
+    const timeMs = parseTimeToMs(timeValue);
+    if (timeMs === null) {
       errors.push({
         row: rowNumber,
         field: 'time',
         value: timeValue,
-        message: timeResult.error || 'Invalid time format',
+        message: 'Invalid time format',
         severity: 'error'
       });
       return; // Skip this row
@@ -471,8 +471,8 @@ export const convertCSVToCleanImport = (
     // Validate duration if provided
     let durationMs: number | undefined;
     if (durationValue && durationValue.trim() !== '') {
-      const durationResult = convertTimeToMs(durationValue);
-      if (!durationResult.success) {
+      const parsedDurationMs = parseTimeToMs(durationValue);
+      if (parsedDurationMs === null) {
         warnings.push({
           row: rowNumber,
           field: 'duration',
@@ -481,7 +481,7 @@ export const convertCSVToCleanImport = (
           severity: 'warning'
         });
       } else {
-        durationMs = durationResult.milliseconds;
+        durationMs = parsedDurationMs;
       }
     }
     
@@ -525,14 +525,14 @@ export const convertCSVToCleanImport = (
       const groupElement: ScriptElementImport = {
         element_type: 'GROUP',
         element_name: groupName,
-        offset_ms: timeResult.milliseconds!,
+        offset_ms: timeMs,
         group_level: groupLevel
       };
       existingGroups.set(fullPath, groupElement);
     } else if (groupPath.length > 0) {
       // Only auto-generate groups for non-GROUP elements that have a group path
       // Generate any missing GROUP elements
-      const groupElements = generateGroupElements(groupPath, timeResult.milliseconds!, existingGroups);
+      const groupElements = generateGroupElements(groupPath, timeMs, existingGroups);
       
       // Add group elements to the results (they'll be inserted before this element)
       groupElements.forEach(groupElement => {
@@ -553,7 +553,7 @@ export const convertCSVToCleanImport = (
     const element: ScriptElementImport = {
       element_type: typeResult.normalizedType as 'CUE' | 'NOTE' | 'GROUP',
       element_name: nameValue.trim(),
-      offset_ms: timeResult.milliseconds!,
+      offset_ms: timeMs,
       cue_notes: descriptionValue?.trim() || undefined,
       department_name: departmentName,
       priority: (priorityResult.normalizedPriority as 'SAFETY' | 'CRITICAL' | 'HIGH' | 'NORMAL' | 'LOW' | 'OPTIONAL') || 'NORMAL',

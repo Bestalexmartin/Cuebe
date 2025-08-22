@@ -162,20 +162,14 @@ export const useElementModalActions = ({
         }
     }, [selectedElementId, scriptId, editQueueElements, insertElement, modalState, modalNames.DUPLICATE_ELEMENT, showSuccess, showError]);
 
-    const handleElementEditSave = useCallback(async (changes: Record<string, { oldValue: any; newValue: any }>) => {
+    const handleElementEditSave = useCallback(async (changes: Record<string, { old_value: any; new_value: any }>) => {
         if (!selectedElement) {
             return;
         }
 
         try {
-            // Transform changes object to match database convention (old_value/new_value)
-            const transformedChanges: Record<string, { old_value: any; new_value: any }> = {};
-            for (const [key, value] of Object.entries(changes)) {
-                transformedChanges[key] = {
-                    old_value: value.oldValue,
-                    new_value: value.newValue
-                };
-            }
+            // Changes are already in the correct format (old_value/new_value)
+            const transformedChanges = changes;
 
             applyLocalChange({
                 type: 'UPDATE_ELEMENT',
@@ -194,7 +188,7 @@ export const useElementModalActions = ({
         }
     }, [selectedElement, applyLocalChange, modalState, modalNames.EDIT_CUE, showSuccess, showError]);
 
-    const handleGroupEditSave = useCallback(async (changes: Record<string, { oldValue: any; newValue: any }>, offsetDelta: number, affectedChildren: string[]) => {
+    const handleGroupEditSave = useCallback(async (changes: Record<string, { old_value: any; new_value: any }>, offsetDelta: number, affectedChildren: string[]) => {
         if (!selectedElement) {
             return;
         }
@@ -205,10 +199,10 @@ export const useElementModalActions = ({
                 type: 'UPDATE_GROUP_WITH_PROPAGATION',
                 element_id: selectedElement.element_id,
                 field_updates: Object.fromEntries(
-                    Object.entries(changes).map(([key, { newValue }]) => [key, newValue])
+                    Object.entries(changes).map(([key, { new_value }]) => [key, new_value])
                 ),
                 old_values: Object.fromEntries(
-                    Object.entries(changes).map(([key, { oldValue }]) => [key, oldValue])
+                    Object.entries(changes).map(([key, { old_value }]) => [key, old_value])
                 ),
                 offset_delta_ms: offsetDelta,
                 affected_children: affectedChildren,

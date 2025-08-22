@@ -21,7 +21,7 @@ import { AppIcon } from '../../../../components/AppIcon';
 import { useEnhancedToast } from '../../../../utils/toastUtils';
 import { parseCSVFile, convertCSVToCleanImport, detectColumnMappings } from '../utils/csvParser';
 import { CSVParseResult, CleanScriptImport, CSVColumnMapping, ImportValidationResult } from '../types/importSchema';
-import { formatTimeFromMs } from '../utils/timeConverter';
+import { formatTimeOffset } from '../../../../utils/timeUtils';
 import { matchDepartment } from '../utils/departmentMatcher';
 import { loadSavedDepartmentMappings, saveDepartmentMappings } from '../utils/departmentMappingStorage';
 import { DepartmentMappingStep } from './DepartmentMappingStep';
@@ -511,7 +511,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
                       )}
                     </VStack>
                     <VStack align="end" spacing={0}>
-                      <Text fontSize="xs" fontFamily="mono">{formatTimeFromMs(element.offset_ms)}</Text>
+                      <Text fontSize="xs" fontFamily="mono">{formatTimeOffset(element.offset_ms, false) || '0:00'}</Text>
                       {element.department_name && (
                         <Text fontSize="xs" opacity="0.7">{element.department_name}</Text>
                       )}
