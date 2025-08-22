@@ -10,27 +10,15 @@ import {
   CardBody,
   Button,
   Badge,
-  Divider,
-  Heading,
-  Code,
-  UnorderedList,
-  OrderedList,
-  ListItem,
-  Link,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Input,
-  useColorModeValue
+  Divider
 } from '@chakra-ui/react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BaseUtilityPage } from '../components/base/BaseUtilityPage';
 import { AppIcon } from '../components/AppIcon';
+import { DocumentSearchUI } from '../components/shared/DocumentSearchUI';
+import { SearchInput } from '../components/shared/SearchInput';
+import { MarkdownRenderer } from '../components/shared/MarkdownRenderer';
+import { useDocumentSearch } from '../hooks/useDocumentSearch';
 import { useAuth } from '@clerk/clerk-react';
 
 // Tutorial file structure - organized for theater professionals
@@ -85,15 +73,6 @@ interface TutorialPageProps {
   onMenuClose: () => void;
 }
 
-interface SearchResult {
-  file_path: string;
-  title: string;
-  category: string;
-  url: string;
-  snippet: string;
-  relevance_score: number;
-  content_type: string;
-}
 
 export const TutorialsPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuClose }) => {
   const [selectedTutorial, setSelectedTutorial] = useState<string | null>(null);
@@ -101,168 +80,37 @@ export const TutorialsPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuC
   const [content, setContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [tutorialFiles, setTutorialFiles] = useState<TutorialFile[]>(TUTORIAL_FILES);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  
+  // Use the shared search hook
+  const {
+    searchQuery,
+    setSearchQuery,
+    searchResults,
+    isSearching,
+    hasSearched,
+    handleSearch,
+    clearSearch,
+    handleSearchResultClick
+  } = useDocumentSearch('tutorial');
 
-  // Chakra UI styled components for markdown
-  const codeBlockBg = useColorModeValue('gray.100', 'gray.700');
-  const tableBg = useColorModeValue('white', 'gray.800');
-  const tableBorderColor = useColorModeValue('gray.200', 'gray.600');
-  const headingColor = useColorModeValue('blue.600', 'blue.300'); // Blue for trust and comfort
-  const subHeadingColor = useColorModeValue('blue.500', 'blue.400');
+  // Clear state function to reset selected docs/categories when searching
+  const clearPageState = () => {
+    setSelectedTutorial(null);
+    setSelectedCategory(null);
+    setContent('');
+  };
+
 
   const { getToken } = useAuth();
 
-  // Search function
-  const handleSearch = async (query: string) => {
-    if (!query.trim()) {
-      setSearchResults([]);
-      return;
-    }
 
-    setIsSearching(true);
-    try {
-      const headers: Record<string, string> = {};
-      const authToken = await getToken();
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-
-      const response = await fetch(`/api/docs/search?q=${encodeURIComponent(query)}`, { headers });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      // Filter to only show tutorial results
-      const tutorialResults = data.results.filter((result: SearchResult) => result.content_type === 'tutorial');
-      setSearchResults(tutorialResults);
-    } catch (error) {
-      console.error('Error searching tutorials:', error);
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Handle search result click
-  const handleSearchResultClick = (result: SearchResult) => {
-    // Find the tutorial by title or path
-    const tutorial = tutorialFiles.find(t => t.name === result.title || t.path === result.file_path);
-    if (tutorial) {
-      setSearchQuery(''); // Clear search
-      setSearchResults([]);
-      loadTutorial(tutorial.name);
-    } else {
-      console.log('No matching tutorial found for search result:', result);
-    }
-  };
-
-  const markdownComponents = {
-    h1: ({ children }: any) => (
-      <Heading as="h1" size="xl" mt={8} mb={4} color={headingColor}>
-        {children}
-      </Heading>
-    ),
-    h2: ({ children }: any) => (
-      <Heading as="h2" size="lg" mt={6} mb={3} color={subHeadingColor}>
-        {children}
-      </Heading>
-    ),
-    h3: ({ children }: any) => (
-      <Heading as="h3" size="md" mt={5} mb={2}>
-        {children}
-      </Heading>
-    ),
-    h4: ({ children }: any) => (
-      <Heading as="h4" size="sm" mt={4} mb={2}>
-        {children}
-      </Heading>
-    ),
-    p: ({ children }: any) => (
-      <Text mb={4} lineHeight="1.6">
-        {children}
-      </Text>
-    ),
-    code: ({ children, className }: any) => {
-      const isInline = !className;
-      return isInline ? (
-        <Code fontSize="sm" px={1} py={0.5} bg={codeBlockBg}>
-          {children}
-        </Code>
-      ) : (
-        <Box as="pre" bg={codeBlockBg} p={4} borderRadius="md" overflowX="auto" mb={4}>
-          <Code fontSize="sm" whiteSpace="pre">
-            {children}
-          </Code>
-        </Box>
-      );
-    },
-    ul: ({ children }: any) => (
-      <UnorderedList mb={4} spacing={1}>
-        {children}
-      </UnorderedList>
-    ),
-    ol: ({ children }: any) => (
-      <OrderedList mb={4} spacing={1}>
-        {children}
-      </OrderedList>
-    ),
-    li: ({ children }: any) => (
-      <ListItem>
-        {children}
-      </ListItem>
-    ),
-    a: ({ href, children }: any) => (
-      <Link href={href} color="blue.400" isExternal>
-        {children}
-      </Link>
-    ),
-    blockquote: ({ children }: any) => (
-      <Box
-        borderLeft="4px solid"
-        borderColor="blue.400"
-        pl={4}
-        py={2}
-        bg={useColorModeValue('blue.50', 'blue.900')}
-        borderRadius="md"
-        mb={4}
-        fontStyle="italic"
-      >
-        {children}
-      </Box>
-    ),
-    table: ({ children }: any) => (
-      <Box overflowX="auto" mb={4}>
-        <Table variant="simple" bg={tableBg} size="sm">
-          {children}
-        </Table>
-      </Box>
-    ),
-    thead: ({ children }: any) => <Thead>{children}</Thead>,
-    tbody: ({ children }: any) => <Tbody>{children}</Tbody>,
-    tr: ({ children }: any) => <Tr>{children}</Tr>,
-    th: ({ children }: any) => (
-      <Th borderColor={tableBorderColor} fontSize="xs">
-        {children}
-      </Th>
-    ),
-    td: ({ children }: any) => (
-      <Td borderColor={tableBorderColor} fontSize="sm">
-        {children}
-      </Td>
-    ),
-    hr: () => <Divider my={6} />
-  };
 
   const loadCategory = (category: string) => {
     setSelectedCategory(category);
     setSelectedTutorial(null);
     setContent('');
     // Clear search when navigating to category
-    setSearchQuery('');
-    setSearchResults([]);
+    clearSearch();
   };
 
   // Quick Access items for tutorial categories
@@ -307,6 +155,8 @@ export const TutorialsPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuC
 
     setIsLoading(true);
     setSelectedTutorial(tutorialId);
+    // Clear search when navigating to tutorial
+    clearSearch();
 
     try {
       const headers: Record<string, string> = {};
@@ -355,54 +205,13 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
   // Default overview content
   const defaultContent = (
     <VStack spacing={4} align="stretch">
-      {/* Show search results if searching, otherwise show tutorial overview */}
-      {searchResults.length > 0 ? (
-        <VStack spacing={4} align="stretch">
-          {searchResults.map((result, index) => (
-            <Box
-              key={index}
-              p={3}
-              rounded="md"
-              shadow="sm"
-              bg="card.background"
-              borderWidth="2px"
-              borderColor="gray.600"
-              cursor="pointer"
-              _hover={{ borderColor: "orange.400" }}
-              onClick={() => handleSearchResultClick(result)}
-            >
-              <VStack align="start" spacing={1}>
-                <HStack justify="space-between" width="100%">
-                  <HStack spacing={2} align="center">
-                    <Box px={1} pt="2px">
-                      <AppIcon 
-                        name={tutorialFiles.find(t => t.name === result.title)?.icon || 'compass'} 
-                        boxSize="14px" 
-                      />
-                    </Box>
-                    <Text fontSize="sm" color="white" textTransform="uppercase" fontWeight="bold">
-                      {result.category}
-                    </Text>
-                    <Text fontSize="sm" color="cardText" fontWeight="bold">
-                      •
-                    </Text>
-                    <Text fontWeight="medium" fontSize="sm" color="cardText">
-                      {result.title}
-                    </Text>
-                  </HStack>
-                  <Text fontSize="xs" color="gray.400">
-                    {result.relevance_score.toFixed(1)}
-                  </Text>
-                </HStack>
-                {result.snippet && (
-                  <Text fontSize="xs" color="cardText" opacity={0.8} noOfLines={2} ml={6}>
-                    {result.snippet}
-                  </Text>
-                )}
-              </VStack>
-            </Box>
-          ))}
-        </VStack>
+      {/* Show search results if user has performed a search, otherwise show tutorial overview */}
+      {hasSearched ? (
+        <DocumentSearchUI
+          searchResults={searchResults}
+          onResultClick={(result) => handleSearchResultClick(result, tutorialFiles, loadTutorial)}
+          files={tutorialFiles}
+        />
       ) : (
         Object.entries(groupTutorialsByCategory()).map(([category, tutorials]) => (
           <Card 
@@ -490,6 +299,7 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
           onClick={() => {
             setSelectedCategory(null);
             setSelectedTutorial(null);
+            clearSearch();
           }}
         >
           Back to All Tutorials
@@ -528,42 +338,14 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
 
   // Search UI component  
   const searchUI = (
-    <HStack spacing={2}>
-      <Input
-        value={searchQuery}
-        onChange={(e) => {
-          setSearchQuery(e.target.value);
-          if (!e.target.value.trim()) {
-            setSearchResults([]);
-          }
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            handleSearch(searchQuery);
-          } else if (e.key === 'Escape') {
-            setSearchQuery('');
-            setSearchResults([]);
-          }
-        }}
-        size="xs"
-        width={{ base: "125px", md: "150px", lg: "200px" }}
-        borderRadius="md"
-        borderColor="gray.700"
-        _hover={{ borderColor: "container.border" }}
-      />
-      <Button
-        size="xs"
-        bg="blue.400"
-        color="white"
-        _hover={{ bg: 'orange.400' }}
-        _active={{ bg: 'orange.400' }}
-        onClick={() => handleSearch(searchQuery)}
-        isDisabled={!searchQuery.trim()}
-        isLoading={isSearching}
-      >
-        Search
-      </Button>
-    </HStack>
+    <SearchInput
+      searchQuery={searchQuery}
+      onSearchQueryChange={setSearchQuery}
+      isSearching={isSearching}
+      onSearch={(query) => handleSearch(query, clearPageState)}
+      onClearSearch={clearSearch}
+      placeholder="Search tutorials..."
+    />
   );
 
   // Selected tutorial content
@@ -591,10 +373,12 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
                     if (selectedCategory) {
                       // Go back to category view
                       setSelectedTutorial(null);
+                      clearSearch();
                     } else {
                       // Go back to overview
                       setSelectedTutorial(null);
                       setSelectedCategory(null);
+                      clearSearch();
                     }
                   }}
                 >
@@ -609,14 +393,7 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
           <Box flex={1} overflowY="auto" className="hide-scrollbar">
             <Card>
               <CardBody>
-                <Box>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={markdownComponents}
-                  >
-                    {content}
-                  </ReactMarkdown>
-                </Box>
+                <MarkdownRenderer content={content} />
               </CardBody>
             </Card>
           </Box>

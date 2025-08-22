@@ -87,6 +87,7 @@ class UserDepartmentAssignment(BaseModel):
     venue_state: Optional[str] = None
     show_date: Optional[datetime] = None
     role: Optional[str] = None
+    share_url: Optional[str] = None
 
 class CrewMemberWithAssignments(CrewMemberWithRelationship):
     """Crew member with their department assignments"""

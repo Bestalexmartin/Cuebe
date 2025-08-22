@@ -191,6 +191,11 @@ def get_crew_member_with_assignments(
     # Format assignments for response
     assignment_list = []
     for assignment in assignments:
+        # Construct share URL from share token
+        share_url = None
+        if assignment.share_token:
+            share_url = f"/share/{assignment.share_token}"
+        
         assignment_data = {
             "assignment_id": assignment.assignment_id,
             "show_id": assignment.show_id,
@@ -203,7 +208,8 @@ def get_crew_member_with_assignments(
             "venue_city": assignment.show.venue.city if assignment.show and assignment.show.venue else None,
             "venue_state": assignment.show.venue.state if assignment.show and assignment.show.venue else None,
             "show_date": assignment.show.show_date if assignment.show else None,
-            "role": assignment.show_role
+            "role": assignment.show_role,
+            "share_url": share_url
         }
         assignment_list.append(schemas.UserDepartmentAssignment(**assignment_data))
     

@@ -60,6 +60,11 @@ def read_departments(
         # Format crew assignments for response
         assignment_list = []
         for assignment in crew_assignments:
+            # Construct share URL from share token
+            share_url = None
+            if assignment.share_token:
+                share_url = f"/share/{assignment.share_token}"
+            
             assignment_data = {
                 "assignment_id": assignment.assignment_id,
                 "show_id": assignment.show_id,
@@ -75,7 +80,8 @@ def read_departments(
                 "user_status": assignment.user.user_status if assignment.user else None,
                 "is_active": assignment.user.is_active if assignment.user else None,
                 "date_created": assignment.user.date_created if assignment.user else None,
-                "date_updated": assignment.user.date_updated if assignment.user else None
+                "date_updated": assignment.user.date_updated if assignment.user else None,
+                "share_url": share_url
             }
             assignment_list.append(schemas.DepartmentCrewAssignment(**assignment_data))
         
