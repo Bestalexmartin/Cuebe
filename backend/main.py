@@ -19,7 +19,7 @@ except ImportError:
     RATE_LIMITING_ENABLED = False
 
 # Import routers
-from routers import users, crews, venues, departments, shows, webhooks, development, system_tests, script_elements, show_sharing, script_import
+from routers import users, crews, venues, departments, shows, webhooks, development, system_tests, script_elements, show_sharing, script_import, docs_search
 from routers.auth import get_current_user
 import models
 
@@ -72,6 +72,7 @@ app.include_router(shows.router)        # Show and script management at /api/sho
 app.include_router(script_elements.router)  # Script elements CRUD at /api/scripts/*/elements, /api/elements/*
 app.include_router(script_import.router) # Script import endpoints at /api/scripts/import/*
 app.include_router(show_sharing.router) # Show-level sharing at /api/shows/*/crew/*/share, /shared/*
+app.include_router(docs_search.router)  # Documentation search at /api/docs/search
 app.include_router(system_tests.router) # System testing endpoints at /api/system-tests/*
 
 # =============================================================================
@@ -315,6 +316,38 @@ async def get_documentation(
         raise
     except Exception as e:
         logger.error(f"Error serving documentation file {file_path}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/tutorials/{file_path:path}")
+async def get_tutorial(
+    file_path: str,
+    current_user: models.User = Depends(get_current_user)
+):
+    """Serve markdown tutorial files from the tutorials directory."""
+    try:
+        # Path resolution for Docker vs local development
+        tutorials_dir = Path("/tutorials") if Path("/tutorials").exists() else Path(__file__).parent.parent / "tutorials"
+        requested_file = tutorials_dir / file_path
+        
+        # Security check: ensure the file is within the tutorials directory
+        if not str(requested_file.resolve()).startswith(str(tutorials_dir.resolve())):
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Check if file exists and is a markdown file
+        if not requested_file.exists():
+            raise HTTPException(status_code=404, detail="Tutorial file not found")
+        
+        if requested_file.suffix.lower() not in ['.md', '.txt', '.mc']:
+            raise HTTPException(status_code=400, detail="Unsupported file type")
+        
+        # Read and return the file content
+        content = requested_file.read_text(encoding="utf-8")
+        return {"content": content, "file_path": file_path}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error serving tutorial file {file_path}: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 logger.info("Cuebe API initialized with organized routers and light mode documentation")

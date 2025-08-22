@@ -91,8 +91,9 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
             newErrors.element_name = 'Group name is required';
         }
 
-        if (formData.offset_ms < 0) {
-            newErrors.timeOffset = 'Time cannot be negative';
+        // Allow negative time offsets for pre-show timing
+        if (!Number.isFinite(formData.offset_ms)) {
+            newErrors.timeOffset = 'Time must be a valid time value';
         }
 
         setErrors(newErrors);
@@ -140,7 +141,7 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
         handleClose();
     };
 
-    const isFormValid = formData.element_name.trim() && formData.offset_ms >= 0;
+    const isFormValid = formData.element_name.trim() && Number.isFinite(formData.offset_ms);
 
     return (
         <BaseModal

@@ -14,10 +14,10 @@ import { ManageScriptPage } from './pages/ManageScriptPage';
 import { EditVenuePage } from './features/venues/pages/EditVenuePage';
 import { EditDepartmentPage } from './features/departments/pages/EditDepartmentPage';
 import { EditCrewPage } from './features/crew/pages/EditCrewPage';
-import { TutorialPage } from './pages/TutorialPage';
 import { TestToolsPage } from './pages/TestToolsPage';
 import { ApiDocsPage } from './pages/ApiDocsPage';
 import { DocumentationPage } from './pages/DocumentationPage';
+import { TutorialsPage } from './pages/TutorialsPage';
 import { SharedPage } from './pages/SharedPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
@@ -104,12 +104,7 @@ const App: React.FC = () => {
                   </ProtectedRoute>
                 } />
 
-                {/* Tutorial and Test Tools Routes */}
-                <Route path="/tutorial" element={
-                  <ProtectedRoute>
-                    <TutorialPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
-                  </ProtectedRoute>
-                } />
+                {/* Test Tools Route */}
 
                 <Route path="/test-tools" element={
                   <ProtectedRoute>
@@ -126,6 +121,12 @@ const App: React.FC = () => {
                 <Route path="/documentation" element={
                   <ProtectedRoute>
                     <DocumentationPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
+                  </ProtectedRoute>
+                } />
+
+                <Route path="/tutorials" element={
+                  <ProtectedRoute>
+                    <TutorialsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
                   </ProtectedRoute>
                 } />
 

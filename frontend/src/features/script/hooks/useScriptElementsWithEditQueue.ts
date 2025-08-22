@@ -869,7 +869,7 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                     // Update child elements with offset propagation
                     return {
                         ...el,
-                        offset_ms: Math.max(0, (el.offset_ms || 0) + offsetDelta)
+                        offset_ms: (el.offset_ms || 0) + offsetDelta
                     };
                 }
                 return el;

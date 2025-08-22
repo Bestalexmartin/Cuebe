@@ -48,6 +48,7 @@ interface BaseUtilityPageProps {
   selectedContent?: React.ReactNode;
   quickAccessItems: QuickAccessItem[];
   activeItemId?: string;
+  headerActions?: React.ReactNode;
   isMenuOpen: boolean;
   onMenuClose: () => void;
 }
@@ -123,6 +124,7 @@ export const BaseUtilityPage: React.FC<BaseUtilityPageProps> = ({
   selectedContent,
   quickAccessItems,
   activeItemId,
+  headerActions,
   isMenuOpen,
   onMenuClose
 }) => {
@@ -137,22 +139,37 @@ export const BaseUtilityPage: React.FC<BaseUtilityPageProps> = ({
     >
       {/* Header Section */}
       <Box flexShrink={0}>
-        <HStack spacing="2" align="center">
-          <AppIcon 
-            name={pageIcon} 
-            boxSize={
-              pageIcon === 'api-docs' ? "27px" : 
-              pageIcon === 'compass' ? "23px" : 
-              "25px"
-            } 
-          />
-          <Heading as="h2" size="md">
-            {pageTitle}
-          </Heading>
-          <Box ml="auto" display={{ base: 'none', lg: 'block' }}>
-            <UtilitiesMenu />
+        <Flex align="center">
+          {/* Left side - Title */}
+          <HStack spacing="2" align="center">
+            <AppIcon 
+              name={pageIcon} 
+              boxSize={
+                pageIcon === 'api-docs' ? "27px" : 
+                pageIcon === 'compass' ? "23px" : 
+                "25px"
+              } 
+            />
+            <Heading as="h2" size="md">
+              {pageTitle}
+            </Heading>
+          </HStack>
+          
+          {/* Right side - Actions aligned to content */}
+          <Box flex="1" display="flex" justifyContent="space-between" alignItems="center" ml="8">
+            {/* Header actions positioned above main content - right aligned to content area */}
+            <Box flex="1" display="flex" justifyContent="flex-end" mr="8">
+              {headerActions}
+            </Box>
+            
+            {/* Utilities menu positioned above quick access */}
+            <Box display={{ base: 'none', lg: 'block' }} width="330px">
+              <Flex justify="flex-end">
+                <UtilitiesMenu />
+              </Flex>
+            </Box>
           </Box>
-        </HStack>
+        </Flex>
       </Box>
 
       {/* Main Content Area */}
@@ -171,6 +188,7 @@ export const BaseUtilityPage: React.FC<BaseUtilityPageProps> = ({
           flexDirection="column"
           minHeight={0} // Important for flex items to shrink
         >
+          
           <Box
             border="1px solid"
             borderColor="container.border"
