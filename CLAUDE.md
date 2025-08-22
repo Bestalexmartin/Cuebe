@@ -103,6 +103,7 @@ docker logs cuebe-frontend
 - **Memoization**: Use useMemo/useCallback in custom hooks for stable references
 - **UI Standards**: Orange borders for hover (`orange.400`), blue for active (`blue.400`)
 - **Icons**: All new icons declared via `AppIcon.tsx`
+- **useEffect**: Do not use useEffect unless it's absolutely necessary and you've confirmed it with me first
 
 ### General Practices - BE LAZY!
 

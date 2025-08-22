@@ -171,7 +171,7 @@ export const getElementManagementButtons = (hasSelection: boolean, hasMultipleSe
             label: 'ADD',
             description: 'Add Script Element',
             isActive: false,
-            isDisabled: hasSelection
+            isDisabled: false
         },
         {
             id: 'edit-element',

@@ -24,6 +24,43 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["shows", "scripts"])
 
+def _create_default_script_elements(script: models.Script, show: models.Show, user: models.User, db: Session):
+    """Create default SHOW START and SHOW END elements for a script."""
+    # Create automatic "Show Start" cue with minimal required fields
+    show_start_cue = models.ScriptElement(
+        script_id=script.script_id,
+        element_type=models.ElementType.NOTE,
+        element_name="SHOW START",  # All caps title
+        offset_ms=0,  # Start at 00:00
+        priority=models.PriorityLevel.CRITICAL,
+        custom_color="#EF4444",  # Matches frontend note preset red
+        sequence=1,
+        group_level=0,
+        created_by=user.user_id
+        # department_id intentionally left out (None/NULL)
+    )
+    db.add(show_start_cue)
+    
+    # Create automatic "Show End" cue if show has an end time
+    if show.show_end and show.show_date:
+        # Calculate runtime in milliseconds
+        runtime_delta = show.show_end - show.show_date
+        runtime_ms = int(runtime_delta.total_seconds() * 1000)
+        
+        show_end_cue = models.ScriptElement(
+            script_id=script.script_id,
+            element_type=models.ElementType.NOTE,
+            element_name="SHOW END",  # All caps title
+            offset_ms=runtime_ms,  # At calculated runtime
+            priority=models.PriorityLevel.CRITICAL,
+            custom_color="#EF4444",  # Matches frontend note preset red
+            sequence=2,
+            group_level=0,
+            created_by=user.user_id
+            # department_id intentionally left out (None/NULL)
+        )
+        db.add(show_end_cue)
+
 def rate_limit(limit_config):
     """Decorator factory that conditionally applies rate limiting"""
     def decorator(func):
@@ -50,6 +87,7 @@ def create_show(
         show_name=show.show_name,
         venue_id=show.venue_id,
         show_date=show.show_date,
+        show_end=show.show_end,
         show_notes=show.show_notes,
         deadline=show.deadline,
         owner_id=user.user_id
@@ -58,13 +96,20 @@ def create_show(
     db.commit()
     db.refresh(new_show)
 
-    # Create first draft script
+    # Create first draft script with start/end times from show
     first_draft = models.Script(
         script_name="First Draft",
         show_id=new_show.show_id,
+        start_time=new_show.show_date,
+        end_time=new_show.show_end if new_show.show_end is not None else None,
         owner_id=user.user_id
     )
     db.add(first_draft)
+    db.commit()
+    db.refresh(first_draft)
+
+    # Create default SHOW START and SHOW END elements
+    _create_default_script_elements(first_draft, new_show, user, db)
     db.commit()
     
     return new_show
@@ -455,42 +500,8 @@ def create_script_for_show(
     db.commit()
     db.refresh(new_script)
 
-    # Create automatic "Show Start" cue with minimal required fields
-    from datetime import timedelta
-    show_start_cue = models.ScriptElement(
-        script_id=new_script.script_id,
-        element_type=models.ElementType.NOTE,
-        element_name="SHOW START",  # All caps title
-        offset_ms=0,  # Start at 00:00
-        priority=models.PriorityLevel.CRITICAL,
-        custom_color="#EF4444",  # Matches frontend note preset red
-        sequence=1,
-        group_level=0,
-        created_by=user.user_id
-        # department_id intentionally left out (None/NULL)
-    )
-    db.add(show_start_cue)
-    
-    # Create automatic "Show End" cue if show has an end time
-    if show.show_end and show.show_date:
-        # Calculate runtime in milliseconds
-        runtime_delta = show.show_end - show.show_date
-        runtime_ms = int(runtime_delta.total_seconds() * 1000)
-        
-        show_end_cue = models.ScriptElement(
-            script_id=new_script.script_id,
-            element_type=models.ElementType.NOTE,
-            element_name="SHOW END",  # All caps title
-            offset_ms=runtime_ms,  # At calculated runtime
-            priority=models.PriorityLevel.CRITICAL,
-            custom_color="#EF4444",  # Matches frontend note preset red
-            sequence=2,
-            group_level=0,
-            created_by=user.user_id
-            # department_id intentionally left out (None/NULL)
-        )
-        db.add(show_end_cue)
-    
+    # Create default SHOW START and SHOW END elements
+    _create_default_script_elements(new_script, show, user, db)
     db.commit()
 
     return new_script

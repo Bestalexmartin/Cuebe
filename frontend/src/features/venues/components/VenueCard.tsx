@@ -128,10 +128,25 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
             {(venue.contact_name || venue.contact_email || venue.contact_phone) && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Contact Information</Text>
-                    <VStack align="stretch" spacing="1" fontSize="sm" color="cardText">
-                        {venue.contact_name && <Text>Contact: {venue.contact_name}</Text>}
-                        {venue.contact_email && <Text>Email: {venue.contact_email}</Text>}
-                        {venue.contact_phone && <Text>Phone: {venue.contact_phone}</Text>}
+                    <VStack align="stretch" spacing="1" fontSize="sm" pl="20px">
+                        {venue.contact_name && (
+                            <Text>
+                                <Text as="span" color="gray.700" _dark={{ color: "gray.200" }}>Contact:</Text>{" "}
+                                <Text as="span" color="cardText">{venue.contact_name}</Text>
+                            </Text>
+                        )}
+                        {venue.contact_email && (
+                            <Text>
+                                <Text as="span" color="gray.700" _dark={{ color: "gray.200" }}>Email:</Text>{" "}
+                                <Text as="span" color="cardText">{venue.contact_email}</Text>
+                            </Text>
+                        )}
+                        {venue.contact_phone && (
+                            <Text>
+                                <Text as="span" color="gray.700" _dark={{ color: "gray.200" }}>Phone:</Text>{" "}
+                                <Text as="span" color="cardText">{venue.contact_phone}</Text>
+                            </Text>
+                        )}
                     </VStack>
                 </Box>
             )}
@@ -140,10 +155,25 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
             {(venue.stage_width || venue.stage_depth || venue.fly_height) && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Technical Specifications</Text>
-                    <HStack spacing="4" fontSize="sm" color="cardText">
-                        {venue.stage_width && <Text>Width: {venue.stage_width} ft</Text>}
-                        {venue.stage_depth && <Text>Depth: {venue.stage_depth} ft</Text>}
-                        {venue.fly_height && <Text>Fly Height: {venue.fly_height} ft</Text>}
+                    <HStack spacing="4" fontSize="sm" pl="20px">
+                        {venue.stage_width && (
+                            <Text>
+                                <Text as="span" color="gray.700" _dark={{ color: "gray.200" }}>Width:</Text>{" "}
+                                <Text as="span" color="cardText">{venue.stage_width} ft</Text>
+                            </Text>
+                        )}
+                        {venue.stage_depth && (
+                            <Text>
+                                <Text as="span" color="gray.700" _dark={{ color: "gray.200" }}>Depth:</Text>{" "}
+                                <Text as="span" color="cardText">{venue.stage_depth} ft</Text>
+                            </Text>
+                        )}
+                        {venue.fly_height && (
+                            <Text>
+                                <Text as="span" color="gray.700" _dark={{ color: "gray.200" }}>Fly Height:</Text>{" "}
+                                <Text as="span" color="cardText">{venue.fly_height} ft</Text>
+                            </Text>
+                        )}
                     </HStack>
                 </Box>
             )}
@@ -152,7 +182,7 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
             {venue.equipment && venue.equipment.length > 0 && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Available Equipment</Text>
-                    <Flex wrap="wrap" gap="1">
+                    <Flex wrap="wrap" gap="1" pl="20px">
                         {venue.equipment.map((item, index) => (
                             <Badge key={index} variant="subtle" colorScheme="purple">
                                 {item}
@@ -166,9 +196,19 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
             {(venue.rental_rate || venue.minimum_rental) && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Rental Information</Text>
-                    <HStack spacing="4" fontSize="sm" color="cardText">
-                        {venue.rental_rate && <Text>Daily Rate: ${venue.rental_rate}</Text>}
-                        {venue.minimum_rental && <Text>Minimum: ${venue.minimum_rental}</Text>}
+                    <HStack spacing="4" fontSize="sm" pl="20px">
+                        {venue.rental_rate && (
+                            <Text>
+                                <Text as="span" color="gray.700" _dark={{ color: "gray.200" }}>Daily Rate:</Text>{" "}
+                                <Text as="span" color="cardText">${venue.rental_rate}</Text>
+                            </Text>
+                        )}
+                        {venue.minimum_rental && (
+                            <Text>
+                                <Text as="span" color="gray.700" _dark={{ color: "gray.200" }}>Minimum:</Text>{" "}
+                                <Text as="span" color="cardText">${venue.minimum_rental}</Text>
+                            </Text>
+                        )}
                     </HStack>
                 </Box>
             )}
@@ -177,7 +217,7 @@ const VenueCardComponent: React.FC<VenueCardProps> = ({
             {venue.venue_notes && (
                 <Box>
                     <Text fontWeight="semibold" mb={2}>Notes</Text>
-                    <Text fontSize="sm" color="cardText">
+                    <Text fontSize="sm" color="cardText" pl="20px">
                         {venue.venue_notes}
                     </Text>
                 </Box>

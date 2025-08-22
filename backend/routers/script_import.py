@@ -295,24 +295,26 @@ async def import_script(
         # Validate show access
         show = validate_show_access(import_request.show_id, current_user, db)
         
-        # Check script name uniqueness again (in case of race condition)
+        # Check script name uniqueness and add timestamp suffix if needed
+        original_name = import_request.script_metadata.script_name.strip()
+        script_name = original_name
+        
         existing_script = db.query(Script).filter(
             and_(
                 Script.show_id == import_request.show_id,
-                Script.script_name.ilike(import_request.script_metadata.script_name.strip())
+                Script.script_name.ilike(script_name)
             )
         ).first()
         
         if existing_script:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Script '{import_request.script_metadata.script_name}' already exists in this show"
-            )
+            # Add timestamp suffix to make name unique
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            script_name = f"{original_name} - {timestamp}"
         
         # Create the script with proper timing from show
         new_script = Script(
             script_id=uuid4(),
-            script_name=import_request.script_metadata.script_name.strip(),
+            script_name=script_name,
             script_status=import_request.script_metadata.script_status,
             start_time=import_request.script_metadata.start_time or show.show_date,
             end_time=import_request.script_metadata.end_time or show.show_end,

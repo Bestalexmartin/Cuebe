@@ -179,15 +179,16 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
             {/* Operations List - with top padding to account for fixed header */}
             <Box height="100%" overflowY="auto" className="hide-scrollbar" pt="87px">
                 <VStack spacing={1} align="stretch">
-                    {operations.map((operation, index) => {
+                    {operations.slice().reverse().map((operation, displayIndex) => {
+                        const originalIndex = operations.length - 1 - displayIndex;
                         const formattedDescription = EditQueueFormatter.formatOperation(operation, allElements);
                         const timestamp = EditQueueFormatter.formatTimestamp(operation.timestamp);
 
-                        const isClickable = onRevertToPoint && index < operations.length - 1;
-                        const paddedNumber = String(index + 1).padStart(2, '0');
+                        const isClickable = onRevertToPoint && originalIndex < operations.length - 1;
+                        const paddedNumber = String(originalIndex + 1).padStart(2, '0');
                         
-                        // Calculate blue color progression - most recent (last) is blue.400, older ones progressively darker
-                        const distanceFromMostRecent = operations.length - 1 - index;
+                        // Calculate blue color progression - most recent (now at top) is blue.400, older ones progressively darker
+                        const distanceFromMostRecent = displayIndex;
                         const blueIntensity = Math.min(900, 400 + (distanceFromMostRecent * 100));
                         const blueColor = `blue.${blueIntensity}`;
 
@@ -204,7 +205,7 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
                                     borderColor: "orange.400",
                                     cursor: isClickable ? "pointer" : "default"
                                 }}
-                                onClick={() => isClickable && handleRowClick(index)}
+                                onClick={() => isClickable && handleRowClick(originalIndex)}
                                 transition="all 0s"
                             >
                                 <HStack align="center" spacing={6}>

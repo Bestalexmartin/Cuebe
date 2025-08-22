@@ -26,6 +26,7 @@ interface ShowFormData {
   show_name: string;
   venue_id: string;
   show_date: string;
+  show_end: string;
   show_notes: string;
   deadline: string;
 }
@@ -40,6 +41,7 @@ const INITIAL_FORM_STATE: ShowFormData = {
   show_name: '',
   venue_id: '',
   show_date: '',
+  show_end: '',
   show_notes: '',
   deadline: '',
 };
@@ -108,6 +110,7 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
         show_name: form.formData.show_name,
         venue_id: venueId || null,
         show_date: convertLocalToUTC(form.formData.show_date),
+        show_end: form.formData.show_end ? convertLocalToUTC(form.formData.show_end) : null,
         show_notes: form.formData.show_notes || null,
         deadline: convertLocalToUTC(form.formData.deadline),
       };
@@ -193,7 +196,14 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
         <FormInput
           form={form}
           name="show_date"
-          label="Show Date"
+          label="Start Time"
+          type="datetime-local"
+        />
+
+        <FormInput
+          form={form}
+          name="show_end"
+          label="End Time"
           type="datetime-local"
         />
 

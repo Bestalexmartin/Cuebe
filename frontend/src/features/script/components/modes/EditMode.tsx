@@ -420,6 +420,30 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         closeDragModal();
     };
 
+    const handleCustomTime = async (timeMs: number) => {
+        await applyReorder();
+
+        if (draggedElement && onApplyLocalChange) {
+            // Create UPDATE_ELEMENT operation with custom time offset change
+            const updateElementOperation = {
+                type: 'UPDATE_ELEMENT',
+                element_id: draggedElement.element_id,
+                changes: {
+                    offset_ms: {
+                        old_value: draggedElement.offset_ms,
+                        new_value: timeMs
+                    }
+                },
+                autoSort: autoSortCues, // Pass current auto-sort state
+                description: `Updated time offset for "${draggedElement.element_name}" to custom time`
+            };
+            
+            onApplyLocalChange(updateElementOperation);
+        }
+        
+        closeDragModal();
+    };
+
     const closeDragModal = () => {
         // Check if we need to restore expanded state for a group that was temporarily collapsed
         if (draggedGroupWasExpanded && draggedElement && onToggleGroupCollapse) {
@@ -732,6 +756,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 onDisableAutoSort={handleDisableAutoSort}
                 onMatchBefore={handleMatchBefore}
                 onMatchAfter={handleMatchAfter}
+                onCustomTime={handleCustomTime}
                 onCancel={handleCancelDrag}
             />
 

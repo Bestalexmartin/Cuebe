@@ -446,15 +446,61 @@ function applyOperationToElements(elements: ScriptElement[], operation: EditOper
                 return [...updatedElements].sort((a, b) => a.sequence - b.sequence);
             } else {
                 // Regular element move (not a group parent)
-                // Update the element's sequence
-                const updatedElements = elements.map(el => 
+                // First, update the element's sequence
+                let updatedElements = elements.map(el => 
                     el.element_id === operation.element_id 
                         ? { ...el, sequence: reorderOp.new_sequence }
                         : el
                 );
                 
-                // Sort all elements by sequence to get the new order
-                return [...updatedElements].sort((a, b) => a.sequence - b.sequence);
+                // Sort to get the new order for group membership detection
+                const sortedElements = [...updatedElements].sort((a, b) => a.sequence - b.sequence);
+                
+                // Find the moved element and its surrounding elements for group membership logic
+                const movedElementIndex = sortedElements.findIndex(el => el.element_id === operation.element_id);
+                const movedElement = sortedElements[movedElementIndex];
+                
+                if (movedElement && movedElementIndex >= 0) {
+                    // Get surrounding elements (excluding group parents)
+                    const nonGroupElements = sortedElements.filter(el => (el as any).element_type !== 'GROUP');
+                    const movedNonGroupIndex = nonGroupElements.findIndex(el => el.element_id === operation.element_id);
+                    
+                    const beforeElement = movedNonGroupIndex > 0 ? nonGroupElements[movedNonGroupIndex - 1] : null;
+                    const afterElement = movedNonGroupIndex < nonGroupElements.length - 1 ? nonGroupElements[movedNonGroupIndex + 1] : null;
+                    
+                    
+                    let updatedMovedElement = { ...movedElement };
+                    
+                    // Check if both surrounding elements are in the same group
+                    if (beforeElement && afterElement && 
+                        beforeElement.parent_element_id && 
+                        afterElement.parent_element_id &&
+                        beforeElement.parent_element_id === afterElement.parent_element_id) {
+                        
+                        
+                        // Add moved element to the same group
+                        updatedMovedElement = {
+                            ...updatedMovedElement,
+                            parent_element_id: beforeElement.parent_element_id,
+                            group_level: beforeElement.group_level || 1
+                        };
+                    } else if (movedElement.parent_element_id) {
+                        
+                        // Remove from previous group if moved outside group context
+                        updatedMovedElement = {
+                            ...updatedMovedElement,
+                            parent_element_id: undefined,
+                            group_level: 0
+                        };
+                    }
+                    
+                    // Apply the group membership changes
+                    updatedElements = sortedElements.map(el => 
+                        el.element_id === operation.element_id ? updatedMovedElement : el
+                    );
+                }
+                
+                return updatedElements;
             }
             
         case 'UPDATE_FIELD':

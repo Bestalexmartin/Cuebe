@@ -391,10 +391,6 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
 
   const renderUploadStep = () => (
     <VStack spacing={6} align="stretch">
-      <Text fontSize="sm">
-        Upload a CSV file containing your script elements. The file should include columns for timing, element type, descriptions, and departments.
-      </Text>
-
       <Box
         border="2px dashed"
         borderColor="blue.400"
@@ -411,7 +407,6 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
         onClick={() => fileInputRef.current?.click()}
       >
         <VStack spacing={4}>
-          <AppIcon name="add" boxSize="48px" color="gray.400" />
           <VStack spacing={2}>
             <Text fontWeight="medium">Drop CSV file here or click to browse</Text>
             <Text fontSize="sm" opacity="0.7">
@@ -492,30 +487,47 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
               <Text fontSize="sm" fontWeight="medium">
                 Preview ({cleanImport.script_elements.length} elements)
               </Text>
-              <Badge colorScheme={errors.length > 0 ? 'red' : 'green'}>
+              <Badge colorScheme={errors.length > 0 ? 'red' : 'green'} px={2}>
                 {errors.length > 0 ? 'Validation Failed' : 'Ready to Import'}
               </Badge>
             </HStack>
             
-            <Box maxHeight="200px" overflowY="auto" border="1px solid" borderColor="gray.200" _dark={{ borderColor: "gray.600" }} borderRadius="md" bg="card.background">
+            <Box 
+              maxHeight="200px" 
+              overflowY="auto" 
+              border="1px solid" 
+              borderColor="gray.200" 
+              _dark={{ borderColor: "gray.600" }} 
+              borderRadius="md" 
+              bg="card.background"
+              css={{
+                '&::-webkit-scrollbar': {
+                  display: 'none'
+                },
+                '-ms-overflow-style': 'none',
+                'scrollbar-width': 'none'
+              }}
+            >
               {cleanImport.script_elements.slice(0, 10).map((element, index) => (
-                <Box key={index} p={2} borderBottom="1px solid" borderColor="gray.100" _dark={{ borderColor: "gray.700" }} _last={{ borderBottom: 'none' }}>
-                  <HStack justify="space-between" align="start">
-                    <VStack align="start" spacing={0} flex={1}>
-                      <HStack spacing={2}>
-                        <Badge size="sm" colorScheme="blue">{element.element_type}</Badge>
-                        <Text fontSize="sm" fontWeight="medium">{element.element_name}</Text>
-                      </HStack>
-                      {element.cue_notes && (
-                        <Text fontSize="xs" opacity="0.8">{element.cue_notes}</Text>
-                      )}
-                    </VStack>
-                    <VStack align="end" spacing={0}>
-                      <Text fontSize="xs" fontFamily="mono">{formatTimeOffset(element.offset_ms, false) || '0:00'}</Text>
-                      {element.department_name && (
-                        <Text fontSize="xs" opacity="0.7">{element.department_name}</Text>
-                      )}
-                    </VStack>
+                <Box key={index} px={2} py={1} borderBottom="1px solid" borderColor="gray.100" _dark={{ borderColor: "gray.700" }} _last={{ borderBottom: 'none' }}>
+                  <HStack spacing={0} align="baseline">
+                    <Box width="50px" flexShrink={0}>
+                      <Badge size="sm" colorScheme="blue">{element.element_type}</Badge>
+                    </Box>
+                    <Text fontSize="xs" fontFamily="mono" width="60px" flexShrink={0} textAlign="right">
+                      {formatTimeOffset(element.offset_ms, false) || '0:00'}
+                    </Text>
+                    <Box width="20px" flexShrink={0} />
+                    <Text fontSize="xs" opacity="0.7" width="80px" flexShrink={0} noOfLines={1}>
+                      {element.department_name || '-'}
+                    </Text>
+                    <Box width="10px" flexShrink={0} />
+                    <Text fontSize="xs" fontWeight="medium" width="160px" flexShrink={0} noOfLines={1}>
+                      {element.element_name}
+                    </Text>
+                    <Text fontSize="xs" opacity="0.8" flex={1} minWidth={0} noOfLines={1}>
+                      {element.cue_notes || '-'}
+                    </Text>
                   </HStack>
                 </Box>
               ))}
@@ -657,7 +669,6 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={getStepTitle()}
-      headerIcon="add"
       size={isMobile ? 'full' : 'xl'}
       closeOnOverlayClick={importState.step === 'upload'}
       closeOnEsc={importState.step === 'upload'}
