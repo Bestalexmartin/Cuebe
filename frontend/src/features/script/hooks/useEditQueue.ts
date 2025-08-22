@@ -53,6 +53,7 @@ export const useEditQueue = (): UseEditQueueReturn => {
         const timestamp = Date.now();
         const id = generateOperationId();
         
+        
         // Create base operation
         const baseOperation = {
             ...operationData,

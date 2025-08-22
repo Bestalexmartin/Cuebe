@@ -1,6 +1,6 @@
 // frontend/src/features/script/export/utils/csvExporter.ts
 
-import { formatTimeFromMs } from '../../import/utils/timeConverter';
+import { formatTimeOffset } from '../../../../utils/timeUtils';
 
 export interface ScriptExportData {
   script: {
@@ -98,7 +98,7 @@ export const convertScriptToCSV = (data: ScriptExportData): string => {
     const groupPath = buildGroupPath(element, sortedElements);
     
     return [
-      formatTimeFromMs(element.offset_ms),
+      formatTimeOffset(element.offset_ms, false),
       element.element_type,
       element.element_name,
       element.cue_notes || '',
@@ -106,7 +106,7 @@ export const convertScriptToCSV = (data: ScriptExportData): string => {
       element.department_name || '',
       element.priority,
       element.location_details || '',
-      element.duration_ms ? formatTimeFromMs(element.duration_ms) : '',
+      element.duration_ms ? formatTimeOffset(element.duration_ms, false) : '',
       element.custom_color || ''
     ];
   }).filter(row => row !== null); // Remove null entries (SHOW START)

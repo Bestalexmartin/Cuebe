@@ -10,7 +10,7 @@ import {
     Flex,
 } from "@chakra-ui/react";
 import { BaseCard, BaseCardAction } from '../../../components/base/BaseCard';
-import { formatDateTimeLocal } from '../../../utils/dateTimeUtils';
+import { formatDateTimeLocal } from '../../../utils/timeUtils';
 
 // TypeScript interfaces
 interface Venue {

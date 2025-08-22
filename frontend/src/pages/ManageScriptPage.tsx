@@ -22,7 +22,7 @@ import { AppIcon } from '../components/AppIcon';
 import { ActionsMenu } from '../components/ActionsMenu';
 import { useValidatedFormSchema } from '../components/forms/ValidatedForm';
 import { useEnhancedToast } from '../utils/toastUtils';
-import { convertLocalToUTC } from '../utils/dateTimeUtils';
+import { convertLocalToUTC } from '../utils/timeUtils';
 import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
 import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
@@ -124,10 +124,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     const modalState = useModalState(Object.values(MODAL_NAMES));
 
-    const { script, isLoading: isLoadingScript, error: scriptError, refetchScript } = useScript(scriptId);
-    const { show } = useShow(script?.show_id);
+    const { script: sourceScript, isLoading: isLoadingScript, error: scriptError, refetchScript } = useScript(scriptId);
+    const { show } = useShow(sourceScript?.show_id);
 
-    const editQueueHook = useScriptElementsWithEditQueue(scriptId);
+    const editQueueHook = useScriptElementsWithEditQueue(scriptId, {
+        onAfterSave: refetchScript
+    });
     const {
         elements: editQueueElements,
         allElements: allEditQueueElements,
@@ -202,7 +204,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     // Script form synchronization hook
     const { currentScript, hasChanges, handleInfoModeExit, clearPendingChanges } = useScriptFormSync({
-        script,
+        sourceScript,
         pendingOperations,
         form,
         activeMode,
@@ -219,30 +221,30 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             // Use the same logic as handleInfoModeExit but don't change mode
             const formChanges = {
                 script_name: {
-                    oldValue: currentScript.script_name,
-                    newValue: form.formData.script_name
+                    old_value: currentScript.script_name,
+                    new_value: form.formData.script_name
                 },
                 script_status: {
-                    oldValue: currentScript.script_status,
-                    newValue: form.formData.script_status
+                    old_value: currentScript.script_status,
+                    new_value: form.formData.script_status
                 },
                 start_time: {
-                    oldValue: currentScript.start_time,
-                    newValue: convertLocalToUTC(form.formData.start_time)
+                    old_value: currentScript.start_time,
+                    new_value: convertLocalToUTC(form.formData.start_time)
                 },
                 end_time: {
-                    oldValue: currentScript.end_time,
-                    newValue: convertLocalToUTC(form.formData.end_time)
+                    old_value: currentScript.end_time,
+                    new_value: (form.formData.end_time && form.formData.end_time.trim()) ? convertLocalToUTC(form.formData.end_time) : currentScript.end_time
                 },
                 script_notes: {
-                    oldValue: currentScript.script_notes || '',
-                    newValue: form.formData.script_notes
+                    old_value: currentScript.script_notes || '',
+                    new_value: form.formData.script_notes
                 }
             };
 
             const actualChanges: any = {};
             for (const [field, values] of Object.entries(formChanges)) {
-                if (values.oldValue !== values.newValue) {
+                if (values.old_value !== values.new_value) {
                     actualChanges[field] = values;
                 }
             }
@@ -262,7 +264,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     // Navigation hook
     const navigation = useScriptNavigation({
         hasUnsavedChanges,
-        script,
+        sourceScript,
         scriptId,
         onUnsavedChangesDetected: (pendingPath: string) => {
             modalHandlers.setPendingNavigation(pendingPath);
@@ -273,7 +275,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     // Modal handlers hook
     const modalHandlers = useScriptModalHandlers({
         scriptId,
-        script,
+        sourceScript,
         hasUnsavedChanges,
         saveChanges,
         discardChanges,
@@ -678,7 +680,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     // Export handler
     const handleExportScript = async () => {
-        if (!scriptId || !script) return;
+        if (!scriptId || !sourceScript) return;
         
         try {
             const token = await getToken();
@@ -687,7 +689,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             }
             
             await exportScriptAsCSV(scriptId, token);
-            showSuccess('Export Complete', `Script "${script.script_name}" exported successfully`);
+            showSuccess('Export Complete', `Script "${sourceScript.script_name}" exported successfully`);
         } catch (error) {
             console.error('Export failed:', error);
             showError('Export Failed', {
@@ -826,7 +828,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                         )}
 
                         {/* Script Content */}
-                        {!isLoadingScript && !scriptError && script && (
+                        {!isLoadingScript && !scriptError && sourceScript && (
                             <Box
                                 flex={1}
                                 p="4"
@@ -838,7 +840,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
                                 {activeMode === 'view' && (
-                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} useMilitaryTime={activePreferences.useMilitaryTime} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} allElements={allEditQueueElements} script={script} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} />
+                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} useMilitaryTime={activePreferences.useMilitaryTime} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} allElements={allEditQueueElements} script={currentScript} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} />
                                 )}
                                 {activeMode === 'edit' && (
                                     <EditMode
@@ -852,9 +854,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                         onScrollStateChange={handleScrollStateChange}
                                         onSelectionChange={setCurrentSelectedElementIds}
                                         onToggleGroupCollapse={toggleGroupCollapse}
+                                        script={currentScript}
                                         elements={editQueueElements}
                                         allElements={allEditQueueElements}
-                                        script={currentScript}
                                         onApplyLocalChange={applyLocalChange}
                                     />
                                 )}
@@ -897,7 +899,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             <ScriptModals
                 modalState={modalState}
                 modalNames={MODAL_NAMES}
-                script={script}
+                script={sourceScript}
                 scriptId={scriptId || ''}
                 selectedElement={elementActions.selectedElement}
                 selectedElementIds={elementActions.selectedElementIds}

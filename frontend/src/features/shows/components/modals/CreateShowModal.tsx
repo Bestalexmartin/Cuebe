@@ -14,7 +14,7 @@ import { FormInput } from '../../../../components/form/FormField';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
 import { useResource } from '../../../../hooks/useResource';
-import { convertLocalToUTC } from '../../../../utils/dateTimeUtils';
+import { convertLocalToUTC } from '../../../../utils/timeUtils';
 
 // TypeScript interfaces
 interface Venue {

@@ -11,7 +11,7 @@ import {
 } from '@chakra-ui/react';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { ScriptElement } from '../../types/scriptElements';
-import { formatTimeFromMs, convertTimeToMs } from '../../import/utils/timeConverter';
+import { formatTimeOffset, parseTimeToMs } from '../../../../utils/timeUtils';
 import { ColorSelector, PRESET_COLORS } from '../ColorSelector';
 import { getGroupChildren } from '../../utils/groupUtils';
 
@@ -20,7 +20,7 @@ interface EditGroupModalProps {
     onClose: () => void;
     element: ScriptElement | null;
     allElements: ScriptElement[];
-    onSave: (changes: Record<string, { oldValue: any; newValue: any }>, offsetDelta: number, affectedChildren: string[]) => void;
+    onSave: (changes: Record<string, { old_value: any; new_value: any }>, offsetDelta: number, affectedChildren: string[]) => void;
 }
 
 interface FormData {
@@ -56,7 +56,7 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
                 custom_color: element.custom_color || PRESET_COLORS[0].value,
                 offset_ms: element.offset_ms || 0
             });
-            setTimeString(formatTimeFromMs(element.offset_ms || 0));
+            setTimeString(formatTimeOffset(element.offset_ms || 0, false) || '0:00');
         }
     }, [element]);
 
@@ -75,12 +75,12 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
 
     const handleTimeChange = (value: string) => {
         setTimeString(value);
-        const result = convertTimeToMs(value);
-        if (result.success && result.milliseconds !== undefined) {
-            setFormData(prev => ({ ...prev, offset_ms: result.milliseconds! }));
+        const timeMs = parseTimeToMs(value);
+        if (timeMs !== null) {
+            setFormData(prev => ({ ...prev, offset_ms: timeMs }));
             setErrors(prev => ({ ...prev, timeOffset: undefined }));
         } else {
-            setErrors(prev => ({ ...prev, timeOffset: result.error || 'Invalid time format' }));
+            setErrors(prev => ({ ...prev, timeOffset: 'Invalid time format' }));
         }
     };
 
@@ -102,25 +102,25 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
     const calculateChanges = () => {
         if (!element) return {};
 
-        const changes: Record<string, { oldValue: any; newValue: any }> = {};
+        const changes: Record<string, { old_value: any; new_value: any }> = {};
         
         if (formData.element_name !== element.element_name) {
-            changes.element_name = { oldValue: element.element_name, newValue: formData.element_name };
+            changes.element_name = { old_value: element.element_name, new_value: formData.element_name };
         }
         
         if (formData.cue_notes !== element.cue_notes) {
-            changes.cue_notes = { oldValue: element.cue_notes, newValue: formData.cue_notes };
+            changes.cue_notes = { old_value: element.cue_notes, new_value: formData.cue_notes };
         }
         
         if (formData.custom_color !== element.custom_color) {
-            changes.custom_color = { oldValue: element.custom_color, newValue: formData.custom_color };
+            changes.custom_color = { old_value: element.custom_color, new_value: formData.custom_color };
         }
 
         const originalOffsetMs = element.offset_ms || 0;
         const offsetDelta = formData.offset_ms - originalOffsetMs;
         
         if (offsetDelta !== 0) {
-            changes.offset_ms = { oldValue: originalOffsetMs, newValue: formData.offset_ms };
+            changes.offset_ms = { old_value: originalOffsetMs, new_value: formData.offset_ms };
         }
 
         return { changes, offsetDelta };

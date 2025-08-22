@@ -382,8 +382,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 element_id: draggedElement.element_id,
                 changes: {
                     offset_ms: {
-                        oldValue: draggedElement.offset_ms,
-                        newValue: elementAbove.offset_ms
+                        old_value: draggedElement.offset_ms,
+                        new_value: elementAbove.offset_ms
                     }
                 },
                 autoSort: autoSortCues, // Pass current auto-sort state
@@ -406,8 +406,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 element_id: draggedElement.element_id,
                 changes: {
                     offset_ms: {
-                        oldValue: draggedElement.offset_ms,
-                        newValue: elementBelow.offset_ms
+                        old_value: draggedElement.offset_ms,
+                        new_value: elementBelow.offset_ms
                     }
                 },
                 autoSort: autoSortCues, // Pass current auto-sort state
@@ -559,7 +559,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     };
 
     // Handle element edit modal save
-    const handleElementEditSave = (changes: Record<string, { oldValue: any; newValue: any }>) => {
+    const handleElementEditSave = (changes: Record<string, { old_value: any; new_value: any }>) => {
         if (!elementToEdit || !onApplyLocalChange) return;
 
         // Create a single UPDATE_ELEMENT operation with all changes  

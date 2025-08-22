@@ -46,8 +46,9 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
 
         const operationsList = operations.map((operation, index) => {
             const timestamp = EditQueueFormatter.formatTimestamp(operation.timestamp);
+            const operationType = operation.type.replace(' WITH PROPAGATION', '').replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
             const description = EditQueueFormatter.formatOperation(operation, allElements);
-            return `${index + 1}. [${timestamp}] ${description}`;
+            return `${index + 1}. [${operationType}] ${timestamp} - ${description}`;
         }).join('\n');
 
         return header + summaryLine + separator + operationsList;
@@ -143,6 +144,7 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
                 pt={2}
                 borderBottom="1px solid"
                 borderColor="ui.border"
+                bg="page.background"
             >
                 <HStack justify="space-between" align="center" mb={2} mt={-1}>
                     <HStack spacing={3}>
@@ -248,10 +250,11 @@ export const EditHistoryView: React.FC<EditHistoryViewProps> = ({
 
                                     {/* Timestamp */}
                                     <Box 
-                                        width="120px" 
+                                        width="200px" 
                                         flexShrink={0}
                                         display="flex"
                                         alignItems="center"
+                                        justifyContent="center"
                                     >
                                         <Text 
                                             fontSize="sm" 

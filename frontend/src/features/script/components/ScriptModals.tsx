@@ -80,8 +80,8 @@ interface ScriptModalsProps {
     onAbandonChangesConfirm: () => void;
     onFinalSaveConfirm: () => void;
     onSaveCancel: () => void;
-    onElementEdit: (changes: Record<string, { oldValue: any; newValue: any }>) => void;
-    onGroupEdit: (changes: Record<string, { oldValue: any; newValue: any }>, offsetDelta: number, affectedChildren: string[]) => void;
+    onElementEdit: (changes: Record<string, { old_value: any; new_value: any }>) => void;
+    onGroupEdit: (changes: Record<string, { old_value: any; new_value: any }>, offsetDelta: number, affectedChildren: string[]) => void;
     allElements: any[]; // For group calculations
 }
 

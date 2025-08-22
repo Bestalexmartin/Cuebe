@@ -14,7 +14,7 @@ import { ActionItem } from '../../../components/ActionsMenu';
 import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfirmationModal';
 import { FinalDeleteConfirmationModal } from '../../../components/modals/FinalDeleteConfirmationModal';
 import { useEnhancedToast } from '../../../utils/toastUtils';
-import { convertUTCToLocal, convertLocalToUTC } from '../../../utils/dateTimeUtils';
+import { convertUTCToLocal, convertLocalToUTC } from '../../../utils/timeUtils';
 import { useChangeDetection } from '../../../hooks/useChangeDetection';
 import { ErrorBoundary } from '../../../components/ErrorBoundary';
 import { CrewAssignmentSection } from '../components/CrewAssignmentSection';

@@ -33,7 +33,7 @@ interface EditElementModalProps {
     isOpen: boolean;
     onClose: () => void;
     element: ScriptElement | null;
-    onSave: (changes: Record<string, { oldValue: any; newValue: any }>) => void;
+    onSave: (changes: Record<string, { old_value: any; new_value: any }>) => void;
 }
 
 interface FormData {
@@ -180,7 +180,7 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
         setIsSubmitting(true);
         try {
             // Create change objects for modified fields
-            const changes: Record<string, { oldValue: any; newValue: any }> = {};
+            const changes: Record<string, { old_value: any; new_value: any }> = {};
 
             Object.keys(formData).forEach(key => {
                 const formValue = formData[key as keyof FormData];
@@ -188,8 +188,8 @@ export const EditElementModal: React.FC<EditElementModalProps> = ({
                 
                 if (formValue !== originalValue) {
                     changes[key] = {
-                        oldValue: originalValue,
-                        newValue: formValue
+                        old_value: originalValue,
+                        new_value: formValue
                     };
                 }
             });

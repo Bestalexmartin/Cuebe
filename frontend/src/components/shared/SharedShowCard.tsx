@@ -10,7 +10,7 @@ import {
   useColorModeValue
 } from '@chakra-ui/react';
 import { AppIcon } from '../AppIcon';
-import { formatDateFriendly, formatTimeLocal } from '../../utils/dateTimeUtils';
+import { formatDateFriendly, formatAbsoluteTimeStandard } from '../../utils/timeUtils';
 
 // TypeScript interfaces
 interface SharedVenue {
@@ -119,7 +119,7 @@ export const SharedShowCard: React.FC<SharedShowCardProps> = ({
               </Text>
               {show.show_end && (
                 <Text fontSize="xs" color={mutedTextColor}>
-                  {formatTimeLocal(show.show_date, useMilitaryTime)} - {formatTimeLocal(show.show_end, useMilitaryTime)}
+                  {formatAbsoluteTimeStandard(show.show_date, useMilitaryTime)} - {formatAbsoluteTimeStandard(show.show_end, useMilitaryTime)}
                 </Text>
               )}
             </VStack>
