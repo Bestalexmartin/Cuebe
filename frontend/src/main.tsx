@@ -8,6 +8,7 @@ import chakraTheme from './ChakraTheme';
 import { ClerkProvider } from '@clerk/clerk-react';
 import { BrowserRouter } from 'react-router-dom';
 import { ChakraProvider } from '@chakra-ui/react';
+import { PreferencesProvider } from './contexts/PreferencesContext';
 
 const PUBLISHABLE_KEY: string | undefined = (import.meta as any).env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -35,7 +36,9 @@ ReactDOM.createRoot(rootElement).render(
           },
         }}
       >
-        <App />
+        <PreferencesProvider>
+          <App />
+        </PreferencesProvider>
       </ChakraProvider>
     </ClerkProvider>
   </BrowserRouter>

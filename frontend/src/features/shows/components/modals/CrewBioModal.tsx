@@ -27,13 +27,15 @@ interface CrewBioModalProps {
   onClose: () => void;
   crewMember: CrewMember | null;
   showId?: string;
+  onShareUrlRefresh?: () => Promise<void>; // Called to trigger external refresh
 }
 
 export const CrewBioModal: React.FC<CrewBioModalProps> = ({
   isOpen,
   onClose,
   crewMember,
-  showId
+  showId,
+  onShareUrlRefresh
 }) => {
   const { getToken } = useAuth();
   const { showSuccess, showError } = useEnhancedToast();
@@ -110,33 +112,51 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
     if (!showId || !crewMember) return;
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication token not available');
+      // If external refresh handler is provided, use it (for Edit Show page)
+      if (onShareUrlRefresh) {
+        await onShareUrlRefresh();
+        // After external refresh, fetch the updated share URL for display
+        const token = await getToken();
+        if (token) {
+          const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          if (response.ok) {
+            const shareData = await response.json();
+            setShareUrl(`${window.location.origin}${shareData.share_url}`);
+          }
+        }
+      } else {
+        // Fallback: handle refresh internally (for Edit Department/Crew pages)
+        const token = await getToken();
+        if (!token) {
+          throw new Error('Authentication token not available');
+        }
+
+        const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share?force_refresh=true`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to refresh sharing link');
+        }
+
+        const shareData = await response.json();
+        setShareUrl(`${window.location.origin}${shareData.share_url}`);
+
+        showSuccess(
+          "Link Refreshed",
+          `A new sharing link has been ${shareData.action}`
+        );
       }
-
-      // Create or refresh the show-level share
-      const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share?force_refresh=true`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to refresh sharing link');
-      }
-
-      const shareData = await response.json();
-
-      // Update the URL with the new token
-      setShareUrl(`${window.location.origin}${shareData.share_url}`);
-
-      showSuccess(
-        "Link Refreshed",
-        `A new sharing link has been ${shareData.action}`
-      );
     } catch (error) {
       console.error('Error refreshing link:', error);
       showError("Failed to refresh sharing link. Please try again.");

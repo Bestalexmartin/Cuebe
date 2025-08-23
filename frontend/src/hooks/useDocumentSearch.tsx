@@ -50,21 +50,21 @@ export const useDocumentSearch = (contentType?: 'tutorial' | 'documentation'): U
         headers['Authorization'] = `Bearer ${authToken}`;
       }
 
-      const response = await fetch(`/api/docs/search?q=${encodeURIComponent(query)}`, { headers });
+      // Build API URL with content_type parameter if specified
+      let apiUrl = `/api/docs/search?q=${encodeURIComponent(query)}`;
+      if (contentType) {
+        apiUrl += `&content_type=${contentType}`;
+      }
+      
+      const response = await fetch(apiUrl, { headers });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
       
-      // Filter results by content type if specified
-      let filteredResults = data.results;
-      if (contentType) {
-        filteredResults = data.results.filter((result: SearchResult) => result.content_type === contentType);
-      }
-      
-      // Update results and mark as searched only after we have the new data
-      setSearchResults(filteredResults);
+      // Use results directly - backend has already filtered by content type
+      setSearchResults(data.results || []);
       setHasSearched(true);
     } catch (error) {
       console.error('Error searching:', error);

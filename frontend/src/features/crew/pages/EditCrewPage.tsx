@@ -60,6 +60,9 @@ export const EditCrewPage: React.FC = () => {
     // Crew bio modal state
     const [isCrewBioModalOpen, setIsCrewBioModalOpen] = useState(false);
     const [selectedCrewMember, setSelectedCrewMember] = useState<any>(null);
+    
+    // Track share URL updates to override stale data
+    const [shareUrlOverrides, setShareUrlOverrides] = useState<Record<string, string>>({});
 
     // Fetch the initial crew data
     const { crew, isLoading: isLoadingCrew, error: crewError } = useCrew(crewId);
@@ -271,6 +274,42 @@ export const EditCrewPage: React.FC = () => {
         setSelectedCrewMember(null);
     }, []);
 
+    // Handle share URL refresh - update the specific assignment's share_url
+    const handleShareUrlRefresh = useCallback(async () => {
+        if (!selectedCrewMember?.show_id || !crew?.user_id) return;
+        
+        try {
+            const token = await getToken();
+            if (!token) return;
+            
+            // Force refresh the share token
+            const response = await fetch(`/api/shows/${selectedCrewMember.show_id}/crew/${crew.user_id}/share?force_refresh=true`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const shareData = await response.json();
+                // Store the updated share URL for this assignment (using show_id as key for crew assignments)
+                setShareUrlOverrides(prev => ({
+                    ...prev,
+                    [selectedCrewMember.show_id]: shareData.share_url
+                }));
+                
+                showSuccess(
+                    "Link Refreshed",
+                    `A new sharing link has been ${shareData.action}`
+                );
+            }
+        } catch (error) {
+            console.error('Error refreshing link:', error);
+            showError("Failed to refresh sharing link. Please try again.");
+        }
+    }, [selectedCrewMember, crew, getToken, showSuccess, showError]);
+
     // Actions menu items
     const actionItems: ActionItem[] = [
         {
@@ -438,7 +477,10 @@ export const EditCrewPage: React.FC = () => {
                         {crew?.department_assignments && crew.department_assignments.length > 0 && (
                             <ResponsiveAssignmentList
                                 title="Department Assignments"
-                                assignments={crew.department_assignments}
+                                assignments={crew.department_assignments.map(assignment => ({
+                                    ...assignment,
+                                    share_url: shareUrlOverrides[assignment.show_id] || assignment.share_url
+                                }))}
                                 onAssignmentClick={handleCrewBioClick}
                                 showDepartmentInfo={true}
                                 formatRoleBadge={formatRoleBadge}
@@ -477,6 +519,7 @@ export const EditCrewPage: React.FC = () => {
                 onClose={handleCrewBioModalClose}
                 crewMember={selectedCrewMember}
                 showId={selectedCrewMember?.show_id || ''}
+                onShareUrlRefresh={handleShareUrlRefresh}
             />
         </ErrorBoundary>
     );

@@ -67,6 +67,9 @@ export const EditDepartmentPage: React.FC = () => {
     // Crew bio modal state
     const [isCrewBioModalOpen, setIsCrewBioModalOpen] = useState(false);
     const [selectedCrewMember, setSelectedCrewMember] = useState<any>(null);
+    
+    // Track share URL updates to override stale data
+    const [shareUrlOverrides, setShareUrlOverrides] = useState<Record<string, string>>({});
 
     // Fetch the initial department data
     const { department, isLoading: isLoadingDepartment, error: departmentError } = useDepartment(departmentId);
@@ -211,6 +214,7 @@ export const EditDepartmentPage: React.FC = () => {
         // Convert assignment data to crew member format for the modal
         const crewMemberData = {
             user_id: assignment.user_id,
+            assignment_id: assignment.assignment_id, // Add assignment_id for tracking
             fullname_first: assignment.fullname_first,
             fullname_last: assignment.fullname_last,
             email_address: assignment.email_address,
@@ -232,6 +236,42 @@ export const EditDepartmentPage: React.FC = () => {
         setIsCrewBioModalOpen(false);
         setSelectedCrewMember(null);
     }, []);
+
+    // Handle share URL refresh - update the specific assignment's share_url
+    const handleShareUrlRefresh = useCallback(async () => {
+        if (!selectedCrewMember?.assignment_id || !selectedCrewMember?.show_id || !selectedCrewMember?.user_id) return;
+        
+        try {
+            const token = await getToken();
+            if (!token) return;
+            
+            // Force refresh the share token
+            const response = await fetch(`/api/shows/${selectedCrewMember.show_id}/crew/${selectedCrewMember.user_id}/share?force_refresh=true`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.ok) {
+                const shareData = await response.json();
+                // Store the updated share URL for this assignment
+                setShareUrlOverrides(prev => ({
+                    ...prev,
+                    [selectedCrewMember.assignment_id]: shareData.share_url
+                }));
+                
+                showSuccess(
+                    "Link Refreshed",
+                    `A new sharing link has been ${shareData.action}`
+                );
+            }
+        } catch (error) {
+            console.error('Error refreshing link:', error);
+            showError("Failed to refresh sharing link. Please try again.");
+        }
+    }, [selectedCrewMember, getToken, showSuccess, showError]);
 
     // Configure actions menu
     const actions: ActionItem[] = [
@@ -367,7 +407,10 @@ export const EditDepartmentPage: React.FC = () => {
                         {department?.crew_assignments && department.crew_assignments.length > 0 && (
                             <ResponsiveAssignmentList
                                 title="Crew Assignments"
-                                assignments={department.crew_assignments}
+                                assignments={department.crew_assignments.map(assignment => ({
+                                    ...assignment,
+                                    share_url: shareUrlOverrides[assignment.assignment_id] || assignment.share_url
+                                }))}
                                 onAssignmentClick={handleCrewBioClick}
                                 showCrewInfo={true}
                                 formatRoleBadge={formatRoleBadge}
@@ -386,6 +429,7 @@ export const EditDepartmentPage: React.FC = () => {
                 onClose={handleCrewBioModalClose}
                 crewMember={selectedCrewMember}
                 showId={selectedCrewMember?.show_id || ''}
+                onShareUrlRefresh={handleShareUrlRefresh}
             />
 
             {/* Delete Confirmation Modal */}

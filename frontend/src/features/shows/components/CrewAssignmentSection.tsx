@@ -290,6 +290,64 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
     setSelectedCrewMember(null);
   }, []);
 
+  // Unified refresh link method - can be called from menu or modal
+  const handleRefreshLink = useCallback(async (userId: string) => {
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error('Authentication token not available');
+      }
+
+      // Refresh the show-level share (generates new token)
+      const response = await fetch(`/api/shows/${showId}/crew/${userId}/share?force_refresh=true`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh sharing link');
+      }
+
+      const shareData = await response.json();
+      
+      // Mark this user as recently refreshed to prevent the useEffect from overriding
+      setRecentlyRefreshedTokens(prev => new Set(prev).add(userId));
+      
+      // Update the local share token
+      setShareTokens(prev => {
+        const newMap = new Map(prev);
+        newMap.set(userId, shareData.share_token);
+        return newMap;
+      });
+      
+      // Clear the "recently refreshed" flag after 5 seconds to allow future useEffect updates
+      setTimeout(() => {
+        setRecentlyRefreshedTokens(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(userId);
+          return newSet;
+        });
+      }, 5000);
+      
+      showSuccess(
+        "Link Refreshed", 
+        `A new sharing link has been ${shareData.action} for this crew member`
+      );
+    } catch (error) {
+      console.error('Error refreshing link:', error);
+      showError("Failed to refresh sharing link. Please try again.");
+    }
+  }, [showId, getToken, showSuccess, showError]);
+
+  // Handle share URL refresh from CrewBioModal
+  const handleShareUrlRefreshFromModal = useCallback(async () => {
+    if (!selectedCrewMember) return;
+    await handleRefreshLink(selectedCrewMember.user_id);
+  }, [selectedCrewMember, handleRefreshLink]);
+
   // Handle Edit Role action
   const handleEditRoleClick = useCallback(() => {
     if (selectedAssignments.size === 1) {
@@ -302,74 +360,17 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
     }
   }, [selectedAssignments, assignments]);
 
-  // Handle Refresh Link action
+  // Handle Refresh Link action from menu (gets userId from selected assignment)
   const handleRefreshLinkClick = useCallback(async () => {
     if (selectedAssignments.size === 1) {
       const assignmentId = Array.from(selectedAssignments)[0];
       const assignment = assignments.find(a => a.id === assignmentId);
       
-      if (assignment) {
-        try {
-          const token = await getToken();
-          if (!token) {
-            throw new Error('Authentication token not available');
-          }
-
-          // Get crew member details to find user_id
-          const crewMember = crews.find(c => c.user_id === assignment.crew_member_ids[0]);
-          if (!crewMember) {
-            throw new Error('Crew member not found');
-          }
-
-          // Refresh the show-level share (generates new token)
-          const refreshUrl = `/api/shows/${showId}/crew/${crewMember.user_id}/share?force_refresh=true`;
-          console.log('🔄 Making refresh request to:', refreshUrl);
-          
-          const response = await fetch(refreshUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to refresh sharing link');
-          }
-
-          const shareData = await response.json();
-          console.log('✅ Received share data from server:', shareData);
-          
-          // Mark this user as recently refreshed to prevent the useEffect from overriding
-          setRecentlyRefreshedTokens(prev => new Set(prev).add(crewMember.user_id));
-          
-          // Update the local share token
-          setShareTokens(prev => {
-            const newMap = new Map(prev);
-            newMap.set(crewMember.user_id, shareData.share_token);
-            return newMap;
-          });
-          
-          // Clear the "recently refreshed" flag after 5 seconds to allow future useEffect updates
-          setTimeout(() => {
-            setRecentlyRefreshedTokens(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(crewMember.user_id);
-              return newSet;
-            });
-          }, 5000);
-          
-          showSuccess(
-            "Link Refreshed", 
-            `A new sharing link has been ${shareData.action} for this crew member`
-          );
-        } catch (error) {
-          console.error('Error refreshing link:', error);
-          showError("Failed to refresh sharing link. Please try again.");
-        }
+      if (assignment && assignment.crew_member_ids.length > 0) {
+        await handleRefreshLink(assignment.crew_member_ids[0]);
       }
     }
-  }, [selectedAssignments, assignments, crews, showId, getToken, showSuccess, showError]);
+  }, [selectedAssignments, assignments, handleRefreshLink]);
 
   // Handle Edit Role modal close
   const handleEditRoleModalClose = useCallback(() => {
@@ -788,6 +789,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
         onClose={handleCrewBioModalClose}
         crewMember={selectedCrewMember}
         showId={showId}
+        onShareUrlRefresh={handleShareUrlRefreshFromModal}
       />
 
       {/* Edit Role Modal */}

@@ -21,6 +21,8 @@ interface AssignmentData {
     profile_img_url?: string;
     role?: string;
     share_url?: string;
+    user_id?: string;
+    show_id?: string;
     // Show info
     show_name?: string;
     show_date?: string;
