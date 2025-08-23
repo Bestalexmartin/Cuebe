@@ -63,7 +63,8 @@ def get_content_directory(content_type: str) -> Path:
     """Get the content directory path, checking multiple possible locations"""
     possible_paths = [
         Path(f"/{content_type}"),  # Docker mount
-        Path(__file__).parent.parent / content_type,  # Local development
+        Path(__file__).parent.parent.parent / content_type,  # Project root (parent of backend/)
+        Path(__file__).parent.parent / content_type,  # Backend directory  
         Path.cwd() / content_type,  # Current working directory
     ]
     
@@ -72,7 +73,7 @@ def get_content_directory(content_type: str) -> Path:
             return path
     
     # Return the most likely path even if it doesn't exist (for error messages)
-    return Path(__file__).parent.parent / content_type
+    return Path(__file__).parent.parent.parent / content_type
 
 def build_search_index():
     """Build the search index from documentation and tutorial files"""
@@ -132,7 +133,7 @@ def process_markdown_file(md_file: Path, base_dir: Path, content_type: str):
         return None
 
 
-def search_documents(query: str, limit: int = 10) -> List[SearchResult]:
+def search_documents(query: str, limit: int = 10, content_type: str = None) -> List[SearchResult]:
     """Search through the document index with improved scoring"""
     if not query.strip():
         return []
@@ -141,7 +142,12 @@ def search_documents(query: str, limit: int = 10) -> List[SearchResult]:
     query_terms = [term.strip() for term in query_lower.split() if term.strip()]
     results = []
     
-    for doc in search_index["documents"]:
+    # Filter documents by content type before searching if specified
+    documents_to_search = search_index["documents"]
+    if content_type:
+        documents_to_search = [doc for doc in search_index["documents"] if doc["content_type"] == content_type]
+    
+    for doc in documents_to_search:
         score = 0.0
         snippet = ""
         title_lower = doc["title"].lower()
@@ -236,10 +242,11 @@ def search_documents(query: str, limit: int = 10) -> List[SearchResult]:
 @router.get("/search", response_model=SearchResponse)
 async def search_docs(
     q: str = Query(..., description="Search query"),
-    limit: int = Query(10, ge=1, le=50, description="Maximum number of results"),
+    limit: int = Query(12, ge=1, le=50, description="Maximum number of results"),
+    content_type: str = Query(None, description="Filter by content type: 'tutorial' or 'documentation'"),
     current_user: dict = Depends(get_current_user)
 ):
-    """Search through documentation"""
+    """Search through documentation and tutorials"""
     
     # Build index if empty
     if not search_index["documents"]:
@@ -248,7 +255,7 @@ async def search_docs(
     if not search_index["documents"]:
         raise HTTPException(status_code=503, detail="Documentation index not available")
     
-    results = search_documents(q, limit)
+    results = search_documents(q, limit, content_type)
     
     return SearchResponse(
         results=results,

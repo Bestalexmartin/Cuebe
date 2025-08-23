@@ -712,10 +712,14 @@ def delete_script(
         )
     
     try:
+        script_name = script.script_name
+        show_name = script.show.show_name
+        
         # Delete the script (cascade will handle script elements)
         db.delete(script)
         db.commit()
         
+        logger.info(f"Successfully deleted script '{script_name}' (ID: {script_id}) from show '{show_name}' by user {user.user_id}")
         return Response(status_code=status.HTTP_204_NO_CONTENT)
         
     except Exception as e:

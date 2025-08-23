@@ -16,6 +16,7 @@ from utils.user_preferences import (
     preferences_to_bitmap_updates,
     validate_preferences,
 )
+from .docs_search import get_content_directory, search_documents, SearchResponse
 
 logger = logging.getLogger(__name__)
 
@@ -113,8 +114,8 @@ async def access_shared_show(
             logger.error(f"Show not found for crew assignment: {crew_assignment.show_id}")
             raise HTTPException(status_code=404, detail="Show not found")
         
-        # Filter scripts to only shared ones (modify the loaded scripts in place)
-        show.scripts = [script for script in show.scripts if script.is_shared]
+        # Filter scripts to only shared ones (create a new list, don't modify the SQLAlchemy relationship)
+        shared_scripts = [script for script in show.scripts if script.is_shared]
         
         # Get the user info for metadata
         user = db.query(models.User).filter(models.User.user_id == crew_assignment.user_id).first()
@@ -129,9 +130,25 @@ async def access_shared_show(
         
         logger.info(f"Successfully processed share token access: {share_token[:8]}...")
         
-        # Return using the same structure as the working endpoint - let Pydantic handle serialization
+        # Create a copy of the show with only shared scripts for response
+        show_copy = models.Show(
+            show_id=show.show_id,
+            show_name=show.show_name,
+            show_date=show.show_date,
+            show_end=show.show_end,
+            show_notes=show.show_notes,
+            deadline=show.deadline,
+            venue_id=show.venue_id,
+            owner_id=show.owner_id,
+            date_created=show.date_created,
+            date_updated=show.date_updated,
+            venue=show.venue,
+            scripts=shared_scripts  # Use filtered scripts list
+        )
+        
+        # Return using filtered show copy - prevents SQLAlchemy from syncing changes
         return schemas.SharedShowResponse(
-            shows=[show],  # Return the actual SQLAlchemy model - Pydantic will serialize it
+            shows=[show_copy],
             user_name=f"{user.fullname_first} {user.fullname_last}".strip(),
             user_profile_image=user.profile_img_url,
             share_expires=None  # TODO: Add expiration logic if needed
@@ -235,4 +252,91 @@ async def update_guest_user_preferences(
         raise  # Re-raise HTTP exceptions
     except Exception as e:
         logger.error(f"Error updating guest preferences for {share_token}: {e}")
+        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+
+
+@router.get("/shared/{share_token}/tutorials/{tutorial_path:path}")
+async def get_shared_tutorial(
+    share_token: str,
+    tutorial_path: str,
+    db: Session = Depends(get_db)
+):
+    """Get tutorial content via share token (public endpoint, no auth required)"""
+    
+    try:
+        # Verify the share token is valid
+        crew_assignment = db.query(models.CrewAssignment).filter(
+            models.CrewAssignment.share_token == share_token,
+            models.CrewAssignment.is_active == True
+        ).first()
+        
+        if not crew_assignment:
+            logger.warning(f"Invalid share token for tutorial access: {share_token}")
+            raise HTTPException(status_code=404, detail="Share not found or expired")
+        
+        # Get tutorial content
+        tutorials_dir = get_content_directory("tutorials")
+        if not tutorials_dir.exists():
+            raise HTTPException(status_code=503, detail="Tutorial content not available")
+        
+        tutorial_file = tutorials_dir / tutorial_path
+        if not tutorial_file.exists() or not tutorial_file.suffix == '.md':
+            raise HTTPException(status_code=404, detail="Tutorial not found")
+        
+        # Ensure the requested file is within the tutorials directory (security check)
+        try:
+            tutorial_file.resolve().relative_to(tutorials_dir.resolve())
+        except ValueError:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Read tutorial content
+        with open(tutorial_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        logger.info(f"Tutorial accessed via share token: {tutorial_path}")
+        
+        return {"content": content, "path": tutorial_path}
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
+    except Exception as e:
+        logger.error(f"Error accessing tutorial via share token {share_token}: {e}")
+        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+
+
+@router.get("/shared/{share_token}/tutorials/search", response_model=SearchResponse)
+async def search_shared_tutorials(
+    share_token: str,
+    q: str = Query(..., description="Search query"),
+    limit: int = Query(12, ge=1, le=50, description="Maximum number of results"),
+    db: Session = Depends(get_db)
+):
+    """Search tutorials via share token (public endpoint, no auth required)"""
+    
+    try:
+        # Verify the share token is valid
+        crew_assignment = db.query(models.CrewAssignment).filter(
+            models.CrewAssignment.share_token == share_token,
+            models.CrewAssignment.is_active == True
+        ).first()
+        
+        if not crew_assignment:
+            logger.warning(f"Invalid share token for tutorial search: {share_token}")
+            raise HTTPException(status_code=404, detail="Share not found or expired")
+        
+        # Search only tutorial content
+        results = search_documents(q, limit, content_type="tutorial")
+        
+        logger.info(f"Tutorial search via share token: query='{q}', results={len(results)}")
+        
+        return SearchResponse(
+            results=results,
+            total_results=len(results),
+            query=q
+        )
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
+    except Exception as e:
+        logger.error(f"Error searching tutorials via share token {share_token}: {e}")
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
