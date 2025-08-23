@@ -79,7 +79,7 @@ export const TutorialsPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuC
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [content, setContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const [tutorialFiles, setTutorialFiles] = useState<TutorialFile[]>(TUTORIAL_FILES);
+  const [tutorialFiles] = useState<TutorialFile[]>(TUTORIAL_FILES);
   
   // Use the shared search hook
   const {
@@ -260,7 +260,7 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
                       }}
                     >
                       <Box px={2}>
-                        <AppIcon name={tutorial.icon} boxSize="21px" />
+                        <AppIcon name={tutorial.icon as any} boxSize="21px" />
                       </Box>
                       <VStack align="start" spacing={0} flex={1}>
                         <Text fontWeight="medium" fontSize="sm" color="cardText">
@@ -321,7 +321,7 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
           onClick={() => loadTutorial(tutorial.name)}
         >
           <Box px={2}>
-            <AppIcon name={tutorial.icon} boxSize="21px" />
+            <AppIcon name={tutorial.icon as any} boxSize="21px" />
           </Box>
           <VStack align="start" spacing={1} flex={1}>
             <Text fontWeight="medium" fontSize="sm" color="cardText">
@@ -363,7 +363,7 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
             <VStack spacing={4} align="stretch">
               <HStack spacing={3} align="center" justify="space-between">
                 <HStack spacing={3} align="center">
-                  <AppIcon name={tutorialFiles.find(t => t.name === selectedTutorial)?.icon || 'compass'} boxSize="24px" />
+                  <AppIcon name={(tutorialFiles.find(t => t.name === selectedTutorial)?.icon as any) || 'compass'} boxSize="24px" />
                   <Text fontWeight="semibold" fontSize="lg">{selectedTutorial}</Text>
                 </HStack>
                 <Button

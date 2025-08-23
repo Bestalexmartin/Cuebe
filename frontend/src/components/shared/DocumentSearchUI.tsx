@@ -1,8 +1,6 @@
 import React from 'react';
 import {
   HStack,
-  Input,
-  Button,
   VStack,
   Box,
   Text

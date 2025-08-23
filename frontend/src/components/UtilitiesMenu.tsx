@@ -46,6 +46,7 @@ export const UtilitiesMenu: React.FC<UtilitiesMenuProps> = ({ onSaveNavigationSt
         _hover={{ bg: 'orange.400' }}
         _focus={{ boxShadow: 'none' }}
         _active={{ bg: 'orange.400' }}
+        rightIcon={<AppIcon name="openmenu" />}
       >
         Utilities
       </MenuButton>

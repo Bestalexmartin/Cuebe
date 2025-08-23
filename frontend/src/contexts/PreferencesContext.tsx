@@ -327,5 +327,3 @@ export const useUserPreferences = () => {
     return context;
 };
 
-// Export types
-export type { UserPreferences };

@@ -1,0 +1,8 @@
+🚀 Starting Cuebe backend server...
+Virtual environment: /Users/alex/Projects/cuebe/backend/venv
+Failed to connect to Redis for rate limiting: Error 61 connecting to localhost:6379. Connection refused.
+INFO:__main__:Rate limiting enabled
+INFO:__main__:Cuebe API initialized with organized routers and light mode documentation
+INFO:     Will watch for changes in these directories: ['/Users/alex/Projects/cuebe/backend']
+ERROR:    [Errno 48] Address already in use
+Built search index with 59 documents

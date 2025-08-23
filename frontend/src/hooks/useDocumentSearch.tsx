@@ -67,7 +67,6 @@ export const useDocumentSearch = (contentType?: 'tutorial' | 'documentation'): U
       setSearchResults(data.results || []);
       setHasSearched(true);
     } catch (error) {
-      console.error('Error searching:', error);
       setSearchResults([]);
       setHasSearched(true); // Still mark as searched even on error to show the no results state
     } finally {
@@ -87,8 +86,6 @@ export const useDocumentSearch = (contentType?: 'tutorial' | 'documentation'): U
     if (file) {
       clearSearch();
       onSelect(file.name);
-    } else {
-      console.log('No matching file found for search result:', result);
     }
   };
 

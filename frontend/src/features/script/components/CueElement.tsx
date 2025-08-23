@@ -9,7 +9,6 @@ import { ScriptElement } from '../types/scriptElements';
 import { getTextColorForBackground } from '../../../utils/colorUtils';
 import { AppIcon } from '../../../components/AppIcon';
 import { formatTimeOffset, formatAbsoluteTime } from '../../../utils/timeUtils';
-import { useUserPreferences } from '../../../hooks/useUserPreferences';
 
 interface CueElementProps {
     element: ScriptElement;
@@ -43,7 +42,6 @@ export const CueElement: React.FC<CueElementProps> = React.memo((props: CueEleme
         onEdit,
         onToggleGroupCollapse
     } = props;
-    const { preferences } = useUserPreferences();
     
     // Use useMilitaryTime directly like colorizeDepNames and showClockTimes
     // All preferences are now passed as props from parent components

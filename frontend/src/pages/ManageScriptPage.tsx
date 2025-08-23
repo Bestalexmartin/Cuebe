@@ -264,7 +264,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     // Navigation hook
     const navigation = useScriptNavigation({
         hasUnsavedChanges,
-        sourceScript,
+        script: sourceScript,
         scriptId,
         onUnsavedChangesDetected: (pendingPath: string) => {
             modalHandlers.setPendingNavigation(pendingPath);
@@ -275,7 +275,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     // Modal handlers hook
     const modalHandlers = useScriptModalHandlers({
         scriptId,
-        sourceScript,
+        script: sourceScript,
         hasUnsavedChanges,
         saveChanges,
         discardChanges,

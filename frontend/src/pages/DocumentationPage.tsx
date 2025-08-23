@@ -23,9 +23,6 @@ import { DocFile, groupAndSortDocuments, getDocumentsForCategory } from '../util
 import { useDocumentSearch } from '../hooks/useDocumentSearch';
 import { useAuth } from '@clerk/clerk-react';
 
-
-
-
 interface DocumentationPageProps {
   isMenuOpen: boolean;
   onMenuClose: () => void;
@@ -59,8 +56,6 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
     setContent('');
   };
 
-
-
   const { getToken } = useAuth();
 
   // Load documentation files on component mount
@@ -82,7 +77,6 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
         const data = await response.json();
         setDocumentFiles(data.documents);
       } catch (error) {
-        console.error('Error loading documentation files:', error);
         setDocumentFiles([]);
       } finally {
         setIsLoadingDocs(false);
@@ -91,9 +85,6 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
 
     loadDocumentationFiles();
   }, [getToken]);
-
-
-
 
   const loadCategory = (category: string) => {
     setSelectedCategory(category);
@@ -270,7 +261,7 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
       isSearching={isSearching}
       onSearch={(query) => handleSearch(query, clearPageState)}
       onClearSearch={clearSearch}
-      placeholder="Search docs..."
+      placeholder="Search documentation..."
     />
   );
 

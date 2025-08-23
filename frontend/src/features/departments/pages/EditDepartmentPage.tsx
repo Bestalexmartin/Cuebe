@@ -409,7 +409,7 @@ export const EditDepartmentPage: React.FC = () => {
                                 title="Crew Assignments"
                                 assignments={department.crew_assignments.map(assignment => ({
                                     ...assignment,
-                                    share_url: shareUrlOverrides[assignment.assignment_id] || assignment.share_url
+                                    share_url: shareUrlOverrides[assignment.assignment_id] || ''
                                 }))}
                                 onAssignmentClick={handleCrewBioClick}
                                 showCrewInfo={true}
