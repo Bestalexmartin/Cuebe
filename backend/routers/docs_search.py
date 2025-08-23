@@ -89,7 +89,7 @@ def build_search_index():
             if doc:
                 documents.append(doc)
     else:
-        print(f"Docs directory not found: {docs_dir}")
+        pass
     
     # Index tutorial files  
     tutorials_dir = get_content_directory("tutorials")
@@ -99,12 +99,10 @@ def build_search_index():
             if doc:
                 documents.append(doc)
     else:
-        print(f"Tutorials directory not found: {tutorials_dir}")
+        pass
     
     search_index["documents"] = documents
     search_index["last_updated"] = datetime.now().isoformat()
-    
-    print(f"Built search index with {len(documents)} documents")
 
 def process_markdown_file(md_file: Path, base_dir: Path, content_type: str):
     """Process a single markdown file for indexing"""
@@ -129,7 +127,6 @@ def process_markdown_file(md_file: Path, base_dir: Path, content_type: str):
         return doc
         
     except Exception as e:
-        print(f"Error processing {md_file}: {e}")
         return None
 
 

@@ -142,7 +142,7 @@ export class EditQueueFormatter {
     /**
      * Format element updates with appropriate descriptions
      */
-    private static formatElementUpdate(operation: any, elementName: string, useMilitaryTime: boolean = false): string {
+    private static formatElementUpdate(operation: any, elementName: string, _useMilitaryTime: boolean = false): string {
         const changes = operation.changes || {};
         const changedFields = Object.keys(changes);
         
@@ -278,7 +278,7 @@ export class EditQueueFormatter {
     /**
      * Format field-specific updates with appropriate value formatting
      */
-    private static formatFieldUpdate(operation: any, elementName: string, useMilitaryTime: boolean = false): string {
+    private static formatFieldUpdate(operation: any, elementName: string, _useMilitaryTime: boolean = false): string {
         const { field, old_value, new_value } = operation;
         
         const fieldDisplayNames: Record<string, string> = {

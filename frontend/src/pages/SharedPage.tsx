@@ -25,7 +25,6 @@ import { encodeShareToken } from '../utils/tokenValidation';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ViewMode } from '../features/script/components/modes/ViewMode';
-import { useUserPreferences } from '../hooks/useUserPreferences';
 import { useSharedData } from '../hooks/useSharedData';
 import { useScriptViewing } from '../hooks/useScriptViewing';
 import { useSorting } from '../hooks/useSorting';
@@ -34,7 +33,7 @@ import { ShowsList } from '../components/shared/ShowsList';
 import { LoadingSpinner, ErrorState, ScriptLoadingState } from '../components/shared/LoadingStates';
 import { SortMenu, SortOption } from '../components/shared/SortMenu';
 import { SharedPageHeader } from '../components/shared/SharedPageHeader';
-import { TutorialsPage } from './TutorialsPage';
+import { SearchInput } from '../components/shared/SearchInput';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -48,7 +47,9 @@ import {
   Tbody,
   Tr,
   Th,
-  Td
+  Td,
+  Card,
+  CardBody
 } from '@chakra-ui/react';
 
 // Independent Scoped-side MarkdownRenderer (duplicated from Auth side for architectural separation)
@@ -170,6 +171,13 @@ const ScopedMarkdownRenderer: React.FC<{ content: string }> = ({ content }) => {
 interface SharedTutorialsPageProps {
   shareToken?: string;
   onClose: () => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  searchResults: any[];
+  isSearching: boolean;
+  hasSearched: boolean;
+  handleSearch: (query: string, onClearState?: () => void) => void;
+  clearSearch: () => void;
 }
 
 // Static tutorial file structure for Scoped side (independent of Auth side)
@@ -211,64 +219,26 @@ const SCOPED_TUTORIAL_FILES = [
   }
 ];
 
-const SharedTutorialsPage: React.FC<SharedTutorialsPageProps> = ({ shareToken, onClose }) => {
+const SharedTutorialsPage: React.FC<SharedTutorialsPageProps> = ({ 
+  shareToken, 
+  onClose: _onClose, 
+  searchQuery: _searchQuery, 
+  setSearchQuery: _setSearchQuery, 
+  searchResults, 
+  isSearching: _isSearching, 
+  hasSearched, 
+  handleSearch: _handleSearch, 
+  clearSearch 
+}) => {
   const [selectedTutorial, setSelectedTutorial] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [content, setContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [tutorialFiles] = useState(SCOPED_TUTORIAL_FILES);
-  
-  // Scoped side search implementation
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSearch = async (query: string, onClearState?: () => void) => {
-    if (!query.trim() || !shareToken) {
-      setSearchResults([]);
-      setHasSearched(false);
-      return;
-    }
-
-    if (onClearState) {
-      onClearState();
-    }
-
-    setIsSearching(true);
-    
-    try {
-      const response = await fetch(`/api/shared/${shareToken}/tutorials/search?q=${encodeURIComponent(query)}`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setSearchResults(data.results || []);
-      setHasSearched(true);
-    } catch (error) {
-      console.error('Error searching shared tutorials:', error);
-      setSearchResults([]);
-      setHasSearched(true);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const clearSearch = () => {
-    setSearchQuery('');
-    setSearchResults([]);
-    setHasSearched(false);
-  };
-
-  const clearPageState = () => {
-    setSelectedTutorial(null);
-    setSelectedCategory(null);
-    setContent('');
-  };
 
   const handleSearchResultClick = (result: any) => {
-    const file = tutorialFiles.find(f => f.name === result.title || f.path === result.file_path || f.title === result.title);
+    const file = tutorialFiles.find(f => f.name === result.title || f.path === result.file_path);
     if (file) {
       clearSearch();
       loadTutorial(file.name);
@@ -365,260 +335,324 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
     return grouped;
   };
 
-  // Search UI component
-  const searchUI = (
-    <Box width="300px">
-      <HStack>
-        <Box position="relative" flex="1">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleSearch(searchQuery, clearPageState);
-              }
-            }}
-            placeholder="Search tutorials..."
-            style={{
-              width: '100%',
-              padding: '6px 32px 6px 12px',
-              border: '1px solid #e2e8f0',
-              borderRadius: '6px',
-              fontSize: '14px',
-              outline: 'none'
-            }}
-          />
-          <Box
-            position="absolute"
-            right="8px"
-            top="50%"
-            transform="translateY(-50%)"
-            cursor="pointer"
-            onClick={() => handleSearch(searchQuery, clearPageState)}
-          >
-            {isSearching ? (
-              <AppIcon name="compass" boxSize="16px" />
-            ) : (
-              <AppIcon name="compass" boxSize="16px" />
-            )}
-          </Box>
-        </Box>
-        {searchQuery && (
-          <Button
-            size="xs"
-            variant="ghost"
-            onClick={clearSearch}
-          >
-            Clear
-          </Button>
-        )}
-      </HStack>
-    </Box>
-  );
 
   return (
-    <Box height="100%">
-      {/* Search Bar */}
-      <Box mb={4} display="flex" justifyContent="flex-end">
-        {searchUI}
-      </Box>
-
-      {/* Main Content */}
-      <Box 
-        border="1px solid"
-        borderColor="container.border"
-        borderRadius="md"
-        height="calc(100% - 60px)"
-        overflow="hidden"
-        display="flex"
-        flexDirection="column"
-      >
-        {selectedTutorial ? (
-          // Selected tutorial content
-          <Box height="100%" display="flex" flexDirection="column">
-            {isLoading ? (
-              <VStack spacing={4} p={8}>
-                <AppIcon name="compass" boxSize="32px" />
-                <Text>Loading tutorial...</Text>
-              </VStack>
-            ) : (
-              <>
-                {/* Sticky Header */}
-                <Box bg="page.background" p={4} borderBottom="1px solid" borderColor="container.border">
-                  <Flex justify="space-between" align="center">
-                    <HStack spacing={3}>
-                      <AppIcon name={tutorialFiles.find(t => t.name === selectedTutorial)?.icon || 'compass'} boxSize="24px" />
-                      <Heading size="md">{selectedTutorial}</Heading>
-                    </HStack>
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      onClick={() => {
-                        if (selectedCategory) {
-                          setSelectedTutorial(null);
-                          clearSearch();
-                        } else {
-                          setSelectedTutorial(null);
-                          setSelectedCategory(null);
-                          clearSearch();
-                        }
-                      }}
-                    >
-                      {selectedCategory ? `Back to ${selectedCategory}` : 'Back to All Tutorials'}
-                    </Button>
-                  </Flex>
-                </Box>
-                
-                {/* Scrollable Content */}
-                <Box flex={1} overflowY="auto" p={6} className="hide-scrollbar">
-                  <ScopedMarkdownRenderer content={content} />
-                </Box>
-              </>
-            )}
-          </Box>
-        ) : (
-          // Tutorial overview or search results
-          <Box p={6} height="100%" overflowY="auto" className="hide-scrollbar">
-            {hasSearched ? (
-              // Search results
-              <VStack spacing={4} align="stretch">
-                <Text fontWeight="semibold">
-                  {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} for "{searchQuery}"
-                </Text>
-                {searchResults.map((result, idx) => (
-                  <Box
-                    key={idx}
-                    p={4}
-                    border="1px solid"
-                    borderColor="gray.600"
-                    borderRadius="md"
-                    cursor="pointer"
-                    _hover={{ borderColor: "orange.400" }}
-                    onClick={() => handleSearchResultClick(result)}
-                  >
-                    <Text fontWeight="medium" mb={2}>{result.title}</Text>
-                    <Text fontSize="sm" color="gray.600" noOfLines={2}>
-                      {result.snippet}
-                    </Text>
-                  </Box>
-                ))}
-                {searchResults.length === 0 && (
-                  <Text color="gray.600">No tutorials found matching your search.</Text>
+    <Flex
+      gap="8"
+      height="100%"
+      flexDirection={{ base: 'column', lg: 'row' }}
+      minHeight={0} // Important for flex items to shrink
+    >
+        {/* Left Main Content */}
+        <Box
+          flex="1"
+          display="flex"
+          flexDirection="column"
+          minHeight={0} // Important for flex items to shrink
+        >
+          
+          <Box
+            border="1px solid"
+            borderColor="container.border"
+            p="4"
+            borderRadius="md"
+            flexGrow={1}
+            overflowY="auto"
+            className="hide-scrollbar edit-form-container"
+            minHeight={0} // Important for flex items to shrink
+          >
+            {selectedTutorial ? (
+              // Selected tutorial content
+              <VStack spacing={0} align="stretch" height="100%">
+                {isLoading ? (
+                  <VStack spacing={4}>
+                    <AppIcon name="compass" boxSize="32px" />
+                    <Text>Loading tutorial...</Text>
+                  </VStack>
+                ) : (
+                  <>
+                    {/* Sticky Header */}
+                    <Box position="sticky" top={0} bg="page.background" zIndex={10} pb="4px">
+                      <VStack spacing={4} align="stretch">
+                        <HStack spacing={3} align="center" justify="space-between">
+                          <HStack spacing={3} align="center">
+                            <AppIcon name={(tutorialFiles.find(t => t.name === selectedTutorial)?.icon as any) || 'compass'} boxSize="24px" />
+                            <Text fontWeight="semibold" fontSize="lg">{selectedTutorial}</Text>
+                          </HStack>
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            onClick={() => {
+                              if (selectedCategory) {
+                                setSelectedTutorial(null);
+                                clearSearch();
+                              } else {
+                                setSelectedTutorial(null);
+                                setSelectedCategory(null);
+                                clearSearch();
+                              }
+                            }}
+                          >
+                            {selectedCategory ? `Back to ${selectedCategory}` : 'Back to All Tutorials'}
+                          </Button>
+                        </HStack>
+                        <Divider />
+                      </VStack>
+                    </Box>
+                    
+                    {/* Scrollable Content */}
+                    <Box flex={1} overflowY="auto" className="hide-scrollbar">
+                      <Card>
+                        <CardBody>
+                          <ScopedMarkdownRenderer content={content} />
+                        </CardBody>
+                      </Card>
+                    </Box>
+                  </>
                 )}
               </VStack>
-            ) : selectedCategory ? (
-              // Category view
-              <VStack spacing={4} align="stretch">
-                <Flex justify="space-between" align="center">
-                  <Badge colorScheme="blue" fontSize="sm" px={2} py={1}>
-                    {selectedCategory}
-                  </Badge>
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedCategory(null);
-                      setSelectedTutorial(null);
-                      clearSearch();
-                    }}
-                  >
-                    Back to All Tutorials
-                  </Button>
-                </Flex>
-                <Divider />
-                {groupTutorialsByCategory()[selectedCategory]?.map((tutorial) => (
-                  <HStack
-                    key={tutorial.name}
-                    spacing={3}
-                    p={3}
-                    rounded="md"
-                    shadow="sm"
-                    bg="card.background"
-                    borderWidth="2px"
-                    borderColor="gray.600"
-                    cursor="pointer"
-                    _hover={{ borderColor: "orange.400" }}
-                    onClick={() => loadTutorial(tutorial.name)}
-                  >
-                    <Box px={2}>
-                      <AppIcon name={tutorial.icon} boxSize="21px" />
-                    </Box>
-                    <VStack align="start" spacing={1} flex={1}>
-                      <Text fontWeight="medium" fontSize="sm" color="cardText">
-                        {tutorial.name}
-                      </Text>
-                      <Text fontSize="xs" color="cardText" opacity={0.8}>
-                        {tutorial.description}
-                      </Text>
-                    </VStack>
-                  </HStack>
-                ))}
-              </VStack>
             ) : (
-              // Tutorial overview
+              // Default content - search results or category overview
               <VStack spacing={4} align="stretch">
-                {Object.entries(groupTutorialsByCategory()).map(([category, tutorials]) => (
-                  <Box
-                    key={category}
-                    border="1px solid"
-                    borderColor="gray.600"
-                    borderRadius="md"
-                    p={4}
-                    cursor="pointer"
-                    _hover={{ borderColor: "orange.400" }}
-                    onClick={() => loadCategory(category)}
-                  >
-                    <VStack align="stretch" spacing={3}>
-                      <HStack spacing={4}>
-                        <Badge colorScheme="blue" fontSize="sm" px={2} py={1}>
-                          {category}
-                        </Badge>
-                        <Text fontWeight="semibold" fontSize="sm" color="cardText">
-                          {tutorials.length} tutorial{tutorials.length > 1 ? 's' : ''}
+                {hasSearched ? (
+                  // Search results using DocumentSearchUI pattern
+                  searchResults.length === 0 ? (
+                    <VStack spacing={4} align="center" py={8}>
+                      <AppIcon name="warning" boxSize="48px" color="gray.400" />
+                      <VStack spacing={2} align="center">
+                        <Text fontSize="lg" fontWeight="medium" color="cardText">
+                          No results found
                         </Text>
-                      </HStack>
-                      <VStack spacing={2} align="stretch">
-                        {tutorials.map((tutorial) => (
-                          <HStack
-                            key={tutorial.name}
-                            spacing={3}
-                            p={2}
+                        <Text fontSize="sm" color="gray.400" textAlign="center" maxW="400px">
+                          Try different search terms or check the spelling. You can also browse by category using the menu to the right.
+                        </Text>
+                      </VStack>
+                    </VStack>
+                  ) : (
+                    <>
+                      <VStack spacing={4} align="stretch">
+                        {searchResults.map((result, idx) => (
+                          <Box
+                            key={idx}
+                            p={3}
                             rounded="md"
                             shadow="sm"
-                            bg="app.background"
+                            bg="card.background"
                             borderWidth="2px"
                             borderColor="gray.600"
                             cursor="pointer"
                             _hover={{ borderColor: "orange.400" }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              loadTutorial(tutorial.name);
-                            }}
+                            onClick={() => handleSearchResultClick(result)}
                           >
-                            <Box px={2}>
-                              <AppIcon name={tutorial.icon} boxSize="21px" />
-                            </Box>
-                            <VStack align="start" spacing={0} flex={1}>
-                              <Text fontWeight="medium" fontSize="sm" color="cardText">
-                                {tutorial.name}
-                              </Text>
-                              <Text fontSize="xs" color="cardText" noOfLines={1}>
-                                {tutorial.description}
-                              </Text>
+                            <VStack align="start" spacing={1}>
+                              <HStack justify="space-between" width="100%">
+                                <HStack spacing={2} align="center">
+                                  <Box px={1} pt="2px">
+                                    <AppIcon 
+                                      name={(tutorialFiles.find(f => f.name === result.title)?.icon as any) || 'docs'} 
+                                      boxSize="14px" 
+                                    />
+                                  </Box>
+                                  <Text fontSize="sm" color="white" textTransform="uppercase" fontWeight="bold">
+                                    {result.category || 'Tutorial'}
+                                  </Text>
+                                  <Text fontSize="sm" color="cardText" fontWeight="bold">
+                                    •
+                                  </Text>
+                                  <Text fontWeight="medium" fontSize="sm" color="cardText">
+                                    {result.title}
+                                  </Text>
+                                </HStack>
+                                {result.relevance_score && (
+                                  <Text fontSize="xs" color="gray.400">
+                                    {result.relevance_score.toFixed(1)}
+                                  </Text>
+                                )}
+                              </HStack>
+                              {result.snippet && (
+                                <Text fontSize="xs" color="cardText" opacity={0.8} noOfLines={2} ml={6}>
+                                  {result.snippet}
+                                </Text>
+                              )}
                             </VStack>
-                          </HStack>
+                          </Box>
                         ))}
                       </VStack>
-                    </VStack>
-                  </Box>
-                ))}
+                    </>
+                  )
+                ) : selectedCategory ? (
+                  // Category view content  
+                  <VStack spacing={4} align="stretch">
+                    <HStack spacing={3} align="center" justify="space-between">
+                      <Badge
+                        colorScheme="blue"
+                        fontSize="sm"
+                        px={2}
+                        py={1}
+                      >
+                        {selectedCategory}
+                      </Badge>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedCategory(null);
+                          setSelectedTutorial(null);
+                          clearSearch();
+                        }}
+                      >
+                        Back to All Tutorials
+                      </Button>
+                    </HStack>
+                    <Divider />
+                    {groupTutorialsByCategory()[selectedCategory]?.map((tutorial) => (
+                      <HStack
+                        key={tutorial.name}
+                        spacing={3}
+                        p={3}
+                        rounded="md"
+                        shadow="sm"
+                        bg="card.background"
+                        borderWidth="2px"
+                        borderColor="gray.600"
+                        cursor="pointer"
+                        _hover={{ borderColor: "orange.400" }}
+                        onClick={() => loadTutorial(tutorial.name)}
+                      >
+                        <Box px={2}>
+                          <AppIcon name={tutorial.icon as any} boxSize="21px" />
+                        </Box>
+                        <VStack align="start" spacing={1} flex={1}>
+                          <Text fontWeight="medium" fontSize="sm" color="cardText">
+                            {tutorial.name}
+                          </Text>
+                          <Text fontSize="xs" color="cardText" opacity={0.8}>
+                            {tutorial.description}
+                          </Text>
+                        </VStack>
+                      </HStack>
+                    ))}
+                  </VStack>
+                ) : (
+                  // Default overview content - matches auth side
+                  Object.entries(groupTutorialsByCategory()).map(([category, tutorials]) => (
+                    <Card 
+                      key={category}
+                      size="sm" 
+                      bg="card.background"
+                      borderWidth="2px"
+                      borderRadius="md"
+                      shadow="sm"
+                      borderColor="gray.600"
+                      cursor="pointer"
+                      _hover={{ borderColor: "orange.400" }}
+                      onClick={() => loadCategory(category)}
+                    >
+                      <CardBody>
+                        <VStack align="stretch" spacing={3}>
+                          <HStack spacing={4}>
+                            <Badge
+                              colorScheme="blue"
+                              fontSize="sm"
+                              px={2}
+                              py={1}
+                            >
+                              {category}
+                            </Badge>
+                            <Text fontWeight="semibold" fontSize="sm" color="cardText">
+                              {tutorials.length} tutorial{tutorials.length > 1 ? 's' : ''}
+                            </Text>
+                          </HStack>
+                          <VStack spacing={2} align="stretch">
+                            {tutorials.map((tutorial) => (
+                              <HStack
+                                key={tutorial.name}
+                                spacing={3}
+                                p={2}
+                                rounded="md"
+                                shadow="sm"
+                                bg="app.background"
+                                borderWidth="2px"
+                                borderColor="gray.600"
+                                cursor="pointer"
+                                _hover={{ borderColor: "orange.400" }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  loadTutorial(tutorial.name);
+                                }}
+                              >
+                                <Box px={2}>
+                                  <AppIcon name={tutorial.icon as any} boxSize="21px" />
+                                </Box>
+                                <VStack align="start" spacing={0} flex={1}>
+                                  <Text fontWeight="medium" fontSize="sm" color="cardText">
+                                    {tutorial.name}
+                                  </Text>
+                                  <Text fontSize="xs" color="cardText" noOfLines={1}>
+                                    {tutorial.description}
+                                  </Text>
+                                </VStack>
+                              </HStack>
+                            ))}
+                          </VStack>
+                        </VStack>
+                      </CardBody>
+                    </Card>
+                  ))
+                )}
               </VStack>
             )}
           </Box>
-        )}
-      </Box>
-    </Box>
+        </Box>
+
+        {/* Right QuickAccess Panel - Desktop Only - matches BaseUtilityPage exactly */}
+        <Box
+          width={{ base: '0', lg: '330px' }}
+          minWidth={{ base: '0', lg: '330px' }}
+          display={{ base: 'none', lg: 'flex' }}
+          flexDirection="column"
+          flexShrink={0}
+          minHeight={0} // Important for flex items to shrink
+        >
+          <Box
+            border="1px solid"
+            borderColor="container.border"
+            p="4"
+            borderRadius="md"
+            height="fit-content" // Shrink to fit content
+            maxHeight="100%" // Don't exceed available height
+            overflowY="auto" // Allow scrolling when content exceeds max height
+            className="hide-scrollbar"
+          >
+            <VStack spacing={4} align="stretch">
+              {quickAccessItems.map((item) => (
+                <Box
+                  key={item.id}
+                  borderWidth="2px"
+                  borderRadius="md"
+                  p="4"
+                  shadow="sm"
+                  bg="card.background"
+                  cursor="pointer"
+                  borderColor="gray.600"
+                  _hover={{ borderColor: "orange.400" }}
+                  onClick={item.onClick}
+                >
+                  <HStack spacing="2" align="center" mb="2">
+                    <AppIcon name={item.icon} boxSize="14px" />
+                    <Heading size="xs" textTransform="uppercase">
+                      {item.title}
+                    </Heading>
+                  </HStack>
+                  <Text fontSize="sm" color="cardText" mb="-1">
+                    {item.description}
+                  </Text>
+                </Box>
+              ))}
+            </VStack>
+          </Box>
+        </Box>
+      </Flex>
   );
 };
 
@@ -739,6 +773,54 @@ export const SharedPage = React.memo(() => {
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [showTutorials, setShowTutorials] = useState<boolean>(false);
 
+  // Tutorial search state
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  // Tutorial search functions
+  const handleSearch = async (query: string, onClearState?: () => void) => {
+    if (!query.trim() || !shareToken) {
+      setSearchResults([]);
+      setHasSearched(false);
+      return;
+    }
+
+    if (onClearState) {
+      onClearState();
+    }
+
+    setIsSearching(true);
+    
+    try {
+      const response = await fetch(`/api/shared/${shareToken}/tutorials/search?q=${encodeURIComponent(query)}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setSearchResults(data.results || []);
+      setHasSearched(true);
+    } catch (error) {
+      console.error('Error searching shared tutorials:', error);
+      setSearchResults([]);
+      setHasSearched(true);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setHasSearched(false);
+  };
+
+  const clearPageState = () => {
+    // This will be passed to SharedTutorialsPage to clear its state
+  };
+
   // Custom hooks
   const { sharedData, isLoading, error } = useSharedData(shareToken);
   const {
@@ -754,10 +836,6 @@ export const SharedPage = React.memo(() => {
 
   const bgColor = useColorModeValue('gray.50', 'gray.900');
 
-  // Get user preferences for script viewing
-  const {
-    preferences: { colorizeDepNames, showClockTimes }
-  } = useUserPreferences();
 
   const handleShowClick = useCallback((showId: string) => {
     setSelectedShowId(prevId => prevId === showId ? null : showId);
@@ -807,58 +885,96 @@ export const SharedPage = React.memo(() => {
           <Flex direction="column" height="100%">
             {/* Header - Shows or Tutorials */}
             {!viewingScriptId && (
-              <Flex justify="space-between" align="center" flexShrink={0} mb={4}>
+              <Flex align="center" flexShrink={0} mb={4}>
+                {/* Left side - Title */}
                 <HStack spacing="2" align="center">
-                  <AppIcon name={showTutorials ? "compass" : "show"} boxSize="25px" />
-                  <Heading as="h2" size="md">{showTutorials ? "Tutorials" : "Shows"}</Heading>
+                  <AppIcon 
+                    name={showTutorials ? "compass" : "show"} 
+                    boxSize={showTutorials ? "23px" : "25px"} 
+                  />
+                  <Heading as="h2" size="md">
+                    {showTutorials ? (
+                      hasSearched && searchResults.length > 0 
+                        ? `Tutorials • ${searchResults.length} Result${searchResults.length !== 1 ? 's' : ''}`
+                        : "Tutorials"
+                    ) : "Shows"}
+                  </Heading>
                 </HStack>
-                <HStack spacing="2">
-                  {!showTutorials && (
-                    <>
-                      <SortMenu
-                        sortBy={sortBy}
-                        sortDirection={sortDirection}
-                        sortOptions={SHOWS_SORT_OPTIONS}
-                        onSortClick={handleSortClick}
+                
+                {/* Right side - Actions aligned to content */}
+                <Box flex="1" display="flex" justifyContent="space-between" alignItems="center" ml="8">
+                  {/* Header actions positioned above main content - right aligned to content area */}
+                  <Box flex="1" display="flex" justifyContent="flex-end" mr="8">
+                    {showTutorials ? (
+                      <SearchInput
+                        searchQuery={searchQuery}
+                        onSearchQueryChange={setSearchQuery}
+                        isSearching={isSearching}
+                        onSearch={(query) => handleSearch(query, clearPageState)}
+                        onClearSearch={clearSearch}
+                        placeholder="Search tutorials..."
                       />
-                      <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
-                    </>
-                  )}
-                  <Menu>
-                    <MenuButton
-                      as={Button}
-                      bg="blue.400"
-                      color="white"
-                      size="xs"
-                      _hover={{ bg: 'orange.400' }}
-                      rightIcon={<AppIcon name="openmenu" />}
-                    >
-                      Utilities
-                    </MenuButton>
-                    <MenuList>
-                      {showTutorials ? (
-                        <MenuItem onClick={() => setShowTutorials(false)}>
-                          <AppIcon name="show" boxSize="16px" mr={2} />
-                          Return to Shows
-                        </MenuItem>
-                      ) : (
-                        <MenuItem onClick={() => setShowTutorials(true)}>
-                          <AppIcon name="compass" boxSize="16px" mr={2} />
-                          Tutorials
-                        </MenuItem>
+                    ) : null}
+                  </Box>
+                  
+                  {/* Utilities menu positioned above quick access */}
+                  <Box width="330px" display="flex" justifyContent="flex-end">
+                    <HStack spacing="2">
+                      {!showTutorials && (
+                        <>
+                          <SortMenu
+                            sortBy={sortBy}
+                            sortDirection={sortDirection}
+                            sortOptions={SHOWS_SORT_OPTIONS}
+                            onSortClick={handleSortClick}
+                          />
+                          <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
+                        </>
                       )}
-                    </MenuList>
-                  </Menu>
-                </HStack>
+                      <Menu>
+                        <MenuButton
+                          as={Button}
+                          bg="blue.400"
+                          color="white"
+                          size="xs"
+                          _hover={{ bg: 'orange.400' }}
+                          rightIcon={<AppIcon name="openmenu" />}
+                        >
+                          Utilities
+                        </MenuButton>
+                        <MenuList>
+                          {showTutorials ? (
+                            <MenuItem onClick={() => setShowTutorials(false)}>
+                              <AppIcon name="show" boxSize="16px" mr={2} />
+                              Return to Shows
+                            </MenuItem>
+                          ) : (
+                            <MenuItem onClick={() => setShowTutorials(true)}>
+                              <AppIcon name="compass" boxSize="16px" mr={2} />
+                              Tutorials
+                            </MenuItem>
+                          )}
+                        </MenuList>
+                      </Menu>
+                    </HStack>
+                  </Box>
+                </Box>
               </Flex>
             )}
 
             {/* Content Area */}
             {showTutorials ? (
-              <Box height="calc(100% - 60px)">
+              <Box height="100%" flex="1">
                 <SharedTutorialsPage 
                   shareToken={shareToken}
                   onClose={() => setShowTutorials(false)}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  searchResults={searchResults}
+                  isSearching={isSearching}
+                  hasSearched={hasSearched}
+                  handleSearch={handleSearch}
+                  clearSearch={clearSearch}
                 />
               </Box>
             ) : 
@@ -897,8 +1013,8 @@ export const SharedPage = React.memo(() => {
                     >
                       <ViewMode
                         scriptId={viewingScriptId}
-                        colorizeDepNames={colorizeDepNames}
-                        showClockTimes={showClockTimes}
+                        colorizeDepNames={true}
+                        showClockTimes={false}
                         autoSortCues={true}
                         elements={scriptElements}
                         allElements={scriptElements}

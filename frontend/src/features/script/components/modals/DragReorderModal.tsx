@@ -6,8 +6,7 @@ import {
     Text,
     Button,
     Box,
-    Input,
-    HStack
+    Input
 } from '@chakra-ui/react';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { formatTimeOffset } from '../../../../utils/timeUtils';
@@ -60,7 +59,7 @@ export const DragReorderModal: React.FC<DragReorderModalProps> = ({
     
     // Recalculate midpoint whenever surrounding elements change
     useEffect(() => {
-        setCustomTime(calculateMidpoint());
+        setCustomTime(calculateMidpoint() || '');
     }, [elementAbove?.offset_ms, elementBelow?.offset_ms, preferences.useMilitaryTime]);
     
     if (!draggedElement) return null;

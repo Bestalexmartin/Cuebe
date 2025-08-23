@@ -255,6 +255,44 @@ async def update_guest_user_preferences(
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
 
 
+@router.get("/shared/{share_token}/tutorials/search", response_model=SearchResponse)
+async def search_shared_tutorials(
+    share_token: str,
+    q: str = Query(..., description="Search query"),
+    limit: int = Query(12, ge=1, le=50, description="Maximum number of results"),
+    db: Session = Depends(get_db)
+):
+    """Search tutorials via share token (public endpoint, no auth required)"""
+    
+    try:
+        # Verify the share token is valid
+        crew_assignment = db.query(models.CrewAssignment).filter(
+            models.CrewAssignment.share_token == share_token,
+            models.CrewAssignment.is_active == True
+        ).first()
+        
+        if not crew_assignment:
+            logger.warning(f"Invalid share token for tutorial search: {share_token}")
+            raise HTTPException(status_code=404, detail="Share not found or expired")
+        
+        # Search only tutorial content
+        results = search_documents(q, limit, content_type="tutorial")
+        
+        logger.info(f"Tutorial search via share token: query='{q}', results={len(results)}")
+        
+        return SearchResponse(
+            results=results,
+            total_results=len(results),
+            query=q
+        )
+        
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
+    except Exception as e:
+        logger.error(f"Error searching tutorials via share token {share_token}: {e}")
+        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+
+
 @router.get("/shared/{share_token}/tutorials/{tutorial_path:path}")
 async def get_shared_tutorial(
     share_token: str,
@@ -301,42 +339,4 @@ async def get_shared_tutorial(
         raise  # Re-raise HTTP exceptions
     except Exception as e:
         logger.error(f"Error accessing tutorial via share token {share_token}: {e}")
-        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
-
-
-@router.get("/shared/{share_token}/tutorials/search", response_model=SearchResponse)
-async def search_shared_tutorials(
-    share_token: str,
-    q: str = Query(..., description="Search query"),
-    limit: int = Query(12, ge=1, le=50, description="Maximum number of results"),
-    db: Session = Depends(get_db)
-):
-    """Search tutorials via share token (public endpoint, no auth required)"""
-    
-    try:
-        # Verify the share token is valid
-        crew_assignment = db.query(models.CrewAssignment).filter(
-            models.CrewAssignment.share_token == share_token,
-            models.CrewAssignment.is_active == True
-        ).first()
-        
-        if not crew_assignment:
-            logger.warning(f"Invalid share token for tutorial search: {share_token}")
-            raise HTTPException(status_code=404, detail="Share not found or expired")
-        
-        # Search only tutorial content
-        results = search_documents(q, limit, content_type="tutorial")
-        
-        logger.info(f"Tutorial search via share token: query='{q}', results={len(results)}")
-        
-        return SearchResponse(
-            results=results,
-            total_results=len(results),
-            query=q
-        )
-        
-    except HTTPException:
-        raise  # Re-raise HTTP exceptions
-    except Exception as e:
-        logger.error(f"Error searching tutorials via share token {share_token}: {e}")
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")

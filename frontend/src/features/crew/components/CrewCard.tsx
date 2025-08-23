@@ -1,6 +1,6 @@
 // frontend/src/features/crew/components/CrewCard.tsx
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import {
     HStack,
     VStack,
