@@ -20,6 +20,7 @@ import { SearchInput } from '../components/shared/SearchInput';
 import { MarkdownRenderer } from '../components/shared/MarkdownRenderer';
 import { useDocumentSearch } from '../hooks/useDocumentSearch';
 import { useAuth } from '@clerk/clerk-react';
+import { authTutorialCache } from '../utils/tutorialCache';
 
 // Tutorial file structure - organized for theater professionals
 const TUTORIAL_FILES: TutorialFile[] = [
@@ -101,7 +102,7 @@ export const TutorialsPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuC
   };
 
 
-  const { getToken } = useAuth();
+  const { getToken, userId } = useAuth();
 
 
 
@@ -151,7 +152,7 @@ export const TutorialsPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuC
 
   const loadTutorial = async (tutorialId: string) => {
     const tutorial = tutorialFiles.find(t => t.name === tutorialId);
-    if (!tutorial) return;
+    if (!tutorial || !userId) return;
 
     setIsLoading(true);
     setSelectedTutorial(tutorialId);
@@ -159,20 +160,36 @@ export const TutorialsPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuC
     clearSearch();
 
     try {
-      const headers: Record<string, string> = {};
+      // Check cache first
+      const cachedContent = authTutorialCache.get(userId, tutorial.path);
+      if (cachedContent) {
+        setContent(cachedContent);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch from server with caching headers
+      const headers: Record<string, string> = {
+        'Cache-Control': 'public, max-age=3600' // 1 hour browser cache
+      };
       const authToken = await getToken();
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
+      
       const response = await fetch(`/api/tutorials/${tutorial.path}`, { headers });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      setContent(data.content);
+      const content = data.content;
+      
+      // Cache the content
+      authTutorialCache.set(userId, tutorial.path, content);
+      setContent(content);
     } catch (error) {
-      setContent(`# Error Loading Tutorial
+      const errorContent = `# Error Loading Tutorial
 
 Unable to load **${tutorial.name}** from \`${tutorial.path}\`
 
@@ -184,7 +201,9 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
 - Check that the file exists at the specified path
 - Verify API endpoint is accessible at \`/api/tutorials/${tutorial.path}\`
 
-**Alternative:** You can access this file directly in your project at: \`tutorials/${tutorial.path}\``);
+**Alternative:** You can access this file directly in your project at: \`tutorials/${tutorial.path}\``;
+      
+      setContent(errorContent);
     } finally {
       setIsLoading(false);
     }

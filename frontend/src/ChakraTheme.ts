@@ -173,6 +173,11 @@ const semanticTokens = {
     'note.preset.yellow': {
       _light: '#EAB308',
       _dark: '#EAB308',
+    },
+    // Interactive states
+    'hover.border': {
+      _light: 'orange.400',
+      _dark: 'orange.400',
     }
   },
 };

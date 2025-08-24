@@ -31,6 +31,8 @@ import { BorderedContainer } from '../components/shared/BorderedContainer';
 import { useScriptSync } from '../hooks/useScriptSync';
 import { SharedTutorialsPage } from './components/SharedTutorialsPage';
 import { GuestDarkModeSwitch } from './components/GuestDarkModeSwitch';
+import { useTutorialSearch } from './hooks/useTutorialSearch';
+import { useScriptUpdateHandlers } from './hooks/useScriptUpdateHandlers';
 
 const SHOWS_SORT_OPTIONS: SortOption[] = [
   { value: 'show_name', label: 'Name' },
@@ -44,49 +46,18 @@ export const SharedPage = React.memo(() => {
   const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [showTutorials, setShowTutorials] = useState<boolean>(false);
+  const [shouldRotateSync, setShouldRotateSync] = useState(false);
 
-  // Tutorial search state
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-
-  // Tutorial search functions
-  const handleSearch = async (query: string, onClearState?: () => void) => {
-    if (!query.trim() || !shareToken) {
-      setSearchResults([]);
-      setHasSearched(false);
-      return;
-    }
-
-    if (onClearState) {
-      onClearState();
-    }
-
-    setIsSearching(true);
-
-    try {
-      const response = await fetch(`/api/shared/${shareToken}/tutorials/search?q=${encodeURIComponent(query)}`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setSearchResults(data.results || []);
-      setHasSearched(true);
-    } catch (error) {
-      setSearchResults([]);
-      setHasSearched(true);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const clearSearch = () => {
-    setSearchQuery('');
-    setSearchResults([]);
-    setHasSearched(false);
-  };
+  // Tutorial search - extracted to custom hook
+  const {
+    searchQuery,
+    setSearchQuery,
+    searchResults,
+    isSearching,
+    hasSearched,
+    handleSearch,
+    clearSearch,
+  } = useTutorialSearch(shareToken);
 
   const clearPageState = () => {
     // This will be passed to SharedTutorialsPage to clear its state
@@ -108,28 +79,24 @@ export const SharedPage = React.memo(() => {
     deleteElement,
   } = useScriptViewing(shareToken);
 
+  // WebSocket update handlers - extracted to custom hook
+  const { handleUpdate } = useScriptUpdateHandlers({
+    updateSingleElement,
+    updateScriptElementsDirectly,
+    deleteElement,
+    refreshScriptElementsOnly,
+  });
+
   // WebSocket sync for the currently viewing script
   const scriptSync = useScriptSync(viewingScriptId, shareToken, {
-    onUpdate: (update) => {
-      // Apply targeted updates based on update type
-      if (update.update_type === 'element_change' && update.changes) {
-        const updatedElement = update.changes;
-        updateSingleElement(updatedElement.element_id, updatedElement);
-      } else if (update.update_type === 'element_order' && update.changes?.elements) {
-        updateScriptElementsDirectly(update.changes.elements);
-      } else if (update.update_type === 'element_delete' && update.changes?.element_id) {
-        deleteElement(update.changes.element_id);
-      } else if (update.update_type === 'elements_updated') {
-        refreshScriptElementsOnly();
-      } else if (update.update_type === 'script_info') {
-        // Script info changes (name, status, times, notes) may affect the script header display
-        // For now, do lightweight refresh to get updated script metadata
-        refreshScriptElementsOnly();
-      }
-    },
+    onUpdate: handleUpdate,
     onConnect: () => {},
     onDisconnect: () => {},
     onError: () => {},
+    onDataReceived: () => {
+      setShouldRotateSync(true);
+      setTimeout(() => setShouldRotateSync(false), 700); // Match CSS animation duration (600ms) + buffer
+    },
   });
 
   const { sortBy, sortDirection, sortedShows, handleSortClick } = useSorting(sharedData);
@@ -182,6 +149,7 @@ export const SharedPage = React.memo(() => {
               connectionCount={scriptSync.connectionCount}
               connectionError={scriptSync.connectionError}
               userType="crew_member"
+              shouldRotate={shouldRotateSync}
             />
           </BorderedContainer>
         </SharedPageHeader>

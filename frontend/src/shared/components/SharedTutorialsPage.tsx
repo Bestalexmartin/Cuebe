@@ -14,7 +14,9 @@ import {
   Heading,
 } from '@chakra-ui/react';
 import { AppIcon } from '../../components/AppIcon';
-import { ScopedMarkdownRenderer } from './ScopedMarkdownRenderer';
+import { MarkdownRenderer } from '../../components/shared/MarkdownRenderer';
+import { SCOPED_TUTORIAL_FILES, createQuickAccessItems, TutorialFile } from '../constants/tutorialData';
+import { tutorialCache } from '../utils/tutorialCache';
 
 // Scoped side tutorial implementation - independent from Auth side
 interface SharedTutorialsPageProps {
@@ -28,45 +30,6 @@ interface SharedTutorialsPageProps {
   handleSearch: (query: string, onClearState?: () => void) => void;
   clearSearch: () => void;
 }
-
-// Static tutorial file structure for Scoped side (independent of Auth side)
-const SCOPED_TUTORIAL_FILES = [
-  {
-    name: 'Welcome to Cuebe! 🎭',
-    path: 'getting-started/welcome-to-cuebe.md',
-    description: 'Your introduction to digital theater production management',
-    category: 'Getting Started',
-    icon: 'compass'
-  },
-  {
-    name: 'Understanding Your Production Elements',
-    path: 'workflows/production-elements-guide.md',
-    description: 'Learn about Shows, Scripts, Venues, Departments, and Crew',
-    category: 'Core Concepts',
-    icon: 'component'
-  },
-  {
-    name: 'Your First Production Setup',
-    path: 'workflows/first-production-setup.md',
-    description: 'Step-by-step walkthrough of creating your first show',
-    category: 'Getting Started',
-    icon: 'compass'
-  },
-  {
-    name: 'Script Collaboration Made Simple',
-    path: 'features/script-collaboration.md',
-    description: 'How your team works together on scripts in real-time',
-    category: 'Working Together',
-    icon: 'component'
-  },
-  {
-    name: 'Getting Started - Your Questions Answered',
-    path: 'faqs/getting-started-faqs.md',
-    description: 'The most common questions from new Cuebe users',
-    category: 'FAQs',
-    icon: 'warning'
-  }
-];
 
 export const SharedTutorialsPage: React.FC<SharedTutorialsPageProps> = ({
   shareToken, 
@@ -110,15 +73,33 @@ export const SharedTutorialsPage: React.FC<SharedTutorialsPageProps> = ({
     clearSearch();
 
     try {
-      const response = await fetch(`/api/shared/${shareToken}/tutorials/${tutorial.path}`);
+      // Check cache first
+      const cachedContent = tutorialCache.get(shareToken, tutorial.path);
+      if (cachedContent) {
+        setContent(cachedContent);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch from server with caching headers
+      const response = await fetch(`/api/shared/${shareToken}/tutorials/${tutorial.path}`, {
+        headers: {
+          'Cache-Control': 'public, max-age=3600' // 1 hour browser cache
+        }
+      });
+      
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      setContent(data.content);
+      const content = data.content;
+      
+      // Cache the content
+      tutorialCache.set(shareToken, tutorial.path, content);
+      setContent(content);
     } catch (error) {
-      setContent(`# Error Loading Tutorial
+      const errorContent = `# Error Loading Tutorial
 
 Unable to load **${tutorial.name}** from \`${tutorial.path}\`
 
@@ -130,51 +111,20 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
 - Ensure the share link is still valid
 - Try refreshing the page
 
-**Alternative:** Contact the person who shared this link with you for assistance.`);
+**Alternative:** Contact the person who shared this link with you for assistance.`;
+      
+      setContent(errorContent);
     } finally {
       setIsLoading(false);
     }
   };
 
   // Quick Access items for Scoped side tutorials
-  const quickAccessItems = [
-    {
-      id: 'getting-started',
-      title: 'Getting Started',
-      description: 'New to Cuebe? Start here!',
-      icon: 'compass' as const,
-      isDisabled: false,
-      onClick: () => loadCategory('Getting Started')
-    },
-    {
-      id: 'core-concepts', 
-      title: 'Core Concepts',
-      description: 'Understanding the building blocks',
-      icon: 'component' as const,
-      isDisabled: false,
-      onClick: () => loadCategory('Core Concepts')
-    },
-    {
-      id: 'working-together',
-      title: 'Working Together', 
-      description: 'Team collaboration features',
-      icon: 'component' as const,
-      isDisabled: false,
-      onClick: () => loadCategory('Working Together')
-    },
-    {
-      id: 'faqs',
-      title: 'FAQs',
-      description: 'Common questions and answers',
-      icon: 'warning' as const,
-      isDisabled: false,
-      onClick: () => loadCategory('FAQs')
-    }
-  ];
+  const quickAccessItems = createQuickAccessItems(loadCategory);
 
   // Group tutorials by category
   const groupTutorialsByCategory = () => {
-    const grouped: { [key: string]: typeof SCOPED_TUTORIAL_FILES } = {};
+    const grouped: { [key: string]: TutorialFile[] } = {};
     tutorialFiles.forEach(tutorial => {
       if (!grouped[tutorial.category]) {
         grouped[tutorial.category] = [];
@@ -253,7 +203,7 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
                     <Box flex={1} overflowY="auto" className="hide-scrollbar">
                       <Card>
                         <CardBody>
-                          <ScopedMarkdownRenderer content={content} />
+                          <MarkdownRenderer content={content} />
                         </CardBody>
                       </Card>
                     </Box>

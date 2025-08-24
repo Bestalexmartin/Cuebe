@@ -29,6 +29,8 @@ interface UseScriptSyncOptions {
   onConnect?: () => void;
   onDisconnect?: () => void;
   onError?: (error: string) => void;
+  onDataReceived?: () => void; // Called when any data received
+  onConnectionEstablished?: () => void; // Called when connection first established
   autoReconnect?: boolean;
 }
 
@@ -69,6 +71,8 @@ export const useScriptSync = (
     onConnect,
     onDisconnect,
     onError,
+    onDataReceived,
+    onConnectionEstablished,
     autoReconnect = true
   } = options;
 
@@ -87,6 +91,7 @@ export const useScriptSync = (
           
         case 'script_update':
           setLastUpdate(message);
+          onDataReceived?.(); // Trigger rotation for script updates
           try {
             onUpdate?.(message);
           } catch (callbackError) {
@@ -104,13 +109,14 @@ export const useScriptSync = (
           
         case 'pong':
           // Heartbeat response - connection is alive
+          onDataReceived?.(); // Trigger rotation for heartbeat
           break;
           
         default:
       }
     } catch (error) {
     }
-  }, [onUpdate, onConnect, onError]);
+  }, [onUpdate, onConnect, onError, onDataReceived, onConnectionEstablished]);
 
   const handleClose = useCallback((event: CloseEvent) => {
     setIsConnected(false);
