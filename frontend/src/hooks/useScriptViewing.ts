@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { ScriptElement } from '../features/script/types/scriptElements';
 import { validateShareToken, buildSharedApiUrl, INVALID_SHARE_TOKEN_ERROR } from '../utils/tokenValidation';
-import { apiCache } from '../utils/apiCache';
 
 interface CrewContext {
   department_name?: string;
@@ -17,6 +16,7 @@ export const useScriptViewing = (shareToken: string | undefined) => {
   const [isLoadingScript, setIsLoadingScript] = useState(false);
   const [scriptError, setScriptError] = useState<string | null>(null);
   const [crewContext, setCrewContext] = useState<CrewContext | null>(null);
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
   const handleScriptClick = useCallback(async (scriptId: string) => {
     if (!validateShareToken(shareToken)) {
@@ -28,22 +28,6 @@ export const useScriptViewing = (shareToken: string | undefined) => {
     setScriptError(null);
     setViewingScriptId(scriptId);
 
-    // Check cache first
-    const cacheKey = apiCache.getScriptElementsKey(scriptId, shareToken!);
-    const cachedResponse = apiCache.get<any>(cacheKey);
-    
-    if (cachedResponse) {
-      if (Array.isArray(cachedResponse)) {
-        setScriptElements(cachedResponse);
-        setCrewContext(null);
-      } else {
-        setScriptElements(cachedResponse.elements || []);
-        setCrewContext(cachedResponse.crew_context || null);
-      }
-      setIsLoadingScript(false);
-      return;
-    }
-
     try {
       const elementsResponse = await fetch(
         buildSharedApiUrl(`/api/scripts/${scriptId}/elements`, shareToken!)
@@ -54,9 +38,6 @@ export const useScriptViewing = (shareToken: string | undefined) => {
       }
 
       const elementsData = await elementsResponse.json();
-
-      // Cache the response
-      apiCache.set(cacheKey, elementsData);
 
       if (Array.isArray(elementsData)) {
         setScriptElements(elementsData);
@@ -80,6 +61,56 @@ export const useScriptViewing = (shareToken: string | undefined) => {
     setCrewContext(null);
   }, []);
 
+  const refreshScriptData = useCallback(() => {
+    if (viewingScriptId) {
+      handleScriptClick(viewingScriptId);
+    }
+  }, [viewingScriptId, handleScriptClick]);
+
+  const refreshScriptElementsOnly = useCallback(async () => {
+    if (!viewingScriptId || !validateShareToken(shareToken)) {
+      return;
+    }
+
+    try {
+      const elementsResponse = await fetch(
+        buildSharedApiUrl(`/api/scripts/${viewingScriptId}/elements`, shareToken!)
+      );
+
+      if (!elementsResponse.ok) {
+        return;
+      }
+
+      const elementsData = await elementsResponse.json();
+      
+      if (Array.isArray(elementsData)) {
+        setScriptElements(elementsData);
+      } else {
+        setScriptElements(elementsData.elements || []);
+        // Don't update crew context to avoid unnecessary re-renders
+      }
+    } catch (err) {
+    }
+  }, [viewingScriptId, shareToken]);
+
+  const updateScriptElementsDirectly = useCallback((newElements: ScriptElement[]) => {
+    setScriptElements(newElements);
+  }, []);
+
+  const updateSingleElement = useCallback((elementId: string, updates: Partial<ScriptElement>) => {
+    setScriptElements(prev => 
+      prev.map(el => 
+        el.element_id === elementId ? { ...el, ...updates } : el
+      )
+    );
+  }, []);
+
+  const deleteElement = useCallback((elementId: string) => {
+    setScriptElements(prev => 
+      prev.filter(el => el.element_id !== elementId)
+    );
+  }, []);
+
   return {
     viewingScriptId,
     scriptElements,
@@ -88,5 +119,10 @@ export const useScriptViewing = (shareToken: string | undefined) => {
     crewContext,
     handleScriptClick,
     handleBackToShows,
+    refreshScriptData,
+    refreshScriptElementsOnly,
+    updateScriptElementsDirectly,
+    updateSingleElement,
+    deleteElement,
   };
 };

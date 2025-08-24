@@ -10,7 +10,9 @@ const FIELD_MAPPING = {
     colorizeDepNames: 'colorize_dep_names',
     autoSortCues: 'auto_sort_cues',
     showClockTimes: 'show_clock_times',
-    useMilitaryTime: 'use_military_time'
+    useMilitaryTime: 'use_military_time',
+    dangerMode: 'danger_mode',
+    autoSaveInterval: 'auto_save_interval'
 } as const;
 
 const REVERSE_FIELD_MAPPING = {
@@ -18,7 +20,9 @@ const REVERSE_FIELD_MAPPING = {
     colorize_dep_names: 'colorizeDepNames',
     auto_sort_cues: 'autoSortCues',
     show_clock_times: 'showClockTimes',
-    use_military_time: 'useMilitaryTime'
+    use_military_time: 'useMilitaryTime',
+    danger_mode: 'dangerMode',
+    auto_save_interval: 'autoSaveInterval'
 } as const;
 
 // Helper functions to convert between frontend and backend field names
@@ -50,6 +54,8 @@ export interface UserPreferences {
     autoSortCues: boolean;
     showClockTimes: boolean;
     useMilitaryTime: boolean;
+    dangerMode: boolean;
+    autoSaveInterval: number; // 0 = off, 15, 30, 60 seconds
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -57,7 +63,9 @@ const DEFAULT_PREFERENCES: UserPreferences = {
     colorizeDepNames: true,
     autoSortCues: true,
     showClockTimes: false,
-    useMilitaryTime: false
+    useMilitaryTime: false,
+    dangerMode: false,
+    autoSaveInterval: 0 // Off by default
 };
 
 const STORAGE_KEY = 'userPreferences';
@@ -67,7 +75,6 @@ const savePreferencesToStorage = (preferences: UserPreferences) => {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
     } catch (error) {
-        console.warn('Failed to save preferences to localStorage:', error);
     }
 };
 
@@ -76,19 +83,21 @@ const loadPreferencesFromStorage = (): UserPreferences | null => {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             const parsed = JSON.parse(stored);
-            // Validate that all required keys exist and are booleans
+            // Validate that all required keys exist and have correct types
             if (
                 typeof parsed.darkMode === 'boolean' &&
                 typeof parsed.colorizeDepNames === 'boolean' &&
                 typeof parsed.autoSortCues === 'boolean' &&
                 typeof parsed.showClockTimes === 'boolean' &&
-                typeof parsed.useMilitaryTime === 'boolean'
+                typeof parsed.useMilitaryTime === 'boolean' &&
+                typeof parsed.dangerMode === 'boolean' &&
+                typeof parsed.autoSaveInterval === 'number' &&
+                [0, 15, 30, 60].includes(parsed.autoSaveInterval)
             ) {
                 return parsed;
             }
         }
     } catch (error) {
-        console.warn('Failed to load preferences from localStorage:', error);
     }
     return null;
 };
@@ -138,7 +147,6 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                     return;
                 }
 
-                console.log('🔄 Loading user preferences (ONCE per session)');
                 const response = await fetch('/api/users/preferences', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -151,9 +159,7 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                     const userPreferences = fromBackendFields(backendPreferences);
                     setPreferences(userPreferences);
                     savePreferencesToStorage(userPreferences);
-                    console.log('✅ User preferences loaded and cached');
                 } else {
-                    console.warn('Failed to load user preferences, using stored or defaults');
                     const storedPreferences = loadPreferencesFromStorage();
                     if (storedPreferences) {
                         setPreferences(storedPreferences);
@@ -163,7 +169,6 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                     }
                 }
             } catch (error) {
-                console.error('Error loading user preferences:', error);
                 const storedPreferences = loadPreferencesFromStorage();
                 if (storedPreferences) {
                     setPreferences(storedPreferences);
@@ -205,7 +210,6 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                 return false;
             }
 
-            console.log(`🔄 Saving preference ${key}:`, value);
             const response = await fetch('/api/users/preferences', {
                 method: 'PATCH',
                 headers: {
@@ -220,11 +224,9 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                 const serverPreferences = fromBackendFields(backendPreferences);
                 setPreferences(serverPreferences);
                 savePreferencesToStorage(serverPreferences);
-                console.log(`✅ Preference ${key} saved successfully`);
                 return true;
             } else {
                 const errorData = await response.json().catch(() => ({}));
-                console.error(`Failed to update preference ${key}:`, response.status, errorData);
                 showError(`Failed to update preference: ${errorData.detail || 'Unknown error'}`);
                 // Revert local changes on error
                 setPreferences(previousPreferences);
@@ -232,7 +234,6 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                 return false;
             }
         } catch (error) {
-            console.error('Error updating user preference:', error);
             showError('Failed to save preference. Please try again.');
             // Revert local changes on error
             setPreferences(previousPreferences);
@@ -265,7 +266,6 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                 return false;
             }
 
-            console.log('🔄 Saving multiple preferences:', Object.keys(newPreferences));
             const response = await fetch('/api/users/preferences', {
                 method: 'PATCH',
                 headers: {
@@ -281,7 +281,6 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                 // Update with server response to ensure consistency
                 setPreferences(serverPreferences);
                 savePreferencesToStorage(serverPreferences);
-                console.log('✅ Multiple preferences saved successfully');
                 return true;
             } else {
                 const errorData = await response.json().catch(() => ({}));
@@ -292,7 +291,6 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                 return false;
             }
         } catch (error) {
-            console.error('Error updating user preferences:', error);
             showError('Failed to save preferences. Please try again.');
             // Revert local changes on error
             setPreferences(previousPreferences);

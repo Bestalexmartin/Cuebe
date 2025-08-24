@@ -44,6 +44,8 @@ interface ScriptModalsProps {
     showClockTimes: boolean;
     autoSortCues: boolean;
     useMilitaryTime: boolean;
+    dangerMode: boolean;
+    autoSaveInterval: number;
 
     // Event handlers
     onDeleteCancel: () => void;
@@ -60,6 +62,8 @@ interface ScriptModalsProps {
     onAutoSortChange: (enabled: boolean) => void;
     onColorizeChange: (enabled: boolean) => void;
     onClockTimesChange: (enabled: boolean) => void;
+    onDangerModeChange: (enabled: boolean) => void;
+    onAutoSaveIntervalChange: (interval: number) => void;
     onConfirmDeleteCue: () => void;
     onConfirmDuplicate: (element_name: string, offset_ms: number) => void;
     onConfirmGroupElements: (groupName: string, backgroundColor: string) => void;
@@ -109,6 +113,8 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     showClockTimes,
     autoSortCues,
     useMilitaryTime,
+    dangerMode,
+    autoSaveInterval,
     scriptName,
     crewCount,
     shareCount,
@@ -132,6 +138,8 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     onAutoSortChange,
     onColorizeChange,
     onClockTimesChange,
+    onDangerModeChange,
+    onAutoSaveIntervalChange,
     onConfirmDeleteCue,
     onConfirmDuplicate,
     onConfirmGroupElements,
@@ -241,13 +249,17 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                     colorizeDepNames,
                     autoSortCues,
                     showClockTimes,
-                    useMilitaryTime
+                    useMilitaryTime,
+                    dangerMode,
+                    autoSaveInterval
                 }}
                 onPreview={onOptionsPreview}
                 onSave={async (preferences) => { onOptionsSave(preferences); }}
                 onAutoSortChange={async (value) => { onAutoSortChange(value); }}
                 onColorizeChange={async (value) => { onColorizeChange(value); }}
                 onClockTimesChange={async (value) => { onClockTimesChange(value); }}
+                onDangerModeChange={async (value) => { onDangerModeChange(value); }}
+                onAutoSaveIntervalChange={async (value) => { onAutoSaveIntervalChange(value); }}
             />
 
             {/* Delete Cue Confirmation Modal */}

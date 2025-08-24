@@ -6,6 +6,8 @@ import { Flex, Text, Heading, Image, IconButton, useColorModeValue } from "@chak
 import { AppIcon } from '../AppIcon';
 import { useIntegratedColorMode } from '../../hooks/useIntegratedColorMode';
 import { BorderedContainer } from '../shared/BorderedContainer';
+import { ScriptSyncIcon } from '../shared/ScriptSyncIcon';
+import { useScriptSyncContextOptional } from '../../contexts/ScriptSyncContext';
 
 const DarkModeSwitch: React.FC = () => {
   const { colorMode, toggleColorMode } = useIntegratedColorMode();
@@ -13,12 +15,18 @@ const DarkModeSwitch: React.FC = () => {
   return (
     <IconButton
       aria-label="Toggle dark mode"
-      icon={<AppIcon name={colorMode === 'light' ? 'moon' : 'sun'} />}
+      icon={
+        <AppIcon 
+          name={colorMode === 'light' ? 'moon' : 'sun'} 
+          color={colorMode === 'light' ? 'blue.400' : 'orange.400'}
+          boxSize="20px"
+        />
+      }
       onClick={toggleColorMode}
       variant="ghost"
       isRound={true}
       _focus={{ boxShadow: 'none' }}
-      _hover={{ bg: "transparent", color: "initial" }}
+      _hover={{ bg: "transparent" }}
     />
   );
 };
@@ -35,6 +43,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
   const handleMenuOpen = (): void => {
     onMenuOpen();
   };
+
+  const syncContext = useScriptSyncContextOptional();
+  const syncData = syncContext?.syncData;
 
   const headerBgColor = useColorModeValue('white', 'gray.800');
 
@@ -72,6 +83,15 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
           <Flex align="center" gap="4">
             <BorderedContainer>
               <DarkModeSwitch />
+            </BorderedContainer>
+            <BorderedContainer>
+              <ScriptSyncIcon
+                isConnected={syncData?.isConnected || false}
+                isConnecting={syncData?.isConnecting || false}
+                connectionCount={syncData?.connectionCount || 0}
+                connectionError={syncData?.connectionError}
+                userType={syncData?.userType || 'stage_manager'}
+              />
             </BorderedContainer>
             <BorderedContainer>
               <UserButton />
