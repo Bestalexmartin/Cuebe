@@ -110,6 +110,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const { scriptId } = useParams<{ scriptId: string }>();
     const { getToken } = useAuth();
     const { showSuccess, showError } = useEnhancedToast();
+    const [shouldRotateAuth, setShouldRotateAuth] = useState(false);
 
     const viewModeRef = useRef<ViewModeRef>(null);
     const editModeRef = useRef<EditModeRef>(null);
@@ -161,7 +162,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         },
         onConnect: () => console.log('✅ AUTH: Script sync connected'),
         onDisconnect: () => console.log('❌ AUTH: Script sync disconnected'),
-        onError: (error) => console.error('💥 AUTH: Script sync error:', error)
+        onError: (error) => console.error('💥 AUTH: Script sync error:', error),
+        onDataReceived: () => {
+            setShouldRotateAuth(true);
+            setTimeout(() => setShouldRotateAuth(false), 700); // Match CSS animation duration (600ms) + buffer
+        }
     });
 
     // Update sync context for header display
@@ -173,7 +178,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 isConnecting: isSyncConnecting,
                 connectionCount: syncConnectionCount,
                 connectionError: syncConnectionError,
-                userType: 'stage_manager'
+                userType: 'stage_manager',
+                shouldRotate: shouldRotateAuth
             });
         } else {
             setSyncData(null);
@@ -181,7 +187,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
         // Cleanup when component unmounts
         return () => setSyncData(null);
-    }, [isSyncConnected, isSyncConnecting, syncConnectionCount, syncConnectionError, scriptId, setSyncData]);
+    }, [isSyncConnected, isSyncConnecting, syncConnectionCount, syncConnectionError, shouldRotateAuth, scriptId, setSyncData]);
 
     // Enhanced applyLocalChange that broadcasts changes via WebSocket
     const applyLocalChangeWithSync = useCallback((operation: any) => {

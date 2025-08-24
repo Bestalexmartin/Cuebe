@@ -8,28 +8,42 @@ import {
 } from '@chakra-ui/react';
 import { AppIcon } from '../AppIcon';
 import { AiOutlineLoading3Quarters, AiOutlineLoading } from "react-icons/ai";
+import { IoSyncCircleSharp, IoSync } from "react-icons/io5";
 
-// Animated Connected Icon Component
-const AnimatedConnectedIcon: React.FC<{ size: string }> = ({ size }) => (
-  <Box
-    width={size}
-    height={size}
-    borderRadius="50%"
-    background="radial-gradient(circle, #9AE6B4, #22543D)"
-    sx={{
-      '@keyframes brightness-pulse': {
-        '0%': { filter: 'brightness(0.8)' },
-        '16.66%': { filter: 'brightness(0.9)' },
-        '33.33%': { filter: 'brightness(1.0)' },
-        '50%': { filter: 'brightness(1.1)' },
-        '66.66%': { filter: 'brightness(1.0)' },
-        '83.33%': { filter: 'brightness(0.9)' },
-        '100%': { filter: 'brightness(0.8)' }
-      },
-      animation: 'brightness-pulse 4s ease-in-out infinite'
-    }}
-  />
-);
+// Connected Icon Component
+const ConnectedIcon: React.FC<{ size: string; shouldRotate?: boolean }> = ({ size, shouldRotate = false }) => {
+  const [animationKey, setAnimationKey] = React.useState(0);
+  
+  React.useEffect(() => {
+    if (shouldRotate) {
+      setAnimationKey(prev => prev + 1);
+    }
+  }, [shouldRotate]);
+  
+  return (
+    <Box
+      width={size}
+      height={size}
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      sx={{
+        '@keyframes heartbeat-rotate': {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' }
+        },
+        animation: shouldRotate ? 'heartbeat-rotate 0.6s ease-in-out' : 'none',
+      }}
+      key={animationKey} // Force re-render to restart animation
+    >
+      <Icon
+        as={IoSyncCircleSharp}
+        boxSize="28px" // Perfect size for visibility
+        color="green.400" // Match the connecting ring color
+      />
+    </Box>
+  );
+};
 
 // Thicker Ring Icon Component
 const ThickRingIcon: React.FC<{ size: string }> = ({ size }) => (
@@ -103,6 +117,7 @@ interface ScriptSyncIconProps {
   connectionError?: string | null;
   userType: 'stage_manager' | 'crew_member';
   onClick?: () => void;
+  shouldRotate?: boolean; // Triggers rotation animation
 }
 
 export const ScriptSyncIcon: React.FC<ScriptSyncIconProps> = ({
@@ -111,15 +126,22 @@ export const ScriptSyncIcon: React.FC<ScriptSyncIconProps> = ({
   connectionCount,
   connectionError,
   userType,
-  onClick
+  onClick,
+  shouldRotate = false
 }) => {
   const [displayedIcon, setDisplayedIcon] = useState<React.ReactNode>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [internalRotate, setInternalRotate] = useState(false);
+  const [hasShownWelcomeRotation, setHasShownWelcomeRotation] = useState(false);
+  
 
   const getCurrentIcon = () => {
     if (connectionError) return <ThickRingIcon size="22px" />;
     if (isConnecting) return <DualSpinningRingIcon size="22px" />;
-    if (isConnected) return <AnimatedConnectedIcon size="22px" />;
+    if (isConnected) {
+      const finalShouldRotate = shouldRotate || internalRotate;
+      return <ConnectedIcon size="22px" shouldRotate={finalShouldRotate} />;
+    }
     return <ThickRingIcon size="22px" />;
   };
 
@@ -146,7 +168,34 @@ export const ScriptSyncIcon: React.FC<ScriptSyncIconProps> = ({
         setIsTransitioning(false);
       }, 1000); // 1 second delay to show connecting state longer
     }
-  }, [isConnected, isConnecting, connectionError]);
+  }, [isConnected, isConnecting, connectionError]); // Remove shouldRotate from deps
+  
+  // Handle rotation updates separately without triggering transitions
+  useEffect(() => {
+    if (isConnected && displayedIcon !== null) {
+      setDisplayedIcon(getCurrentIcon());
+    }
+  }, [shouldRotate, internalRotate]); // Update for both external and internal rotation changes
+
+  // Reset welcome rotation state when component unmounts or disconnects
+  useEffect(() => {
+    if (!isConnected) {
+      setHasShownWelcomeRotation(false);
+    }
+  }, [isConnected]);
+
+  // Simple welcome rotation when connected
+  useEffect(() => {
+    if (isConnected && !hasShownWelcomeRotation) {
+      const timer = setTimeout(() => {
+        setInternalRotate(true);
+        setHasShownWelcomeRotation(true);
+        setTimeout(() => setInternalRotate(false), 700);
+      }, 1500); // Wait 1.5s after connection
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isConnected, hasShownWelcomeRotation]);
 
   return (
     <IconButton
