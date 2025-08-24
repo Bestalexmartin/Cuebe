@@ -11,7 +11,7 @@ interface UseAutoSaveParams {
     onAutoSaveComplete?: (success: boolean) => void;
 }
 
-interface UseAutoSaveReturn {
+export interface UseAutoSaveReturn {
     isAutoSaving: boolean;
     lastAutoSaveTime: number | null;
     secondsUntilNextSave: number;
@@ -28,7 +28,7 @@ export const useAutoSave = ({
 }: UseAutoSaveParams) => {
     const lastAutoSaveOperationCountRef = useRef<number>(0);
     const countdownRef = useRef<number | null>(null);
-    const performAutoSaveRef = useRef<() => Promise<void>>();
+    const performAutoSaveRef = useRef<(() => Promise<void>) | undefined>(undefined);
     
     const [isAutoSaving, setIsAutoSaving] = useState<boolean>(false);
     const [lastAutoSaveTime, setLastAutoSaveTime] = useState<number | null>(null);
@@ -103,7 +103,7 @@ export const useAutoSave = ({
                 const next = prev - 1;
                 if (next <= 0) {
                     // Time to auto-save
-                    performAutoSaveRef.current?.();
+                    performAutoSaveRef.current && performAutoSaveRef.current();
                     return autoSaveInterval; // Reset countdown
                 }
                 return next;

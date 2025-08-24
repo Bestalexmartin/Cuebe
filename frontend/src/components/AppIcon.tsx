@@ -2,14 +2,14 @@
 
 import React from "react";
 import { Icon, IconProps } from "@chakra-ui/react";
-import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, CopyIcon, MoonIcon, SunIcon, TriangleDownIcon, TriangleUpIcon, CalendarIcon, TimeIcon, SearchIcon, ExternalLinkIcon, CloseIcon, CheckIcon, MinusIcon, QuestionIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronUpIcon, DeleteIcon, CopyIcon, MoonIcon, TriangleDownIcon, TriangleUpIcon, CalendarIcon, TimeIcon, SearchIcon, ExternalLinkIcon, CloseIcon, CheckIcon, MinusIcon, QuestionIcon } from '@chakra-ui/icons';
 import { TiPin } from "react-icons/ti";
 import { IoPeopleSharp, IoOptionsSharp } from "react-icons/io5";
 import { IoIosSave } from "react-icons/io";
 import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
 import { FaMasksTheater, FaMapLocationDot, FaScroll } from "react-icons/fa6";
-import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt, FaAngleDoubleUp, FaAngleDoubleDown, FaHistory, FaEllipsisV, FaRedo, FaCircle, FaDotCircle, FaSync, FaSun, FaRegCircle } from "react-icons/fa";
+import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt, FaAngleDoubleUp, FaAngleDoubleDown, FaHistory, FaEllipsisV, FaRedo, FaCircle, FaSync, FaSun, FaRegCircle } from "react-icons/fa";
 import { FaArrowRightLong } from "react-icons/fa6";
 import { LuLayers3 } from "react-icons/lu";
 import { RiDashboard2Fill } from "react-icons/ri";

@@ -26,7 +26,6 @@ import { convertLocalToUTC } from '../utils/timeUtils';
 import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
 import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
 import { useScriptSync } from '../hooks/useScriptSync';
-import { ScriptSyncStatus } from '../components/shared/ScriptSyncStatus';
 import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
 import { EnableAutoSortOperation } from '../features/script/types/editQueue';
@@ -36,7 +35,6 @@ import { SaveProcessingModal } from '../components/modals/SaveProcessingModal';
 import { useAuth } from '@clerk/clerk-react';
 
 import { ScriptToolbar } from '../features/script/components/ScriptToolbar';
-import { PreferenceBadges } from '../components/shared/PreferenceBadges';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { ViewMode, ViewModeRef } from '../features/script/components/modes/ViewMode';
 import { EditMode, EditModeRef } from '../features/script/components/modes/EditMode';
@@ -155,7 +153,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         connectionCount: syncConnectionCount,
         connectionError: syncConnectionError,
         sendUpdate: sendSyncUpdate 
-    } = useScriptSync(scriptId, undefined, {
+    } = useScriptSync(scriptId || null, undefined, {
         onUpdate: (update) => {
             console.log('🔄 AUTH: Received script update from:', update.updated_by, update);
             // TODO: Handle incoming updates from other users (future enhancement)
@@ -394,7 +392,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const navigate = useNavigate();
 
     // Auto-save functionality
-    const { isAutoSaving, lastAutoSaveTime, secondsUntilNextSave, showSaveSuccess } = useAutoSave({
+    const { isAutoSaving, secondsUntilNextSave, showSaveSuccess } = useAutoSave({
         autoSaveInterval: activePreferences.autoSaveInterval,
         hasUnsavedChanges,
         pendingOperations,

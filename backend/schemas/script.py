@@ -44,3 +44,8 @@ class ScriptUpdate(BaseModel):
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None  # Planned end time
     is_shared: Optional[bool] = None
+
+class BatchUpdateResponse(BaseModel):
+    """Response for batch update operations on script elements"""
+    updated_count: int
+    total_changes: int

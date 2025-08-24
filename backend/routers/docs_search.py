@@ -31,6 +31,11 @@ class SearchResponse(BaseModel):
     total_results: int
     query: str
 
+class IndexRebuildResponse(BaseModel):
+    message: str
+    documents_indexed: int
+    last_updated: datetime
+
 def extract_title_from_markdown(content: str) -> str:
     """Extract title from markdown content"""
     lines = content.split('\n')
@@ -102,7 +107,7 @@ def build_search_index():
         pass
     
     search_index["documents"] = documents
-    search_index["last_updated"] = datetime.now().isoformat()
+    search_index["last_updated"] = datetime.now()
 
 def process_markdown_file(md_file: Path, base_dir: Path, content_type: str):
     """Process a single markdown file for indexing"""
@@ -260,15 +265,15 @@ async def search_docs(
         query=q
     )
 
-@router.post("/search/rebuild")
+@router.post("/search/rebuild", response_model=IndexRebuildResponse)
 async def rebuild_search_index(current_user: dict = Depends(get_current_user)):
     """Rebuild the documentation search index"""
     build_search_index()
-    return {
-        "message": "Search index rebuilt successfully",
-        "documents_indexed": len(search_index["documents"]),
-        "last_updated": search_index["last_updated"]
-    }
+    return IndexRebuildResponse(
+        message="Search index rebuilt successfully",
+        documents_indexed=len(search_index["documents"]),
+        last_updated=search_index["last_updated"]
+    )
 
 # Build index on module import
 build_search_index()

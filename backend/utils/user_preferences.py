@@ -10,8 +10,7 @@ USER_PREFERENCE_BITS = {
     'show_clock_times': 3,        # bit position 3
     'use_military_time': 4,       # bit position 4 (0=12hr, 1=24hr)
     'danger_mode': 5,            # bit position 5 (0=safe, 1=danger)
-    'compactView': 6,           # bit position 6 (future)
-    # etc.
+    # bit positions 6+ available for future preferences
 }
 
 # Default preferences (dark_mode=False, colorize_dep_names=True, auto_sort_cues=True, show_clock_times=False, use_military_time=False, danger_mode=False)

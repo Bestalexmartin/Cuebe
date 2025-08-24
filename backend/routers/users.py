@@ -166,7 +166,7 @@ def update_user_options(
     return current_options
 
 
-@router.get("/preferences", response_model=dict)
+@router.get("/preferences", response_model=schemas.user.UserPreferences)
 @rate_limit(RateLimitConfig.READ_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def get_user_preferences(
     request: Request,
@@ -187,11 +187,12 @@ def get_user_preferences(
     if 'auto_save_interval' not in json_preferences:
         json_preferences['auto_save_interval'] = 0  # Default: off
     
-    # Combine both preference types
-    return {**bitmap_preferences, **json_preferences}
+    # Combine both preference types and return as schema
+    combined_preferences = {**bitmap_preferences, **json_preferences}
+    return schemas.user.UserPreferences(**combined_preferences)
 
 
-@router.patch("/preferences", response_model=dict)
+@router.patch("/preferences", response_model=schemas.user.UserPreferences)
 @rate_limit(RateLimitConfig.CRUD_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def update_user_preferences(
     request: Request,
@@ -250,4 +251,5 @@ def update_user_preferences(
     bitmap_preferences = bitmap_to_preferences(user.user_prefs_bitmap or DEFAULT_PREFERENCES_BITMAP)
     json_preferences = user.user_prefs_json or {}
     
-    return {**bitmap_preferences, **json_preferences}
+    combined_preferences = {**bitmap_preferences, **json_preferences}
+    return schemas.user.UserPreferences(**combined_preferences)

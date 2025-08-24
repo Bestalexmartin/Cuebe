@@ -3,6 +3,7 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
+import schemas
 from uuid import UUID
 from datetime import datetime, timezone
 import logging
@@ -521,7 +522,10 @@ def _process_bulk_reorder_operation(db: Session, script_id: UUID, operation_data
             element.date_updated = datetime.now(timezone.utc)
             updated_count += 1
     
-    return {"updated_count": updated_count, "total_changes": len(element_changes)}
+    return schemas.script.BatchUpdateResponse(
+        updated_count=updated_count,
+        total_changes=len(element_changes)
+    )
 
 def _process_disable_auto_sort_operation(operation_data: dict):
     """Process a disable auto-sort operation (preference only, no element changes)."""

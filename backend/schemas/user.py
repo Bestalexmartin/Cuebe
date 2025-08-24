@@ -48,6 +48,18 @@ class CrewRelationshipCreate(BaseModel):
     crew_user_id: UUID
     notes: Optional[str] = None
 
+class UserPreferences(BaseModel):
+    """User preference settings combining bitmap and JSON preferences"""
+    # Bitmap preferences (boolean flags)
+    dark_mode: bool = False
+    colorize_dep_names: bool = True  
+    auto_sort_cues: bool = True
+    show_clock_times: bool = False
+    use_military_time: bool = False
+    danger_mode: bool = False
+    # JSON preferences
+    auto_save_interval: int = 0  # 0 = off, 15, 30, 60 seconds
+
 class CrewMemberWithRelationship(BaseModel):
     """User data combined with relationship notes for crew management"""
     # User fields
