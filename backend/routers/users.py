@@ -173,13 +173,22 @@ def get_user_preferences(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get user's preference settings using bitmap system."""
+    """Get user's preference settings from bitmap and JSON options."""
+    # Get bitmap, default if null
     bitmap = user.user_prefs_bitmap
     if bitmap is None:
         bitmap = DEFAULT_PREFERENCES_BITMAP
+        
+    # Convert bitmap to preferences dict
+    bitmap_preferences = bitmap_to_preferences(bitmap)
     
-    preferences = bitmap_to_preferences(bitmap)
-    return preferences
+    # Get JSON preferences with defaults
+    json_preferences = user.user_prefs_json or {}
+    if 'auto_save_interval' not in json_preferences:
+        json_preferences['auto_save_interval'] = 0  # Default: off
+    
+    # Combine both preference types
+    return {**bitmap_preferences, **json_preferences}
 
 
 @router.patch("/preferences", response_model=dict)
@@ -190,29 +199,55 @@ def update_user_preferences(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Update user's preference settings using bitmap system."""
-    # Validate preference updates
-    validation_errors = validate_preferences(preference_updates)
-    if validation_errors:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid preferences: {validation_errors}"
-        )
+    """Update user's preference settings using bitmap system and JSON options."""
     
-    # Get current bitmap
-    current_bitmap = user.user_prefs_bitmap
-    if current_bitmap is None:
-        current_bitmap = DEFAULT_PREFERENCES_BITMAP
+    # Separate bitmap preferences from JSON options
+    bitmap_updates = {}
+    json_updates = {}
     
-    # Apply updates to bitmap
-    updated_bitmap = preferences_to_bitmap_updates(current_bitmap, preference_updates)
+    for key, value in preference_updates.items():
+        if key == 'auto_save_interval':
+            # Validate auto_save_interval
+            if not isinstance(value, int) or value not in [0, 15, 30, 60]:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid auto_save_interval: {value}. Must be 0, 15, 30, or 60."
+                )
+            json_updates[key] = value
+        else:
+            bitmap_updates[key] = value
+    
+    # Validate bitmap preference updates
+    if bitmap_updates:
+        validation_errors = validate_preferences(bitmap_updates)
+        if validation_errors:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid preferences: {validation_errors}"
+            )
+    
+    # Update bitmap preferences
+    if bitmap_updates:
+        current_bitmap = user.user_prefs_bitmap
+        if current_bitmap is None:
+            current_bitmap = DEFAULT_PREFERENCES_BITMAP
+        
+        updated_bitmap = preferences_to_bitmap_updates(current_bitmap, bitmap_updates)
+        user.user_prefs_bitmap = updated_bitmap
+    
+    # Update JSON preferences
+    if json_updates:
+        current_json_prefs = user.user_prefs_json or {}
+        current_json_prefs.update(json_updates)
+        user.user_prefs_json = current_json_prefs
+        flag_modified(user, "user_prefs_json")  # Mark JSON field as modified
     
     # Save to database
-    user.user_prefs_bitmap = updated_bitmap
     db.commit()
     db.refresh(user)
     
-    # Return updated preferences
-    updated_preferences = bitmap_to_preferences(updated_bitmap)
+    # Return combined preferences
+    bitmap_preferences = bitmap_to_preferences(user.user_prefs_bitmap or DEFAULT_PREFERENCES_BITMAP)
+    json_preferences = user.user_prefs_json or {}
     
-    return updated_preferences
+    return {**bitmap_preferences, **json_preferences}

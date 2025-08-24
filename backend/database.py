@@ -5,8 +5,8 @@ import logging
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 
-# Enable comprehensive database logging
-logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+# Disable database logging for cleaner output
+logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
 
 DATABASE_URL = "postgresql://{user}:{password}@{host}:{port}/{db}".format(
     user=os.getenv("POSTGRES_USER"),
@@ -27,25 +27,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Additional event listener for detailed transaction logging
 logger = logging.getLogger(__name__)
 
-@event.listens_for(engine, "before_cursor_execute")
-def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
-    # Only log preferences-related queries and critical operations
-    if ("userTable" in statement and "preferences" in statement) or \
-       ("DELETE" in statement.upper()) or \
-       ("preferences" in statement.lower()):
-        logger.info(f"🔍 SQL EXECUTE: {statement}")
-        if parameters:
-            logger.info(f"🔍 SQL PARAMS: {parameters}")
-
-@event.listens_for(engine, "commit")
-def receive_commit(conn):
-    # Keep commit logging for tracking transactions
-    logger.info("✅ DATABASE COMMIT")
-
-@event.listens_for(engine, "rollback") 
-def receive_rollback(conn):
-    # Keep rollback logging for debugging transaction issues
-    logger.info("❌ DATABASE ROLLBACK")
+# Database event logging disabled for cleaner output
 
 # Dependency to get a DB session
 def get_db():

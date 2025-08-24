@@ -14,7 +14,7 @@ import {
     Badge,
     useBreakpointValue
 } from "@chakra-ui/react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useScript } from "../features/script/hooks/useScript";
 import { useShow } from "../features/shows/hooks/useShow";
 import { ErrorBoundary } from '../components/ErrorBoundary';
@@ -25,6 +25,9 @@ import { useEnhancedToast } from '../utils/toastUtils';
 import { convertLocalToUTC } from '../utils/timeUtils';
 import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
 import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
+import { useScriptSync } from '../hooks/useScriptSync';
+import { ScriptSyncStatus } from '../components/shared/ScriptSyncStatus';
+import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
 import { EnableAutoSortOperation } from '../features/script/types/editQueue';
 import { useModalState } from '../hooks/useModalState';
@@ -33,6 +36,8 @@ import { SaveProcessingModal } from '../components/modals/SaveProcessingModal';
 import { useAuth } from '@clerk/clerk-react';
 
 import { ScriptToolbar } from '../features/script/components/ScriptToolbar';
+import { PreferenceBadges } from '../components/shared/PreferenceBadges';
+import { useAutoSave } from '../hooks/useAutoSave';
 import { ViewMode, ViewModeRef } from '../features/script/components/modes/ViewMode';
 import { EditMode, EditModeRef } from '../features/script/components/modes/EditMode';
 import { useScriptModes, ScriptMode } from '../features/script/hooks/useScriptModes';
@@ -127,9 +132,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const { script: sourceScript, isLoading: isLoadingScript, error: scriptError, refetchScript } = useScript(scriptId);
     const { show } = useShow(sourceScript?.show_id);
 
-    const editQueueHook = useScriptElementsWithEditQueue(scriptId, {
-        onAfterSave: refetchScript
-    });
+    const editQueueHook = useScriptElementsWithEditQueue(scriptId);
     const {
         elements: editQueueElements,
         allElements: allEditQueueElements,
@@ -143,6 +146,73 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         expandAllGroups,
         collapseAllGroups
     } = editQueueHook;
+
+    // Real-time sync for collaborative editing
+    const { 
+        isConnected: isSyncConnected,
+        isConnecting: isSyncConnecting,
+        connectionCount: syncConnectionCount,
+        connectionError: syncConnectionError,
+        sendUpdate: sendSyncUpdate 
+    } = useScriptSync(scriptId, undefined, {
+        onUpdate: (update) => {
+            console.log('🔄 AUTH: Received script update from:', update.updated_by, update);
+            // TODO: Handle incoming updates from other users (future enhancement)
+        },
+        onConnect: () => console.log('✅ AUTH: Script sync connected'),
+        onDisconnect: () => console.log('❌ AUTH: Script sync disconnected'),
+        onError: (error) => console.error('💥 AUTH: Script sync error:', error)
+    });
+
+    // Update sync context for header display
+    const { setSyncData } = useScriptSyncContext();
+    useEffect(() => {
+        if (scriptId) {
+            setSyncData({
+                isConnected: isSyncConnected,
+                isConnecting: isSyncConnecting,
+                connectionCount: syncConnectionCount,
+                connectionError: syncConnectionError,
+                userType: 'stage_manager'
+            });
+        } else {
+            setSyncData(null);
+        }
+
+        // Cleanup when component unmounts
+        return () => setSyncData(null);
+    }, [isSyncConnected, isSyncConnecting, syncConnectionCount, syncConnectionError, scriptId, setSyncData]);
+
+    // Enhanced applyLocalChange that broadcasts changes via WebSocket
+    const applyLocalChangeWithSync = useCallback((operation: any) => {
+        // Apply change locally first
+        applyLocalChange(operation);
+        
+        // Broadcast to other connected users
+        if (isSyncConnected) {
+            try {
+                // Determine update type based on operation
+                let updateType = 'element_change';
+                if (operation.operation_type === 'UPDATE_SCRIPT_INFO') {
+                    updateType = 'script_info';
+                } else if (operation.operation_type === 'UPDATE_TIME_OFFSET' || operation.operation_type === 'REORDER_ELEMENT') {
+                    updateType = 'element_order';
+                } else if (operation.operation_type === 'DELETE_ELEMENT') {
+                    updateType = 'element_delete';
+                }
+                
+                sendSyncUpdate({
+                    update_type: updateType,
+                    changes: operation,
+                    operation_id: operation.operation_id || `local_${Date.now()}`
+                });
+                
+                console.log('Broadcast script update:', updateType, operation.operation_type);
+            } catch (error) {
+                console.error('Failed to broadcast script update:', error);
+            }
+        }
+    }, [applyLocalChange, isSyncConnected, sendSyncUpdate]);
 
     const [previewPreferences, setPreviewPreferences] = useState<UserPreferences | null>(null);
     const [buttonShowsOpen, setButtonShowsOpen] = useState<boolean>(true);
@@ -168,7 +238,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     }, [allEditQueueElements, buttonShowsOpen, expandAllGroups, collapseAllGroups]);
 
     const {
-        preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues, useMilitaryTime },
+        preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues, useMilitaryTime, dangerMode, autoSaveInterval },
         updatePreference,
         updatePreferences
     } = useUserPreferences();
@@ -188,16 +258,16 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const activePreferences = useMemo(() => {
         const result = modalState.isOpen(MODAL_NAMES.OPTIONS) && previewPreferences
             ? previewPreferences
-            : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState, useMilitaryTime };
+            : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval };
         
         
         return result;
-    }, [modalState, previewPreferences, darkMode, colorizeDepNames, showClockTimes, currentAutoSortState, useMilitaryTime]);
+    }, [modalState, previewPreferences, darkMode, colorizeDepNames, showClockTimes, currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval]);
 
     const { insertElement } = useElementActions(
         editQueueElements,
         activePreferences.autoSortCues,
-        applyLocalChange
+        applyLocalChangeWithSync
     );
 
     const { activeMode, setActiveMode } = useScriptModes('view');
@@ -267,8 +337,20 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         script: sourceScript,
         scriptId,
         onUnsavedChangesDetected: (pendingPath: string) => {
-            modalHandlers.setPendingNavigation(pendingPath);
-            modalState.openModal(MODAL_NAMES.UNSAVED_CHANGES);
+            if (activePreferences.dangerMode) {
+                // In danger mode, navigate directly without confirmation
+                navigate(pendingPath, {
+                    state: {
+                        view: 'shows',
+                        selectedShowId: sourceScript?.show_id,
+                        selectedScriptId: scriptId,
+                        returnFromManage: true
+                    }
+                });
+            } else {
+                modalHandlers.setPendingNavigation(pendingPath);
+                modalState.openModal(MODAL_NAMES.UNSAVED_CHANGES);
+            }
         }
     });
 
@@ -288,7 +370,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             // Clear pending changes in info mode to prevent duplicate operations
             clearPendingChanges();
             setActiveMode('view');
-        }
+        },
+        sendSyncUpdate: sendSyncUpdate,
+        dangerMode: activePreferences.dangerMode
     });
 
     // Track EditMode's selection state reactively
@@ -299,6 +383,17 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const [isHiding, setIsHiding] = useState(false);
     const [isScriptShared, setIsScriptShared] = useState(false);
     const [shareCount, setShareCount] = useState(0);
+    
+    // Navigation
+    const navigate = useNavigate();
+
+    // Auto-save functionality
+    const { isAutoSaving, lastAutoSaveTime, secondsUntilNextSave, showSaveSuccess } = useAutoSave({
+        autoSaveInterval: activePreferences.autoSaveInterval,
+        hasUnsavedChanges,
+        pendingOperations,
+        saveChanges: () => saveChanges(false), // Auto-save preserves edit history
+    });
 
     // Element modal actions hook
     const elementActions = useElementModalActions({
@@ -388,13 +483,21 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
         // Handle SHARE button
         if (modeId === 'share') {
-            modalState.openModal(MODAL_NAMES.SHARE_CONFIRMATION);
+            if (activePreferences.dangerMode) {
+                handleShareConfirm();
+            } else {
+                modalState.openModal(MODAL_NAMES.SHARE_CONFIRMATION);
+            }
             return;
         }
 
         // Handle HIDE button
         if (modeId === 'hide') {
-            modalState.openModal(MODAL_NAMES.HIDE_SCRIPT);
+            if (activePreferences.dangerMode) {
+                handleFinalHideConfirm();
+            } else {
+                modalState.openModal(MODAL_NAMES.HIDE_SCRIPT);
+            }
             return;
         }
 
@@ -738,8 +841,23 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                             )}
                             <Heading as="h2" size="md">{currentScript?.script_name || 'Script'}</Heading>
                             {(currentScript?.is_shared || isScriptShared) && (
-                                <Badge variant="solid" colorScheme="green" fontSize="md" ml={1}>
+                                <Badge variant="solid" colorScheme="green" fontSize="sm" ml={1} px={2}>
                                     SHARED
+                                </Badge>
+                            )}
+                            {activePreferences.autoSaveInterval > 0 && (
+                                <Badge 
+                                    variant="solid"
+                                    colorScheme={showSaveSuccess ? "blue" : (isAutoSaving ? "blue" : "red")}
+                                    bg={showSaveSuccess ? "blue.500" : undefined}
+                                    fontSize="sm"
+                                    ml={1}
+                                    px={2}
+                                >
+                                    {isAutoSaving 
+                                        ? "SAVING..." 
+                                        : `AUTO SAVE • ${hasUnsavedChanges ? (secondsUntilNextSave > 0 ? secondsUntilNextSave : activePreferences.autoSaveInterval) : activePreferences.autoSaveInterval}`
+                                    }
                                 </Badge>
                             )}
                         </HStack>
@@ -918,6 +1036,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 showClockTimes={activePreferences.showClockTimes}
                 autoSortCues={activePreferences.autoSortCues}
                 useMilitaryTime={activePreferences.useMilitaryTime}
+                dangerMode={activePreferences.dangerMode}
+                autoSaveInterval={activePreferences.autoSaveInterval}
                 onDeleteCancel={modalHandlers.handleDeleteCancel}
                 onInitialDeleteConfirm={modalHandlers.handleInitialDeleteConfirm}
                 onFinalDeleteConfirm={modalHandlers.handleFinalDeleteConfirm}
@@ -934,6 +1054,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onAutoSortChange={handleAutoSortCheckboxChange}
                 onColorizeChange={async (value: boolean) => await updatePreference('colorizeDepNames', value)}
                 onClockTimesChange={async (value: boolean) => await updatePreference('showClockTimes', value)}
+                onDangerModeChange={async (value: boolean) => await updatePreference('dangerMode', value)}
+                onAutoSaveIntervalChange={async (value: number) => await updatePreference('autoSaveInterval', value)}
                 onConfirmDeleteCue={elementActions.handleConfirmDeleteCue}
                 onConfirmDuplicate={elementActions.handleConfirmDuplicate}
                 onConfirmGroupElements={elementActions.handleConfirmGroupElements}

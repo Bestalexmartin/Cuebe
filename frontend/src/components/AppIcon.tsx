@@ -9,7 +9,7 @@ import { IoIosSave } from "react-icons/io";
 import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
 import { FaMasksTheater, FaMapLocationDot, FaScroll } from "react-icons/fa6";
-import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt, FaAngleDoubleUp, FaAngleDoubleDown, FaHistory, FaEllipsisV, FaRedo } from "react-icons/fa";
+import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt, FaAngleDoubleUp, FaAngleDoubleDown, FaHistory, FaEllipsisV, FaRedo, FaCircle, FaDotCircle, FaSync, FaSun, FaRegCircle } from "react-icons/fa";
 import { FaArrowRightLong } from "react-icons/fa6";
 import { LuLayers3 } from "react-icons/lu";
 import { RiDashboard2Fill } from "react-icons/ri";
@@ -79,7 +79,10 @@ export type IconName =
   | 'close'
   | 'check'
   | 'minus'
-  | 'question';
+  | 'question'
+  | 'sync-disconnected'
+  | 'sync-connecting'
+  | 'sync-connected';
 
 interface AppIconProps extends Omit<IconProps, 'as'> {
   name: IconName;
@@ -164,7 +167,7 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
     case 'moon':
       return <Icon as={MoonIcon} {...props} />;
     case 'sun':
-      return <Icon as={SunIcon} {...props} />;
+      return <Icon as={FaSun} {...props} />;
     case 'triangle-down':
       return <Icon as={TriangleDownIcon} {...props} />;
     case 'triangle-up':
@@ -197,6 +200,12 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={MinusIcon} {...props} />;
     case 'question':
       return <Icon as={QuestionIcon} {...props} />;
+    case 'sync-disconnected':
+      return <Icon as={FaRegCircle} {...props} />;
+    case 'sync-connecting':
+      return <Icon as={FaSync} {...props} />;
+    case 'sync-connected':
+      return <Icon as={FaCircle} {...props} />;
     default:
       return null;
   }

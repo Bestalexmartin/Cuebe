@@ -6,7 +6,10 @@ import {
     FormControl,
     FormLabel,
     Switch,
-    HStack
+    HStack,
+    Select,
+    Text,
+    Divider
 } from '@chakra-ui/react';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { UserPreferences } from '../../../../hooks/useUserPreferences';
@@ -21,6 +24,8 @@ interface OptionsModalProps {
     onColorizeChange?: (value: boolean) => Promise<void>;
     onClockTimesChange?: (value: boolean) => Promise<void>;
     onMilitaryTimeChange?: (value: boolean) => Promise<void>;
+    onDangerModeChange?: (value: boolean) => Promise<void>;
+    onAutoSaveIntervalChange?: (value: number) => Promise<void>;
 }
 
 export const OptionsModal: React.FC<OptionsModalProps> = ({
@@ -32,7 +37,9 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
     onAutoSortChange,
     onColorizeChange,
     onClockTimesChange,
-    onMilitaryTimeChange
+    onMilitaryTimeChange,
+    onDangerModeChange,
+    onAutoSaveIntervalChange
 }) => {
     const [localPreferences, setLocalPreferences] = useState<UserPreferences>(initialOptions);
 
@@ -88,6 +95,29 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
         }
     };
 
+    const handleDangerModeChange = async (checked: boolean) => {
+        const newPreferences = { ...localPreferences, dangerMode: checked };
+        setLocalPreferences(newPreferences);
+        onPreview?.(newPreferences);
+        
+        // Trigger immediate update if callback is provided
+        if (onDangerModeChange) {
+            await onDangerModeChange(checked);
+        }
+    };
+
+    const handleAutoSaveIntervalChange = async (value: string) => {
+        const interval = parseInt(value);
+        const newPreferences = { ...localPreferences, autoSaveInterval: interval };
+        setLocalPreferences(newPreferences);
+        onPreview?.(newPreferences);
+        
+        // Trigger immediate update if callback is provided
+        if (onAutoSaveIntervalChange) {
+            await onAutoSaveIntervalChange(interval);
+        }
+    };
+
     const handleClose = async () => {
         // Save preferences before closing
         await onSave(localPreferences);
@@ -96,7 +126,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
 
     return (
         <BaseModal
-            title="Script Display Options"
+            title="Script Edit Options"
             headerIcon="options"
             headerIconColor="page.text"
             isOpen={isOpen}
@@ -183,6 +213,72 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                             Use Military Time
                         </FormLabel>
                     </HStack>
+                </FormControl>
+
+                <Divider mt={3} />
+                
+                <Text fontSize="md" fontWeight="bold" color="red.500" mt={1}>
+                    Advanced Options
+                </Text>
+
+                <FormControl>
+                    <HStack align="center" spacing={5}>
+                        <Switch
+                            id="dangermode-switch"
+                            isChecked={localPreferences.dangerMode}
+                            onChange={(e) => handleDangerModeChange(e.target.checked)}
+                            colorScheme="red"
+                            size="md"
+                        />
+                        <FormLabel
+                            mb="0"
+                            fontSize="md"
+                            htmlFor="dangermode-switch"
+                        >
+                            Danger Mode
+                        </FormLabel>
+                    </HStack>
+                    <Text fontSize="xs" color="gray.500" mt={1}>
+                        Skip confirmation dialogs for delete and other destructive actions
+                    </Text>
+                </FormControl>
+
+                <FormControl>
+                    <HStack align="center" spacing={5} mb={1}>
+                        <Switch
+                            id="autosave-switch"
+                            isChecked={localPreferences.autoSaveInterval > 0}
+                            onChange={(e) => {
+                                // If turning on and interval is 0, default to 30 seconds
+                                const newInterval = e.target.checked 
+                                    ? (localPreferences.autoSaveInterval || 30)
+                                    : 0;
+                                handleAutoSaveIntervalChange(newInterval.toString());
+                            }}
+                            colorScheme="blue"
+                            size="md"
+                        />
+                        <FormLabel mb={0} fontSize="md" htmlFor="autosave-switch">
+                            Auto-Save
+                        </FormLabel>
+                        {localPreferences.autoSaveInterval > 0 && (
+                            <Select 
+                                value={localPreferences.autoSaveInterval}
+                                onChange={(e) => handleAutoSaveIntervalChange(e.target.value)}
+                                size="xs"
+                                width="auto"
+                                minWidth="65px"
+                                ml={-2}
+                            >
+                                <option value={15}>15 sec</option>
+                                <option value={30}>30 sec</option>
+                                <option value={60}>60 sec</option>
+                            </Select>
+                        )}
+                    </HStack>
+                    <Text fontSize="xs" color="gray.500" mt={1}>
+                        Automatically save changes without clearing edit history
+                    </Text>
                 </FormControl>
             </VStack>
         </BaseModal>

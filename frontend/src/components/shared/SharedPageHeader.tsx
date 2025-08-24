@@ -14,7 +14,7 @@ import { BorderedContainer } from './BorderedContainer';
 interface SharedPageHeaderProps {
   userName?: string;
   userProfileImage?: string;
-  children?: React.ReactNode; // For the dark mode switch
+  children?: React.ReactNode; // For the dark mode switch and sync icon
 }
 
 export const SharedPageHeader: React.FC<SharedPageHeaderProps> = ({
@@ -54,12 +54,8 @@ export const SharedPageHeader: React.FC<SharedPageHeaderProps> = ({
       </Flex>
 
       <Flex align="center" gap={4}>
-        {/* Dark mode switch */}
-        {children && (
-          <BorderedContainer>
-            {children}
-          </BorderedContainer>
-        )}
+        {/* Dark mode switch, sync icon, and user profile */}
+        {children}
 
         {/* Shared user profile */}
         <BorderedContainer>

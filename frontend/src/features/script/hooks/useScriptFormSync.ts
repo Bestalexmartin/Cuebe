@@ -151,7 +151,12 @@ export const useScriptFormSync = ({
                 changes: actualChanges
             };
 
-            applyLocalChange(infoFormOperation);
+            try {
+                applyLocalChange(infoFormOperation);
+            } catch (error) {
+                console.error('Error applying info mode changes:', error);
+                // Continue with mode switch even if change application fails
+            }
         }
 
         setActiveMode(targetModeId);

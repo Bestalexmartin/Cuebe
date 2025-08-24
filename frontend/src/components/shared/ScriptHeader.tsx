@@ -58,12 +58,12 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = React.memo(({
       <HStack spacing="2">
         <Button
           size="xs"
-          variant="outline"
+          bg="blue.400"
+          color="white"
+          _hover={{ bg: 'orange.400' }}
           onClick={onBackToShows}
-          _hover={{ bg: 'gray.100' }}
-          _dark={{ _hover: { bg: 'gray.700' } }}
         >
-          Back
+          Back to Shows
         </Button>
       </HStack>
     </Flex>

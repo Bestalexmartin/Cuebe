@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Show } from '../features/shows/types';
 import { validateShareToken, encodeShareToken, INVALID_SHARE_TOKEN_ERROR } from '../utils/tokenValidation';
-import { apiCache } from '../utils/apiCache';
 
 interface SharedData {
   shows?: Show[];
@@ -14,6 +13,7 @@ export const useSharedData = (shareToken: string | undefined) => {
   const [sharedData, setSharedData] = useState<SharedData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
   useEffect(() => {
     const fetchSharedData = async () => {
@@ -23,15 +23,8 @@ export const useSharedData = (shareToken: string | undefined) => {
         return;
       }
 
-      // Check cache first
-      const cacheKey = apiCache.getSharedDataKey(shareToken!);
-      const cachedData = apiCache.get<SharedData>(cacheKey);
-      
-      if (cachedData) {
-        setSharedData(cachedData);
-        setIsLoading(false);
-        return;
-      }
+      setIsLoading(true);
+      setError(null);
 
       try {
         const response = await fetch(`/api/shared/${encodeShareToken(shareToken!)}`);
@@ -44,10 +37,15 @@ export const useSharedData = (shareToken: string | undefined) => {
         }
 
         const data = await response.json();
-        
-        // Cache the response
-        apiCache.set(cacheKey, data);
-        setSharedData(data);
+        console.log('🔄 useSharedData: Fresh data loaded:', {
+          showCount: data.shows?.length,
+          scriptCount: data.shows?.reduce((acc: number, show: any) => acc + (show.scripts?.length || 0), 0),
+          userData: data.user_name
+        });
+        setSharedData(prev => {
+          console.log('🔄 useSharedData: State update - prev !== new:', prev !== data);
+          return data;
+        });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load shared content');
       } finally {
@@ -56,7 +54,12 @@ export const useSharedData = (shareToken: string | undefined) => {
     };
 
     fetchSharedData();
-  }, [shareToken]);
+  }, [shareToken, refreshCounter]);
 
-  return { sharedData, isLoading, error };
+  const refreshData = () => {
+    console.log('🔄 useSharedData: Refreshing data...');
+    setRefreshCounter(prev => prev + 1);
+  };
+
+  return { sharedData, isLoading, error, refreshData };
 };

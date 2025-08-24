@@ -34,6 +34,9 @@ import { LoadingSpinner, ErrorState, ScriptLoadingState } from '../components/sh
 import { SortMenu, SortOption } from '../components/shared/SortMenu';
 import { SharedPageHeader } from '../components/shared/SharedPageHeader';
 import { SearchInput } from '../components/shared/SearchInput';
+import { ScriptSyncIcon } from '../components/shared/ScriptSyncIcon';
+import { BorderedContainer } from '../components/shared/BorderedContainer';
+import { useScriptSync } from '../hooks/useScriptSync';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -685,12 +688,10 @@ const GuestDarkModeSwitch: React.FC<{ shareToken?: string }> = ({ shareToken }) 
           setGuestDarkMode(isDark);
           setColorMode(isDark ? 'dark' : 'light');
         } else {
-          console.warn('Failed to load guest preferences, using defaults');
           setGuestDarkMode(false);
           setColorMode('light');
         }
       } catch (error) {
-        console.error('Error loading guest preferences:', error);
         setGuestDarkMode(false);
       } finally {
         setIsLoading(false);
@@ -734,7 +735,6 @@ const GuestDarkModeSwitch: React.FC<{ shareToken?: string }> = ({ shareToken }) 
       setGuestDarkMode(!newDarkMode);
       setColorMode(!newDarkMode ? 'dark' : 'light');
       showError('Failed to save dark mode preference');
-      console.error('Error updating guest dark mode:', error);
     }
   };
 
@@ -742,7 +742,7 @@ const GuestDarkModeSwitch: React.FC<{ shareToken?: string }> = ({ shareToken }) 
     return (
       <IconButton
         aria-label="Toggle dark mode"
-        icon={<AppIcon name="moon" />}
+        icon={<AppIcon name="moon" color="blue.400" boxSize="20px" />}
         variant="ghost"
         isRound={true}
         size="md"
@@ -756,7 +756,13 @@ const GuestDarkModeSwitch: React.FC<{ shareToken?: string }> = ({ shareToken }) 
   return (
     <IconButton
       aria-label="Toggle dark mode"
-      icon={<AppIcon name={guestDarkMode ? 'sun' : 'moon'} />}
+      icon={
+        <AppIcon 
+          name={guestDarkMode ? 'sun' : 'moon'}
+          color={guestDarkMode ? 'orange.400' : 'blue.400'}
+          boxSize="20px"
+        />
+      }
       onClick={toggleGuestDarkMode}
       variant="ghost"
       isRound={true}
@@ -803,7 +809,6 @@ export const SharedPage = React.memo(() => {
       setSearchResults(data.results || []);
       setHasSearched(true);
     } catch (error) {
-      console.error('Error searching shared tutorials:', error);
       setSearchResults([]);
       setHasSearched(true);
     } finally {
@@ -822,7 +827,7 @@ export const SharedPage = React.memo(() => {
   };
 
   // Custom hooks
-  const { sharedData, isLoading, error } = useSharedData(shareToken);
+  const { sharedData, isLoading, error, refreshData } = useSharedData(shareToken);
   const {
     viewingScriptId,
     scriptElements,
@@ -831,7 +836,37 @@ export const SharedPage = React.memo(() => {
     crewContext,
     handleScriptClick,
     handleBackToShows,
+    refreshScriptData,
+    refreshScriptElementsOnly,
+    updateScriptElementsDirectly,
+    updateSingleElement,
+    deleteElement,
   } = useScriptViewing(shareToken);
+  
+  // WebSocket sync for the currently viewing script
+  const scriptSync = useScriptSync(viewingScriptId, shareToken, {
+    onUpdate: (update) => {
+      // Apply targeted updates based on update type
+      if (update.update_type === 'element_change' && update.changes) {
+        const updatedElement = update.changes;
+        updateSingleElement(updatedElement.element_id, updatedElement);
+      } else if (update.update_type === 'element_order' && update.changes?.elements) {
+        updateScriptElementsDirectly(update.changes.elements);
+      } else if (update.update_type === 'element_delete' && update.changes?.element_id) {
+        deleteElement(update.changes.element_id);
+      } else if (update.update_type === 'elements_updated') {
+        refreshScriptElementsOnly();
+      } else if (update.update_type === 'script_info') {
+        // Script info changes (name, status, times, notes) may affect the script header display
+        // For now, do lightweight refresh to get updated script metadata
+        refreshScriptElementsOnly();
+      }
+    },
+    onConnect: () => {},
+    onDisconnect: () => {},
+    onError: (error) => {}
+  });
+  
   const { sortBy, sortDirection, sortedShows, handleSortClick } = useSorting(sharedData);
 
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -871,7 +906,18 @@ export const SharedPage = React.memo(() => {
           userName={sharedData?.user_name}
           userProfileImage={sharedData?.user_profile_image}
         >
-          <GuestDarkModeSwitch shareToken={shareToken} />
+          <BorderedContainer>
+            <GuestDarkModeSwitch shareToken={shareToken} />
+          </BorderedContainer>
+          <BorderedContainer>
+            <ScriptSyncIcon
+              isConnected={scriptSync.isConnected}
+              isConnecting={scriptSync.isConnecting}
+              connectionCount={scriptSync.connectionCount}
+              connectionError={scriptSync.connectionError}
+              userType="crew_member"
+            />
+          </BorderedContainer>
         </SharedPageHeader>
 
         {/* Main Content Area */}
@@ -1014,7 +1060,7 @@ export const SharedPage = React.memo(() => {
                       <ViewMode
                         scriptId={viewingScriptId}
                         colorizeDepNames={true}
-                        showClockTimes={false}
+                        showClockTimes={true}
                         autoSortCues={true}
                         elements={scriptElements}
                         allElements={scriptElements}

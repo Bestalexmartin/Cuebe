@@ -25,7 +25,7 @@ interface UseScriptElementsWithEditQueueReturn {
     applyLocalChange: (operation: Omit<EditOperation, 'id' | 'timestamp' | 'description'>) => void;
     
     // Save operations
-    saveChanges: () => Promise<boolean>;
+    saveChanges: (clearHistory?: boolean) => Promise<boolean>;
     discardChanges: () => void;
     
     // Undo/Redo
@@ -191,7 +191,7 @@ export const useScriptElementsWithEditQueue = (
         editQueue.addOperation(operation);
     }, [editQueue.addOperation]);
     
-    const saveChanges = useCallback(async (): Promise<boolean> => {
+    const saveChanges = useCallback(async (clearHistory: boolean = true): Promise<boolean> => {
         if (!scriptId || editQueueRef.current.operations.length === 0) {
             return true;
         }
@@ -237,13 +237,15 @@ export const useScriptElementsWithEditQueue = (
                 throw new Error(`Failed to save changes: ${response.status} - ${JSON.stringify(errorData)}`);
             }
             
-            // Clear the edit queue and fetch fresh data
-            editQueueRef.current.clearQueue();
-            await fetchElements();
+            // Update server elements with current computed state before clearing queue
+            // This prevents UI reversion when edit queue is cleared
+            if (lastComputedElementsRef.current.length > 0) {
+                setServerElements(lastComputedElementsRef.current);
+            }
             
-            // Refetch script data if callback provided
-            if (options.onAfterSave) {
-                await options.onAfterSave();
+            // Conditionally clear the edit queue based on clearHistory parameter
+            if (clearHistory) {
+                editQueueRef.current.clearQueue();
             }
             
             // Clear saving flag to allow normal rendering

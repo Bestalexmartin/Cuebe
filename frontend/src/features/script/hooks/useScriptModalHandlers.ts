@@ -32,6 +32,10 @@ interface UseScriptModalHandlersParams {
     hasInfoChanges: boolean;
     captureInfoChanges: () => void;
     onSaveSuccess?: () => void; // Callback for when save completes successfully
+    // WebSocket sync support
+    sendSyncUpdate?: (message: { update_type: string; changes?: any; operation_id?: string }) => void;
+    // Danger mode - skip confirmation dialogs
+    dangerMode?: boolean;
 }
 
 export const useScriptModalHandlers = ({
@@ -45,7 +49,9 @@ export const useScriptModalHandlers = ({
     activeMode,
     hasInfoChanges,
     captureInfoChanges,
-    onSaveSuccess
+    onSaveSuccess,
+    sendSyncUpdate,
+    dangerMode = false
 }: UseScriptModalHandlersParams) => {
     const navigate = useNavigate();
     const { getToken } = useAuth();
@@ -93,6 +99,22 @@ export const useScriptModalHandlers = ({
             if (success) {
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
+                // Broadcast script changes via WebSocket - send specific updates instead of generic script_info
+                if (sendSyncUpdate && scriptId) {
+                    // Note: We need access to the actual edit operations to send proper updates
+                    // For now, send a generic refresh signal that triggers a targeted data update
+                    const broadcastMessage = {
+                        update_type: 'elements_updated',
+                        changes: {
+                            script_id: scriptId,
+                            updated_at: new Date().toISOString(),
+                            message: 'Script elements updated'
+                        },
+                        operation_id: `save_${Date.now()}`
+                    };
+                    sendSyncUpdate(broadcastMessage);
+                }
+                
                 modalState.closeModal(modalNames.SAVE_PROCESSING);
                 showSuccess('Changes Saved', 'All pending changes have been saved successfully.');
                 
@@ -114,7 +136,6 @@ export const useScriptModalHandlers = ({
                 showError('Failed to save changes. Please try again.');
             }
         } catch (error) {
-            console.error('Error saving changes:', error);
             modalState.closeModal(modalNames.SAVE_PROCESSING);
             showError('An error occurred while saving changes.');
         }
@@ -148,7 +169,6 @@ export const useScriptModalHandlers = ({
                 showError('Failed to save changes. Please try again.');
             }
         } catch (error) {
-            console.error('Error saving changes:', error);
             modalState.closeModal(modalNames.SAVE_PROCESSING);
             showError('An error occurred while saving changes.');
         }
@@ -160,8 +180,12 @@ export const useScriptModalHandlers = ({
 
     const handleInitialSaveConfirm = useCallback(() => {
         modalState.closeModal(modalNames.SAVE_CONFIRMATION);
-        modalState.openModal(modalNames.FINAL_SAVE_CONFIRMATION);
-    }, [modalState, modalNames]);
+        if (dangerMode) {
+            handleFinalSaveConfirm();
+        } else {
+            modalState.openModal(modalNames.FINAL_SAVE_CONFIRMATION);
+        }
+    }, [modalState, modalNames, dangerMode, handleFinalSaveConfirm]);
 
     const handleSaveCancel = useCallback(() => {
         modalState.closeModal(modalNames.SAVE_CONFIRMATION);
@@ -170,8 +194,14 @@ export const useScriptModalHandlers = ({
 
     // Clear history functionality
     const handleClearHistory = useCallback(() => {
-        modalState.openModal(modalNames.CLEAR_HISTORY);
-    }, [modalState, modalNames]);
+        if (dangerMode) {
+            // Skip confirmation in danger mode - go directly to clear history
+            discardChanges();
+            showSuccess('Edit History Cleared', 'All changes have been discarded and the script has been restored to its original state.');
+        } else {
+            modalState.openModal(modalNames.CLEAR_HISTORY);
+        }
+    }, [modalState, modalNames, dangerMode, discardChanges, showSuccess]);
 
     const handleInitialClearHistoryConfirm = useCallback(() => {
         modalState.closeModal(modalNames.CLEAR_HISTORY);
@@ -190,16 +220,7 @@ export const useScriptModalHandlers = ({
     }, [modalState, modalNames]);
 
     // Delete functionality
-    const handleDeleteClick = useCallback(() => {
-        modalState.openModal(modalNames.DELETE);
-    }, [modalState, modalNames]);
-
-    const handleInitialDeleteConfirm = useCallback(() => {
-        modalState.closeModal(modalNames.DELETE);
-        modalState.openModal(modalNames.FINAL_DELETE);
-    }, [modalState, modalNames]);
-
-    const handleFinalDeleteConfirm = useCallback(async () => {
+    const performDelete = useCallback(async () => {
         if (!scriptId) return;
 
         setIsDeleting(true);
@@ -222,7 +243,9 @@ export const useScriptModalHandlers = ({
             }
 
             showSuccess('Script Deleted', `"${script?.script_name}" has been permanently deleted`);
-
+            modalState.closeModal(modalNames.FINAL_DELETE);
+            
+            // Navigate to dashboard after successful deletion
             navigate('/dashboard', {
                 state: {
                     view: 'shows',
@@ -230,15 +253,30 @@ export const useScriptModalHandlers = ({
                     returnFromManage: true
                 }
             });
-
         } catch (error) {
-            console.error('Error deleting script:', error);
             showError('Failed to delete script. Please try again.');
         } finally {
             setIsDeleting(false);
-            modalState.closeModal(modalNames.FINAL_DELETE);
         }
-    }, [scriptId, getToken, script, navigate, showSuccess, showError, modalState, modalNames]);
+    }, [scriptId, getToken, showSuccess, showError, modalState, modalNames, navigateWithCurrentContext, script]);
+
+    const handleDeleteClick = useCallback(() => {
+        if (dangerMode) {
+            // Skip confirmation in danger mode - go directly to delete
+            performDelete();
+        } else {
+            modalState.openModal(modalNames.DELETE);
+        }
+    }, [modalState, modalNames, dangerMode, performDelete]);
+
+    const handleInitialDeleteConfirm = useCallback(() => {
+        modalState.closeModal(modalNames.DELETE);
+        modalState.openModal(modalNames.FINAL_DELETE);
+    }, [modalState, modalNames]);
+
+    const handleFinalDeleteConfirm = useCallback(() => {
+        performDelete();
+    }, [performDelete]);
 
     const handleDeleteCancel = useCallback(() => {
         modalState.closeModal(modalNames.DELETE);

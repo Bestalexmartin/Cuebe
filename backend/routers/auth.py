@@ -85,3 +85,44 @@ def get_current_user_optional(
     except Exception:
         # If authentication fails, return None instead of raising error
         return None
+
+
+async def get_current_user_from_token(token_string: str, db: Session) -> models.User:
+    """
+    Validate JWT token and return user - for WebSocket authentication
+    Raises HTTPException if token is invalid
+    """
+    pem_key_str = os.getenv("CLERK_PEM_PUBLIC_KEY")
+    if not pem_key_str:
+        raise HTTPException(status_code=500, detail="Missing PEM Public Key")
+
+    pem_key = pem_key_str.replace("\\n", "\n")
+    
+    try:
+        # Decode and verify the JWT
+        decoded_claims = jwt.decode(token_string, pem_key, algorithms=["RS256"])
+        
+        # Validate timing claims
+        current_time = int(time.time())
+        if decoded_claims.get("exp", 0) < current_time:
+            raise HTTPException(status_code=401, detail="Token expired")
+        if decoded_claims.get("nbf", 0) > current_time:
+            raise HTTPException(status_code=401, detail="Token not yet valid")
+            
+        # Get user from database
+        clerk_user_id = decoded_claims.get("sub")
+        if not clerk_user_id:
+            raise HTTPException(status_code=401, detail="User ID not found in token")
+        
+        user = db.query(models.User).filter(models.User.clerk_user_id == clerk_user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+            
+        return user
+        
+    except jwt.JWTError as e:
+        logger.error(f"JWT validation failed: {e}")
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+    except Exception as e:
+        logger.error(f"Token validation failed: {e}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
