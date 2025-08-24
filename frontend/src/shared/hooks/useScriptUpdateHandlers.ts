@@ -1,5 +1,5 @@
 interface ScriptUpdate {
-  update_type: 'element_change' | 'element_order' | 'element_delete' | 'elements_updated' | 'script_info';
+  update_type?: 'element_change' | 'element_order' | 'element_delete' | 'elements_updated' | 'script_info';
   changes?: any;
 }
 
@@ -13,6 +13,9 @@ interface UpdateCallbacks {
 export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
   const handleUpdate = (update: ScriptUpdate) => {
     const { updateSingleElement, updateScriptElementsDirectly, deleteElement, refreshScriptElementsOnly } = callbacks;
+    
+    // Guard against updates without type
+    if (!update.update_type) return;
     
     // Apply targeted updates based on update type
     if (update.update_type === 'element_change' && update.changes) {

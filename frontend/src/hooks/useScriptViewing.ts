@@ -16,7 +16,7 @@ export const useScriptViewing = (shareToken: string | undefined) => {
   const [isLoadingScript, setIsLoadingScript] = useState(false);
   const [scriptError, setScriptError] = useState<string | null>(null);
   const [crewContext, setCrewContext] = useState<CrewContext | null>(null);
-  const [refreshCounter, setRefreshCounter] = useState(0);
+  // Remove unused state
 
   const handleScriptClick = useCallback(async (scriptId: string) => {
     if (!validateShareToken(shareToken)) {
@@ -99,9 +99,12 @@ export const useScriptViewing = (shareToken: string | undefined) => {
 
   const updateSingleElement = useCallback((elementId: string, updates: Partial<ScriptElement>) => {
     setScriptElements(prev => 
-      prev.map(el => 
-        el.element_id === elementId ? { ...el, ...updates } : el
-      )
+      prev.map(el => {
+        if (el.element_id === elementId) {
+          return { ...el, ...updates } as ScriptElement;
+        }
+        return el;
+      })
     );
   }, []);
 

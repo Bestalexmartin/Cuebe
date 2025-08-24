@@ -6,9 +6,7 @@ import {
   Box,
   Icon
 } from '@chakra-ui/react';
-import { AppIcon } from '../AppIcon';
-import { AiOutlineLoading3Quarters, AiOutlineLoading } from "react-icons/ai";
-import { IoSyncCircleSharp, IoSync } from "react-icons/io5";
+import { IoSyncCircleSharp } from "react-icons/io5";
 
 // Connected Icon Component
 const ConnectedIcon: React.FC<{ size: string; shouldRotate?: boolean }> = ({ size, shouldRotate = false }) => {
@@ -123,9 +121,7 @@ interface ScriptSyncIconProps {
 export const ScriptSyncIcon: React.FC<ScriptSyncIconProps> = ({
   isConnected,
   isConnecting,
-  connectionCount,
   connectionError,
-  userType,
   onClick,
   shouldRotate = false
 }) => {

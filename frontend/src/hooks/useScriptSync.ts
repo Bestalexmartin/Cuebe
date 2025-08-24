@@ -6,7 +6,7 @@ import { useAuth } from '@clerk/clerk-react';
 interface ScriptUpdate {
   type: 'script_update' | 'connection_established' | 'update_confirmed' | 'error' | 'pong';
   script_id?: string;
-  update_type?: 'element_change' | 'script_info' | 'element_order' | 'element_delete';
+  update_type?: 'element_change' | 'script_info' | 'element_order' | 'element_delete' | 'elements_updated';
   changes?: any;
   updated_by?: string;
   updated_by_id?: string;
@@ -118,7 +118,7 @@ export const useScriptSync = (
     }
   }, [onUpdate, onConnect, onError, onDataReceived, onConnectionEstablished]);
 
-  const handleClose = useCallback((event: CloseEvent) => {
+  const handleClose = useCallback((_event: CloseEvent) => {
     setIsConnected(false);
     setIsConnecting(false);
     setConnectionCount(0);
@@ -135,7 +135,7 @@ export const useScriptSync = (
     }
   }, [autoReconnect, scriptId, onDisconnect]);
 
-  const handleError = useCallback((error: Event) => {
+  const handleError = useCallback((_error: Event) => {
     setConnectionError('WebSocket connection error');
     onError?.('Connection error occurred');
   }, [onError, scriptId]);

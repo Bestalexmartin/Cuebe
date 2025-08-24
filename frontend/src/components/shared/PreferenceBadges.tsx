@@ -4,8 +4,7 @@ import React from 'react';
 import {
     HStack,
     Badge,
-    Text,
-    Box
+    Text
 } from '@chakra-ui/react';
 
 interface PreferenceBadgesProps {
@@ -16,7 +15,6 @@ interface PreferenceBadgesProps {
 }
 
 export const PreferenceBadges: React.FC<PreferenceBadgesProps> = ({
-    dangerMode,
     autoSaveInterval,
     isAutoSaving = false,
     secondsUntilNextSave = 0

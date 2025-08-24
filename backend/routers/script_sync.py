@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 import models
+import schemas.websocket as websocket_schemas
 from database import get_db
 from .auth import get_current_user_from_token, get_current_user
 
@@ -37,7 +38,7 @@ class ScriptConnectionManager:
         # Store connection metadata
         self.connection_info[websocket] = {
             "script_id": script_id,
-            "connected_at": datetime.now().isoformat(),
+            "connected_at": datetime.now(),
             **connection_info
         }
         
@@ -59,12 +60,11 @@ class ScriptConnectionManager:
             
             logger.info(f"WebSocket disconnected from script {script_id}")
     
-    async def broadcast_to_script(self, script_id: str, message: dict, exclude_websocket: Optional[WebSocket] = None):
+    async def broadcast_to_script(self, script_id: str, message_json: str, exclude_websocket: Optional[WebSocket] = None):
         """Broadcast message to all connections in a script room"""
         if script_id not in self.connections:
             return
         
-        message_json = json.dumps(message)
         disconnected_websockets = []
         
         for websocket in self.connections[script_id]:
@@ -192,13 +192,12 @@ async def script_websocket(
         await connection_manager.connect(websocket, str(script_id), access_info)
         
         # Send connection confirmation
-        await websocket.send_text(json.dumps({
-            "type": "connection_established",
-            "script_id": str(script_id),
-            "access_type": access_info["access_type"],
-            "connected_users": connection_manager.get_connection_count(str(script_id)),
-            "timestamp": datetime.now().isoformat()
-        }))
+        connection_response = websocket_schemas.ConnectionEstablishedResponse(
+            script_id=str(script_id),
+            access_type=access_info["access_type"],
+            connected_users=connection_manager.get_connection_count(str(script_id))
+        )
+        await websocket.send_text(connection_response.model_dump_json())
         
         # Listen for messages
         while True:
@@ -208,20 +207,20 @@ async def script_websocket(
                 
                 # Validate message format
                 if "type" not in message:
-                    await websocket.send_text(json.dumps({
-                        "type": "error",
-                        "message": "Invalid message format: missing 'type' field"
-                    }))
+                    error_response = websocket_schemas.WebSocketErrorResponse(
+                        message="Invalid message format: missing 'type' field"
+                    )
+                    await websocket.send_text(error_response.model_dump_json())
                     continue
                 
                 # Handle different message types
                 await handle_script_update(websocket, str(script_id), message, access_info, db)
                 
             except json.JSONDecodeError:
-                await websocket.send_text(json.dumps({
-                    "type": "error", 
-                    "message": "Invalid JSON format"
-                }))
+                error_response = websocket_schemas.WebSocketErrorResponse(
+                    message="Invalid JSON format"
+                )
+                await websocket.send_text(error_response.model_dump_json())
                 continue
                 
     except HTTPException as e:
@@ -243,10 +242,10 @@ async def handle_script_update(websocket: WebSocket, script_id: str, message: di
     
     # Allow certain message types for all users, restrict script_update for owners/crew only
     if message_type == "script_update" and access_info["access_type"] not in ["owner", "crew_member"]:
-        await websocket.send_text(json.dumps({
-            "type": "error",
-            "message": "Permission denied: Read-only access for script updates"
-        }))
+        error_response = websocket_schemas.WebSocketErrorResponse(
+            message="Permission denied: Read-only access for script updates"
+        )
+        await websocket.send_text(error_response.model_dump_json())
         return
     
     if message_type == "script_update":
@@ -254,61 +253,56 @@ async def handle_script_update(websocket: WebSocket, script_id: str, message: di
         required_fields = ["update_type", "changes"]
         for field in required_fields:
             if field not in message:
-                await websocket.send_text(json.dumps({
-                    "type": "error",
-                    "message": f"Missing required field: {field}"
-                }))
+                error_response = websocket_schemas.WebSocketErrorResponse(
+                    message=f"Missing required field: {field}"
+                )
+                await websocket.send_text(error_response.model_dump_json())
                 return
         
         # Create update message for broadcasting
-        update_message = {
-            "type": "script_update",
-            "script_id": script_id,
-            "update_type": message["update_type"],
-            "changes": message["changes"],
-            "updated_by": access_info["user_name"],
-            "updated_by_id": access_info["user_id"],
-            "timestamp": datetime.now().isoformat(),
-            "operation_id": message.get("operation_id")  # Optional: for edit queue integration
-        }
+        update_response = websocket_schemas.ScriptUpdateResponse(
+            script_id=script_id,
+            update_type=message["update_type"],
+            changes=message["changes"],
+            updated_by=access_info["user_name"],
+            updated_by_id=access_info["user_id"],
+            operation_id=message.get("operation_id")  # Optional: for edit queue integration
+        )
         
         # Broadcast to all other connections in the script room
-        await connection_manager.broadcast_to_script(script_id, update_message, exclude_websocket=websocket)
+        await connection_manager.broadcast_to_script(script_id, update_response.model_dump_json(), exclude_websocket=websocket)
         
         # Send confirmation back to sender
-        await websocket.send_text(json.dumps({
-            "type": "update_confirmed",
-            "operation_id": message.get("operation_id"),
-            "timestamp": datetime.now().isoformat()
-        }))
+        confirmation_response = websocket_schemas.UpdateConfirmedResponse(
+            operation_id=message.get("operation_id")
+        )
+        await websocket.send_text(confirmation_response.model_dump_json())
         
         logger.info(f"Script update broadcast: {message_type} for script {script_id} by {access_info['user_name']}")
     
     elif message_type == "ping":
         # Heartbeat/keepalive
-        await websocket.send_text(json.dumps({
-            "type": "pong",
-            "timestamp": datetime.now().isoformat()
-        }))
+        pong_response = websocket_schemas.PongResponse()
+        await websocket.send_text(pong_response.model_dump_json())
     
     elif message_type == "get_connection_info":
         # Request info about other connected users
         connections_info = connection_manager.get_connection_info_for_script(script_id)
-        await websocket.send_text(json.dumps({
-            "type": "connection_info",
-            "script_id": script_id,
-            "connections": connections_info,
-            "total_connected": len(connections_info)
-        }))
+        connection_info_response = websocket_schemas.ConnectionInfoResponse(
+            script_id=script_id,
+            connections=connections_info,
+            total_connected=len(connections_info)
+        )
+        await websocket.send_text(connection_info_response.model_dump_json())
     
     else:
-        await websocket.send_text(json.dumps({
-            "type": "error",
-            "message": f"Unknown message type: {message_type}"
-        }))
+        error_response = websocket_schemas.WebSocketErrorResponse(
+            message=f"Unknown message type: {message_type}"
+        )
+        await websocket.send_text(error_response.model_dump_json())
 
 # HTTP endpoint to get connection info (for debugging/monitoring)
-@router.get("/script/{script_id}/connections")
+@router.get("/script/{script_id}/connections", response_model=websocket_schemas.ScriptConnectionsInfo)
 async def get_script_connections(
     script_id: UUID,
     db: Session = Depends(get_db),
@@ -327,8 +321,8 @@ async def get_script_connections(
     
     connections_info = connection_manager.get_connection_info_for_script(str(script_id))
     
-    return {
-        "script_id": str(script_id),
-        "total_connections": len(connections_info),
-        "connections": connections_info
-    }
+    return websocket_schemas.ScriptConnectionsInfo(
+        script_id=str(script_id),
+        total_connections=len(connections_info),
+        connections=connections_info
+    )

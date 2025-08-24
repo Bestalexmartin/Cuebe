@@ -46,7 +46,6 @@ class TutorialCache {
 
   // Clean up expired entries periodically
   cleanup(): void {
-    const now = Date.now();
     for (const [key, cached] of this.cache.entries()) {
       if (this.isExpired(cached.timestamp)) {
         this.cache.delete(key);

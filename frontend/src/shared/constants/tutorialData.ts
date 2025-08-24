@@ -1,16 +1,18 @@
+import { IconName } from '../../components/AppIcon';
+
 export interface TutorialFile {
   name: string;
   path: string;
   description: string;
   category: string;
-  icon: string;
+  icon: IconName;
 }
 
 export interface QuickAccessItem {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  icon: IconName;
   isDisabled: boolean;
   onClick: () => void;
 }
