@@ -18,7 +18,7 @@ import { TestToolsPage } from './pages/TestToolsPage';
 import { ApiDocsPage } from './pages/ApiDocsPage';
 import { DocumentationPage } from './pages/DocumentationPage';
 import { TutorialsPage } from './pages/TutorialsPage';
-import { SharedPage } from './pages/SharedPage';
+import { SharedPage } from './shared/SharedPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ScriptSyncProvider } from './contexts/ScriptSyncContext';
 
