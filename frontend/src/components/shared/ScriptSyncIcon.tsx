@@ -162,6 +162,13 @@ export const ScriptSyncIcon: React.FC<ScriptSyncIconProps> = ({
       setTimeout(() => {
         setDisplayedIcon(newIcon);
         setIsTransitioning(false);
+        
+        // Trigger welcome rotation when connected icon is displayed
+        if (isConnected && !hasShownWelcomeRotation) {
+          setInternalRotate(true);
+          setHasShownWelcomeRotation(true);
+          setTimeout(() => setInternalRotate(false), 700);
+        }
       }, 1000); // 1 second delay to show connecting state longer
     }
   }, [isConnected, isConnecting, connectionError]); // Remove shouldRotate from deps
@@ -180,18 +187,7 @@ export const ScriptSyncIcon: React.FC<ScriptSyncIconProps> = ({
     }
   }, [isConnected]);
 
-  // Simple welcome rotation when connected
-  useEffect(() => {
-    if (isConnected && !hasShownWelcomeRotation) {
-      const timer = setTimeout(() => {
-        setInternalRotate(true);
-        setHasShownWelcomeRotation(true);
-        setTimeout(() => setInternalRotate(false), 700);
-      }, 1500); // Wait 1.5s after connection
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isConnected, hasShownWelcomeRotation]);
+  // Welcome rotation is now handled in the main transition logic above
 
   return (
     <IconButton

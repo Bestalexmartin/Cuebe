@@ -396,7 +396,68 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         autoSaveInterval: activePreferences.autoSaveInterval,
         hasUnsavedChanges,
         pendingOperations,
-        saveChanges: () => saveChanges(false), // Auto-save preserves edit history
+        saveChanges: async () => {
+            // Capture operation count before save (might be cleared after)
+            const operationCount = pendingOperations.length;
+            console.log('🔄 Auto-save: About to save', operationCount, 'operations');
+            console.log('🔄 Auto-save: WebSocket status - connected:', isSyncConnected, 'connecting:', isSyncConnecting);
+            
+            // Log script info operations to see what's being saved
+            const scriptInfoOps = pendingOperations.filter(op => op.type === 'UPDATE_SCRIPT_INFO');
+            if (scriptInfoOps.length > 0) {
+                console.log('🔄 Auto-save: Script info operations:', scriptInfoOps.map(op => ({
+                    type: op.type,
+                    changes: op.changes
+                })));
+            }
+            
+            const success = await saveChanges(false); // Auto-save preserves edit history
+            console.log('🔄 Auto-save: Save result:', success);
+            
+            // Broadcast WebSocket update after successful auto-save
+            if (success && isSyncConnected && operationCount > 0) {
+                try {
+                    // Log what script data we have at broadcast time
+                    console.log('🔄 Auto-save: Broadcasting with script data:', {
+                        sourceScriptStartTime: sourceScript?.start_time,
+                        currentScriptStartTime: currentScript?.start_time,
+                        pendingScriptOps: scriptInfoOps.length
+                    });
+                    
+                    // Send targeted updates for script info changes
+                    if (scriptInfoOps.length > 0) {
+                        // Extract the actual script info changes to broadcast
+                        const scriptChanges = {};
+                        scriptInfoOps.forEach(op => {
+                            Object.assign(scriptChanges, op.changes);
+                        });
+                        
+                        sendSyncUpdate({
+                            update_type: 'script_info',
+                            changes: scriptChanges,
+                            operation_id: `autosave_script_info_${Date.now()}`
+                        });
+                        console.log('🔄 Auto-save: Broadcasting script info changes:', scriptChanges);
+                    }
+                    
+                    // Send general elements update for other changes
+                    if (operationCount > scriptInfoOps.length) {
+                        sendSyncUpdate({
+                            update_type: 'elements_updated',
+                            changes: { saved_operations: operationCount - scriptInfoOps.length, source: 'auto_save' },
+                            operation_id: `autosave_elements_${Date.now()}`
+                        });
+                    }
+                    console.log('🔄 Auto-save: Broadcast update for', operationCount, 'operations');
+                } catch (error) {
+                    console.error('🔄 Auto-save: Failed to broadcast update:', error);
+                }
+            } else {
+                console.log('🔄 Auto-save: NOT broadcasting - success:', success, 'connected:', isSyncConnected, 'operations:', operationCount);
+            }
+            
+            return success;
+        },
     });
 
     // Element modal actions hook
@@ -1024,7 +1085,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             <ScriptModals
                 modalState={modalState}
                 modalNames={MODAL_NAMES}
-                script={sourceScript}
+                script={currentScript}
                 scriptId={scriptId || ''}
                 selectedElement={elementActions.selectedElement}
                 selectedElementIds={elementActions.selectedElementIds}

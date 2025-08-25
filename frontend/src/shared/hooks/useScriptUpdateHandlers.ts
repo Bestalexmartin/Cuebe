@@ -8,11 +8,13 @@ interface UpdateCallbacks {
   updateScriptElementsDirectly: (elements: any[]) => void;
   deleteElement: (elementId: string) => void;
   refreshScriptElementsOnly: () => void;
+  refreshSharedData?: () => void; // For full data refresh if needed
+  updateScriptInfo?: (changes: any) => void; // For direct script info updates
 }
 
 export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
   const handleUpdate = (update: ScriptUpdate) => {
-    const { updateSingleElement, updateScriptElementsDirectly, deleteElement, refreshScriptElementsOnly } = callbacks;
+    const { updateSingleElement, updateScriptElementsDirectly, deleteElement, refreshScriptElementsOnly, refreshSharedData, updateScriptInfo } = callbacks;
     
     // Guard against updates without type
     if (!update.update_type) return;
@@ -28,9 +30,17 @@ export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
     } else if (update.update_type === 'elements_updated') {
       refreshScriptElementsOnly();
     } else if (update.update_type === 'script_info') {
-      // Script info changes (name, status, times, notes) may affect the script header display
-      // For now, do lightweight refresh to get updated script metadata
-      refreshScriptElementsOnly();
+      // Script info changes - apply directly if possible, otherwise refresh
+      if (updateScriptInfo && update.changes) {
+        console.log('🔄 ScriptUpdate: Applying script info changes directly:', update.changes);
+        updateScriptInfo(update.changes);
+      } else if (refreshSharedData) {
+        console.log('🔄 ScriptUpdate: Full data refresh for script info changes');
+        refreshSharedData();
+      } else {
+        // Fallback to element refresh if nothing else available
+        refreshScriptElementsOnly();
+      }
     }
   };
 

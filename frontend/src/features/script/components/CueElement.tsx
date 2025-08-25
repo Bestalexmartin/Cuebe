@@ -236,12 +236,12 @@ export const CueElement: React.FC<CueElementProps> = React.memo((props: CueEleme
             const durationMs = endTime.getTime() - startTime.getTime();
 
             if (durationMs > 0) {
-                return formatTimeOffset(durationMs, effectiveUseMilitaryTime);
+                return formatTimeOffset(durationMs, false); // Duration should not use military time
             }
         }
 
         if (element.duration_ms) {
-            return formatTimeOffset(element.duration_ms, effectiveUseMilitaryTime);
+            return formatTimeOffset(element.duration_ms, false); // Duration should not use military time
         }
 
 

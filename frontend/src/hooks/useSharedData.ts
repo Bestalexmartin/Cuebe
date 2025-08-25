@@ -43,8 +43,10 @@ export const useSharedData = (shareToken: string | undefined) => {
           userData: data.user_name
         });
         setSharedData(prev => {
-          console.log('🔄 useSharedData: State update - prev !== new:', prev !== data);
-          return data;
+          // Only update state if data actually changed to prevent unnecessary re-renders
+          const hasChanged = JSON.stringify(prev) !== JSON.stringify(data);
+          console.log('🔄 useSharedData: Data changed:', hasChanged);
+          return hasChanged ? data : prev;
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load shared content');
@@ -61,5 +63,10 @@ export const useSharedData = (shareToken: string | undefined) => {
     setRefreshCounter(prev => prev + 1);
   };
 
-  return { sharedData, isLoading, error, refreshData };
+  const updateSharedData = (updater: (prevData: SharedData | null) => SharedData | null) => {
+    console.log('🔄 useSharedData: Updating shared data directly');
+    setSharedData(updater);
+  };
+
+  return { sharedData, isLoading, error, refreshData, updateSharedData };
 };
