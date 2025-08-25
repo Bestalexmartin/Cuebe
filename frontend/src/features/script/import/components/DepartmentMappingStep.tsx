@@ -171,7 +171,7 @@ export const DepartmentMappingStep: React.FC<DepartmentMappingStepProps> = ({
                     p={3}
                     bg={draggedItem === dept.name ? "transparent" : "page.background"}
                     border="2px solid"
-                    borderColor={draggedItem === dept.name ? "orange.400" : "container.border"}
+                    borderColor={draggedItem === dept.name ? "orange.400" : "ui.border"}
                     borderRadius="md"
                     cursor="grab"
                     _active={{ cursor: "grabbing" }}
@@ -226,7 +226,7 @@ export const DepartmentMappingStep: React.FC<DepartmentMappingStepProps> = ({
                   bg={isDropTarget ? 'orange.50' : 'page.background'}
                   _dark={{ bg: isDropTarget ? 'orange.900' : 'page.background' }}
                   border="2px solid"
-                  borderColor={isDropTarget ? 'orange.400' : 'container.border'}
+                  borderColor={isDropTarget ? 'orange.400' : 'ui.border'}
                   borderRadius="md"
                   onDragOver={handleDragOver}
                   onDragEnter={(e) => handleDragEnter(e, dept.department_id)}

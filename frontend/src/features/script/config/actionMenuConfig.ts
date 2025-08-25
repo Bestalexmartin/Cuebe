@@ -4,6 +4,7 @@ import { ActionItem } from '../../../components/ActionsMenu';
 
 interface ActionMenuConfigParams {
     onOptionsClick: () => void;
+    onFilterDepartmentsClick: () => void;
     onDuplicateClick: () => void;
     onExportClick: () => void;
     onDeleteClick: () => void;
@@ -11,14 +12,22 @@ interface ActionMenuConfigParams {
 
 export const createActionMenuConfig = ({
     onOptionsClick,
+    onFilterDepartmentsClick,
     onDuplicateClick,
     onExportClick,
     onDeleteClick
 }: ActionMenuConfigParams): ActionItem[] => [
     {
         id: 'options',
-        label: 'Options',
+        label: 'Manage Edit Options',
         onClick: onOptionsClick,
+        isDestructive: false,
+        isDisabled: false
+    },
+    {
+        id: 'filter-departments',
+        label: 'Filter by Department',
+        onClick: onFilterDepartmentsClick,
         isDestructive: false,
         isDisabled: false
     },
@@ -35,13 +44,6 @@ export const createActionMenuConfig = ({
         onClick: onExportClick,
         isDestructive: false,
         isDisabled: false
-    },
-    {
-        id: 'edit-history',
-        label: 'Edit History',
-        onClick: () => { },
-        isDestructive: false,
-        isDisabled: true
     },
     {
         id: 'delete-script',

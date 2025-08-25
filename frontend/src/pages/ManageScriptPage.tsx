@@ -41,6 +41,7 @@ import { EditMode, EditModeRef } from '../features/script/components/modes/EditM
 import { useScriptModes, ScriptMode } from '../features/script/hooks/useScriptModes';
 import { useElementActions } from '../features/script/hooks/useElementActions';
 import { ScriptModals } from '../features/script/components/ScriptModals';
+import { FilterDepartmentsModal } from '../features/script/components/modals/FilterDepartmentsModal';
 import { MobileScriptDrawer } from '../features/script/components/MobileScriptDrawer';
 import { getToolbarButtons, ToolbarContext } from '../features/script/utils/toolbarConfig';
 import { InfoMode } from '../features/script/components/modes/InfoMode';
@@ -65,6 +66,7 @@ const MODAL_NAMES = {
     EDIT_CUE: 'edit_cue',
     EDIT_GROUP: 'edit_group',
     OPTIONS: 'options',
+    FILTER_DEPARTMENTS: 'filter_departments',
     DELETE_CUE: 'delete_cue',
     DUPLICATE_ELEMENT: 'duplicate_element',
     GROUP_ELEMENTS: 'group_elements',
@@ -376,6 +378,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             setActiveMode('view');
         },
         sendSyncUpdate: sendSyncUpdate,
+        pendingOperations: pendingOperations,
         dangerMode: activePreferences.dangerMode
     });
 
@@ -387,6 +390,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const [isHiding, setIsHiding] = useState(false);
     const [isScriptShared, setIsScriptShared] = useState(false);
     const [shareCount, setShareCount] = useState(0);
+    
+    // Department filtering state
+    const [filteredDepartmentIds, setFilteredDepartmentIds] = useState<string[]>([]);
+    const [hasUserSetFilter, setHasUserSetFilter] = useState(false);
     
     // Navigation
     const navigate = useNavigate();
@@ -440,14 +447,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                         console.log('🔄 Auto-save: Broadcasting script info changes:', scriptChanges);
                     }
                     
-                    // Send general elements update for other changes
-                    if (operationCount > scriptInfoOps.length) {
-                        sendSyncUpdate({
-                            update_type: 'elements_updated',
-                            changes: { saved_operations: operationCount - scriptInfoOps.length, source: 'auto_save' },
-                            operation_id: `autosave_elements_${Date.now()}`
-                        });
-                    }
+                    // Note: Only script_info changes are broadcast - element changes require full refresh for now
                     console.log('🔄 Auto-save: Broadcast update for', operationCount, 'operations');
                 } catch (error) {
                     console.error('🔄 Auto-save: Failed to broadcast update:', error);
@@ -869,9 +869,81 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         }
     };
 
+    // Handle department filter application
+    const handleApplyDepartmentFilter = useCallback((selectedDepartmentIds: string[]) => {
+        console.log('🔍 Applying department filter:', selectedDepartmentIds);
+        setFilteredDepartmentIds(selectedDepartmentIds);
+        setHasUserSetFilter(true);
+    }, []);
+
+    // Create filtered elements based on department selection
+    const filteredEditQueueElements = useMemo(() => {
+        console.log('🔍 Filtering elements:', {
+            totalElements: editQueueElements?.length,
+            selectedDepartments: filteredDepartmentIds,
+            selectedCount: filteredDepartmentIds.length
+        });
+        
+        if (filteredDepartmentIds.length === 0) {
+            // If no departments selected, show only NOTEs and GROUPs
+            return editQueueElements?.filter(element => 
+                element.element_type === 'NOTE' || element.element_type === 'GROUP'
+            ) || [];
+        }
+        
+        const filtered = editQueueElements?.filter(element => {
+            // Always show NOTEs and GROUPs regardless of department filter
+            if (element.element_type === 'NOTE' || element.element_type === 'GROUP') {
+                return true;
+            }
+            
+            // Show elements that belong to selected departments
+            return element.department_id && filteredDepartmentIds.includes(element.department_id);
+        }) || [];
+        
+        console.log('🔍 Filtered result:', {
+            originalCount: editQueueElements?.length || 0,
+            filteredCount: filtered.length
+        });
+        
+        return filtered;
+    }, [editQueueElements, filteredDepartmentIds]);
+
+    const filteredAllEditQueueElements = useMemo(() => {
+        if (filteredDepartmentIds.length === 0) {
+            // If no departments selected, show only NOTEs and GROUPs
+            return allEditQueueElements?.filter(element => 
+                element.element_type === 'NOTE' || element.element_type === 'GROUP'
+            ) || [];
+        }
+        
+        return allEditQueueElements?.filter(element => {
+            // Always show NOTEs and GROUPs regardless of department filter
+            if (element.element_type === 'NOTE' || element.element_type === 'GROUP') {
+                return true;
+            }
+            
+            // Show elements that belong to selected departments
+            return element.department_id && filteredDepartmentIds.includes(element.department_id);
+        }) || [];
+    }, [allEditQueueElements, filteredDepartmentIds]);
+
+    // Initialize department filter with all departments when elements first load (only if user hasn't set a filter)
+    useEffect(() => {
+        if (allEditQueueElements && filteredDepartmentIds.length === 0 && !hasUserSetFilter) {
+            const allDepartmentIds = Array.from(new Set(
+                allEditQueueElements
+                    .filter(el => el.department_id && el.element_type !== 'NOTE' && el.element_type !== 'GROUP')
+                    .map(el => el.department_id!)
+            ));
+            setFilteredDepartmentIds(allDepartmentIds);
+        }
+    }, [allEditQueueElements, filteredDepartmentIds.length, hasUserSetFilter]);
+
     // Configure actions menu using extracted config
     const actions = createActionMenuConfig({
         onOptionsClick: () => modalState.openModal(MODAL_NAMES.OPTIONS),
+        onFilterDepartmentsClick: () => modalState.openModal(MODAL_NAMES.FILTER_DEPARTMENTS),
         onDuplicateClick: () => modalState.openModal(MODAL_NAMES.DUPLICATE),
         onExportClick: handleExportScript,
         onDeleteClick: modalHandlers.handleDeleteClick
@@ -1026,7 +1098,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
                                 {activeMode === 'view' && (
-                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} useMilitaryTime={activePreferences.useMilitaryTime} onScrollStateChange={handleScrollStateChange} elements={editQueueElements} allElements={allEditQueueElements} script={currentScript} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} />
+                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} useMilitaryTime={activePreferences.useMilitaryTime} onScrollStateChange={handleScrollStateChange} elements={filteredEditQueueElements} allElements={filteredAllEditQueueElements} script={currentScript} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} />
                                 )}
                                 {activeMode === 'edit' && (
                                     <EditMode
@@ -1041,13 +1113,13 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                         onSelectionChange={setCurrentSelectedElementIds}
                                         onToggleGroupCollapse={toggleGroupCollapse}
                                         script={currentScript}
-                                        elements={editQueueElements}
-                                        allElements={allEditQueueElements}
+                                        elements={filteredEditQueueElements}
+                                        allElements={filteredAllEditQueueElements}
                                         onApplyLocalChange={applyLocalChange}
                                     />
                                 )}
                                 {activeMode === 'play' && <PlayMode />}
-                                {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={allEditQueueElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} onRevertSuccess={() => setActiveMode('edit')} />}
+                                {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={filteredAllEditQueueElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} onRevertSuccess={() => setActiveMode('edit')} />}
                             </Box>
                         )}
                     </Box>
@@ -1141,6 +1213,15 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onInitialHideConfirm={handleInitialHideConfirm}
                 onFinalHideConfirm={handleFinalHideConfirm}
                 onHideCancel={handleHideCancel}
+            />
+
+            {/* Filter Departments Modal */}
+            <FilterDepartmentsModal
+                isOpen={modalState.isOpen(MODAL_NAMES.FILTER_DEPARTMENTS)}
+                onClose={() => modalState.closeModal(MODAL_NAMES.FILTER_DEPARTMENTS)}
+                elements={allEditQueueElements || []}
+                selectedDepartmentIds={filteredDepartmentIds}
+                onApplyFilter={handleApplyDepartmentFilter}
             />
 
             {/* Save Confirmation Modal */}
