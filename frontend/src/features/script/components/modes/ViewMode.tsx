@@ -190,6 +190,18 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                         {displayElements.map((element, index) => {
                             // Only show clock times if we have the required script start time
                             const shouldShowClockTimes = showClockTimes && !!script?.start_time;
+                            
+                            // Debug: Log first element's script times when they change
+                            if (index === 0) {
+                                console.log('🔄 ViewMode: Rendering element with times:', {
+                                    elementId: element.element_id.slice(-6),
+                                    scriptStartTime: script?.start_time,
+                                    shouldShowClockTimes,
+                                    scriptRef: script === script,  // Check if script object is stable
+                                    renderCount: Date.now() // Add timestamp to track rapid re-renders
+                                });
+                            }
+                            
                             return (
                                 <CueElement
                                     key={element.element_id}

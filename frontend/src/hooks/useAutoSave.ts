@@ -36,21 +36,24 @@ export const useAutoSave = ({
     const [showSaveSuccess, setShowSaveSuccess] = useState<boolean>(false);
 
     const performAutoSave = useCallback(async () => {
-        // Don't auto-save if already saving or no changes
-        if (isAutoSaving || !hasUnsavedChanges || pendingOperations.length === 0) {
-            // Reset timer when no changes to save
-            setSecondsUntilNextSave(autoSaveInterval);
-            return;
-        }
-
         // Check if there are new operations since last auto-save
         const currentOperationCount = pendingOperations.length;
-        if (currentOperationCount === lastAutoSaveOperationCountRef.current) {
-            console.log('🔄 Auto-save: No new changes since last save, skipping');
+        
+        // Don't auto-save if already saving, no changes, or no new operations
+        if (isAutoSaving || !hasUnsavedChanges || currentOperationCount === 0 || currentOperationCount === lastAutoSaveOperationCountRef.current) {
+            if (currentOperationCount === 0 || currentOperationCount === lastAutoSaveOperationCountRef.current) {
+                console.log('🔄 Auto-save: No new operations, clearing timer');
+                // Clear the timer completely when no new changes
+                if (countdownRef.current) {
+                    clearInterval(countdownRef.current);
+                    countdownRef.current = null;
+                }
+                setSecondsUntilNextSave(0);
+            }
             return;
         }
 
-
+        console.log('🔄 Auto-save: Saving', currentOperationCount, 'operations');
         setIsAutoSaving(true);
         onAutoSaveStart?.();
 
@@ -61,15 +64,25 @@ export const useAutoSave = ({
                 // Update tracking but don't clear the edit queue
                 lastAutoSaveOperationCountRef.current = currentOperationCount;
                 setLastAutoSaveTime(Date.now());
+                console.log('🔄 Auto-save: Success, operations saved');
+                
                 // Show success indicator for 2 seconds
                 setShowSaveSuccess(true);
                 setTimeout(() => {
                     setShowSaveSuccess(false);
                 }, 2000);
+                
+                // Clear timer after successful save - no more operations to save immediately
+                if (countdownRef.current) {
+                    clearInterval(countdownRef.current);
+                    countdownRef.current = null;
+                }
+                setSecondsUntilNextSave(0);
             }
 
             onAutoSaveComplete?.(success);
         } catch (error) {
+            console.error('🔄 Auto-save: Error', error);
             onAutoSaveComplete?.(false);
         } finally {
             setIsAutoSaving(false);
@@ -95,6 +108,14 @@ export const useAutoSave = ({
             return;
         }
 
+        // Only start countdown if there are pending operations AND we haven't saved them yet
+        const currentOperationCount = pendingOperations.length;
+        if (currentOperationCount === 0 || currentOperationCount === lastAutoSaveOperationCountRef.current) {
+            setSecondsUntilNextSave(0);
+            return;
+        }
+
+        console.log('🔄 Auto-save: Starting timer for', currentOperationCount, 'new operations');
 
         // Set up countdown timer (updates every second)
         setSecondsUntilNextSave(autoSaveInterval);
@@ -104,26 +125,33 @@ export const useAutoSave = ({
                 if (next <= 0) {
                     // Time to auto-save
                     performAutoSaveRef.current && performAutoSaveRef.current();
-                    return autoSaveInterval; // Reset countdown
+                    // Don't reset countdown here - let the performAutoSave function handle timer state
+                    return 0;
                 }
                 return next;
             });
         }, 1000);
-
-        // No separate main interval needed - countdown timer handles saves
 
         return () => {
             if (countdownRef.current) {
                 clearInterval(countdownRef.current);
             }
         };
-    }, [autoSaveInterval]);
+    }, [autoSaveInterval, pendingOperations.length]);
 
     // Reset operation count tracking when pendingOperations changes significantly
     useEffect(() => {
-        // If operations were cleared (likely due to manual save), reset tracking
+        // If operations were cleared (likely due to manual save), reset tracking and stop timer
         if (pendingOperations.length === 0 && lastAutoSaveOperationCountRef.current > 0) {
+            console.log('🔄 Auto-save: Operations cleared, stopping timer');
             lastAutoSaveOperationCountRef.current = 0;
+            
+            // Clear the timer when no operations remain
+            if (countdownRef.current) {
+                clearInterval(countdownRef.current);
+                countdownRef.current = null;
+            }
+            setSecondsUntilNextSave(0);
         }
     }, [pendingOperations.length]);
 

@@ -64,7 +64,7 @@ export const SharedPage = React.memo(() => {
   };
 
   // Custom hooks
-  const { sharedData, isLoading, error } = useSharedData(shareToken);
+  const { sharedData, isLoading, error, refreshData, updateSharedData } = useSharedData(shareToken);
   const {
     viewingScriptId,
     scriptElements,
@@ -79,12 +79,53 @@ export const SharedPage = React.memo(() => {
     deleteElement,
   } = useScriptViewing(shareToken);
 
+  // Function to update script info directly without API call
+  const updateScriptInfo = useCallback((changes: any) => {
+    if (!viewingScriptId) return;
+    
+    updateSharedData(prevData => {
+      if (!prevData?.shows) return prevData;
+      
+      const updatedShows = prevData.shows.map(show => ({
+        ...show,
+        scripts: show.scripts.map(script => {
+          if (script.script_id === viewingScriptId) {
+            const updatedScript = { ...script };
+            
+            // Apply each change
+            for (const [field, changeData] of Object.entries(changes)) {
+              const { new_value } = changeData as { old_value: any; new_value: any };
+              if (field === 'script_name') updatedScript.script_name = new_value;
+              else if (field === 'script_status') updatedScript.script_status = new_value;
+              else if (field === 'start_time') updatedScript.start_time = new_value;
+              else if (field === 'end_time') updatedScript.end_time = new_value;
+              else if (field === 'script_notes') updatedScript.script_notes = new_value;
+            }
+            
+            console.log('🔄 SharedPage: Applied script info changes:', {
+              scriptId: script.script_id,
+              changes: Object.keys(changes),
+              newStartTime: updatedScript.start_time
+            });
+            
+            return updatedScript;
+          }
+          return script;
+        })
+      }));
+      
+      return { ...prevData, shows: updatedShows };
+    });
+  }, [viewingScriptId, updateSharedData]);
+
   // WebSocket update handlers - extracted to custom hook
   const { handleUpdate } = useScriptUpdateHandlers({
     updateSingleElement,
     updateScriptElementsDirectly,
     deleteElement,
     refreshScriptElementsOnly,
+    refreshSharedData: refreshData, // For full data refresh if needed
+    updateScriptInfo, // For direct script info updates
   });
 
   // WebSocket sync for the currently viewing script
@@ -109,11 +150,17 @@ export const SharedPage = React.memo(() => {
 
   const currentScript = useMemo(() => {
     if (!viewingScriptId || !sharedData?.shows) return null;
-    return (
-      sharedData.shows
-        .flatMap(show => show.scripts)
-        .find(script => script.script_id === viewingScriptId) || null
-    );
+    const foundScript = sharedData.shows
+      .flatMap(show => show.scripts)
+      .find(script => script.script_id === viewingScriptId) || null;
+    
+    console.log('🔄 SharedPage: currentScript memo recalculated:', {
+      scriptId: foundScript?.script_id,
+      startTime: foundScript?.start_time,
+      sharedDataRef: sharedData?.shows === sharedData?.shows // Check if reference changed
+    });
+    
+    return foundScript;
   }, [viewingScriptId, sharedData?.shows]);
 
   if (isLoading) {

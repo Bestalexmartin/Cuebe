@@ -61,8 +61,14 @@ export const SharedPageHeader: React.FC<SharedPageHeaderProps> = ({
         <BorderedContainer>
           <Avatar
             size="sm"
+            w="28px"
+            h="28px"
             name={userName || 'Guest User'}
             src={userProfileImage}
+            fontWeight="bold"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
           />
         </BorderedContainer>
       </Flex>
