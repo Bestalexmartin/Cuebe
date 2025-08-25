@@ -377,22 +377,57 @@ interface UpdateNotification {
 ### Real-Time Script Playback (Phase 3)
 This foundation enables the complete vision:
 
-**Live Performance Mode**
+**Architecture: Local Clock Synchronization**
+The playback system uses an elegant hybrid approach:
+- **WebSocket Control Signals**: Only for start/stop/seek commands (minimal traffic)
+- **Local Device Clocks**: Each device independently calculates current position
+- **Benefits**: Minimal network dependency, resilient to connectivity issues, perfect synchronization
+
 ```typescript
 interface PlaybackState {
   position: number; // Current playback position in milliseconds
   is_playing: boolean;
+  script_start_time: string; // Script's start time (e.g., "19:30:00")
+  playback_start_timestamp: number; // When playback began (Date.now())
+  playback_rate: number; // 1.0 = normal speed, 0.5 = half speed, etc.
   current_cue: string | null;
   highlighted_elements: string[];
-  playback_rate: number; // 1.0 = normal speed
 }
 
 interface PlaybackCommand {
   command: 'play' | 'pause' | 'seek' | 'highlight' | 'call_cue';
-  data: any;
+  // Play command data
+  script_start_time?: string; // Script start time for position calculation
+  playback_start_timestamp?: number; // When to begin playback (Date.now())
+  playback_rate?: number;
+  // Pause command data  
+  paused_at_position?: number; // Position where playback was paused
+  // Seek command data
+  seek_to_position?: number; // New position to jump to
+  new_playback_start?: number; // Adjusted start time for seeking
+  // Highlight/cue calling
+  element_id?: string;
   issued_by: string;
   timestamp: number;
 }
+```
+
+**Position Calculation (Per Device)**
+```typescript
+const calculateCurrentPosition = (state: PlaybackState): number => {
+  if (!state.is_playing) return state.position;
+  
+  const elapsedTime = Date.now() - state.playback_start_timestamp;
+  return (elapsedTime * state.playback_rate); // Position in milliseconds from script start
+};
+
+const getCurrentVisibleElements = (elements: ScriptElement[], currentPosition: number) => {
+  return elements.filter(element => {
+    const elementTime = element.offset_ms || 0;
+    // Show elements that should be visible at current position
+    return elementTime <= currentPosition && elementTime > currentPosition - ELEMENT_VISIBILITY_WINDOW;
+  });
+};
 ```
 
 **Director/SM Controls**

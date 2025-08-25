@@ -34,6 +34,7 @@ interface UseScriptModalHandlersParams {
     onSaveSuccess?: () => void; // Callback for when save completes successfully
     // WebSocket sync support
     sendSyncUpdate?: (message: { update_type: string; changes?: any; operation_id?: string }) => void;
+    pendingOperations?: any[]; // For targeted WebSocket broadcasts
     // Danger mode - skip confirmation dialogs
     dangerMode?: boolean;
 }
@@ -51,6 +52,7 @@ export const useScriptModalHandlers = ({
     captureInfoChanges,
     onSaveSuccess,
     sendSyncUpdate,
+    pendingOperations = [],
     dangerMode = false
 }: UseScriptModalHandlersParams) => {
     const navigate = useNavigate();
@@ -99,20 +101,29 @@ export const useScriptModalHandlers = ({
             if (success) {
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
-                // Broadcast script changes via WebSocket - send specific updates instead of generic script_info
-                if (sendSyncUpdate && scriptId) {
-                    // Note: We need access to the actual edit operations to send proper updates
-                    // For now, send a generic refresh signal that triggers a targeted data update
-                    const broadcastMessage = {
-                        update_type: 'elements_updated',
-                        changes: {
-                            script_id: scriptId,
-                            updated_at: new Date().toISOString(),
-                            message: 'Script elements updated'
-                        },
-                        operation_id: `save_${Date.now()}`
-                    };
-                    sendSyncUpdate(broadcastMessage);
+                // Broadcast targeted script info changes via WebSocket (same logic as auto-save)
+                if (sendSyncUpdate && scriptId && pendingOperations.length > 0) {
+                    try {
+                        // Send targeted updates for script info changes only (the working part)
+                        const scriptInfoOps = pendingOperations.filter(op => op.type === 'UPDATE_SCRIPT_INFO');
+                        if (scriptInfoOps.length > 0) {
+                            // Extract the actual script info changes to broadcast
+                            const scriptChanges = {};
+                            scriptInfoOps.forEach(op => {
+                                Object.assign(scriptChanges, op.changes);
+                            });
+                            
+                            sendSyncUpdate({
+                                update_type: 'script_info',
+                                changes: scriptChanges,
+                                operation_id: `manual_save_script_info_${Date.now()}`
+                            });
+                            console.log('🔄 Manual Save: Broadcasting script info changes:', scriptChanges);
+                        }
+                        // Note: Only script_info changes are broadcast - element changes require full refresh for now
+                    } catch (error) {
+                        console.error('🔄 Manual Save: WebSocket broadcast error:', error);
+                    }
                 }
                 
                 modalState.closeModal(modalNames.SAVE_PROCESSING);
