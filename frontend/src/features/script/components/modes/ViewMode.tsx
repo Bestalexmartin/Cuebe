@@ -30,9 +30,9 @@ export interface ViewModeRef {
     refetchElements: () => Promise<void>;
 }
 
-const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({ 
-    scriptId, 
-    colorizeDepNames = false, 
+const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
+    scriptId,
+    colorizeDepNames = false,
     showClockTimes = false,
     autoSortCues = false,
     useMilitaryTime = false,
@@ -42,7 +42,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     onScrollStateChange,
     onToggleGroupCollapse
 }, ref) => {
-    
+
     // Only fetch elements if none are provided
     const shouldFetchElements = !providedElements;
     const { elements: fetchedElements, isLoading, error, refetchElements } = useScriptElements(
@@ -51,17 +51,17 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     // Use provided script if available, otherwise fetch it
     const { script: scriptFromHook } = useScript(providedScript ? undefined : scriptId);
     const script = providedScript || scriptFromHook;
-    
+
     // Use provided elements if available, otherwise use fetched elements
     const elements = providedElements || fetchedElements;
     const allElementsForGroupCalculations = providedAllElements || elements;
-    
+
     // Create display elements with auto-sort applied when needed
     const displayElements = useMemo(() => {
         if (!autoSortCues || !elements) {
             return elements;
         }
-        
+
         // Return sorted copy for display
         return [...elements].sort((a, b) => {
             const aOffset = a.offset_ms || 0;
@@ -69,9 +69,9 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
             return aOffset - bOffset;
         });
     }, [elements, autoSortCues]);
-    
+
     const scrollContainerRef = useRef<HTMLDivElement>(null);
-    
+
     // Expose refetch function to parent via ref
     useImperativeHandle(ref, () => ({
         refetchElements
@@ -80,14 +80,14 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     // Function to check scroll state
     const checkScrollState = () => {
         if (!scrollContainerRef.current || !onScrollStateChange) return;
-        
+
         const container = scrollContainerRef.current;
         const { scrollTop, scrollHeight, clientHeight } = container;
-        
+
         const isAtTop = scrollTop <= 1; // Allow for 1px tolerance
         const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1; // Allow for 1px tolerance
         const allElementsFitOnScreen = scrollHeight <= clientHeight;
-        
+
         onScrollStateChange({
             isAtTop,
             isAtBottom,
@@ -106,10 +106,10 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
         if (!container) return;
 
         container.addEventListener('scroll', checkScrollState);
-        
+
         // Check initial state
         setTimeout(checkScrollState, 100); // Small delay to ensure rendering is complete
-        
+
         return () => {
             container.removeEventListener('scroll', checkScrollState);
         };
@@ -119,11 +119,11 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
         <VStack height="100%" spacing={0} align="stretch">
             {/* Header Row */}
             <ScriptElementsHeader />
-            
+
             {/* Elements List */}
-            <Box 
+            <Box
                 ref={scrollContainerRef}
-                flex={1} 
+                flex={1}
                 overflowY="auto"
                 className="hide-scrollbar"
                 sx={{
@@ -157,8 +157,8 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                 )}
 
                 {(shouldFetchElements ? (!isLoading && !error) : true) && displayElements.length > 0 && (
-                    <VStack 
-                        spacing={0} 
+                    <VStack
+                        spacing={0}
                         align="stretch"
                         css={{
                             '& > *': {
@@ -190,18 +190,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                         {displayElements.map((element, index) => {
                             // Only show clock times if we have the required script start time
                             const shouldShowClockTimes = showClockTimes && !!script?.start_time;
-                            
-                            // Debug: Log first element's script times when they change
-                            if (index === 0) {
-                                console.log('🔄 ViewMode: Rendering element with times:', {
-                                    elementId: element.element_id.slice(-6),
-                                    scriptStartTime: script?.start_time,
-                                    shouldShowClockTimes,
-                                    scriptRef: script === script,  // Check if script object is stable
-                                    renderCount: Date.now() // Add timestamp to track rapid re-renders
-                                });
-                            }
-                            
+
                             return (
                                 <CueElement
                                     key={element.element_id}

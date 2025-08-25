@@ -7,8 +7,7 @@ import {
     Text,
     Checkbox,
     Button,
-    Box,
-    Divider
+    Box
 } from '@chakra-ui/react';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { ScriptElement } from '../../types/scriptElements';
@@ -88,12 +87,11 @@ export const FilterDepartmentsModal: React.FC<FilterDepartmentsModalProps> = ({
     };
 
     const allSelected = localSelectedIds.length === departments.length;
-    const someSelected = localSelectedIds.length > 0 && localSelectedIds.length < departments.length;
 
     return (
         <BaseModal
             title="Filter by Department"
-            headerIcon="filter"
+            headerIcon="options"
             headerIconColor="page.text"
             isOpen={isOpen}
             onClose={handleClose}

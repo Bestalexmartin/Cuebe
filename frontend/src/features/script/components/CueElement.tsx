@@ -26,7 +26,7 @@ interface CueElementProps {
     onToggleGroupCollapse?: (elementId: string) => void;
 }
 
-export const CueElement: React.FC<CueElementProps> = React.memo((props: CueElementProps) => {
+export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) => {
     const {
         element,
         index,
@@ -42,11 +42,11 @@ export const CueElement: React.FC<CueElementProps> = React.memo((props: CueEleme
         onEdit,
         onToggleGroupCollapse
     } = props;
-    
+
     // Use useMilitaryTime directly like colorizeDepNames and showClockTimes
     // All preferences are now passed as props from parent components
     const effectiveUseMilitaryTime = useMilitaryTime;
-    
+
 
     // Drag functionality
     const dragTimeoutRef = useRef<number | null>(null);
@@ -465,7 +465,7 @@ export const CueElement: React.FC<CueElementProps> = React.memo((props: CueEleme
                 {/* Location */}
                 <Box w="180px" pl={6} pr={3} position="relative" py={.5} borderColor="gray.500">
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
-                        {element.location_details || '\u00A0'}
+                        {`SEQ: ${element.sequence}${element.location_details ? ' | ' + element.location_details : ''}`}
                     </Text>
                     {element.priority !== 'SAFETY' && (
                         <Box
@@ -555,4 +555,4 @@ export const CueElement: React.FC<CueElementProps> = React.memo((props: CueEleme
             </HStack>
         </Box>
     );
-});
+};
