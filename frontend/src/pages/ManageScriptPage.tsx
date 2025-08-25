@@ -133,36 +133,18 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const { script: sourceScript, isLoading: isLoadingScript, error: scriptError, refetchScript } = useScript(scriptId);
     const { show } = useShow(sourceScript?.show_id);
 
-    const editQueueHook = useScriptElementsWithEditQueue(scriptId);
-    const {
-        elements: editQueueElements,
-        allElements: allEditQueueElements,
-        pendingOperations,
-        hasUnsavedChanges,
-        revertToPoint,
-        applyLocalChange,
-        discardChanges,
-        saveChanges,
-        toggleGroupCollapse,
-        expandAllGroups,
-        collapseAllGroups
-    } = editQueueHook;
+    // Moved this hook call after preferences are defined
 
     // Real-time sync for collaborative editing
-    const { 
+    const {
         isConnected: isSyncConnected,
         isConnecting: isSyncConnecting,
         connectionCount: syncConnectionCount,
         connectionError: syncConnectionError,
-        sendUpdate: sendSyncUpdate 
+        sendUpdate: sendSyncUpdate
     } = useScriptSync(scriptId || null, undefined, {
-        onUpdate: (update) => {
-            console.log('🔄 AUTH: Received script update from:', update.updated_by, update);
-            // TODO: Handle incoming updates from other users (future enhancement)
-        },
-        onConnect: () => console.log('✅ AUTH: Script sync connected'),
-        onDisconnect: () => console.log('❌ AUTH: Script sync disconnected'),
-        onError: (error) => console.error('💥 AUTH: Script sync error:', error),
+        onConnect: () => { },
+        onDisconnect: () => { },
         onDataReceived: () => {
             setShouldRotateAuth(true);
             setTimeout(() => setShouldRotateAuth(false), 700); // Match CSS animation duration (600ms) + buffer
@@ -189,11 +171,40 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         return () => setSyncData(null);
     }, [isSyncConnected, isSyncConnecting, syncConnectionCount, syncConnectionError, shouldRotateAuth, scriptId, setSyncData]);
 
+    // applyLocalChangeWithSync will be defined after editQueueHook
+
+    const [previewPreferences, setPreviewPreferences] = useState<UserPreferences | null>(null);
+    const [buttonShowsOpen, setButtonShowsOpen] = useState<boolean>(true);
+    const [groupOverrides, setGroupOverrides] = useState<Record<string, boolean>>({});
+
+    // handleToggleAllGroups will be defined after editQueueHook
+
+    const {
+        preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues, useMilitaryTime, dangerMode, autoSaveInterval },
+        updatePreference,
+        updatePreferences
+    } = useUserPreferences();
+
+    const editQueueHook = useScriptElementsWithEditQueue(scriptId, { autoSortCues });
+    const {
+        elements: editQueueElements,
+        allElements: allEditQueueElements,
+        pendingOperations,
+        hasUnsavedChanges,
+        revertToPoint,
+        applyLocalChange,
+        discardChanges,
+        saveChanges,
+        toggleGroupCollapse,
+        expandAllGroups,
+        collapseAllGroups
+    } = editQueueHook;
+
     // Enhanced applyLocalChange that broadcasts changes via WebSocket
     const applyLocalChangeWithSync = useCallback((operation: any) => {
         // Apply change locally first
         applyLocalChange(operation);
-        
+
         // Broadcast to other connected users
         if (isSyncConnected) {
             try {
@@ -206,27 +217,22 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 } else if (operation.operation_type === 'DELETE_ELEMENT') {
                     updateType = 'element_delete';
                 }
-                
+
                 sendSyncUpdate({
                     update_type: updateType,
                     changes: operation,
                     operation_id: operation.operation_id || `local_${Date.now()}`
                 });
-                
-                console.log('Broadcast script update:', updateType, operation.operation_type);
+
             } catch (error) {
                 console.error('Failed to broadcast script update:', error);
             }
         }
     }, [applyLocalChange, isSyncConnected, sendSyncUpdate]);
 
-    const [previewPreferences, setPreviewPreferences] = useState<UserPreferences | null>(null);
-    const [buttonShowsOpen, setButtonShowsOpen] = useState<boolean>(true);
-    const [groupOverrides, setGroupOverrides] = useState<Record<string, boolean>>({});
-
     const handleToggleAllGroups = useCallback(() => {
         if (!allEditQueueElements) return;
-        
+
         // Use the new batch operations that will be saved to the edit queue
         if (buttonShowsOpen) {
             // Button shows "Open All" so we want to expand all groups
@@ -235,19 +241,13 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             // Button shows "Close All" so we want to collapse all groups  
             collapseAllGroups();
         }
-        
+
         // Update the button state to reflect the new state
         setButtonShowsOpen(!buttonShowsOpen);
-        
+
         // Clear group overrides since we're now using the edit queue
         setGroupOverrides({});
     }, [allEditQueueElements, buttonShowsOpen, expandAllGroups, collapseAllGroups]);
-
-    const {
-        preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues, useMilitaryTime, dangerMode, autoSaveInterval },
-        updatePreference,
-        updatePreferences
-    } = useUserPreferences();
 
     // Calculate the current auto-sort state from edit queue operations
     const currentAutoSortState = useMemo(() => {
@@ -265,8 +265,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         const result = modalState.isOpen(MODAL_NAMES.OPTIONS) && previewPreferences
             ? previewPreferences
             : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval };
-        
-        
+
+
         return result;
     }, [modalState, previewPreferences, darkMode, colorizeDepNames, showClockTimes, currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval]);
 
@@ -390,11 +390,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const [isHiding, setIsHiding] = useState(false);
     const [isScriptShared, setIsScriptShared] = useState(false);
     const [shareCount, setShareCount] = useState(0);
-    
+
     // Department filtering state
     const [filteredDepartmentIds, setFilteredDepartmentIds] = useState<string[]>([]);
     const [hasUserSetFilter, setHasUserSetFilter] = useState(false);
-    
+
     // Navigation
     const navigate = useNavigate();
 
@@ -406,31 +406,14 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         saveChanges: async () => {
             // Capture operation count before save (might be cleared after)
             const operationCount = pendingOperations.length;
-            console.log('🔄 Auto-save: About to save', operationCount, 'operations');
-            console.log('🔄 Auto-save: WebSocket status - connected:', isSyncConnected, 'connecting:', isSyncConnecting);
-            
+
             // Log script info operations to see what's being saved
             const scriptInfoOps = pendingOperations.filter(op => op.type === 'UPDATE_SCRIPT_INFO');
-            if (scriptInfoOps.length > 0) {
-                console.log('🔄 Auto-save: Script info operations:', scriptInfoOps.map(op => ({
-                    type: op.type,
-                    changes: op.changes
-                })));
-            }
-            
             const success = await saveChanges(false); // Auto-save preserves edit history
-            console.log('🔄 Auto-save: Save result:', success);
-            
+
             // Broadcast WebSocket update after successful auto-save
             if (success && isSyncConnected && operationCount > 0) {
                 try {
-                    // Log what script data we have at broadcast time
-                    console.log('🔄 Auto-save: Broadcasting with script data:', {
-                        sourceScriptStartTime: sourceScript?.start_time,
-                        currentScriptStartTime: currentScript?.start_time,
-                        pendingScriptOps: scriptInfoOps.length
-                    });
-                    
                     // Send targeted updates for script info changes
                     if (scriptInfoOps.length > 0) {
                         // Extract the actual script info changes to broadcast
@@ -438,24 +421,18 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                         scriptInfoOps.forEach(op => {
                             Object.assign(scriptChanges, op.changes);
                         });
-                        
+
                         sendSyncUpdate({
                             update_type: 'script_info',
                             changes: scriptChanges,
                             operation_id: `autosave_script_info_${Date.now()}`
                         });
-                        console.log('🔄 Auto-save: Broadcasting script info changes:', scriptChanges);
                     }
-                    
-                    // Note: Only script_info changes are broadcast - element changes require full refresh for now
-                    console.log('🔄 Auto-save: Broadcast update for', operationCount, 'operations');
                 } catch (error) {
-                    console.error('🔄 Auto-save: Failed to broadcast update:', error);
+                    // Auto-save broadcast error - silent fail
                 }
-            } else {
-                console.log('🔄 Auto-save: NOT broadcasting - success:', success, 'connected:', isSyncConnected, 'operations:', operationCount);
             }
-            
+
             return success;
         },
     });
@@ -578,7 +555,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 handleInfoModeExit(modeId as ScriptMode);
                 return;
             }
-            
+
             setActiveMode(modeId as ScriptMode);
             return;
         }
@@ -669,7 +646,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     };
 
     // Auto-sort functionality
-    
+
     const handleAutoSortElements = useCallback(async () => {
         if (!scriptId) return;
 
@@ -710,7 +687,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 new_preference_value: true,
                 element_moves: elementChanges
             } as Omit<EnableAutoSortOperation, 'id' | 'timestamp' | 'description'>);
-            
+
             showSuccess('Elements Auto-Sorted', `Reordered ${elementChanges.length} elements by time offset. New elements will be automatically sorted.`);
         } catch (error) {
             showError(error instanceof Error ? error.message : 'Failed to enable auto-sort');
@@ -750,7 +727,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     useEffect(() => {
         const loadSharingStatus = async () => {
             if (!scriptId) return;
-            
+
             try {
                 // Script sharing status is now determined by the script.is_shared flag
                 // which is already loaded in currentScript
@@ -763,19 +740,19 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 // Silently handle sharing status errors
             }
         };
-        
+
         loadSharingStatus();
     }, [scriptId, currentScript, getToken]);
 
     // Sharing handlers
     const handleShareConfirm = async () => {
         if (!scriptId) return;
-        
+
         setIsSharing(true);
         try {
             const token = await getToken();
             if (!token) throw new Error('Authentication required');
-            
+
             // Update script to set is_shared = true
             const response = await fetch(`/api/scripts/${scriptId}`, {
                 method: 'PATCH',
@@ -785,7 +762,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 },
                 body: JSON.stringify({ is_shared: true }),
             });
-            
+
             if (!response.ok) {
                 throw new Error('Failed to update script sharing status');
             }
@@ -810,12 +787,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     const handleFinalHideConfirm = useCallback(async () => {
         if (!scriptId) return;
-        
+
         setIsHiding(true);
         try {
             const token = await getToken();
             if (!token) throw new Error('Authentication required');
-            
+
             // Update script to set is_shared = false
             const response = await fetch(`/api/scripts/${scriptId}`, {
                 method: 'PATCH',
@@ -825,7 +802,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 },
                 body: JSON.stringify({ is_shared: false }),
             });
-            
+
             if (!response.ok) {
                 throw new Error('Failed to update script sharing status');
             }
@@ -852,13 +829,13 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     // Export handler
     const handleExportScript = async () => {
         if (!scriptId || !sourceScript) return;
-        
+
         try {
             const token = await getToken();
             if (!token) {
                 throw new Error('Authentication token not available');
             }
-            
+
             await exportScriptAsCSV(scriptId, token);
             showSuccess('Export Complete', `Script "${sourceScript.script_name}" exported successfully`);
         } catch (error) {
@@ -871,62 +848,51 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     // Handle department filter application
     const handleApplyDepartmentFilter = useCallback((selectedDepartmentIds: string[]) => {
-        console.log('🔍 Applying department filter:', selectedDepartmentIds);
         setFilteredDepartmentIds(selectedDepartmentIds);
         setHasUserSetFilter(true);
     }, []);
 
     // Create filtered elements based on department selection
     const filteredEditQueueElements = useMemo(() => {
-        console.log('🔍 Filtering elements:', {
-            totalElements: editQueueElements?.length,
-            selectedDepartments: filteredDepartmentIds,
-            selectedCount: filteredDepartmentIds.length
-        });
-        
+
         if (filteredDepartmentIds.length === 0) {
             // If no departments selected, show only NOTEs and GROUPs
-            return editQueueElements?.filter(element => 
+            return editQueueElements?.filter(element =>
                 element.element_type === 'NOTE' || element.element_type === 'GROUP'
             ) || [];
         }
-        
+
         const filtered = editQueueElements?.filter(element => {
             // Always show NOTEs and GROUPs regardless of department filter
             if (element.element_type === 'NOTE' || element.element_type === 'GROUP') {
                 return true;
             }
-            
+
             // Show elements that belong to selected departments
             return element.department_id && filteredDepartmentIds.includes(element.department_id);
         }) || [];
-        
-        console.log('🔍 Filtered result:', {
-            originalCount: editQueueElements?.length || 0,
-            filteredCount: filtered.length
-        });
-        
+
         return filtered;
-    }, [editQueueElements, filteredDepartmentIds]);
+    }, [editQueueElements, filteredDepartmentIds, editQueueElements?.map(el => el.sequence).join(',')]);
 
     const filteredAllEditQueueElements = useMemo(() => {
         if (filteredDepartmentIds.length === 0) {
             // If no departments selected, show only NOTEs and GROUPs
-            return allEditQueueElements?.filter(element => 
+            return allEditQueueElements?.filter(element =>
                 element.element_type === 'NOTE' || element.element_type === 'GROUP'
             ) || [];
         }
-        
+
         return allEditQueueElements?.filter(element => {
             // Always show NOTEs and GROUPs regardless of department filter
             if (element.element_type === 'NOTE' || element.element_type === 'GROUP') {
                 return true;
             }
-            
+
             // Show elements that belong to selected departments
             return element.department_id && filteredDepartmentIds.includes(element.department_id);
         }) || [];
-    }, [allEditQueueElements, filteredDepartmentIds]);
+    }, [allEditQueueElements, filteredDepartmentIds, allEditQueueElements?.map(el => el.sequence).join(',')]);
 
     // Initialize department filter with all departments when elements first load (only if user hasn't set a filter)
     useEffect(() => {
@@ -983,7 +949,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                 </Badge>
                             )}
                             {activePreferences.autoSaveInterval > 0 && (
-                                <Badge 
+                                <Badge
                                     variant="solid"
                                     colorScheme={showSaveSuccess ? "blue" : (isAutoSaving ? "blue" : "red")}
                                     bg={showSaveSuccess ? "blue.500" : undefined}
@@ -991,8 +957,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                     ml={1}
                                     px={2}
                                 >
-                                    {isAutoSaving 
-                                        ? "SAVING..." 
+                                    {isAutoSaving
+                                        ? "SAVING..."
                                         : `AUTO SAVE • ${hasUnsavedChanges ? (secondsUntilNextSave > 0 ? secondsUntilNextSave : activePreferences.autoSaveInterval) : activePreferences.autoSaveInterval}`
                                     }
                                 </Badge>
@@ -1113,7 +1079,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                         onSelectionChange={setCurrentSelectedElementIds}
                                         onToggleGroupCollapse={toggleGroupCollapse}
                                         script={currentScript}
-                                        elements={filteredEditQueueElements}
+                                        elements={(() => {
+                                            return filteredEditQueueElements;
+                                        })()}
                                         allElements={filteredAllEditQueueElements}
                                         onApplyLocalChange={applyLocalChange}
                                     />

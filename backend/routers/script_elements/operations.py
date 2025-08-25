@@ -77,6 +77,7 @@ def _process_edit_operation(db: Session, script_id: UUID, operation_data: dict, 
     operation_type = operation_data.get("type")
     element_id = operation_data.get("element_id")
     
+    
     if operation_type == "REORDER":
         return _process_reorder_operation(db, script_id, operation_data, user)
     elif operation_type == "UPDATE_FIELD":
@@ -121,6 +122,7 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
     old_sequence = operation_data.get("old_sequence")
     new_sequence = operation_data.get("new_sequence")
     
+    
     if old_sequence == new_sequence:
         # No change needed
         return {"element_id": element_id, "new_sequence": new_sequence, "no_change": True}
@@ -141,11 +143,12 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
         raise ValueError(f"Element {element_id} not found")
     
     # Check if we're moving a group parent - if so, we need to move the entire group
-    is_group_parent = str(moved_element.element_type) == 'ElementType.GROUP' or moved_element.element_type == models.ElementType.GROUP
+    is_group_parent = moved_element.element_type == models.ElementType.GROUP
     group_children = []
     if is_group_parent:
         # Find all children of this group
-        group_children = [el for el in all_elements if el.parent_element_id == str(moved_element.element_id)]
+        
+        group_children = [el for el in all_elements if el.parent_element_id == moved_element.element_id]
     
     # Update sequences for all elements to ensure no duplicates
     # Create a new sequence mapping based on the move
@@ -161,10 +164,11 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
                     # Move the group parent
                     element.sequence = new_sequence
                     updated_count += 1
-                elif element.parent_element_id == str(moved_element.element_id):
+                elif element.parent_element_id == moved_element.element_id:
                     # Move group children to be consecutive after parent
                     child_index = group_children.index(element)
-                    element.sequence = new_sequence + child_index + 1
+                    new_child_sequence = new_sequence + child_index + 1
+                    element.sequence = new_child_sequence
                     updated_count += 1
                 elif element.sequence > old_sequence and element.sequence <= new_sequence:
                     # Other elements move up by the size of the group
@@ -177,19 +181,27 @@ def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dic
         else:
             # Moving up: elements between new and old positions move down by group_size
             for element in all_elements:
+                original_sequence = element.sequence
+                action_taken = "NO ACTION"
+                
                 if element.element_id == moved_element.element_id:
                     # Move the group parent
                     element.sequence = new_sequence
                     updated_count += 1
-                elif element.parent_element_id == str(moved_element.element_id):
+                    action_taken = f"PARENT: {original_sequence} → {new_sequence}"
+                elif element.parent_element_id == moved_element.element_id:
                     # Move group children to be consecutive after parent
                     child_index = group_children.index(element)
-                    element.sequence = new_sequence + child_index + 1
+                    new_child_sequence = new_sequence + child_index + 1
+                    element.sequence = new_child_sequence
                     updated_count += 1
+                    action_taken = f"CHILD: {original_sequence} → {new_child_sequence}"
                 elif element.sequence >= new_sequence and element.sequence < old_sequence:
                     # Other elements move down by the size of the group
-                    element.sequence = element.sequence + group_size
+                    new_seq = element.sequence + group_size
+                    element.sequence = new_seq
                     updated_count += 1
+                    action_taken = f"SHIFT DOWN: {original_sequence} → {new_seq}"
                 
                 element.updated_by = user.user_id
                 element.date_updated = datetime.now(timezone.utc)

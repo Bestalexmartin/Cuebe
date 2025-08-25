@@ -70,7 +70,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     // Use external elements if provided (from edit queue), otherwise fallback to direct hook
     const shouldFetchElements = !externalElements;
     const { elements: serverElements, isLoading, error, refetchElements } = useScriptElements(shouldFetchElements ? scriptId : undefined);
-    
+
     // Use provided script if available, otherwise fetch it
     const shouldFetchScript = !providedScript;
     const { script: scriptFromHook } = useScript(shouldFetchScript ? scriptId : undefined);
@@ -83,15 +83,15 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const [draggedElement, setDraggedElement] = useState<any>(null);
     const [elementAbove, setElementAbove] = useState<any>(null);
     const [elementBelow, setElementBelow] = useState<any>(null);
-    const [pendingReorder, setPendingReorder] = useState<any>(null);
     const [originalElementsBeforeDrag, setOriginalElementsBeforeDrag] = useState<any[]>([]);
     const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [elementToEdit, setElementToEdit] = useState<any>(null);
-    const [draggedGroupWasExpanded, setDraggedGroupWasExpanded] = useState(false); // Track original group state
+    const [draggedGroupWasExpanded, setDraggedGroupWasExpanded] = useState(false);
+    const [tempCollapsedGroupId, setTempCollapsedGroupId] = useState<string | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
-    const lastScrollStateRef = useRef<{isAtTop: boolean; isAtBottom: boolean; allElementsFitOnScreen: boolean} | null>(null);
-    
+    const lastScrollStateRef = useRef<{ isAtTop: boolean; isAtBottom: boolean; allElementsFitOnScreen: boolean } | null>(null);
+
     // Helper function to handle element selection with shift-click support
     const handleElementSelect = (elementId: string, shiftKey: boolean = false) => {
         if (!shiftKey) {
@@ -111,15 +111,15 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             // Check if any currently selected element or the clicked element is part of a group
             const selectedElements = displayElements.filter(el => selectedElementIds.includes(el.element_id));
             const clickedElement = displayElements.find(el => el.element_id === elementId);
-            
+
             const allElements = [...selectedElements];
             if (clickedElement) allElements.push(clickedElement);
-            
-            const hasGroupElements = allElements.some(el => 
-                (el as any).element_type === 'GROUP' || 
+
+            const hasGroupElements = allElements.some(el =>
+                (el as any).element_type === 'GROUP' ||
                 (el.parent_element_id && el.group_level && el.group_level > 0)
             );
-            
+
             if (hasGroupElements) {
                 // Don't allow shift-selection when group elements are involved - just select clicked element
                 setSelectedElementIds([elementId]);
@@ -165,7 +165,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             // Check for group boundaries in the selection range
             const elementsInRange = displayElements.slice(startIndex, endIndex + 1);
             const groupIds = new Set<string | undefined>();
-            
+
             // Collect all group IDs (parent_element_id for children, element_id for parents)
             elementsInRange.forEach(el => {
                 if ((el as any).element_type === 'GROUP') {
@@ -176,7 +176,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                     groupIds.add(undefined); // Ungrouped element
                 }
             });
-            
+
             // If we have more than one group ID, we're crossing group boundaries
             if (groupIds.size > 1) {
                 // Don't allow selection across groups - just select the clicked element
@@ -195,16 +195,16 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             onSelectionChange?.(newSelection);
         }
     };
-    
+
 
     useEffect(() => {
         // Don't update localElements during drag operations - preserve the user's dropped position
-        if (dragModalOpen || pendingReorder) {
+        if (dragModalOpen) {
             return;
         }
-        
+
         // Only update if the elements have actually changed (deep comparison)
-        const elementsChanged = !localElements || 
+        const elementsChanged = !localElements ||
             localElements.length !== elements?.length ||
             localElements.some((el, index) => {
                 const newEl = elements?.[index];
@@ -212,20 +212,20 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 if (el.element_id !== newEl.element_id) return true;
                 // Check if any key fields have changed
                 return el.duration_ms !== newEl.duration_ms ||
-                       el.priority !== newEl.priority ||
-                       el.element_name !== newEl.element_name ||
-                       el.offset_ms !== newEl.offset_ms ||
-                       el.location_details !== newEl.location_details ||
-                       el.cue_notes !== newEl.cue_notes ||
-                       el.cue_id !== newEl.cue_id ||
-                       el.department_id !== newEl.department_id ||
-                       el.custom_color !== newEl.custom_color;
+                    el.priority !== newEl.priority ||
+                    el.element_name !== newEl.element_name ||
+                    el.offset_ms !== newEl.offset_ms ||
+                    el.location_details !== newEl.location_details ||
+                    el.cue_notes !== newEl.cue_notes ||
+                    el.cue_id !== newEl.cue_id ||
+                    el.department_id !== newEl.department_id ||
+                    el.custom_color !== newEl.custom_color;
             });
-            
+
         if (elementsChanged) {
             setLocalElements(elements);
         }
-    }, [elements, localElements, dragModalOpen, pendingReorder]);
+    }, [elements, localElements, dragModalOpen]);
 
     // Expose refetch function and selection state to parent via ref
     useImperativeHandle(
@@ -241,9 +241,14 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         [refetchElements, selectedElementIds, onSelectionChange]
     );
 
-    // Drag sensors
+    // Drag sensors with activation constraints to distinguish click from drag
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                delay: 80, // Require 100ms hold before drag starts
+                tolerance: 5, // Allow 5px of movement during delay
+            }
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
@@ -252,18 +257,19 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     // Handle drag start - collapse groups for visual effect
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
-        
+
         // Find the dragged element
         const draggedElement = displayElements.find(el => el.element_id === active.id);
         const isGroupParent = draggedElement && (draggedElement as any).element_type === 'GROUP';
         const isExpanded = isGroupParent && !draggedElement.is_collapsed;
-        
+
         // Store the original expanded state before we modify it
         setDraggedGroupWasExpanded(isExpanded || false);
-        
+
         // If it's an expanded group, collapse it for visual effect during drag
-        if (isExpanded && onToggleGroupCollapse) {
-            onToggleGroupCollapse(draggedElement.element_id);
+        // Use temporary state instead of edit queue to avoid triggering operations
+        if (isExpanded) {
+            setTempCollapsedGroupId(draggedElement.element_id);
         }
     };
 
@@ -272,15 +278,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         const { active, over } = event;
 
         if (!over || active.id === over.id) {
-            // If we temporarily collapsed a group for visual effect, restore it even on abort
-            if (draggedGroupWasExpanded && onToggleGroupCollapse) {
-                const draggedEl = displayElements.find(el => el.element_id === active.id);
-                if (draggedEl && (draggedEl as any).element_type === 'GROUP') {
-                    onToggleGroupCollapse(draggedEl.element_id);
-                }
-            }
-            
-            // Reset the tracking state
+            // Clear temporary visual collapse state
+            setTempCollapsedGroupId(null);
             setDraggedGroupWasExpanded(false);
             return;
         }
@@ -298,37 +297,31 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
 
         // Store original elements before making any changes
         setOriginalElementsBeforeDrag([...localElements]);
-        
+
         // Create reordered elements using arrayMove
         const reorderedElements = arrayMove(elementsForDrag, oldIndex, overIndex);
-        
+
         // Find the actual final position of the dragged element
         const newIndex = reorderedElements.findIndex(el => el.element_id === active.id);
-        
+
         // Calculate elementAbove and elementBelow based on the POST-reorder state
         let elementAbove: typeof reorderedElements[0] | null = null;
         let elementBelow: typeof reorderedElements[0] | null = null;
-        
+
         // Use the reordered elements to find neighbors
         elementAbove = newIndex > 0 ? reorderedElements[newIndex - 1] : null;
         elementBelow = newIndex < reorderedElements.length - 1 ? reorderedElements[newIndex + 1] : null;
-        
+
         // Update localElements to match the visual reorder (this will temporarily disable sorting)
         setLocalElements(reorderedElements);
-        
-        const pendingReorderData = {
-            oldIndex,
-            newIndex,
-            reorderedElements
-        };
-        setPendingReorder(pendingReorderData);
+
 
         // Check if all three elements (above, dragged, below) have the same time offset
         const draggedTimeOffset = draggedEl.offset_ms;
         const aboveTimeOffset = elementAbove?.offset_ms;
         const belowTimeOffset = elementBelow?.offset_ms;
-        
-        
+
+
         const allHaveSameTimeOffset = (
             (elementAbove === null || aboveTimeOffset === draggedTimeOffset) &&
             (elementBelow === null || belowTimeOffset === draggedTimeOffset)
@@ -336,23 +329,19 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
 
 
         // Check if auto-sort is currently enabled
-        
+
         if (allHaveSameTimeOffset || !autoSortCues) {
             // Set the dragged element so applyReorder can access it
             setDraggedElement(draggedEl);
-            await applyReorderDirect(pendingReorderData, draggedEl);
-            
-            // If we temporarily collapsed a group for visual effect, restore it to expanded
-            if (draggedGroupWasExpanded && onToggleGroupCollapse) {
-                // The group is currently collapsed from drag start, so toggle will expand it
-                onToggleGroupCollapse(draggedEl.element_id);
-            }
-            
+            await applyReorderDirect({ reorderedElements }, draggedEl);
+
             // Clear all state like the modal handlers do
             setDraggedElement(null);
-            setPendingReorder(null);
             setOriginalElementsBeforeDrag([]);
-            setDraggedGroupWasExpanded(false); // Reset the tracking state
+            setDraggedGroupWasExpanded(false);
+
+            // Delay clearing temp collapsed state to prevent visual jump
+            setTimeout(() => setTempCollapsedGroupId(null), 100);
             return;
         }
 
@@ -368,12 +357,12 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         if (onAutoSortChange) {
             onAutoSortChange(false);
         }
-        await applyReorder();
+        // Note: applyReorderDirect was already called, no need to call applyReorder again
         closeDragModal();
     };
 
     const handleMatchBefore = async () => {
-        await applyReorder();
+        // Note: applyReorderDirect was already called, no need to call applyReorder again
 
         if (elementAbove && draggedElement && onApplyLocalChange) {
             // Create UPDATE_ELEMENT operation with time offset change
@@ -389,15 +378,15 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 autoSort: autoSortCues, // Pass current auto-sort state
                 description: `Updated time offset for "${draggedElement.element_name}" to match preceding element`
             };
-            
+
             onApplyLocalChange(updateElementOperation);
         }
-        
+
         closeDragModal();
     };
 
     const handleMatchAfter = async () => {
-        await applyReorder();
+        // Note: applyReorderDirect was already called, no need to call applyReorder again
 
         if (elementBelow && draggedElement && onApplyLocalChange) {
             // Create UPDATE_ELEMENT operation with time offset change
@@ -413,15 +402,15 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 autoSort: autoSortCues, // Pass current auto-sort state
                 description: `Updated time offset for "${draggedElement.element_name}" to match following element`
             };
-            
+
             onApplyLocalChange(updateElementOperation);
         }
-        
+
         closeDragModal();
     };
 
     const handleCustomTime = async (timeMs: number) => {
-        await applyReorder();
+        // Note: applyReorderDirect was already called, no need to call applyReorder again
 
         if (draggedElement && onApplyLocalChange) {
             // Create UPDATE_ELEMENT operation with custom time offset change
@@ -437,32 +426,27 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 autoSort: autoSortCues, // Pass current auto-sort state
                 description: `Updated time offset for "${draggedElement.element_name}" to custom time`
             };
-            
+
             onApplyLocalChange(updateElementOperation);
         }
-        
+
         closeDragModal();
     };
 
     const closeDragModal = () => {
-        // Check if we need to restore expanded state for a group that was temporarily collapsed
-        if (draggedGroupWasExpanded && draggedElement && onToggleGroupCollapse) {
-            onToggleGroupCollapse(draggedElement.element_id);
-        }
-        
         setDragModalOpen(false);
         setDraggedElement(null);
         setElementAbove(null);
         setElementBelow(null);
-        setPendingReorder(null);
         setOriginalElementsBeforeDrag([]);
-        setDraggedGroupWasExpanded(false); // Reset the tracking state
+        setDraggedGroupWasExpanded(false);
+        setTempCollapsedGroupId(null);
     };
 
     const handleCancelDrag = () => {
         // Revert local elements back to original position before drag
         setLocalElements(originalElementsBeforeDrag);
-        
+
         // Close modal and clear state
         closeDragModal();
     };
@@ -472,108 +456,53 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         if (onApplyLocalChange) {
             // Calculate sequence values based on the reordered positions
             const reorderedElements = pendingReorderData.reorderedElements;
-            
+
             // Find the dragged element in the reordered array to get its new position
             const newIndex = reorderedElements.findIndex((el: any) => el.element_id === draggedElement?.element_id);
-            const oldSequence = draggedElement?.sequence;
-            
-            // Calculate new sequence based on position in reordered array
-            // We want to insert the element at this position, so we need to determine the right sequence
-            let newSequence;
-            
-            if (newIndex === 0) {
-                // Moving to the beginning - get sequence 1 less than the first element
-                const firstOtherElement = reorderedElements.find((_el: any, idx: number) => idx === 1);
-                newSequence = firstOtherElement ? Math.max(1, firstOtherElement.sequence - 1) : 1;
-            } else if (newIndex === reorderedElements.length - 1) {
-                // Moving to the end - get sequence 1 more than the last other element
-                const lastOtherElement = reorderedElements[newIndex - 1];
-                newSequence = lastOtherElement ? lastOtherElement.sequence + 1 : reorderedElements.length;
-            } else {
-                // Moving to middle - get sequence between the elements before and after
-                const elementBefore = reorderedElements[newIndex - 1];
-                const elementAfter = reorderedElements[newIndex + 1];
-                
-                if (elementBefore && elementAfter) {
-                    // Insert between the two elements - use the sequence of the element after
-                    newSequence = elementAfter.sequence;
-                } else {
-                    // Fallback to position-based
-                    newSequence = newIndex + 1;
-                }
+            // Get current sequence from elements prop (includes edit queue changes)
+            const currentElement = elements?.find(el => el.element_id === draggedElement?.element_id);
+            const oldSequence = currentElement?.sequence;
+
+            // Two-phase operation: elements shift, then we take the target position
+            // The new sequence is simply the target position (newIndex + 1)
+            // Edit queue handles the shifting automatically
+            const newSequence = newIndex + 1;
+
+            // Don't create a reorder operation if the sequence isn't actually changing
+            if (newSequence === oldSequence) {
+                return;
             }
-            
-            // Create sequence-based reorder operation for edit queue (no indices needed)
-            const reorderOperation = {
+
+            // Check if this is a group parent and include children information
+            const isGroupParent = draggedElement && (draggedElement as any).element_type === 'GROUP';
+            let reorderOperation: any = {
                 type: 'REORDER',
                 element_id: draggedElement?.element_id,
                 old_sequence: oldSequence,
                 new_sequence: newSequence
             };
-            
+
+            // If dragging a group parent, include children information for backend processing
+            if (isGroupParent && elements) {
+                const groupChildren = elements.filter(el => el.parent_element_id === draggedElement?.element_id);
+                if (groupChildren.length > 0) {
+                    reorderOperation.is_group_parent = true;
+                    reorderOperation.group_children = groupChildren.map(child => ({
+                        element_id: child.element_id,
+                        current_sequence: child.sequence
+                    }));
+                }
+            }
+
             onApplyLocalChange(reorderOperation);
             return;
         }
 
         // This should not happen - edit queue is always available
         console.error('Edit queue not available for reorder operation');
-        
+
     };
 
-    const applyReorder = async () => {
-        if (!pendingReorder) {
-            return;
-        }
-
-        // If we have edit queue functionality, use it
-        if (onApplyLocalChange) {
-            // Use the same sequence-based logic as applyReorderDirect
-            const reorderedElements = pendingReorder.reorderedElements;
-            
-            // Find the dragged element in the reordered array to get its new position
-            const newIndex = reorderedElements.findIndex((el: any) => el.element_id === draggedElement?.element_id);
-            const oldSequence = draggedElement?.sequence;
-            
-            // Calculate new sequence based on position in reordered array
-            let newSequence;
-            
-            if (newIndex === 0) {
-                // Moving to the beginning - get sequence 1 less than the first element
-                const firstOtherElement = reorderedElements.find((_el: any, idx: number) => idx === 1);
-                newSequence = firstOtherElement ? Math.max(1, firstOtherElement.sequence - 1) : 1;
-            } else if (newIndex === reorderedElements.length - 1) {
-                // Moving to the end - get sequence 1 more than the last other element
-                const lastOtherElement = reorderedElements[newIndex - 1];
-                newSequence = lastOtherElement ? lastOtherElement.sequence + 1 : reorderedElements.length;
-            } else {
-                // Moving to middle - get sequence between the elements before and after
-                const elementBefore = reorderedElements[newIndex - 1];
-                const elementAfter = reorderedElements[newIndex + 1];
-                
-                if (elementBefore && elementAfter) {
-                    // Insert between the two elements - use the sequence of the element after
-                    newSequence = elementAfter.sequence;
-                } else {
-                    // Fallback to position-based
-                    newSequence = newIndex + 1;
-                }
-            }
-            
-            // Create sequence-based reorder operation for edit queue (no indices needed)
-            const reorderOperation = {
-                type: 'REORDER',
-                element_id: draggedElement?.element_id,
-                old_sequence: oldSequence,
-                new_sequence: newSequence
-            };
-            
-            onApplyLocalChange(reorderOperation);
-            return;
-        }
-
-        // This should not happen - edit queue is always available
-        console.error('Edit queue not available for reorder operation');
-    };
 
 
     // Handle element edit
@@ -595,7 +524,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             autoSort: autoSortCues && changes.offset_ms, // Only auto-sort if time offset changed and auto-sort is enabled
             description: `Updated element "${elementToEdit.element_name}"`
         };
-        
+
         onApplyLocalChange(updateElementOperation);
 
         // Close modal and clear state
@@ -613,23 +542,23 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     // Function to check scroll state
     const checkScrollState = () => {
         if (!scrollContainerRef.current || !onScrollStateChange) return;
-        
+
         const container = scrollContainerRef.current;
         const { scrollTop, scrollHeight, clientHeight } = container;
-        
+
         const isAtTop = scrollTop <= 1; // Allow for 1px tolerance
         const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1; // Allow for 1px tolerance
         const allElementsFitOnScreen = scrollHeight <= clientHeight;
-        
+
         const currentState = { isAtTop, isAtBottom, allElementsFitOnScreen };
         const lastState = lastScrollStateRef.current;
-        
+
         // Only call callback if scroll state actually changed
-        const stateChanged = !lastState || 
+        const stateChanged = !lastState ||
             lastState.isAtTop !== currentState.isAtTop ||
             lastState.isAtBottom !== currentState.isAtBottom ||
             lastState.allElementsFitOnScreen !== currentState.allElementsFitOnScreen;
-            
+
         if (stateChanged) {
             lastScrollStateRef.current = currentState;
             onScrollStateChange(currentState);
@@ -641,16 +570,17 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         checkScrollState();
     }, [localElements, isLoading]);
 
+
     // Add scroll event listener
     useEffect(() => {
         const container = scrollContainerRef.current;
         if (!container) return;
 
         container.addEventListener('scroll', checkScrollState);
-        
+
         // Check initial state
         setTimeout(checkScrollState, 100); // Small delay to ensure rendering is complete
-        
+
         return () => {
             container.removeEventListener('scroll', checkScrollState);
         };
@@ -659,17 +589,26 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     // Create display elements with auto-sort applied when needed
     const displayElements = useMemo(() => {
         if (!localElements) return [];
-        
-        // Don't apply auto-sort during drag operations - preserve user's drop position
-        if (!autoSortCues || dragModalOpen || pendingReorder) {
-            return localElements;
+
+        let elementsToDisplay = localElements;
+
+        // Filter out children of temporarily collapsed groups during drag
+        if (tempCollapsedGroupId) {
+            elementsToDisplay = localElements.filter(element =>
+                element.parent_element_id !== tempCollapsedGroupId
+            );
         }
-        
+
+        // Don't apply auto-sort during drag operations - preserve user's drop position
+        if (!autoSortCues || dragModalOpen) {
+            return elementsToDisplay;
+        }
+
         // Return sorted copy for display
-        return [...localElements].sort((a, b) => {
+        return [...elementsToDisplay].sort((a, b) => {
             return a.offset_ms - b.offset_ms;
         });
-    }, [localElements, autoSortCues, dragModalOpen, pendingReorder]);
+    }, [localElements, autoSortCues, dragModalOpen, draggedGroupWasExpanded, tempCollapsedGroupId, localElements?.map(el => el.sequence).join(',')]);
 
 
     return (
@@ -720,7 +659,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                                         const shouldShowClockTimes = showClockTimes && !!script?.start_time;
                                         return (
                                             <CueElement
-                                                key={element.element_id}
+                                                key={`${element.element_id}-${index}`}
                                                 element={element}
                                                 index={index}
                                                 allElements={allElementsForGroupCalculations}

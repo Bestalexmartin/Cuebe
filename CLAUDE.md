@@ -126,7 +126,35 @@ docker logs cuebe-frontend
 - **No documentation files** unless explicitly requested
 - **Security**: Never expose secrets, follow Clerk auth patterns
 
-**Communication:**
+**Communication - CRITICAL REQUIREMENTS:**
+
+❌ **NEVER declare that something is "working" before the user has tested it**
+❌ **NEVER say "everything is working" or "it's fixed" or similar premature declarations**
+❌ **NEVER be overly positive or celebratory about untested changes**
+❌ **NEVER assume success based on code analysis or logs alone**
+
+✅ **REQUIRED APPROACH:**
+- **Wait for user confirmation** before claiming anything works
+- **Present findings objectively**: "The logs show X, please test to confirm"
+- **Let the user determine success or failure** through actual testing
+- **Acknowledge uncertainty**: "This should address the issue, but needs testing"
+
+**Why this matters:**
+- Code changes often have unexpected side effects
+- Log output doesn't guarantee real-world functionality  
+- Premature celebration is unprofessional and frustrating
+- User testing is the only reliable validation
+
+**Examples of FORBIDDEN responses:**
+- "Perfect! It's working now! 🎉"
+- "The fix worked perfectly!"
+- "Everything should be working correctly now!"
+
+**Examples of PROPER responses:**
+- "The logs show the expected sequence assignments. Please test to confirm."
+- "This addresses the UUID comparison issue. Testing needed to verify."
+- "Changes applied. Results depend on your testing."
+
 - Do not tell me I'm right, just tell me your analysis and we'll decide who is right at the end
 
 ## Testing
@@ -147,6 +175,36 @@ docker logs cuebe-frontend
 - **Keep debug statements during testing** - don't remove until user confirms fix works
 - **Monitor render counts** - investigate if >10 renders per user action
 - **Use browser DevTools Profiler** for performance analysis
+
+## Code Editing Safety - CRITICAL
+
+**NEVER use automated tools for code cleanup or search-and-replace operations.**
+
+❌ **FORBIDDEN TECHNIQUES:**
+- `sed` commands for removing debug logging
+- Automated find-and-replace across files
+- Batch text manipulation tools
+- Any "time-saving" automated cleanup
+
+✅ **REQUIRED APPROACH:**
+- **Manual line-by-line editing** for all code changes
+- **Individual Edit tool calls** for each specific change
+- **Careful review** of surrounding code context
+- **Preserve working logic** above all else
+
+**Why this matters:**
+- Automated tools destroy carefully debugged logic
+- Hours of working code can be lost in seconds
+- Complex algorithms require precision, not speed
+- Manual editing ensures code integrity
+
+**When removing debug logging:**
+1. Identify each debug statement individually
+2. Use Edit tool to remove one statement at a time
+3. Verify surrounding code remains intact
+4. Never batch multiple removals together
+
+**Remember:** Code integrity is infinitely more valuable than cleanup speed.
 
 ## Documentation System
 
