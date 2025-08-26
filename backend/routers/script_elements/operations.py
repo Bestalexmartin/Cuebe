@@ -261,7 +261,6 @@ def _apply_create_group_in_memory(elements_by_id: dict, script_id: UUID, operati
     temp_id = operation_data.get("element_data", {}).get("element_id")
     if temp_id and temp_id_mapping is not None:
         temp_id_mapping[temp_id] = group_id
-        logger.info(f"🔄 BACKEND: Mapped temp group ID {temp_id} → {group_id}")
     
     # Update child elements
     for element in elements_to_group:
@@ -446,35 +445,30 @@ def _apply_bulk_reorder_in_memory(elements_by_id: dict, operation_data: dict):
 
 
 def _apply_enable_auto_sort_in_memory(elements_by_id: dict, operation_data: dict, user):
-    """Apply ENABLE_AUTO_SORT operation in-memory."""
+    """Apply ENABLE_AUTO_SORT operation in-memory - full resequencing by time."""
     
-    element_moves = operation_data.get("element_moves", [])
+    resequenced_elements = operation_data.get("resequenced_elements", [])
+    total_elements = operation_data.get("total_elements", 0)
     
-    logger.info(f"🔄 BACKEND: ENABLE_AUTO_SORT processing {len(element_moves)} moves:")
-    for move in element_moves:
-        element_id = move.get("element_id")
-        old_sequence = move.get("old_sequence")
-        new_sequence = move.get("new_sequence")
-        logger.info(f"🔄 BACKEND: Move {element_id[-6:]} from {old_sequence} → {new_sequence}")
     
-    # Apply the element moves
-    for move in element_moves:
-        element_id = move.get("element_id")
-        new_sequence = move.get("new_sequence")
+    # Apply the resequencing
+    updated_count = 0
+    for resequence in resequenced_elements:
+        element_id = resequence.get("element_id")
+        old_sequence = resequence.get("old_sequence")
+        new_sequence = resequence.get("new_sequence")
         
         element = elements_by_id.get(element_id)
         if element:
-            old_seq = element.sequence
             element.sequence = new_sequence
             element.updated_by = user.user_id
             element.date_updated = datetime.now(timezone.utc)
-            logger.info(f"🔄 BACKEND: Updated {element.element_name} sequence {old_seq} → {new_sequence}")
-        else:
-            logger.warning(f"🔄 BACKEND: Element {element_id} not found for auto-sort move")
+            updated_count += 1
     
     return {
         "operation": "enable_auto_sort",
-        "moved_elements": len(element_moves)
+        "resequenced_count": updated_count,
+        "total_elements": total_elements
     }
 
 
@@ -642,7 +636,6 @@ def batch_update_from_edit_queue(
                     old_id = operation_data.get("element_id")
                     new_id = temp_id_mapping[old_id]
                     operation_data["element_id"] = new_id
-                    logger.info(f"🔄 BACKEND: Applied temp ID mapping {old_id} → {new_id}")
                 
                 # Process operation on in-memory state
                 result = _apply_operation_in_memory(
@@ -671,11 +664,6 @@ def batch_update_from_edit_queue(
             if original_sequences.get(element_id_str) != element.sequence:
                 changed_elements.append(element)
         
-        # Debug: Show sequence changes
-        logger.info(f"🔄 BACKEND: Updated sequences for {len(changed_elements)} elements out of {len(all_elements)} total")
-        for element in changed_elements:
-            old_seq = original_sequences.get(str(element.element_id))
-            logger.info(f"🔄 BACKEND: {element.element_name} sequence: {old_seq} → {element.sequence}")
         
         # Commit all changes atomically
         db.commit()

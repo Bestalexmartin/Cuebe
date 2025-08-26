@@ -72,13 +72,12 @@ export interface EnableAutoSortOperation extends BaseEditOperation {
     type: 'ENABLE_AUTO_SORT';
     old_preference_value: boolean;
     new_preference_value: boolean;
-    element_moves: Array<{
+    resequenced_elements: Array<{
         element_id: string;
-        old_index: number;
-        new_index: number;
         old_sequence: number;
         new_sequence: number;
     }>;
+    total_elements: number; // For validation
 }
 
 export interface DisableAutoSortOperation extends BaseEditOperation {
@@ -148,7 +147,55 @@ export interface EditQueue {
     hasUnsavedChanges: boolean;
 }
 
+// Selective checkpoint - only stores fields that changed
+export interface ElementSnapshot {
+    element_id: string;
+    // Core sequencing fields
+    sequence?: number;
+    offset_ms?: number;
+    
+    // Content fields that can be edited
+    element_name?: string;
+    cue_notes?: string;
+    custom_color?: string;
+    location_details?: string;
+    
+    // Grouping fields
+    parent_element_id?: string | null;
+    group_level?: number;
+    is_collapsed?: boolean;
+    
+    // Creation/deletion tracking
+    _exists?: boolean; // false = element was deleted, true = element was created
+}
+
+export interface ScriptSnapshot {
+    script_id: string;
+    // Only capture script fields that can be edited via operations
+    script_name?: string;
+    venue_id?: string | null;
+    description?: string;
+    auto_sort_cues?: boolean;
+}
+
+export interface EditCheckpoint {
+    id: string;
+    timestamp: number;
+    type: 'AUTO_SORT' | 'MANUAL'; // Type of checkpoint for different revert behaviors
+    description: string; // Human-readable description like "Pre-Auto-Sort"
+    
+    // Selective snapshots - only fields that changed
+    elementSnapshots: Record<string, ElementSnapshot>; // element_id -> snapshot
+    scriptSnapshot?: ScriptSnapshot;
+    
+    // Context for restoration
+    operationsSince: EditOperation[]; // Operations that led to this checkpoint
+    totalElementCount: number; // For validation during restore
+}
+
 export interface EditQueueState {
     queue: EditQueue;
     currentIndex: number; // For undo/redo functionality
+    checkpoints: EditCheckpoint[]; // Major state snapshots
+    activeCheckpoint?: string; // ID of most recent checkpoint that can be reverted to
 }

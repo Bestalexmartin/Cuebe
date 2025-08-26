@@ -111,40 +111,73 @@ export const useScriptModalHandlers = ({
   ]);
 
   const handleFinalSaveConfirm = useCallback(async () => {
+    console.log("🔄 Manual Save: Starting save process", { scriptId });
     modalState.closeModal(modalNames.FINAL_SAVE_CONFIRMATION);
     modalState.openModal(modalNames.SAVE_PROCESSING);
 
     try {
+      console.log("🔄 Manual Save: Calling saveChanges()");
       const success = await saveChanges();
 
       if (success) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Broadcast targeted script info changes via WebSocket IMMEDIATELY after save success
+        console.log("🔄 Manual Save: WebSocket broadcast analysis:", {
+          sendSyncUpdate: !!sendSyncUpdate,
+          scriptId,
+          totalPendingOps: pendingOperations.length,
+          pendingOperations: pendingOperations.map(op => ({ type: op.type, id: op.id }))
+        });
 
-        // Broadcast targeted script info changes via WebSocket (same logic as auto-save)
         if (sendSyncUpdate && scriptId && pendingOperations.length > 0) {
           try {
-            // Send targeted updates for script info changes only (the working part)
+            // Send targeted updates for all saved changes
             const scriptInfoOps = pendingOperations.filter(
               (op) => op.type === "UPDATE_SCRIPT_INFO",
             );
+            const elementOps = pendingOperations.filter(
+              (op) => op.type !== "UPDATE_SCRIPT_INFO",
+            );
+            
+            console.log("🔄 Manual Save: Operation breakdown:", {
+              scriptInfoOps: scriptInfoOps.length,
+              elementOps: elementOps.length,
+              elementOpTypes: elementOps.map(op => op.type)
+            });
+            
+            // Broadcast script info changes
             if (scriptInfoOps.length > 0) {
-              // Extract the actual script info changes to broadcast
               const scriptChanges = {};
               scriptInfoOps.forEach((op) => {
                 Object.assign(scriptChanges, op.changes);
               });
 
+              console.log("🔄 Manual Save: Broadcasting script_info", { scriptChanges });
               sendSyncUpdate({
                 update_type: "script_info",
                 changes: scriptChanges,
                 operation_id: `manual_save_script_info_${Date.now()}`,
               });
             }
-            // Note: Only script_info changes are broadcast - element changes require full refresh for now
+            
+            // Broadcast element changes
+            if (elementOps.length > 0) {
+              console.log("🔄 Manual Save: Broadcasting elements_updated", { elementOps: elementOps.length, timestamp: new Date().toISOString() });
+              sendSyncUpdate({
+                update_type: "elements_updated",
+                changes: elementOps,
+                operation_id: `manual_save_elements_${Date.now()}`,
+              });
+              console.log("🔄 Manual Save: elements_updated broadcast sent", { timestamp: new Date().toISOString() });
+            } else {
+              console.log("🔄 Manual Save: No element operations to broadcast");
+            }
           } catch (error) {
             console.error("🔄 Manual Save: WebSocket broadcast error:", error);
           }
+        } else {
+          console.log("🔄 Manual Save: WebSocket broadcast skipped - missing requirements");
         }
+
 
         modalState.closeModal(modalNames.SAVE_PROCESSING);
         showSuccess(

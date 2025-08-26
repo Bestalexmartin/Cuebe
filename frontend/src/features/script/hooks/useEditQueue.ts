@@ -1,7 +1,7 @@
 // frontend/src/features/script/hooks/useEditQueue.ts
 
 import { useState, useCallback, useRef, useMemo } from 'react';
-import { EditOperation, EditQueueState } from '../types/editQueue';
+import { EditOperation, EditQueueState, EditCheckpoint, ElementSnapshot, ScriptSnapshot } from '../types/editQueue';
 import { ScriptElement } from '../types/scriptElements';
 import { EditQueueFormatter } from '../utils/editQueueFormatter';
 
@@ -11,6 +11,8 @@ export interface UseEditQueueReturn {
     hasUnsavedChanges: boolean;
     canUndo: boolean;
     canRedo: boolean;
+    checkpoints: EditCheckpoint[];
+    activeCheckpoint?: string;
     
     // Operations
     addOperation: (operation: Omit<EditOperation, 'id' | 'timestamp' | 'description'>) => void;
@@ -18,6 +20,16 @@ export interface UseEditQueueReturn {
     redo: () => EditOperation | null;
     clearQueue: () => void;
     revertToPoint: (targetIndex: number) => void;
+    
+    // Checkpoint operations
+    createCheckpoint: (
+        type: 'AUTO_SORT' | 'MANUAL',
+        description: string,
+        elements: ScriptElement[],
+        scriptData?: any
+    ) => string; // Returns checkpoint ID
+    revertToCheckpoint: (checkpointId: string) => EditCheckpoint | null;
+    clearCheckpoints: () => void;
     
     // Batch operations
     startBatch: () => void;
@@ -38,7 +50,9 @@ export const useEditQueue = (): UseEditQueueReturn => {
             operations: [],
             hasUnsavedChanges: false
         },
-        currentIndex: -1 // -1 means we're at the "latest" state
+        currentIndex: -1, // -1 means we're at the "latest" state
+        checkpoints: [],
+        activeCheckpoint: undefined
     });
     
     const operationIdCounter = useRef(0);
@@ -243,6 +257,89 @@ export const useEditQueue = (): UseEditQueueReturn => {
             
         return EditQueueFormatter.formatOperationsSummary(activeOperations);
     }, [queueState]);
+
+    // Checkpoint functions
+    const createCheckpoint = useCallback((
+        type: 'AUTO_SORT' | 'MANUAL',
+        description: string,
+        elements: ScriptElement[],
+        scriptData?: any
+    ): string => {
+        const checkpointId = `checkpoint_${Date.now()}_${++operationIdCounter.current}`;
+        
+        // Create selective snapshots of only relevant fields
+        const elementSnapshots: Record<string, ElementSnapshot> = {};
+        elements.forEach(element => {
+            elementSnapshots[element.element_id] = {
+                element_id: element.element_id,
+                sequence: element.sequence,
+                offset_ms: element.offset_ms,
+                element_name: element.element_name,
+                cue_notes: element.cue_notes,
+                custom_color: element.custom_color,
+                location_details: element.location_details,
+                parent_element_id: element.parent_element_id,
+                group_level: element.group_level,
+                is_collapsed: element.is_collapsed,
+                _exists: true
+            };
+        });
+
+        const scriptSnapshot: ScriptSnapshot | undefined = scriptData ? {
+            script_id: scriptData.script_id,
+            script_name: scriptData.script_name,
+            venue_id: scriptData.venue_id,
+            description: scriptData.description,
+            auto_sort_cues: scriptData.auto_sort_cues
+        } : undefined;
+
+        const checkpoint: EditCheckpoint = {
+            id: checkpointId,
+            timestamp: Date.now(),
+            type,
+            description,
+            elementSnapshots,
+            scriptSnapshot,
+            operationsSince: [...queueState.queue.operations], // Copy current operations
+            totalElementCount: elements.length
+        };
+
+        setQueueState(prevState => ({
+            ...prevState,
+            checkpoints: [...prevState.checkpoints, checkpoint],
+            activeCheckpoint: checkpointId
+        }));
+
+        return checkpointId;
+    }, [queueState.queue.operations]);
+
+    const revertToCheckpoint = useCallback((checkpointId: string): EditCheckpoint | null => {
+        const checkpoint = queueState.checkpoints.find(cp => cp.id === checkpointId);
+        if (!checkpoint) {
+            return null;
+        }
+
+        // Clear current operations since we're reverting
+        setQueueState(prevState => ({
+            queue: {
+                operations: [],
+                hasUnsavedChanges: true // We have changes (the revert operation)
+            },
+            currentIndex: -1,
+            checkpoints: prevState.checkpoints,
+            activeCheckpoint: undefined // No active checkpoint after revert
+        }));
+
+        return checkpoint;
+    }, [queueState.checkpoints]);
+
+    const clearCheckpoints = useCallback(() => {
+        setQueueState(prevState => ({
+            ...prevState,
+            checkpoints: [],
+            activeCheckpoint: undefined
+        }));
+    }, []);
     
     return useMemo(() => ({
         // State
@@ -250,6 +347,8 @@ export const useEditQueue = (): UseEditQueueReturn => {
         hasUnsavedChanges: queueState.queue.hasUnsavedChanges,
         canUndo: queueState.currentIndex >= 0 || queueState.queue.operations.length > 0,
         canRedo: queueState.currentIndex < queueState.queue.operations.length - 1,
+        checkpoints: queueState.checkpoints,
+        activeCheckpoint: queueState.activeCheckpoint,
         
         // Operations
         addOperation,
@@ -257,6 +356,11 @@ export const useEditQueue = (): UseEditQueueReturn => {
         redo,
         clearQueue,
         revertToPoint,
+        
+        // Checkpoint operations
+        createCheckpoint,
+        revertToCheckpoint,
+        clearCheckpoints,
         
         // Batch operations
         startBatch,
@@ -268,6 +372,11 @@ export const useEditQueue = (): UseEditQueueReturn => {
     }), [
         queueState.queue.operations,
         queueState.queue.hasUnsavedChanges,
-        queueState.currentIndex
+        queueState.currentIndex,
+        queueState.checkpoints,
+        queueState.activeCheckpoint,
+        createCheckpoint,
+        revertToCheckpoint,
+        clearCheckpoints
     ]);
 };

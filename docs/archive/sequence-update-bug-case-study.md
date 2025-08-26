@@ -7,7 +7,7 @@ This document chronicles the investigation and resolution of a complex bug where
 **Duration**: Multi-session debugging effort  
 **Impact**: Critical - drag operations appeared to work but data was not persisted correctly  
 **Root Causes**: 3 React useMemo caching layers + backend sequential processing mismatch  
-**Solution**: Fixed frontend caching + implemented in-memory backend batch processing  
+**Solution**: Fixed frontend caching + implemented comprehensive in-memory backend batch processing with full operation support  
 
 ## Problem Description
 
@@ -95,6 +95,24 @@ After fixing frontend caching, UI updates worked correctly, but database persist
 
 This caused sequence conflicts because each operation worked with the original database state instead of building on previous operations.
 
+### Phase 4: Auto-Sort Feature Redesign
+During the debugging process, the auto-sort feature was identified as a major contributor to sequence conflicts. The original implementation generated many individual REORDER operations, which were particularly problematic with sequential processing.
+
+**Original Auto-Sort**: Generated 20+ individual REORDER operations for resequencing
+**Problem**: Each REORDER operation conflicted with others when processed sequentially
+**Solution**: Redesigned auto-sort as a single ENABLE_AUTO_SORT operation with full resequencing data
+
+```json
+{
+  "type": "ENABLE_AUTO_SORT",
+  "resequenced_elements": [
+    {"element_id": "abc123", "old_sequence": 7, "new_sequence": 1},
+    {"element_id": "def456", "old_sequence": 1, "new_sequence": 7},
+    // ... all resequencing in one atomic operation
+  ]
+}
+```
+
 ## Solution Architecture
 
 ### Frontend Fixes
@@ -120,31 +138,75 @@ for operation in operations:
     db.commit()                               # Immediate commit
 ```
 
-#### After: Batch Processing  
+#### After: Comprehensive In-Memory Batch Processing  
 ```python
-# Load once
-elements = db.query(ScriptElement).all()
-elements_by_id = {str(el.id): el for el in elements}
-original_sequences = {str(el.id): el.sequence for el in elements}
+# Load all elements once
+all_elements = db.query(ScriptElement).filter(
+    ScriptElement.script_id == script_id
+).order_by(ScriptElement.sequence).all()
 
-# Apply all operations in-memory
-for operation in operations:
-    apply_operation_in_memory(elements_by_id, operation)
+# Create in-memory lookup with original sequences tracked
+elements_by_id = {str(el.element_id): el for el in all_elements}
+original_sequences = {str(el.element_id): el.sequence for el in all_elements}
 
-# Update only changed elements
+# Process all operations in-memory with full operation support
+temp_id_mapping = {}  # Track temporary IDs for new elements
+operation_results = []
+
+for operation_data in batch_request.operations:
+    try:
+        # Apply operation using mirrored frontend logic
+        result = _apply_operation_in_memory(
+            elements_by_id, script_id, operation_data, user, temp_id_mapping
+        )
+        operation_results.append({"status": "success", "result": result})
+    except Exception as e:
+        operation_results.append({"status": "error", "error": str(e)})
+
+# Identify and commit only changed elements
 changed_elements = [
     el for el_id, el in elements_by_id.items() 
-    if original_sequences[el_id] != el.sequence
+    if original_sequences.get(el_id) != el.sequence
 ]
 
-# Single atomic commit
+# Single atomic commit for all changes
 db.commit()
 ```
+
+### Comprehensive Operation Support
+The final in-memory processing system supports all edit queue operations:
+
+**Element Management**:
+- `REORDER`: Single element and group reordering with automatic sequence adjustment
+- `CREATE_ELEMENT`: New element creation with temp ID mapping
+- `DELETE_ELEMENT`: Element removal with sequence gap normalization
+- `UPDATE_ELEMENT`: Multi-field element updates
+- `UPDATE_FIELD`: Single field updates with type-specific handling
+
+**Grouping Operations**:
+- `CREATE_GROUP`: Group creation with child element assignment
+- `UNGROUP_ELEMENTS`: Group dissolution with child element cleanup
+- `UPDATE_GROUP_WITH_PROPAGATION`: Group updates with child element synchronization
+- `TOGGLE_GROUP_COLLAPSE`: Individual group collapse/expand
+- `BATCH_COLLAPSE_GROUPS`: Multiple group collapse/expand operations
+
+**Auto-Sort & Preferences**:
+- `ENABLE_AUTO_SORT`: Full script resequencing by time offset
+- `DISABLE_AUTO_SORT`: Preference change only
+- `UPDATE_SCRIPT_INFO`: Script-level metadata updates
+
+**Specialized Operations**:
+- `BULK_REORDER`: Multiple element reordering in single operation
+- `UPDATE_TIME_OFFSET`: Time-based updates with sequence implications
+
+Each operation mirrors the exact logic from the frontend `applyOperationToElements` function, ensuring perfect consistency between UI state and database persistence.
 
 ### Performance Impact
 - **Before**: N database queries + N commits for N operations
 - **After**: 1 database query + 1 commit for N operations  
 - **Improvement**: ~5-10x faster for batch operations
+- **Memory efficiency**: Only changed elements are committed to database
+- **Auto-sort improvement**: 20+ operations reduced to 1 atomic operation
 
 ## Key Technical Insights
 
@@ -207,12 +269,25 @@ db.commit()
 - `/frontend/src/features/script/hooks/useScriptElementsWithEditQueue.ts`: Confirmed existing memoization was correct
 
 ### Backend  
-- `/backend/routers/script_elements/operations.py`: Complete rewrite of batch processing logic
-  - New: `_apply_operation_in_memory()`
-  - New: `_apply_reorder_in_memory()`
-  - New: `_apply_group_reorder_in_memory()`
-  - New: `_apply_single_element_reorder_in_memory()`
-  - Modified: `batch_update_from_edit_queue()` - now uses in-memory processing
+- `/backend/routers/script_elements/operations.py`: Complete rewrite to comprehensive in-memory batch processing
+  - New: `_apply_operation_in_memory()` - Master operation router
+  - New: `_apply_reorder_in_memory()` - Single/group element reordering
+  - New: `_apply_group_reorder_in_memory()` - Complex group movement logic
+  - New: `_apply_single_element_reorder_in_memory()` - Individual element sequence updates
+  - New: `_apply_enable_auto_sort_in_memory()` - Full script resequencing
+  - New: `_apply_disable_auto_sort_in_memory()` - Preference updates
+  - New: `_apply_create_group_in_memory()` - Group creation with child management
+  - New: `_apply_ungroup_in_memory()` - Group dissolution logic
+  - New: `_apply_update_element_in_memory()` - Multi-field element updates
+  - New: `_apply_update_field_in_memory()` - Single field updates
+  - New: `_apply_create_element_in_memory()` - Element creation with temp ID mapping
+  - New: `_apply_delete_element_in_memory()` - Element removal with sequence normalization
+  - New: `_apply_toggle_group_collapse_in_memory()` - Group state management
+  - New: `_apply_batch_collapse_groups_in_memory()` - Multi-group operations
+  - New: `_apply_update_group_with_propagation_in_memory()` - Group updates with child sync
+  - New: `_apply_update_time_offset_in_memory()` - Time-based updates
+  - New: `_apply_bulk_reorder_in_memory()` - Multiple element reordering
+  - Modified: `batch_update_from_edit_queue()` - Orchestrates in-memory processing with error handling
 
 ## Conclusion
 

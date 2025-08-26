@@ -42,7 +42,9 @@ const SHOWS_SORT_OPTIONS: SortOption[] = [
 ];
 
 export const SharedPage = React.memo(() => {
+  console.log("🔄 SharedPage: Component render", { timestamp: new Date().toISOString() });
   const { shareToken } = useParams<{ shareToken: string }>();
+  console.log("🔄 SharedPage: shareToken from params", { shareToken });
   const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [showTutorials, setShowTutorials] = useState<boolean>(false);
@@ -122,6 +124,7 @@ export const SharedPage = React.memo(() => {
   });
 
   // WebSocket sync for the currently viewing script
+  console.log("🔄 SharedPage: useScriptSync params", { viewingScriptId, shareToken });
   const scriptSync = useScriptSync(viewingScriptId, shareToken, {
     onUpdate: handleUpdate,
     onConnect: () => { },

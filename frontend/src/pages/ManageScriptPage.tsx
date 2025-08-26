@@ -136,20 +136,22 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     // Moved this hook call after preferences are defined
 
     // Real-time sync for collaborative editing
-    const {
-        isConnected: isSyncConnected,
-        isConnecting: isSyncConnecting,
-        connectionCount: syncConnectionCount,
-        connectionError: syncConnectionError,
-        sendUpdate: sendSyncUpdate
-    } = useScriptSync(scriptId || null, undefined, {
+    const scriptSyncOptions = useMemo(() => ({
         onConnect: () => { },
         onDisconnect: () => { },
         onDataReceived: () => {
             setShouldRotateAuth(true);
             setTimeout(() => setShouldRotateAuth(false), 700); // Match CSS animation duration (600ms) + buffer
         }
-    });
+    }), [setShouldRotateAuth]);
+
+    const {
+        isConnected: isSyncConnected,
+        isConnecting: isSyncConnecting,
+        connectionCount: syncConnectionCount,
+        connectionError: syncConnectionError,
+        sendUpdate: sendSyncUpdate
+    } = useScriptSync(scriptId || null, undefined, scriptSyncOptions);
 
     // Update sync context for header display
     const { setSyncData } = useScriptSyncContext();
@@ -197,7 +199,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         saveChanges,
         toggleGroupCollapse,
         expandAllGroups,
-        collapseAllGroups
+        collapseAllGroups,
+        checkpoints,
+        activeCheckpoint,
+        createCheckpoint,
+        revertToCheckpoint
     } = editQueueHook;
 
     // Enhanced applyLocalChange that broadcasts changes via WebSocket
@@ -210,12 +216,22 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             try {
                 // Determine update type based on operation
                 let updateType = 'element_change';
-                if (operation.operation_type === 'UPDATE_SCRIPT_INFO') {
+                if (operation.type === 'UPDATE_SCRIPT_INFO') {
                     updateType = 'script_info';
-                } else if (operation.operation_type === 'UPDATE_TIME_OFFSET' || operation.operation_type === 'REORDER_ELEMENT') {
+                } else if (operation.type === 'UPDATE_TIME_OFFSET' || operation.type === 'REORDER' || operation.type === 'BULK_REORDER') {
                     updateType = 'element_order';
-                } else if (operation.operation_type === 'DELETE_ELEMENT') {
+                } else if (operation.type === 'DELETE_ELEMENT') {
                     updateType = 'element_delete';
+                } else if (operation.type === 'CREATE_ELEMENT') {
+                    updateType = 'element_create';
+                } else if (operation.type === 'CREATE_GROUP' || operation.type === 'UNGROUP_ELEMENTS') {
+                    updateType = 'element_group';
+                } else if (operation.type === 'TOGGLE_GROUP_COLLAPSE' || operation.type === 'BATCH_COLLAPSE_GROUPS') {
+                    updateType = 'element_group_state';
+                } else if (operation.type === 'ENABLE_AUTO_SORT' || operation.type === 'DISABLE_AUTO_SORT') {
+                    updateType = 'element_order';
+                } else if (operation.type === 'UPDATE_ELEMENT' || operation.type === 'UPDATE_FIELD') {
+                    updateType = 'element_update';
                 }
 
                 sendSyncUpdate({
@@ -373,9 +389,18 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         hasInfoChanges: hasChanges,
         captureInfoChanges,
         onSaveSuccess: () => {
+            console.log("🔄 ManageScriptPage: onSaveSuccess callback triggered", { 
+                activeMode, 
+                timestamp: new Date().toISOString(),
+                pendingOpsCount: pendingOperations.length,
+                pendingOpsTypes: pendingOperations.map(op => op.type)
+            });
             // Clear pending changes in info mode to prevent duplicate operations
+            console.log("🔄 ManageScriptPage: Calling clearPendingChanges", { timestamp: new Date().toISOString() });
             clearPendingChanges();
+            console.log("🔄 ManageScriptPage: Setting activeMode to 'view'", { timestamp: new Date().toISOString() });
             setActiveMode('view');
+            console.log("🔄 ManageScriptPage: onSaveSuccess completed", { timestamp: new Date().toISOString() });
         },
         sendSyncUpdate: sendSyncUpdate,
         pendingOperations: pendingOperations,
@@ -407,8 +432,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             // Capture operation count before save (might be cleared after)
             const operationCount = pendingOperations.length;
 
-            // Log script info operations to see what's being saved
+            // Separate script info and element operations for broadcasting
             const scriptInfoOps = pendingOperations.filter(op => op.type === 'UPDATE_SCRIPT_INFO');
+            const elementOps = pendingOperations.filter(op => op.type !== 'UPDATE_SCRIPT_INFO');
             const success = await saveChanges(false); // Auto-save preserves edit history
 
             // Broadcast WebSocket update after successful auto-save
@@ -416,7 +442,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 try {
                     // Send targeted updates for script info changes
                     if (scriptInfoOps.length > 0) {
-                        // Extract the actual script info changes to broadcast
                         const scriptChanges = {};
                         scriptInfoOps.forEach(op => {
                             Object.assign(scriptChanges, op.changes);
@@ -426,6 +451,15 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                             update_type: 'script_info',
                             changes: scriptChanges,
                             operation_id: `autosave_script_info_${Date.now()}`
+                        });
+                    }
+                    
+                    // Send targeted updates for element changes
+                    if (elementOps.length > 0) {
+                        sendSyncUpdate({
+                            update_type: 'elements_updated',
+                            changes: elementOps,
+                            operation_id: `autosave_elements_${Date.now()}`
                         });
                     }
                 } catch (error) {
@@ -663,36 +697,50 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 return;
             }
 
-            const elementChanges: any[] = [];
-            for (let newIndex = 0; newIndex < sortedElements.length; newIndex++) {
-                const element = sortedElements[newIndex];
-                const oldIndex = currentElements.findIndex(el => el.element_id === element.element_id);
+            // Create resequenced elements array for the new format
+            const resequencedElements = sortedElements.map((element, index) => ({
+                element_id: element.element_id,
+                old_sequence: element.sequence,
+                new_sequence: index + 1
+            }));
 
-                if (oldIndex !== newIndex) {
-                    elementChanges.push({
-                        element_id: element.element_id,
-                        old_index: oldIndex,
-                        new_index: newIndex,
-                        old_sequence: oldIndex + 1,
-                        new_sequence: newIndex + 1
-                    });
-                }
-            }
-
-            // Create the auto-sort operation with element changes for the initial sort
-            applyLocalChange({
-                type: 'ENABLE_AUTO_SORT',
+            const enableOperation = {
+                type: 'ENABLE_AUTO_SORT' as const,
                 element_id: 'auto-sort-preference',
                 old_preference_value: false,
                 new_preference_value: true,
-                element_moves: elementChanges
-            } as Omit<EnableAutoSortOperation, 'id' | 'timestamp' | 'description'>);
+                resequenced_elements: resequencedElements,
+                total_elements: currentElements.length
+            };
 
-            showSuccess('Elements Auto-Sorted', `Reordered ${elementChanges.length} elements by time offset. New elements will be automatically sorted.`);
+            applyLocalChange(enableOperation);
+
+            showSuccess('Elements Auto-Sorted', `Reordered ${resequencedElements.length} elements by time offset. New elements will be automatically sorted.`);
         } catch (error) {
             showError(error instanceof Error ? error.message : 'Failed to enable auto-sort');
         }
     }, [scriptId, editQueueElements, applyLocalChange, showSuccess, showError]);
+
+    // Checkpoint revert functionality
+    const handleRevertAutoSort = useCallback(async () => {
+        if (!activeCheckpoint) {
+            showError('No checkpoint available to revert to');
+            return;
+        }
+
+        try {
+            const success = await revertToCheckpoint(activeCheckpoint);
+            if (success) {
+                // Disable auto-sort preference after reverting
+                await updatePreference('autoSortCues', false);
+                showSuccess('Auto-Sort Reverted', 'Script restored to pre-auto-sort state.');
+            } else {
+                showError('Failed to revert to checkpoint');
+            }
+        } catch (error) {
+            showError(error instanceof Error ? error.message : 'Failed to revert auto-sort');
+        }
+    }, [activeCheckpoint, revertToCheckpoint, updatePreference, showSuccess, showError]);
 
     const handleAutoSortToggle = useCallback(
         async (value: boolean) => {

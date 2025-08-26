@@ -43,6 +43,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
         onToggleGroupCollapse
     } = props;
 
+
     // Use useMilitaryTime directly like colorizeDepNames and showClockTimes
     // All preferences are now passed as props from parent components
     const effectiveUseMilitaryTime = useMilitaryTime;
