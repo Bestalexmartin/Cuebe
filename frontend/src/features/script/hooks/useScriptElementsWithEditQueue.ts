@@ -228,6 +228,7 @@ export const useScriptElementsWithEditQueue = (
         }
 
         // Send batch of operations to server
+        console.log("🔄 SAVE: Sending operations to backend:", JSON.stringify(editQueueRef.current.operations, null, 2));
         const response = await fetch(
           `/api/scripts/${scriptId}/elements/batch-update`,
           {

@@ -1079,9 +1079,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                         onSelectionChange={setCurrentSelectedElementIds}
                                         onToggleGroupCollapse={toggleGroupCollapse}
                                         script={currentScript}
-                                        elements={(() => {
-                                            return filteredEditQueueElements;
-                                        })()}
+                                        elements={filteredEditQueueElements}
                                         allElements={filteredAllEditQueueElements}
                                         onApplyLocalChange={applyLocalChange}
                                     />
