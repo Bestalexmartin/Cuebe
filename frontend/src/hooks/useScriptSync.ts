@@ -63,6 +63,8 @@ export const useScriptSync = (
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const prevScriptIdRef = useRef(scriptId);
+  const prevShareTokenRef = useRef(shareToken);
   const maxReconnectAttempts = 5;
   const baseReconnectDelay = 1000; // 1 second
   
@@ -141,13 +143,28 @@ export const useScriptSync = (
   }, [onError, scriptId]);
 
   const connectToWebSocket = useCallback(async () => {
+    console.log("🔄 useScriptSync: connectToWebSocket function recreated", { 
+      scriptId, 
+      shareToken, 
+      timestamp: new Date().toISOString(),
+      getTokenRef: getToken,
+      handleMessageRef: handleMessage,
+      handleCloseRef: handleClose,
+      handleErrorRef: handleError,
+      onErrorRef: onError,
+      reason: "useCallback dependency changed"
+    });
     if (!scriptId) {
+      console.log("🔄 useScriptSync: Cannot connect - no script ID");
       setConnectionError('No script ID provided');
       return;
     }
 
+    console.log("🔄 useScriptSync: Starting websocket connection", { scriptId, shareToken, timestamp: new Date().toISOString() });
+    
     // Clear any existing connection
     if (wsRef.current) {
+      console.log("🔄 useScriptSync: Closing existing websocket", { timestamp: new Date().toISOString() });
       wsRef.current.close();
     }
 
@@ -200,13 +217,20 @@ export const useScriptSync = (
   }, [scriptId, shareToken, getToken, handleMessage, handleClose, handleError, onError]);
 
   const sendMessage = useCallback((message: OutgoingMessage) => {
+    console.log("🔄 useScriptSync: sendMessage called", { messageType: message.type, timestamp: new Date().toISOString(), wsState: wsRef.current?.readyState });
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       try {
         wsRef.current.send(JSON.stringify(message));
+        console.log("🔄 useScriptSync: Message sent successfully", { messageType: message.type });
       } catch (error) {
+        console.log("🔄 useScriptSync: Send message error", { error });
         setConnectionError('Failed to send message');
       }
     } else {
+      console.log("🔄 useScriptSync: Cannot send message - websocket not open", { 
+        wsState: wsRef.current?.readyState,
+        wsExists: !!wsRef.current 
+      });
       setConnectionError('Not connected to sync server');
     }
   }, []);
@@ -251,14 +275,40 @@ export const useScriptSync = (
 
   // Auto-connect when scriptId changes
   useEffect(() => {
+    console.log("🔄 useScriptSync: Effect triggered", { 
+      scriptId, 
+      shareToken,
+      scriptIdType: typeof scriptId,
+      shareTokenType: typeof shareToken,
+      scriptIdPrev: prevScriptIdRef.current,
+      shareTokenPrev: prevShareTokenRef.current,
+      connectionStatus: isConnected ? 'connected' : 'disconnected',
+      timestamp: new Date().toISOString()
+    });
+    
+    // Track what changed
+    if (prevScriptIdRef.current !== scriptId) {
+      console.log("🔄 useScriptSync: scriptId changed", { from: prevScriptIdRef.current, to: scriptId });
+    }
+    if (prevShareTokenRef.current !== shareToken) {
+      console.log("🔄 useScriptSync: shareToken changed", { from: prevShareTokenRef.current, to: shareToken });
+    }
+    
+    // Update refs for next render
+    prevScriptIdRef.current = scriptId;
+    prevShareTokenRef.current = shareToken;
+    
     if (scriptId) {
+      console.log("🔄 useScriptSync: Connecting to websocket");
       connectToWebSocket();
     } else {
+      console.log("🔄 useScriptSync: Disconnecting - no scriptId");
       disconnect();
     }
     
     // Cleanup on unmount
     return () => {
+      console.log("🔄 useScriptSync: Cleanup - disconnecting", { scriptId, shareToken });
       disconnect();
     };
   }, [scriptId, shareToken]); // Note: Don't include connectToWebSocket in deps to avoid infinite reconnects

@@ -53,7 +53,7 @@ export class EditQueueFormatter {
             
             case 'DISABLE_AUTO_SORT':
                 return `Auto-sort disabled`;
-            
+
             case 'UPDATE_SCRIPT_INFO':
                 return this.formatScriptInfoUpdate(operation, useMilitaryTime);
             

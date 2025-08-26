@@ -21,7 +21,6 @@ interface OptionsModalProps {
     onSave: (preferences: UserPreferences) => Promise<void>;
     onPreview?: (preferences: UserPreferences) => void;
     onAutoSortChange?: (value: boolean) => Promise<void>;
-    onColorizeChange?: (value: boolean) => Promise<void>;
     onClockTimesChange?: (value: boolean) => Promise<void>;
     onMilitaryTimeChange?: (value: boolean) => Promise<void>;
     onDangerModeChange?: (value: boolean) => Promise<void>;
@@ -35,7 +34,6 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
     onSave,
     onPreview,
     onAutoSortChange,
-    onColorizeChange,
     onClockTimesChange,
     onMilitaryTimeChange,
     onDangerModeChange,
@@ -51,16 +49,6 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
         }
     }, [isOpen]); // Only depend on isOpen to force refresh every time modal opens
 
-    const handleColorizeChange = async (checked: boolean) => {
-        const newPreferences = { ...localPreferences, colorizeDepNames: checked };
-        setLocalPreferences(newPreferences);
-        onPreview?.(newPreferences);
-        
-        // Trigger immediate update if callback is provided
-        if (onColorizeChange) {
-            await onColorizeChange(checked);
-        }
-    };
 
     const handleClockTimesChange = async (checked: boolean) => {
         const newPreferences = { ...localPreferences, showClockTimes: checked };
@@ -78,7 +66,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
         setLocalPreferences(newPreferences);
         onPreview?.(newPreferences);
         
-        // Trigger immediate auto-sort if callback is provided
+        // Trigger immediate update if callback is provided
         if (onAutoSortChange) {
             await onAutoSortChange(checked);
         }
@@ -139,25 +127,6 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
             errorBoundaryContext="OptionsModal"
         >
             <VStack spacing={3} align="stretch">
-                <FormControl>
-                    <HStack align="center" spacing={5}>
-                        <Switch
-                            id="colorize-switch"
-                            isChecked={localPreferences.colorizeDepNames}
-                            onChange={(e) => handleColorizeChange(e.target.checked)}
-                            colorScheme="blue"
-                            size="md"
-                        />
-                        <FormLabel
-                            mb="0"
-                            fontSize="md"
-                            htmlFor="colorize-switch"
-                        >
-                            Colorize Department Names
-                        </FormLabel>
-                    </HStack>
-                </FormControl>
-
                 <FormControl>
                     <HStack align="center" spacing={5}>
                         <Switch

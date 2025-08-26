@@ -228,7 +228,6 @@ export const useScriptElementsWithEditQueue = (
         }
 
         // Send batch of operations to server
-        console.log("🔄 SAVE: Sending operations to backend:", JSON.stringify(editQueueRef.current.operations, null, 2));
         const response = await fetch(
           `/api/scripts/${scriptId}/elements/batch-update`,
           {
@@ -363,6 +362,27 @@ export const useScriptElementsWithEditQueue = (
     >);
   }, [applyLocalChange, allElements]);
 
+  // Checkpoint operations
+  const createCheckpoint = useCallback((
+    type: 'AUTO_SORT' | 'MANUAL', 
+    description: string, 
+    scriptData?: any
+  ): string => {
+    return editQueue.createCheckpoint(type, description, elements, scriptData);
+  }, [editQueue, elements]);
+
+  const revertToCheckpoint = useCallback(async (checkpointId: string): Promise<boolean> => {
+    const checkpoint = editQueue.revertToCheckpoint(checkpointId);
+    if (!checkpoint) {
+      return false;
+    }
+
+    // Apply the checkpoint data to restore previous state
+    // For now, just refetch elements to restore server state
+    await fetchElements();
+    return true;
+  }, [editQueue, fetchElements]);
+
   useEffect(() => {
     fetchElements();
   }, [fetchElements]);
@@ -401,6 +421,12 @@ export const useScriptElementsWithEditQueue = (
       expandAllGroups,
       collapseAllGroups,
 
+      // Checkpoint operations
+      checkpoints: editQueue.checkpoints,
+      activeCheckpoint: editQueue.activeCheckpoint,
+      createCheckpoint,
+      revertToCheckpoint,
+
       // Revert
       revertToPoint: editQueueRef.current.revertToPoint,
     }),
@@ -423,6 +449,10 @@ export const useScriptElementsWithEditQueue = (
       toggleGroupCollapse,
       expandAllGroups,
       collapseAllGroups,
+      editQueue.checkpoints,
+      editQueue.activeCheckpoint,
+      createCheckpoint,
+      revertToCheckpoint,
     ],
   );
 };
