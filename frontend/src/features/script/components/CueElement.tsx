@@ -465,7 +465,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                 {/* Location */}
                 <Box w="180px" pl={6} pr={3} position="relative" py={.5} borderColor="gray.500">
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
-                        {`SEQ: ${element.sequence}${element.location_details ? ' | ' + element.location_details : ''}`}
+                        {element.location_details || '\u00A0'}
                     </Text>
                     {element.priority !== 'SAFETY' && (
                         <Box
