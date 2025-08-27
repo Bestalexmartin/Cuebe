@@ -45,7 +45,7 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
     showCardRefs
 }) => {
     const navigate = useNavigate();
-    const { venues, isLoading } = useVenues();
+    const { venues, isLoading, error } = useVenues();
 
     // Venue-specific sorting logic
     const handleSortClick = (newSortBy: string) => {
@@ -121,6 +121,7 @@ export const VenuesView: React.FC<VenuesViewProps> = ({
 
             <EntityViewContainer
                 isLoading={isLoading}
+                error={error}
                 hasItems={sortedVenues.length > 0}
                 emptyStateComponent={emptyState}
             >

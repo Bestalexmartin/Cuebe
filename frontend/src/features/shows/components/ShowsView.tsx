@@ -1,10 +1,12 @@
 // frontend/src/features/shows/components/ShowsView.tsx
 
 import React, { useMemo } from 'react';
-import { Flex, Box, VStack, HStack, Heading, Button, Divider, Text, Spinner } from "@chakra-ui/react";
-import { AppIcon } from '../../../components/AppIcon';
+import { Flex } from "@chakra-ui/react";
 import { ShowCard } from "./ShowCard";
-import { SortMenu, SortOption } from '../../../components/shared/SortMenu';
+import { EntityViewHeader } from '../../../components/shared/EntityViewHeader';
+import { EntityViewContainer } from '../../../components/shared/EntityViewContainer';
+import { EntityEmptyState } from '../../../components/shared/EntityEmptyState';
+import { SortOption } from '../../../components/shared/SortMenu';
 
 // TypeScript interfaces
 interface Venue {
@@ -119,102 +121,54 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
         return showsToSort;
     }, [shows, sortBy, sortDirection]);
 
+    const emptyState = (
+        <EntityEmptyState
+            entityIcon="show"
+            message="You haven't added any shows yet."
+            actionButtonText="Create Your First Show"
+            onActionClick={onCreateShow}
+        />
+    );
+
     return (
         <Flex direction="column" height="100%">
-            {/* Header Section */}
-            <Flex justify="space-between" align="center" flexShrink={0}>
-                <HStack spacing="2" align="center">
-                    <AppIcon name="show" boxSize="25px" />
-                    <Heading as="h2" size="md">Shows</Heading>
-                </HStack>
-                <HStack spacing="2">
-                    <SortMenu
-                        sortBy={sortBy}
-                        sortDirection={sortDirection}
-                        sortOptions={SHOWS_SORT_OPTIONS}
-                        onSortClick={handleSortClick}
-                    />
-                    <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
-                    <Button
-                        bg="blue.400"
-                        color="white"
-                        size="xs"
-                        onClick={onCreateShow}
-                        _hover={{ bg: 'orange.400' }}
-                    >
-                        Create Show
-                    </Button>
-                </HStack>
-            </Flex>
+            <EntityViewHeader
+                entityName="Shows"
+                entityIcon="show"
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                sortOptions={SHOWS_SORT_OPTIONS}
+                onSortClick={handleSortClick}
+                createButtonText="Create Show"
+                onCreateClick={onCreateShow}
+            />
 
-            {/* Content Section */}
-            <Box
-                mt="4"
-                border="1px solid"
-                borderColor="container.border"
-                p="4"
-                borderRadius="md"
-                flexGrow={1}
-                overflowY="auto"
-                className="hide-scrollbar"
+            <EntityViewContainer
+                isLoading={isLoading}
+                error={error}
+                hasItems={sortedShows.length > 0}
+                emptyStateComponent={emptyState}
             >
-                {/* Loading State */}
-                {isLoading && (
-                    <Flex justify="center" align="center" height="200px">
-                        <Spinner />
-                    </Flex>
-                )}
-
-                {/* Error State */}
-                {error && (
-                    <Text color="red.500" textAlign="center" p="4">
-                        {error}
-                    </Text>
-                )}
-
-                {/* Shows List or Empty State */}
-                {!isLoading && !error && (
-                    sortedShows.length > 0 ? (
-                        <VStack spacing={4} align="stretch">
-                            {sortedShows.map(show => (
-                                <div key={show.show_id} ref={el => { showCardRefs.current[show.show_id] = el; }}>
-                                    <ShowCard
-                                        show={show}
-                                        sortBy={sortBy}
-                                        sortDirection={sortDirection}
-                                        isSelected={selectedShowId === show.show_id}
-                                        isHovered={hoveredCardId === show.show_id}
-                                        onShowHover={setHoveredCardId}
-                                        onShowClick={handleShowClick}
-                                        selectedScriptId={selectedScriptId}
-                                        onScriptClick={handleScriptClick}
-                                        onCreateScriptClick={onCreateScript}
-                                        onImportScriptClick={onImportScript}
-                                        onClearDepartmentMappingClick={onClearDepartmentMappingClick}
-                                        onSaveNavigationState={onSaveNavigationState}
-                                    />
-                                </div>
-                            ))}
-                        </VStack>
-                    ) : (
-                        <Flex direction="column" align="center" justify="center" height="200px" gap="4">
-                            <AppIcon name="show" boxSize="40px" color="gray.400" />
-                            <Text color="gray.500" textAlign="center">
-                                You haven't added any shows yet.
-                            </Text>
-                            <Button
-                                bg="blue.400"
-                                color="white"
-                                size="sm"
-                                onClick={onCreateShow}
-                                _hover={{ bg: 'orange.400' }}
-                            >
-                                Create Your First Show
-                            </Button>
-                        </Flex>
-                    )
-                )}
-            </Box>
+                {sortedShows.map(show => (
+                    <div key={show.show_id} ref={el => { showCardRefs.current[show.show_id] = el; }}>
+                        <ShowCard
+                            show={show}
+                            sortBy={sortBy}
+                            sortDirection={sortDirection}
+                            isSelected={selectedShowId === show.show_id}
+                            isHovered={hoveredCardId === show.show_id}
+                            onShowHover={setHoveredCardId}
+                            onShowClick={handleShowClick}
+                            selectedScriptId={selectedScriptId}
+                            onScriptClick={handleScriptClick}
+                            onCreateScriptClick={onCreateScript}
+                            onImportScriptClick={onImportScript}
+                            onClearDepartmentMappingClick={onClearDepartmentMappingClick}
+                            onSaveNavigationState={onSaveNavigationState}
+                        />
+                    </div>
+                ))}
+            </EntityViewContainer>
         </Flex>
     );
 };
