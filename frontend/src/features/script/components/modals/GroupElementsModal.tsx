@@ -14,12 +14,12 @@ import { BaseModal } from '../../../../components/base/BaseModal';
 
 // Preset colors for group backgrounds - consistent with note colors
 const GROUP_PRESET_COLORS = [
-    { name: 'Default', value: '#E2E8F0' },
-    { name: 'Red', value: '#EF4444' },
-    { name: 'Grey', value: '#808080' },
-    { name: 'Black', value: '#10151C' },
-    { name: 'Blue', value: '#3B82F6' },
-    { name: 'Yellow', value: '#EAB308' },
+    { name: "Red", value: "#EF4444" },
+    { name: "Yellow", value: "#EAB308" },
+    { name: "Green", value: "#44aa44" },
+    { name: "Blue", value: "#3B82F6" },
+    { name: "Grey", value: "#6B7280" },
+    { name: "Black", value: "#1F2937" },
 ];
 
 interface GroupElementsModalProps {
@@ -48,7 +48,7 @@ export const GroupElementsModal: React.FC<GroupElementsModalProps> = ({
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
-        
+
         const newErrors: { groupName?: string } = {};
 
         if (!groupName.trim()) {
@@ -120,7 +120,7 @@ export const GroupElementsModal: React.FC<GroupElementsModalProps> = ({
                         <Input
                             value={selectedColor}
                             onChange={(e) => setSelectedColor(e.target.value)}
-                            placeholder="#E2E8F0"
+                            placeholder="#EF4444"
                             width="120px"
                             fontFamily="mono"
                         />

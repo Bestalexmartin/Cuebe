@@ -144,6 +144,7 @@ def _apply_ungroup_in_memory(elements_by_id: dict, operation_data: dict, user):
     
     group_element_id = operation_data.get("group_element_id")
     
+    
     # Find the group parent element
     group_element = elements_by_id.get(group_element_id)
     if not group_element:
@@ -165,15 +166,30 @@ def _apply_ungroup_in_memory(elements_by_id: dict, operation_data: dict, user):
         child.date_updated = datetime.now(timezone.utc)
         updated_children += 1
     
+    # Store the sequence of the group element before deletion for resequencing
+    deleted_sequence = group_element.sequence
+    
     # Remove the group parent element from the in-memory dict
     # (This simulates the db.delete() operation)
     del elements_by_id[group_element_id]
+    
+    # Resequence elements: shift all elements with sequence > deleted_sequence down by 1
+    elements_resequenced = 0
+    for element in elements_by_id.values():
+        if element.sequence > deleted_sequence:
+            element.sequence = element.sequence - 1
+            element.updated_by = user.user_id
+            element.date_updated = datetime.now(timezone.utc)
+            elements_resequenced += 1
+    
     
     return {
         "operation": "ungroup_elements",
         "group_element_id": group_element_id,
         "updated_children": updated_children,
-        "group_deleted": True
+        "elements_resequenced": elements_resequenced,
+        "group_deleted": True,
+        "element_to_delete": group_element_id  # Track for actual database deletion
     }
 
 
@@ -226,6 +242,15 @@ def _apply_create_group_in_memory(elements_by_id: dict, script_id: UUID, operati
     max_time = max(time_offsets)
     group_duration = max_time - min_time
     
+    # SEQUENCE MANAGEMENT: Shift existing elements up to make room for group parent
+    elements_shifted = 0
+    for element in elements_by_id.values():
+        if element.sequence >= min_sequence:
+            element.sequence = element.sequence + 1
+            element.updated_by = user.user_id
+            element.date_updated = datetime.now(timezone.utc)
+            elements_shifted += 1
+    
     # Create group parent element (simulate database object)
     import uuid
     group_id = str(uuid.uuid4())
@@ -240,7 +265,7 @@ def _apply_create_group_in_memory(elements_by_id: dict, script_id: UUID, operati
         element_id=group_id,
         script_id=script_id,
         element_type=models.ElementType.GROUP,
-        sequence=min_sequence,
+        sequence=min_sequence,  # Group takes the original min_sequence position
         offset_ms=min_time,
         duration_ms=group_duration,
         element_name=group_name,
@@ -257,23 +282,29 @@ def _apply_create_group_in_memory(elements_by_id: dict, script_id: UUID, operati
     # Add group to elements dict
     elements_by_id[group_id] = group_element
     
+    
     # Store temp ID mapping if provided - frontend sends temp IDs like "group-op_1234567890_1"
     temp_id = operation_data.get("element_data", {}).get("element_id")
     if temp_id and temp_id_mapping is not None:
         temp_id_mapping[temp_id] = group_id
     
-    # Update child elements
-    for element in elements_to_group:
-        element.parent_element_id = group_id
-        element.group_level = 1
-        element.updated_by = user.user_id
-        element.date_updated = datetime.now(timezone.utc)
+    # DON'T update child elements here - defer until after parent is inserted
+    # This prevents SQLAlchemy from trying to UPDATE children before parent exists
     
     return {
         "operation": "create_group",
         "group_element_id": group_id,
         "grouped_element_ids": element_ids,
-        "group_name": group_name
+        "group_name": group_name,
+        "elements_shifted": elements_shifted,
+        "group_inserted_at_sequence": min_sequence,
+        "deferred_child_updates": [
+            {
+                "element_id": str(el.element_id),
+                "parent_element_id": group_id,
+                "group_level": 1
+            } for el in elements_to_group
+        ]
     }
 
 
@@ -634,6 +665,8 @@ def batch_update_from_edit_queue(
     operation_results = []
     processed_operations = 0
     temp_id_mapping = {}
+    deferred_child_updates = []  # Track child updates to apply after parents are inserted
+    deleted_element_ids = []  # Track elements that need to be deleted from database
     
     try:
         # Process script operations first (directly to database)
@@ -657,6 +690,7 @@ def batch_update_from_edit_queue(
         
         # Process element operations in-memory, sequentially
         for operation_data in element_operations:
+            logger.info(f"Processing operation: {operation_data.get('type')} with data: {operation_data}")
             try:
                 # Apply temporary ID mapping before processing  
                 if operation_data.get("element_id") and operation_data.get("element_id") in temp_id_mapping:
@@ -668,6 +702,16 @@ def batch_update_from_edit_queue(
                 result = _apply_operation_in_memory(
                     elements_by_id, script_id, operation_data, user, temp_id_mapping
                 )
+                
+                # Check for deferred child updates from CREATE_GROUP operations
+                if result and result.get("deferred_child_updates"):
+                    deferred_child_updates.extend(result["deferred_child_updates"])
+                    
+                # Check for element deletions from UNGROUP operations
+                if result and result.get("element_to_delete"):
+                    element_id_to_track = result["element_to_delete"]
+                    logger.info(f"Tracking element for deletion: {element_id_to_track}")
+                    deleted_element_ids.append(element_id_to_track)
                 
                 operation_results.append({
                     "operation_id": operation_data.get("id"),
@@ -685,11 +729,64 @@ def batch_update_from_edit_queue(
                 })
                 # Continue with other operations rather than failing the entire batch
         
-        # Handle new elements, modified elements, and sequence changes
+        # Handle new elements and modifications with proper ordering for CREATE_GROUP
+        # Step 1: First, insert all new GROUP elements (parents must exist before children reference them)
         for element_id_str, element in elements_by_id.items():
             if element_id_str not in original_sequences:
-                # New element - convert MockElement to SQLAlchemy model and add to database
-                if hasattr(element, '__class__') and 'MockElement' in str(element.__class__):
+                # New element - check if it's a GROUP element
+                if (hasattr(element, '__class__') and 'MockElement' in str(element.__class__) and 
+                    hasattr(element, 'element_type') and element.element_type == models.ElementType.GROUP):
+                    
+                    # Convert MockElement to actual database model
+                    db_element = models.ScriptElement()
+                    
+                    # Set the element_id FIRST before copying other attributes (convert string to UUID)
+                    from uuid import UUID
+                    db_element.element_id = UUID(element.element_id) if isinstance(element.element_id, str) else element.element_id
+                    
+                    # Copy all other attributes from MockElement to database model
+                    for attr_name in dir(element):
+                        if not attr_name.startswith('_') and attr_name != 'element_id':  # Skip element_id since we set it explicitly
+                            attr_value = getattr(element, attr_name)
+                            if hasattr(db_element, attr_name) and not callable(attr_value):
+                                setattr(db_element, attr_name, attr_value)
+                    
+                    db.add(db_element)
+        
+        # Flush to ensure GROUP elements are inserted before child updates
+        db.flush()
+        
+        # Apply deferred child updates now that parent groups exist
+        for child_update in deferred_child_updates:
+            element_id = child_update["element_id"]
+            if element_id in elements_by_id:
+                element = elements_by_id[element_id]
+                element.parent_element_id = child_update["parent_element_id"]
+                element.group_level = child_update["group_level"]
+                element.updated_by = user.user_id
+                element.date_updated = datetime.now(timezone.utc)
+        
+        # Handle element deletions (e.g., from UNGROUP operations)
+        logger.info(f"Processing deletions: {len(deleted_element_ids)} elements to delete: {deleted_element_ids}")
+        for element_id_to_delete in deleted_element_ids:
+            logger.info(f"Attempting to delete element: {element_id_to_delete} (type: {type(element_id_to_delete)})")
+            # Find and delete the element from the database
+            element_to_delete = db.query(models.ScriptElement).filter(
+                models.ScriptElement.element_id == element_id_to_delete
+            ).first()
+            if element_to_delete:
+                logger.info(f"Found element to delete: {element_to_delete.element_id}, deleting...")
+                db.delete(element_to_delete)
+            else:
+                logger.warning(f"Element to delete not found in database: {element_id_to_delete}")
+        
+        # Step 2: Handle all other new elements (non-GROUP)
+        for element_id_str, element in elements_by_id.items():
+            if element_id_str not in original_sequences:
+                # New element - check if it's NOT a GROUP element
+                if (hasattr(element, '__class__') and 'MockElement' in str(element.__class__) and 
+                    (not hasattr(element, 'element_type') or element.element_type != models.ElementType.GROUP)):
+                    
                     # Convert MockElement to actual database model
                     db_element = models.ScriptElement()
                     
@@ -706,7 +803,9 @@ def batch_update_from_edit_queue(
                 pass
         
         # Commit all changes atomically
+        logger.info(f"Committing transaction with {len(deleted_element_ids)} deletions pending")
         db.commit()
+        logger.info("Transaction committed successfully")
         
         logger.info(f"Processed {processed_operations} operations for script {script_id}")
         

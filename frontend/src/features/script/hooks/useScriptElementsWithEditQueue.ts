@@ -45,6 +45,16 @@ interface UseScriptElementsWithEditQueueReturn {
   expandAllGroups: () => void;
   collapseAllGroups: () => void;
 
+  // Checkpoint operations
+  checkpoints: any[];
+  activeCheckpoint: string | undefined | null;
+  createCheckpoint: (
+    type: "AUTO_SORT" | "MANUAL",
+    description: string,
+    scriptData?: any,
+  ) => string;
+  revertToCheckpoint: (checkpointId: string) => Promise<boolean>;
+
   // Revert
   revertToPoint: (targetIndex: number) => void;
 }
@@ -68,9 +78,11 @@ export const useScriptElementsWithEditQueue = (
   options: UseScriptElementsOptions = {},
 ): UseScriptElementsWithEditQueueReturn => {
   const [serverElements, setServerElements] = useState<ScriptElement[]>([]);
+  const [currentElements, setCurrentElements] = useState<ScriptElement[]>([]); // NEW: Live UI state
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [needsRebuild, setNeedsRebuild] = useState(false); // NEW: Track when rebuild is needed
   const { getToken } = useAuth();
 
   const editQueue = useEditQueue();
@@ -85,7 +97,96 @@ export const useScriptElementsWithEditQueue = (
   // Keep a ref to the last computed elements to prevent flicker during save
   const lastComputedElementsRef = useRef<ScriptElement[]>([]);
 
-  // Apply edit operations to server elements to get current view
+  // Rebuild current elements when needed, otherwise use existing state
+  const rebuildCurrentElements = useCallback(
+    (baseElements: ScriptElement[], operationsToApply: EditOperation[]) => {
+      let rebuiltElements = [...baseElements];
+
+      console.log("🔄 REBUILD - Starting operation replay", {
+        totalOperations: operationsToApply.length,
+        operationTypes: operationsToApply.map((op) => op.type),
+        operationIds: operationsToApply.map((op) => op.id),
+      });
+
+      operationsToApply.forEach((operation, index) => {
+        console.log(
+          `🔄 REBUILD - Replaying operation ${index + 1}/${operationsToApply.length}`,
+          {
+            operationType: operation.type,
+            operationId: operation.id,
+            elementId: operation.element_id,
+          },
+        );
+        rebuiltElements = applyOperationToElements(rebuiltElements, operation);
+      });
+
+      // Recalculate group durations after applying all operations
+      rebuiltElements = recalculateGroupDurations(rebuiltElements);
+      return rebuiltElements;
+    },
+    [],
+  );
+
+  // Initialize current elements from server elements on first load or when server elements change
+  useEffect(() => {
+    console.log("🔍 SERVER ELEMENTS EFFECT TRIGGERED", {
+      serverElementsLength: serverElements.length,
+      currentElementsLength: currentElements.length,
+      operationsLength: operations.length,
+      serverElementsRef:
+        serverElements.length > 0 ? serverElements[0]?.element_id : "empty",
+      timestamp: Date.now(),
+    });
+
+    if (serverElements.length > 0) {
+      if (currentElements.length === 0) {
+        // First load - initialize currentElements
+        console.log(
+          "🔄 INIT - Setting initial currentElements from serverElements",
+          { count: serverElements.length },
+        );
+        setCurrentElements([...serverElements]);
+        setNeedsRebuild(false);
+      } else if (operations.length === 0) {
+        // Server elements changed and no pending operations - update currentElements
+        console.log(
+          "🔄 REFRESH - Updating currentElements from fresh serverElements",
+          { count: serverElements.length },
+        );
+        setCurrentElements([...serverElements]);
+        setNeedsRebuild(false);
+      } else {
+        // Server elements changed with pending operations - trigger rebuild
+        console.log(
+          "🔄 REFRESH - Server elements changed with pending operations, triggering rebuild",
+          {
+            operationsCount: operations.length,
+            serverElementsCount: serverElements.length,
+            currentElementsCount: currentElements.length,
+          },
+        );
+        setNeedsRebuild(true);
+      }
+    }
+  }, [serverElements]); // Only trigger when serverElements actually changes
+
+  // Handle rebuilds when needed
+  useEffect(() => {
+    if (needsRebuild && serverElements.length > 0) {
+      console.log("🔄 REBUILD - Rebuilding currentElements", {
+        serverElementsCount: serverElements.length,
+        operationsCount: operations.length,
+      });
+      const rebuiltElements = rebuildCurrentElements(
+        serverElements,
+        operations,
+      );
+      setCurrentElements(rebuiltElements);
+      setNeedsRebuild(false);
+    }
+  }, [needsRebuild, serverElements, operations, rebuildCurrentElements]);
+
+  // Compute display elements from current elements
   const { elements, allElements } = useMemo(() => {
     // If we're saving, return the last computed state to prevent flicker
     if (isSaving && lastComputedElementsRef.current.length > 0) {
@@ -94,28 +195,6 @@ export const useScriptElementsWithEditQueue = (
         allElements: lastComputedElementsRef.current, // This isn't ideal but prevents crashes during save
       };
     }
-
-    let currentElements = [...serverElements];
-
-    // Apply each operation in sequence to build current state
-    console.log("🔥 EDIT QUEUE - Starting operation replay", {
-      totalOperations: operations.length,
-      operationTypes: operations.map(op => op.type),
-      operationIds: operations.map(op => op.id)
-    });
-    
-    operations.forEach((operation, index) => {
-      console.log(`🔥 EDIT QUEUE - Replaying operation ${index + 1}/${operations.length}`, {
-        operationType: operation.type,
-        operationId: operation.id,
-        elementId: operation.element_id
-      });
-      currentElements = applyOperationToElements(currentElements, operation);
-    });
-
-    // After all operations are applied, recalculate group durations
-    // This ensures durations are accurate after any reordering, time changes, or group membership changes
-    currentElements = recalculateGroupDurations(currentElements);
 
     // Filter out collapsed child elements for display
     const visibleElements = currentElements.filter((element) => {
@@ -140,7 +219,7 @@ export const useScriptElementsWithEditQueue = (
       elements: visibleElements,
       allElements: currentElements, // Include all elements for group summary calculations
     };
-  }, [serverElements, operations, isSaving]);
+  }, [currentElements, isSaving]);
 
   const fetchElements = useCallback(async () => {
     if (!scriptId) {
@@ -224,15 +303,34 @@ export const useScriptElementsWithEditQueue = (
 
   const applyLocalChange = useCallback(
     (operation: Omit<EditOperation, "id" | "timestamp" | "description">) => {
-      // ADDED: Track calls to applyLocalChange
-      console.log("🔥 APPLY LOCAL CHANGE - Called", {
+      console.log("🎆 APPLY LOCAL CHANGE - Called", {
         operationType: operation.type,
         elementId: operation.element_id,
-        stackTrace: new Error().stack?.split('\n').slice(1, 6).map(line => line.trim())
+        currentElementsCount: currentElements.length,
       });
+
+      // Add operation to edit queue first
       editQueue.addOperation(operation);
+
+      // Apply operation directly to current elements for immediate UI update
+      if (currentElements.length > 0) {
+        console.log(
+          "🎆 APPLY LOCAL CHANGE - Applying directly to currentElements",
+        );
+        const updatedElements = applyOperationToElements(
+          currentElements,
+          operation as EditOperation,
+        );
+        const finalElements = recalculateGroupDurations(updatedElements);
+        setCurrentElements(finalElements);
+      } else {
+        console.log(
+          "🎆 APPLY LOCAL CHANGE - No currentElements yet, will rebuild later",
+        );
+        setNeedsRebuild(true);
+      }
     },
-    [editQueue.addOperation],
+    [editQueue.addOperation, currentElements],
   );
 
   const saveChanges = useCallback(
@@ -245,7 +343,7 @@ export const useScriptElementsWithEditQueue = (
         // Capture operation count and details before save (might be cleared after)
         const operationCount = editQueueRef.current.operations.length;
         const currentOperations = [...editQueueRef.current.operations];
-        
+
         // Set saving flag to prevent flicker
         setIsSaving(true);
         const token = await getToken();
@@ -292,17 +390,23 @@ export const useScriptElementsWithEditQueue = (
 
         // Note: WebSocket broadcasting is handled by useScriptModalHandlers
         // to avoid duplicate messages and ensure proper coordination
-        console.log("🔄 Elements Save: Completed successfully", { 
-          operationCount, 
+        console.log("🔄 Elements Save: Completed successfully", {
+          operationCount,
           timestamp: new Date().toISOString(),
-          operationTypes: currentOperations.map(op => op.type),
-          note: "WebSocket broadcasting delegated to modal handlers"
+          operationTypes: currentOperations.map((op) => op.type),
+          note: "WebSocket broadcasting delegated to modal handlers",
         });
 
-        // Update server elements with current computed state before clearing queue
-        // This prevents UI reversion when edit queue is cleared
-        if (lastComputedElementsRef.current.length > 0) {
-          setServerElements(lastComputedElementsRef.current);
+        // Update server elements with current state and reset currentElements for fresh start
+        if (currentElements.length > 0) {
+          console.log(
+            "🔄 Elements Save: Updating serverElements with currentElements",
+            {
+              currentElementsCount: currentElements.length,
+            },
+          );
+          setServerElements([...currentElements]);
+          setCurrentElements([...currentElements]); // Reset currentElements to match new server state
         }
 
         // Conditionally clear the edit queue based on clearHistory parameter
@@ -321,7 +425,7 @@ export const useScriptElementsWithEditQueue = (
         return false;
       }
     },
-    [scriptId, getToken, fetchElements, options.sendSyncUpdate],
+    [scriptId, getToken, currentElements],
   );
 
   const discardChanges = useCallback(() => {
@@ -398,29 +502,48 @@ export const useScriptElementsWithEditQueue = (
   }, [applyLocalChange, allElements]);
 
   // Checkpoint operations
-  const createCheckpoint = useCallback((
-    type: 'AUTO_SORT' | 'MANUAL', 
-    description: string, 
-    scriptData?: any
-  ): string => {
-    return editQueue.createCheckpoint(type, description, elements, scriptData);
-  }, [editQueue, elements]);
+  const createCheckpoint = useCallback(
+    (
+      type: "AUTO_SORT" | "MANUAL",
+      description: string,
+      scriptData?: any,
+    ): string => {
+      return editQueue.createCheckpoint(
+        type,
+        description,
+        elements,
+        scriptData,
+      );
+    },
+    [editQueue, elements],
+  );
 
-  const revertToCheckpoint = useCallback(async (checkpointId: string): Promise<boolean> => {
-    const checkpoint = editQueue.revertToCheckpoint(checkpointId);
-    if (!checkpoint) {
-      return false;
-    }
+  const revertToCheckpoint = useCallback(
+    async (checkpointId: string): Promise<boolean> => {
+      const checkpoint = editQueue.revertToCheckpoint(checkpointId);
+      if (!checkpoint) {
+        return false;
+      }
 
-    // Apply the checkpoint data to restore previous state
-    // For now, just refetch elements to restore server state
-    await fetchElements();
-    return true;
-  }, [editQueue, fetchElements]);
+      // Trigger rebuild from serverElements + remaining operations after revert
+      console.log("🔄 REVERT TO CHECKPOINT - Triggering rebuild");
+      setNeedsRebuild(true);
+      return true;
+    },
+    [editQueue],
+  );
 
+  // Custom revert to point function that triggers rebuild
+  const revertToPoint = useCallback((targetIndex: number) => {
+    console.log("🔄 REVERT TO POINT - Triggering rebuild", { targetIndex });
+    editQueueRef.current.revertToPoint(targetIndex);
+    setNeedsRebuild(true);
+  }, []);
+
+  // Only fetch on mount or script ID change - not on options changes
   useEffect(() => {
     fetchElements();
-  }, [fetchElements]);
+  }, [scriptId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return useMemo(
     () => ({
@@ -463,7 +586,7 @@ export const useScriptElementsWithEditQueue = (
       revertToCheckpoint,
 
       // Revert
-      revertToPoint: editQueueRef.current.revertToPoint,
+      revertToPoint,
     }),
     [
       elements,
@@ -488,6 +611,7 @@ export const useScriptElementsWithEditQueue = (
       editQueue.activeCheckpoint,
       createCheckpoint,
       revertToCheckpoint,
+      revertToPoint,
     ],
   );
 };
@@ -550,9 +674,9 @@ function applyOperationToElements(
         newSequence: reorderOp.new_sequence,
         isGroupParent: reorderOp.is_group_parent,
         groupChildrenCount: reorderOp.group_children?.length || 0,
-        totalElementsBeforeReorder: elements.length
+        totalElementsBeforeReorder: elements.length,
       });
-      
+
       const elementToMove = elements.find(
         (el) => el.element_id === operation.element_id,
       );
@@ -560,7 +684,7 @@ function applyOperationToElements(
       if (!elementToMove) {
         console.log("🔥 EDIT QUEUE - REORDER FAILED: Element not found", {
           elementId: operation.element_id,
-          availableElementIds: elements.map(el => el.element_id)
+          availableElementIds: elements.map((el) => el.element_id),
         });
         return elements;
       }
@@ -711,21 +835,23 @@ function applyOperationToElements(
         }
 
         const finalResult = updatedElements;
-        
+
         console.log("🔥 EDIT QUEUE - REORDER operation completed", {
           originalSequence: reorderOp.old_sequence,
           targetSequence: reorderOp.new_sequence,
-          actualFinalSequence: finalResult.find(el => el.element_id === operation.element_id)?.sequence,
+          actualFinalSequence: finalResult.find(
+            (el) => el.element_id === operation.element_id,
+          )?.sequence,
           totalElementsAfterReorder: finalResult.length,
           isGroupParent,
           elementOrderAfterReorder: finalResult.map((el, idx) => ({
             index: idx,
             id: el.element_id,
             name: el.element_name,
-            sequence: el.sequence
-          }))
+            sequence: el.sequence,
+          })),
         });
-        
+
         return finalResult;
       }
 
@@ -993,7 +1119,8 @@ function applyOperationToElements(
         noteParts.length > 0 ? `Includes ${noteParts.join(" and ")}` : "";
 
       // Create a deterministic group parent ID based on the operation ID to prevent duplicates during React StrictMode
-      const groupParentId = `group-${operation.id}`;
+      const operationId = operation.id || `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+      const groupParentId = `group-${operationId}`;
       const groupParent = {
         element_id: groupParentId,
         script_id: elements[0]?.script_id || "",
