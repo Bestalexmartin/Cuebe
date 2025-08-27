@@ -209,10 +209,10 @@ def update_user_preferences(
     for key, value in preference_updates.items():
         if key == 'auto_save_interval':
             # Validate auto_save_interval
-            if not isinstance(value, int) or value not in [0, 15, 30, 60]:
+            if not isinstance(value, int) or (value != 0 and (value < 10 or value > 300)):
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Invalid auto_save_interval: {value}. Must be 0, 15, 30, or 60."
+                    detail=f"Invalid auto_save_interval: {value}. Must be 0 (off) or between 10-300 seconds."
                 )
             json_updates[key] = value
         else:

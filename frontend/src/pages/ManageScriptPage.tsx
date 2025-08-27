@@ -405,7 +405,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const navigate = useNavigate();
 
     // Auto-save functionality
-    const { isAutoSaving, secondsUntilNextSave, showSaveSuccess } = useAutoSave({
+    const { isAutoSaving, secondsUntilNextSave, showSaveSuccess, isPaused, togglePause } = useAutoSave({
         autoSaveInterval: activePreferences.autoSaveInterval,
         hasUnsavedChanges,
         pendingOperations,
@@ -416,7 +416,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             // Separate script info and element operations for broadcasting
             const scriptInfoOps = pendingOperations.filter(op => op.type === 'UPDATE_SCRIPT_INFO');
             const elementOps = pendingOperations.filter(op => op.type !== 'UPDATE_SCRIPT_INFO');
-            const success = await saveChanges(false); // Auto-save preserves edit history
+            const success = await saveChanges(); // Auto-save now clears edit history
 
             // Broadcast WebSocket update after successful auto-save
             if (success && isSyncConnected && operationCount > 0) {
@@ -978,15 +978,24 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                             {activePreferences.autoSaveInterval > 0 && (
                                 <Badge
                                     variant="solid"
-                                    colorScheme={showSaveSuccess ? "blue" : (isAutoSaving ? "blue" : "red")}
+                                    colorScheme={showSaveSuccess ? "blue" : (isAutoSaving ? "blue" : isPaused ? "gray" : "red")}
                                     bg={showSaveSuccess ? "blue.500" : undefined}
                                     fontSize="sm"
                                     ml={1}
                                     px={2}
+                                    cursor="pointer"
+                                    onClick={togglePause}
+                                    _hover={{
+                                        bg: isPaused ? "gray.600" : "red.600"
+                                    }}
+                                    transition="background-color 0.2s"
+                                    userSelect="none"
                                 >
                                     {isAutoSaving
                                         ? "SAVING..."
-                                        : `AUTO SAVE • ${hasUnsavedChanges ? (secondsUntilNextSave > 0 ? secondsUntilNextSave : activePreferences.autoSaveInterval) : activePreferences.autoSaveInterval}`
+                                        : isPaused 
+                                            ? "AUTO SAVE • PAUSED"
+                                            : `AUTO SAVE • ${hasUnsavedChanges && secondsUntilNextSave > 0 ? secondsUntilNextSave : activePreferences.autoSaveInterval}`
                                     }
                                 </Badge>
                             )}

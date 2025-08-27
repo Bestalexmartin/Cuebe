@@ -3,7 +3,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 
 interface UseAutoSaveParams {
-  autoSaveInterval: number; // 0 = off, 15, 30, 60 seconds
+  autoSaveInterval: number; // 0 = off, 10, 60, 120, 300 seconds (10s, 1min, 2min, 5min)
   hasUnsavedChanges: boolean;
   pendingOperations: any[];
   saveChanges: () => Promise<boolean>;
@@ -16,6 +16,8 @@ export interface UseAutoSaveReturn {
   lastAutoSaveTime: number | null;
   secondsUntilNextSave: number;
   showSaveSuccess: boolean;
+  isPaused: boolean;
+  togglePause: () => void;
 }
 
 export const useAutoSave = ({
@@ -26,7 +28,6 @@ export const useAutoSave = ({
   onAutoSaveStart,
   onAutoSaveComplete,
 }: UseAutoSaveParams) => {
-  const lastAutoSaveOperationCountRef = useRef<number>(0);
   const countdownRef = useRef<number | null>(null);
   const performAutoSaveRef = useRef<(() => Promise<void>) | undefined>(
     undefined,
@@ -36,23 +37,23 @@ export const useAutoSave = ({
   const [lastAutoSaveTime, setLastAutoSaveTime] = useState<number | null>(null);
   const [secondsUntilNextSave, setSecondsUntilNextSave] = useState<number>(0);
   const [showSaveSuccess, setShowSaveSuccess] = useState<boolean>(false);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
+
+  const togglePause = useCallback(() => {
+    setIsPaused(prev => !prev);
+    // Clear countdown when pausing
+    if (!isPaused && countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+      setSecondsUntilNextSave(0);
+    }
+  }, [isPaused]);
 
   const performAutoSave = useCallback(async () => {
-    // Check if there are new operations since last auto-save
-    const currentOperationCount = pendingOperations.length;
-
-    // Don't auto-save if already saving, no changes, or no new operations
-    if (
-      isAutoSaving ||
-      !hasUnsavedChanges ||
-      currentOperationCount === 0 ||
-      currentOperationCount === lastAutoSaveOperationCountRef.current
-    ) {
-      if (
-        currentOperationCount === 0 ||
-        currentOperationCount === lastAutoSaveOperationCountRef.current
-      ) {
-        // Clear the timer completely when no new changes
+    // Don't auto-save if paused, already saving, or no changes
+    if (isPaused || isAutoSaving || !hasUnsavedChanges || pendingOperations.length === 0) {
+      if (pendingOperations.length === 0) {
+        // Clear the timer completely when no changes
         if (countdownRef.current) {
           clearInterval(countdownRef.current);
           countdownRef.current = null;
@@ -69,8 +70,6 @@ export const useAutoSave = ({
       const success = await saveChanges();
 
       if (success) {
-        // Update tracking but don't clear the edit queue
-        lastAutoSaveOperationCountRef.current = currentOperationCount;
         setLastAutoSaveTime(Date.now());
 
         // Show success indicator for 2 seconds
@@ -79,7 +78,7 @@ export const useAutoSave = ({
           setShowSaveSuccess(false);
         }, 2000);
 
-        // Clear timer after successful save - no more operations to save immediately
+        // Clear timer after successful save - edit queue is now cleared
         if (countdownRef.current) {
           clearInterval(countdownRef.current);
           countdownRef.current = null;
@@ -95,6 +94,7 @@ export const useAutoSave = ({
       setIsAutoSaving(false);
     }
   }, [
+    isPaused,
     isAutoSaving,
     hasUnsavedChanges,
     pendingOperations,
@@ -116,18 +116,14 @@ export const useAutoSave = ({
       countdownRef.current = null;
     }
 
-    // Don't set up auto-save if disabled
-    if (autoSaveInterval === 0) {
+    // Don't set up auto-save if disabled or paused
+    if (autoSaveInterval === 0 || isPaused) {
       setSecondsUntilNextSave(0);
       return;
     }
 
-    // Only start countdown if there are pending operations AND we haven't saved them yet
-    const currentOperationCount = pendingOperations.length;
-    if (
-      currentOperationCount === 0 ||
-      currentOperationCount === lastAutoSaveOperationCountRef.current
-    ) {
+    // Only start countdown if there are pending operations
+    if (pendingOperations.length === 0) {
       setSecondsUntilNextSave(0);
       return;
     }
@@ -152,17 +148,11 @@ export const useAutoSave = ({
         clearInterval(countdownRef.current);
       }
     };
-  }, [autoSaveInterval, pendingOperations.length]);
+  }, [autoSaveInterval, pendingOperations.length, isPaused]);
 
-  // Reset operation count tracking when pendingOperations changes significantly
+  // Reset timer when operations are cleared (after any save)
   useEffect(() => {
-    // If operations were cleared (likely due to manual save), reset tracking and stop timer
-    if (
-      pendingOperations.length === 0 &&
-      lastAutoSaveOperationCountRef.current > 0
-    ) {
-      lastAutoSaveOperationCountRef.current = 0;
-
+    if (pendingOperations.length === 0) {
       // Clear the timer when no operations remain
       if (countdownRef.current) {
         clearInterval(countdownRef.current);
@@ -177,5 +167,7 @@ export const useAutoSave = ({
     lastAutoSaveTime,
     secondsUntilNextSave,
     showSaveSuccess,
+    isPaused,
+    togglePause,
   };
 };

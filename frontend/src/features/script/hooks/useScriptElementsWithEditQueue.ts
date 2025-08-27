@@ -31,7 +31,7 @@ interface UseScriptElementsWithEditQueueReturn {
   ) => void;
 
   // Save operations
-  saveChanges: (clearHistory?: boolean) => Promise<boolean>;
+  saveChanges: () => Promise<boolean>;
   discardChanges: () => void;
 
   // Undo/Redo
@@ -121,7 +121,7 @@ export const useScriptElementsWithEditQueue = (
       });
 
       // Recalculate group durations after applying all operations
-      rebuiltElements = recalculateGroupDurations(rebuiltElements);
+      rebuiltElements = recalculateGroupTimings(rebuiltElements);
       return rebuiltElements;
     },
     [],
@@ -335,7 +335,17 @@ export const useScriptElementsWithEditQueue = (
           currentElements,
           operation as EditOperation,
         );
-        const finalElements = recalculateGroupDurations(updatedElements);
+        
+        // Only recalculate group timings if this isn't a manual group parent offset change
+        const isManualGroupParentOffsetChange = operation.type === 'update_element' && 
+          (operation as any).element_id &&
+          updatedElements.find(el => el.element_id === (operation as any).element_id &&
+            (el as any).element_type === 'GROUP') &&
+          (operation as any).changes?.offset_ms;
+            
+        const finalElements = isManualGroupParentOffsetChange 
+          ? updatedElements 
+          : recalculateGroupTimings(updatedElements);
         
         if (isGroupOperation) {
           console.log("🎆 APPLY LOCAL CHANGE - Group operation applied", {
@@ -363,7 +373,7 @@ export const useScriptElementsWithEditQueue = (
   );
 
   const saveChanges = useCallback(
-    async (clearHistory: boolean = true): Promise<boolean> => {
+    async (): Promise<boolean> => {
       if (!scriptId || editQueueRef.current.operations.length === 0) {
         return true;
       }
@@ -373,8 +383,8 @@ export const useScriptElementsWithEditQueue = (
         const operationCount = editQueueRef.current.operations.length;
         const currentOperations = [...editQueueRef.current.operations];
 
-        // LOGGING: Track save type and group-related operations
-        const saveType = clearHistory ? "MANUAL_SAVE" : "AUTO_SAVE";
+        // LOGGING: Track group-related operations
+        const saveType = "SAVE";
         const groupOperations = currentOperations.filter(op => 
           op.type === 'GROUP_ELEMENTS' || 
           op.type === 'UNGROUP_ELEMENTS' || 
@@ -486,10 +496,8 @@ export const useScriptElementsWithEditQueue = (
         // Fetch fresh data from database
         await fetchElements();
 
-        // Conditionally clear the edit queue based on clearHistory parameter
-        if (clearHistory) {
-          editQueueRef.current.clearQueue();
-        }
+        // Always clear the edit queue after successful save
+        editQueueRef.current.clearQueue();
 
         // Clear saving flag to allow normal rendering
         setIsSaving(false);
@@ -708,9 +716,9 @@ function normalizeSequences(elements: ScriptElement[]): ScriptElement[] {
 }
 
 /**
- * Recalculate durations for all group elements based on their children
+ * Recalculate offset and duration for all group elements based on their children
  */
-function recalculateGroupDurations(elements: ScriptElement[]): ScriptElement[] {
+function recalculateGroupTimings(elements: ScriptElement[]): ScriptElement[] {
   return elements.map((element) => {
     if ((element as any).element_type === "GROUP") {
       // Find all child elements of this group
@@ -719,13 +727,14 @@ function recalculateGroupDurations(elements: ScriptElement[]): ScriptElement[] {
       );
 
       if (childElements.length > 0) {
-        // Calculate new duration from child time offsets
+        // Calculate new offset and duration from child time offsets
         const childTimeOffsets = childElements.map((el) => el.offset_ms);
         const minTimeOffset = Math.min(...childTimeOffsets);
         const maxTimeOffset = Math.max(...childTimeOffsets);
         const groupDurationMs = maxTimeOffset - minTimeOffset;
         return {
           ...element,
+          offset_ms: minTimeOffset,
           duration_ms: groupDurationMs,
         };
       }
