@@ -55,7 +55,7 @@ export interface UserPreferences {
     showClockTimes: boolean;
     useMilitaryTime: boolean;
     dangerMode: boolean;
-    autoSaveInterval: number; // 0 = off, 15, 30, 60 seconds
+    autoSaveInterval: number; // 0 = off, 10-300 seconds (configurable range)
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -92,9 +92,32 @@ const loadPreferencesFromStorage = (): UserPreferences | null => {
                 typeof parsed.useMilitaryTime === 'boolean' &&
                 typeof parsed.dangerMode === 'boolean' &&
                 typeof parsed.autoSaveInterval === 'number' &&
-                [0, 15, 30, 60].includes(parsed.autoSaveInterval)
+                (parsed.autoSaveInterval === 0 || (parsed.autoSaveInterval >= 10 && parsed.autoSaveInterval <= 300))
             ) {
                 return parsed;
+            }
+            
+            // Migration: Convert old intervals to new ones, ensure valid range
+            if (typeof parsed.autoSaveInterval === 'number') {
+                let migratedInterval = parsed.autoSaveInterval;
+                
+                // Handle specific old values
+                if (parsed.autoSaveInterval === 15 || parsed.autoSaveInterval === 30) {
+                    migratedInterval = 60;
+                } else if (parsed.autoSaveInterval === 120) {
+                    migratedInterval = 120; // Keep 2min as is
+                } else if (parsed.autoSaveInterval === 300) {
+                    migratedInterval = 300; // Keep 5min as is
+                }
+                
+                // Ensure it's in valid range (0 or 10-300)
+                if (migratedInterval !== 0 && (migratedInterval < 10 || migratedInterval > 300)) {
+                    migratedInterval = 60; // Default to 60 seconds
+                }
+                
+                const migratedPrefs = { ...parsed, autoSaveInterval: migratedInterval };
+                savePreferencesToStorage(migratedPrefs);
+                return migratedPrefs;
             }
         }
     } catch (error) {

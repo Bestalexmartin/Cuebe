@@ -58,7 +58,7 @@ class UserPreferences(BaseModel):
     use_military_time: bool = False
     danger_mode: bool = False
     # JSON preferences
-    auto_save_interval: int = 0  # 0 = off, 15, 30, 60 seconds
+    auto_save_interval: int = 0  # 0 = off, 10-300 seconds (configurable range)
 
 class CrewMemberWithRelationship(BaseModel):
     """User data combined with relationship notes for crew management"""

@@ -9,7 +9,8 @@ import {
     HStack,
     Select,
     Text,
-    Divider
+    Divider,
+    Input
 } from '@chakra-ui/react';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { UserPreferences } from '../../../../hooks/useUserPreferences';
@@ -218,9 +219,9 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                             id="autosave-switch"
                             isChecked={localPreferences.autoSaveInterval > 0}
                             onChange={(e) => {
-                                // If turning on and interval is 0, default to 30 seconds
+                                // If turning on and interval is 0, default to 60 seconds
                                 const newInterval = e.target.checked 
-                                    ? (localPreferences.autoSaveInterval || 30)
+                                    ? (localPreferences.autoSaveInterval || 60)
                                     : 0;
                                 handleAutoSaveIntervalChange(newInterval.toString());
                             }}
@@ -230,23 +231,29 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                         <FormLabel mb={0} fontSize="md" htmlFor="autosave-switch">
                             Auto-Save
                         </FormLabel>
-                        {localPreferences.autoSaveInterval > 0 && (
-                            <Select 
-                                value={localPreferences.autoSaveInterval}
-                                onChange={(e) => handleAutoSaveIntervalChange(e.target.value)}
-                                size="xs"
-                                width="auto"
-                                minWidth="65px"
-                                ml={-2}
-                            >
-                                <option value={15}>15 sec</option>
-                                <option value={30}>30 sec</option>
-                                <option value={60}>60 sec</option>
-                            </Select>
+{localPreferences.autoSaveInterval > 0 && (
+                            <HStack spacing={2} ml={-2}>
+                                <Input
+                                    type="number"
+                                    value={localPreferences.autoSaveInterval}
+                                    onChange={(e) => {
+                                        const value = parseInt(e.target.value);
+                                        if (!isNaN(value) && value >= 10 && value <= 300) {
+                                            handleAutoSaveIntervalChange(value.toString());
+                                        }
+                                    }}
+                                    min={10}
+                                    max={300}
+                                    size="xs"
+                                    width="60px"
+                                    textAlign="center"
+                                />
+                                <Text fontSize="xs" color="gray.600">seconds</Text>
+                            </HStack>
                         )}
                     </HStack>
                     <Text fontSize="xs" color="gray.500" mt={1}>
-                        Automatically save changes without clearing edit history
+                        Automatically save changes without preserving edit history
                     </Text>
                 </FormControl>
             </VStack>
