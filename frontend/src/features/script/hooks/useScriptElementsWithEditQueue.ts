@@ -56,6 +56,11 @@ interface UseScriptElementsOptions {
   limit?: number;
   onAfterSave?: () => Promise<void>;
   autoSortCues?: boolean;
+  sendSyncUpdate?: (message: {
+    update_type: string;
+    changes?: any;
+    operation_id?: string;
+  }) => void;
 }
 
 export const useScriptElementsWithEditQueue = (
@@ -93,7 +98,18 @@ export const useScriptElementsWithEditQueue = (
     let currentElements = [...serverElements];
 
     // Apply each operation in sequence to build current state
-    operations.forEach((operation) => {
+    console.log("🔥 EDIT QUEUE - Starting operation replay", {
+      totalOperations: operations.length,
+      operationTypes: operations.map(op => op.type),
+      operationIds: operations.map(op => op.id)
+    });
+    
+    operations.forEach((operation, index) => {
+      console.log(`🔥 EDIT QUEUE - Replaying operation ${index + 1}/${operations.length}`, {
+        operationType: operation.type,
+        operationId: operation.id,
+        elementId: operation.element_id
+      });
       currentElements = applyOperationToElements(currentElements, operation);
     });
 
@@ -208,6 +224,12 @@ export const useScriptElementsWithEditQueue = (
 
   const applyLocalChange = useCallback(
     (operation: Omit<EditOperation, "id" | "timestamp" | "description">) => {
+      // ADDED: Track calls to applyLocalChange
+      console.log("🔥 APPLY LOCAL CHANGE - Called", {
+        operationType: operation.type,
+        elementId: operation.element_id,
+        stackTrace: new Error().stack?.split('\n').slice(1, 6).map(line => line.trim())
+      });
       editQueue.addOperation(operation);
     },
     [editQueue.addOperation],
@@ -220,6 +242,10 @@ export const useScriptElementsWithEditQueue = (
       }
 
       try {
+        // Capture operation count and details before save (might be cleared after)
+        const operationCount = editQueueRef.current.operations.length;
+        const currentOperations = [...editQueueRef.current.operations];
+        
         // Set saving flag to prevent flicker
         setIsSaving(true);
         const token = await getToken();
@@ -264,6 +290,15 @@ export const useScriptElementsWithEditQueue = (
           );
         }
 
+        // Note: WebSocket broadcasting is handled by useScriptModalHandlers
+        // to avoid duplicate messages and ensure proper coordination
+        console.log("🔄 Elements Save: Completed successfully", { 
+          operationCount, 
+          timestamp: new Date().toISOString(),
+          operationTypes: currentOperations.map(op => op.type),
+          note: "WebSocket broadcasting delegated to modal handlers"
+        });
+
         // Update server elements with current computed state before clearing queue
         // This prevents UI reversion when edit queue is cleared
         if (lastComputedElementsRef.current.length > 0) {
@@ -286,7 +321,7 @@ export const useScriptElementsWithEditQueue = (
         return false;
       }
     },
-    [scriptId, getToken, fetchElements],
+    [scriptId, getToken, fetchElements, options.sendSyncUpdate],
   );
 
   const discardChanges = useCallback(() => {
@@ -508,11 +543,25 @@ function applyOperationToElements(
   switch (operation.type) {
     case "REORDER":
       const reorderOp = operation as any;
+      console.log("🔥 EDIT QUEUE - Processing REORDER operation", {
+        operationType: operation.type,
+        elementId: operation.element_id,
+        oldSequence: reorderOp.old_sequence,
+        newSequence: reorderOp.new_sequence,
+        isGroupParent: reorderOp.is_group_parent,
+        groupChildrenCount: reorderOp.group_children?.length || 0,
+        totalElementsBeforeReorder: elements.length
+      });
+      
       const elementToMove = elements.find(
         (el) => el.element_id === operation.element_id,
       );
 
       if (!elementToMove) {
+        console.log("🔥 EDIT QUEUE - REORDER FAILED: Element not found", {
+          elementId: operation.element_id,
+          availableElementIds: elements.map(el => el.element_id)
+        });
         return elements;
       }
 
@@ -662,6 +711,21 @@ function applyOperationToElements(
         }
 
         const finalResult = updatedElements;
+        
+        console.log("🔥 EDIT QUEUE - REORDER operation completed", {
+          originalSequence: reorderOp.old_sequence,
+          targetSequence: reorderOp.new_sequence,
+          actualFinalSequence: finalResult.find(el => el.element_id === operation.element_id)?.sequence,
+          totalElementsAfterReorder: finalResult.length,
+          isGroupParent,
+          elementOrderAfterReorder: finalResult.map((el, idx) => ({
+            index: idx,
+            id: el.element_id,
+            name: el.element_name,
+            sequence: el.sequence
+          }))
+        });
+        
         return finalResult;
       }
 

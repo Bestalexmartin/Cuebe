@@ -51,7 +51,8 @@ const INITIAL_FORM_STATE: ScriptElementCreate = {
     cue_notes: '',
     department_id: '',
     priority: 'NORMAL',
-    custom_color: '' // For note background color
+    custom_color: '', // For note background color
+    location_details: '' // Stage location
 };
 
 
@@ -328,6 +329,8 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
                 <FormControl>
                     <FormLabel>Location</FormLabel>
                     <Input
+                        value={form.formData.location_details}
+                        onChange={(e) => form.updateField('location_details', e.target.value)}
                         placeholder="e.g., Stage left, Booth, etc."
                     />
                 </FormControl>

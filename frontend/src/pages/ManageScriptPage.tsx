@@ -136,14 +136,20 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     // Moved this hook call after preferences are defined
 
     // Real-time sync for collaborative editing
-    const scriptSyncOptions = useMemo(() => ({
-        onConnect: () => { },
-        onDisconnect: () => { },
-        onDataReceived: () => {
-            setShouldRotateAuth(true);
-            setTimeout(() => setShouldRotateAuth(false), 700); // Match CSS animation duration (600ms) + buffer
-        }
-    }), [setShouldRotateAuth]);
+    const scriptSyncOptions = useMemo(() => {
+        console.log("🔄 ManageScriptPage: scriptSyncOptions recreated", { 
+            timestamp: new Date().toISOString(),
+            setShouldRotateAuthRef: setShouldRotateAuth
+        });
+        return {
+            onConnect: () => { },
+            onDisconnect: () => { },
+            onDataReceived: () => {
+                setShouldRotateAuth(true);
+                setTimeout(() => setShouldRotateAuth(false), 700); // Match CSS animation duration (600ms) + buffer
+            }
+        };
+    }, [setShouldRotateAuth]);
 
     const {
         isConnected: isSyncConnected,
@@ -187,7 +193,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         updatePreferences
     } = useUserPreferences();
 
-    const editQueueHook = useScriptElementsWithEditQueue(scriptId, { autoSortCues });
+    const editQueueHook = useScriptElementsWithEditQueue(scriptId, { 
+        autoSortCues,
+        sendSyncUpdate: sendSyncUpdate
+    });
     const {
         elements: editQueueElements,
         allElements: allEditQueueElements,
@@ -206,45 +215,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         revertToCheckpoint
     } = editQueueHook;
 
-    // Enhanced applyLocalChange that broadcasts changes via WebSocket
-    const applyLocalChangeWithSync = useCallback((operation: any) => {
-        // Apply change locally first
-        applyLocalChange(operation);
-
-        // Broadcast to other connected users
-        if (isSyncConnected) {
-            try {
-                // Determine update type based on operation
-                let updateType = 'element_change';
-                if (operation.type === 'UPDATE_SCRIPT_INFO') {
-                    updateType = 'script_info';
-                } else if (operation.type === 'UPDATE_TIME_OFFSET' || operation.type === 'REORDER' || operation.type === 'BULK_REORDER') {
-                    updateType = 'element_order';
-                } else if (operation.type === 'DELETE_ELEMENT') {
-                    updateType = 'element_delete';
-                } else if (operation.type === 'CREATE_ELEMENT') {
-                    updateType = 'element_create';
-                } else if (operation.type === 'CREATE_GROUP' || operation.type === 'UNGROUP_ELEMENTS') {
-                    updateType = 'element_group';
-                } else if (operation.type === 'TOGGLE_GROUP_COLLAPSE' || operation.type === 'BATCH_COLLAPSE_GROUPS') {
-                    updateType = 'element_group_state';
-                } else if (operation.type === 'ENABLE_AUTO_SORT' || operation.type === 'DISABLE_AUTO_SORT') {
-                    updateType = 'element_order';
-                } else if (operation.type === 'UPDATE_ELEMENT' || operation.type === 'UPDATE_FIELD') {
-                    updateType = 'element_update';
-                }
-
-                sendSyncUpdate({
-                    update_type: updateType,
-                    changes: operation,
-                    operation_id: operation.operation_id || `local_${Date.now()}`
-                });
-
-            } catch (error) {
-                console.error('Failed to broadcast script update:', error);
-            }
-        }
-    }, [applyLocalChange, isSyncConnected, sendSyncUpdate]);
 
     const handleToggleAllGroups = useCallback(() => {
         if (!allEditQueueElements) return;
@@ -289,7 +259,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const { insertElement } = useElementActions(
         editQueueElements,
         activePreferences.autoSortCues,
-        applyLocalChangeWithSync
+        applyLocalChange  // Use regular applyLocalChange - no immediate websocket broadcast
     );
 
     const { activeMode, setActiveMode } = useScriptModes('view');
@@ -402,7 +372,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             setActiveMode('view');
             console.log("🔄 ManageScriptPage: onSaveSuccess completed", { timestamp: new Date().toISOString() });
         },
-        sendSyncUpdate: sendSyncUpdate,
+        sendSyncUpdate: (message: any) => {
+            sendSyncUpdate(message);
+            // Trigger websocket icon rotation for successful user transmission
+            setShouldRotateAuth(true);
+            setTimeout(() => setShouldRotateAuth(false), 700);
+        },
         pendingOperations: pendingOperations,
         dangerMode: activePreferences.dangerMode
     });
@@ -816,7 +791,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             }
             modalState.closeModal(MODAL_NAMES.SHARE_CONFIRMATION);
             setIsScriptShared(true);
-            await refetchScript(); // Refresh script data to update currentScript.is_shared
             setActiveMode('view' as ScriptMode); // Return to view mode to show HIDE button
             showSuccess('Script Shared', 'Script has been shared with all crew members');
         } catch (error) {
@@ -857,7 +831,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             modalState.closeModal(MODAL_NAMES.FINAL_HIDE_SCRIPT);
             setIsScriptShared(false);
             setShareCount(0);
-            await refetchScript(); // Refresh script data to update currentScript.is_shared
             setActiveMode('view' as ScriptMode); // Return to view mode to show SHARE button
             showSuccess('Script Hidden', 'Script has been hidden from all crew members');
         } catch (error) {
@@ -867,7 +840,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         } finally {
             setIsHiding(false);
         }
-    }, [scriptId, getToken, modalState, setActiveMode, showSuccess, showError, refetchScript]);
+    }, [scriptId, getToken, modalState, setActiveMode, showSuccess, showError]);
 
     const handleHideCancel = useCallback(() => {
         modalState.closeModal(MODAL_NAMES.HIDE_SCRIPT);

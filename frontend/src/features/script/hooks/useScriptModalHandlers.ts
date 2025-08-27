@@ -130,7 +130,7 @@ export const useScriptModalHandlers = ({
 
         if (sendSyncUpdate && scriptId && pendingOperations.length > 0) {
           try {
-            // Send targeted updates for all saved changes
+            // Send targeted updates for all saved changes (single coordination point)
             const scriptInfoOps = pendingOperations.filter(
               (op) => op.type === "UPDATE_SCRIPT_INFO",
             );
@@ -161,15 +161,18 @@ export const useScriptModalHandlers = ({
             
             // Broadcast element changes
             if (elementOps.length > 0) {
-              console.log("🔄 Manual Save: Broadcasting elements_updated", { elementOps: elementOps.length, timestamp: new Date().toISOString() });
+              console.log("🔄 Manual Save: Broadcasting elements_updated", { 
+                elementOps: elementOps.length, 
+                timestamp: new Date().toISOString() 
+              });
               sendSyncUpdate({
                 update_type: "elements_updated",
-                changes: elementOps,
+                changes: elementOps, // Clean list format - backend now supports both dict and list
                 operation_id: `manual_save_elements_${Date.now()}`,
               });
-              console.log("🔄 Manual Save: elements_updated broadcast sent", { timestamp: new Date().toISOString() });
-            } else {
-              console.log("🔄 Manual Save: No element operations to broadcast");
+              console.log("🔄 Manual Save: elements_updated broadcast sent", { 
+                timestamp: new Date().toISOString() 
+              });
             }
           } catch (error) {
             console.error("🔄 Manual Save: WebSocket broadcast error:", error);

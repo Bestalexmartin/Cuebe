@@ -67,6 +67,13 @@ export const useEditQueue = (): UseEditQueueReturn => {
         const timestamp = Date.now();
         const id = generateOperationId();
         
+        // ADDED: Operation source tracking
+        console.log("🔥 EDIT QUEUE - Adding operation to queue", {
+            operationType: operationData.type,
+            elementId: operationData.element_id,
+            operationData,
+            stackTrace: new Error().stack?.split('\n').slice(1, 8).map(line => line.trim())
+        });
         
         // Create base operation
         const baseOperation = {
