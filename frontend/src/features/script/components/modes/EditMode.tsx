@@ -89,24 +89,9 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const [elementToEdit, setElementToEdit] = useState<any>(null);
     const [draggedGroupWasExpanded, setDraggedGroupWasExpanded] = useState(false);
     const [tempCollapsedGroupId, setTempCollapsedGroupId] = useState<string | null>(null);
-    const [currentDragId, setCurrentDragId] = useState<string | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const lastScrollStateRef = useRef<{ isAtTop: boolean; isAtBottom: boolean; allElementsFitOnScreen: boolean } | null>(null);
 
-    // Debug: Monitor localElements changes to detect unwanted overrides
-    useEffect(() => {
-        console.log("🔥 LOCAL ELEMENTS CHANGED", {
-            timestamp: Date.now(),
-            elementCount: localElements?.length || 0,
-            elementOrder: localElements?.map((el, idx) => ({
-                index: idx,
-                id: el.element_id,
-                name: el.element_name,
-                sequence: el.sequence
-            })) || [],
-            stackTrace: new Error().stack?.split('\n').slice(1, 4).join(' | ')
-        });
-    }, [localElements]);
 
     // Helper function to handle element selection with shift-click support
     const handleElementSelect = (elementId: string, shiftKey: boolean = false) => {
@@ -239,21 +224,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             });
 
         if (elementsChanged) {
-            console.log("🔥 ELEMENTS PROP CHANGED - Overriding localElements", {
-                reason: "elements prop changed",
-                isDragModalOpen: dragModalOpen,
-                oldElementsCount: localElements?.length || 0,
-                newElementsCount: elements?.length || 0,
-                oldElementOrder: localElements?.map(el => ({ id: el.element_id, name: el.element_name, sequence: el.sequence })) || [],
-                newElementOrder: elements?.map(el => ({ id: el.element_id, name: el.element_name, sequence: el.sequence })) || [],
-                stackTrace: new Error().stack?.split('\n').slice(1, 4).join(' | ')
-            });
             setLocalElements(elements);
-        } else {
-            console.log("🔥 ELEMENTS PROP UPDATE SKIPPED - No changes detected", {
-                isDragModalOpen: dragModalOpen,
-                elementsCount: elements?.length || 0
-            });
         }
     }, [elements, localElements, dragModalOpen]);
 
@@ -288,27 +259,11 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
 
-        // Generate unique drag ID for tracking
-        const dragId = `drag_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-        setCurrentDragId(dragId);
-
         // Find the dragged element
         const draggedElement = displayElements.find(el => el.element_id === active.id);
         const isGroupParent = draggedElement && (draggedElement as any).element_type === 'GROUP';
         const isExpanded = isGroupParent && !draggedElement.is_collapsed;
 
-        console.log("🔥 DRAG START", {
-            dragId,
-            elementId: active.id,
-            elementName: draggedElement?.element_name,
-            elementType: (draggedElement as any)?.element_type,
-            sequence: draggedElement?.sequence,
-            offsetMs: draggedElement?.offset_ms,
-            isGroup: isGroupParent,
-            isExpanded,
-            totalDisplayElements: displayElements.length,
-            autoSortEnabled: autoSortCues
-        });
 
         // Store the original expanded state before we modify it
         setDraggedGroupWasExpanded(isExpanded || false);
@@ -324,22 +279,10 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
 
-        console.log("🔥 DRAG END", {
-            dragId: currentDragId,
-            activeId: active.id,
-            overId: over?.id,
-            samePosition: active.id === over?.id,
-            hasOverTarget: !!over
-        });
-
         if (!over || active.id === over.id) {
-            console.log("🔥 DRAG CANCELLED - No drop target or same position", {
-                dragId: currentDragId
-            });
             // Clear temporary visual collapse state
             setTempCollapsedGroupId(null);
             setDraggedGroupWasExpanded(false);
-            setCurrentDragId(null); // Clear drag ID when cancelled
             return;
         }
 
@@ -348,27 +291,12 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         const oldIndex = elementsForDrag.findIndex(el => el.element_id === active.id);
         const overIndex = elementsForDrag.findIndex(el => el.element_id === over.id);
 
-        console.log("🔥 DRAG INDICES", {
-            oldIndex,
-            overIndex,
-            totalElements: elementsForDrag.length,
-            validIndices: oldIndex !== -1 && overIndex !== -1
-        });
 
         if (oldIndex === -1 || overIndex === -1) {
-            console.log("🔥 DRAG FAILED - Invalid indices");
             return;
         }
 
         const draggedEl = elementsForDrag[oldIndex];
-        console.log("🔥 DRAGGED ELEMENT", {
-            elementId: draggedEl.element_id,
-            elementName: draggedEl.element_name,
-            currentSequence: draggedEl.sequence,
-            currentOffsetMs: draggedEl.offset_ms,
-            fromIndex: oldIndex,
-            toIndex: overIndex
-        });
 
         // Store original elements before making any changes
         setOriginalElementsBeforeDrag([...localElements]);
@@ -379,12 +307,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         // Find the actual final position of the dragged element
         const newIndex = reorderedElements.findIndex(el => el.element_id === active.id);
 
-        console.log("🔥 ARRAY MOVE RESULT", {
-            oldIndex,
-            overIndex,
-            newIndex,
-            elementMovedToCorrectPosition: newIndex === overIndex
-        });
 
         // Calculate elementAbove and elementBelow based on the POST-reorder state
         let elementAbove: typeof reorderedElements[0] | null = null;
@@ -394,30 +316,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         elementAbove = newIndex > 0 ? reorderedElements[newIndex - 1] : null;
         elementBelow = newIndex < reorderedElements.length - 1 ? reorderedElements[newIndex + 1] : null;
 
-        console.log("🔥 NEIGHBOR ELEMENTS", {
-            elementAbove: elementAbove ? {
-                id: elementAbove.element_id,
-                name: elementAbove.element_name,
-                offsetMs: elementAbove.offset_ms
-            } : null,
-            elementBelow: elementBelow ? {
-                id: elementBelow.element_id,
-                name: elementBelow.element_name,
-                offsetMs: elementBelow.offset_ms
-            } : null
-        });
 
         // Update localElements to match the visual reorder (this will temporarily disable sorting)
-        console.log("🔥 UPDATING LOCAL ELEMENTS - Setting visual state", {
-            beforeUpdate: localElements.length,
-            afterUpdate: reorderedElements.length,
-            draggedElementNewPosition: reorderedElements.findIndex(el => el.element_id === active.id),
-            newElementOrder: reorderedElements.map((el, idx) => ({
-                index: idx,
-                id: el.element_id,
-                name: el.element_name
-            }))
-        });
         setLocalElements(reorderedElements);
 
         // Check if all three elements (above, dragged, below) have the same time offset
@@ -430,53 +330,23 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             (elementBelow === null || belowTimeOffset === draggedTimeOffset)
         );
 
-        console.log("🔥 TIME OFFSET ANALYSIS", {
-            draggedTimeOffset,
-            aboveTimeOffset: aboveTimeOffset ?? 'N/A',
-            belowTimeOffset: belowTimeOffset ?? 'N/A',
-            allHaveSameTimeOffset,
-            autoSortEnabled: autoSortCues,
-            willProceedDirectly: allHaveSameTimeOffset || !autoSortCues,
-            willShowModal: !allHaveSameTimeOffset && autoSortCues
-        });
-
         if (allHaveSameTimeOffset || !autoSortCues) {
-            console.log("🔥 PROCEEDING WITH DIRECT REORDER");
             // Set the dragged element so applyReorder can access it
             setDraggedElement(draggedEl);
             await applyReorderDirect({ reorderedElements }, draggedEl);
 
             // Clear all state like the modal handlers do
-            console.log("🔥 DRAG CLEANUP - Clearing drag state", {
-                beforeCleanup: {
-                    draggedElement: !!draggedElement,
-                    originalElementsCount: originalElementsBeforeDrag.length,
-                    tempCollapsedGroupId: tempCollapsedGroupId
-                },
-                localElementsAfterDrag: localElements?.map(el => ({
-                    id: el.element_id,
-                    name: el.element_name,
-                    sequence: el.sequence
-                }))
-            });
-
             setDraggedElement(null);
             setOriginalElementsBeforeDrag([]);
             setDraggedGroupWasExpanded(false);
 
             // Delay clearing temp collapsed state to prevent visual jump
             setTimeout(() => {
-                console.log("🔥 DRAG CLEANUP - Clearing temp collapsed state");
                 setTempCollapsedGroupId(null);
             }, 100);
-            console.log("🔥 DIRECT REORDER COMPLETED", {
-                dragId: currentDragId
-            });
-            setCurrentDragId(null); // Clear drag ID when operation completes
             return;
         }
 
-        console.log("🔥 SHOWING DRAG MODAL - Time conflicts detected");
         // Set modal data for cases where time offsets differ
         setDraggedElement(draggedEl);
         setElementAbove(elementAbove);
@@ -486,9 +356,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
 
     // Handle modal choices
     const handleDisableAutoSort = async () => {
-        console.log("🔥 MODAL CHOICE - Disable Auto Sort", {
-            willDisableAutoSort: !!onAutoSortChange
-        });
 
         if (onAutoSortChange) {
             onAutoSortChange(false);
@@ -498,19 +365,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     };
 
     const handleMatchBefore = async () => {
-        console.log("🔥 MODAL CHOICE - Match Before", {
-            hasElementAbove: !!elementAbove,
-            elementAbove: elementAbove ? {
-                id: elementAbove.element_id,
-                name: elementAbove.element_name,
-                offsetMs: elementAbove.offset_ms
-            } : null,
-            draggedElement: draggedElement ? {
-                id: draggedElement.element_id,
-                name: draggedElement.element_name,
-                currentOffsetMs: draggedElement.offset_ms
-            } : null
-        });
 
         // Note: applyReorderDirect was already called, no need to call applyReorder again
 
@@ -529,7 +383,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 description: `Updated time offset for "${draggedElement.element_name}" to match preceding element`
             };
 
-            console.log("🔥 SUBMITTING TIME OFFSET UPDATE - Match Before", updateElementOperation);
             onApplyLocalChange(updateElementOperation);
         }
 
@@ -537,19 +390,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     };
 
     const handleMatchAfter = async () => {
-        console.log("🔥 MODAL CHOICE - Match After", {
-            hasElementBelow: !!elementBelow,
-            elementBelow: elementBelow ? {
-                id: elementBelow.element_id,
-                name: elementBelow.element_name,
-                offsetMs: elementBelow.offset_ms
-            } : null,
-            draggedElement: draggedElement ? {
-                id: draggedElement.element_id,
-                name: draggedElement.element_name,
-                currentOffsetMs: draggedElement.offset_ms
-            } : null
-        });
 
         // Note: applyReorderDirect was already called, no need to call applyReorder again
 
@@ -568,7 +408,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 description: `Updated time offset for "${draggedElement.element_name}" to match following element`
             };
 
-            console.log("🔥 SUBMITTING TIME OFFSET UPDATE - Match After", updateElementOperation);
             onApplyLocalChange(updateElementOperation);
         }
 
@@ -576,14 +415,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     };
 
     const handleCustomTime = async (timeMs: number) => {
-        console.log("🔥 MODAL CHOICE - Custom Time", {
-            customTimeMs: timeMs,
-            draggedElement: draggedElement ? {
-                id: draggedElement.element_id,
-                name: draggedElement.element_name,
-                currentOffsetMs: draggedElement.offset_ms
-            } : null
-        });
 
         // Note: applyReorderDirect was already called, no need to call applyReorder again
 
@@ -602,7 +433,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                 description: `Updated time offset for "${draggedElement.element_name}" to custom time`
             };
 
-            console.log("🔥 SUBMITTING TIME OFFSET UPDATE - Custom Time", updateElementOperation);
             onApplyLocalChange(updateElementOperation);
         }
 
@@ -628,12 +458,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     };
 
     const applyReorderDirect = async (pendingReorderData: any, draggedElement: any) => {
-        console.log("🔥 APPLY REORDER DIRECT - START", {
-            dragId: currentDragId,
-            elementId: draggedElement?.element_id,
-            elementName: draggedElement?.element_name,
-            hasEditQueue: !!onApplyLocalChange
-        });
 
         // If we have edit queue functionality, use it
         if (onApplyLocalChange) {
@@ -651,18 +475,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             // Edit queue handles the shifting automatically
             const newSequence = newIndex + 1;
 
-            console.log("🔥 SEQUENCE CALCULATION", {
-                newIndex,
-                oldSequence,
-                newSequence,
-                sequenceChanged: newSequence !== oldSequence,
-                currentElementExists: !!currentElement,
-                reorderedElementsCount: reorderedElements.length
-            });
-
             // Don't create a reorder operation if the sequence isn't actually changing
             if (newSequence === oldSequence) {
-                console.log("🔥 REORDER SKIPPED - Sequence unchanged");
                 return;
             }
 
@@ -686,33 +500,14 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                     }));
                 }
 
-                console.log("🔥 GROUP REORDER", {
-                    isGroupParent,
-                    childrenCount: groupChildren.length,
-                    groupChildren: groupChildren.map(child => ({
-                        id: child.element_id,
-                        name: child.element_name,
-                        sequence: child.sequence
-                    }))
-                });
             }
 
-            console.log("🔥 SUBMITTING REORDER OPERATION", {
-                dragId: currentDragId,
-                operation: reorderOperation,
-                isGroup: isGroupParent,
-                hasChildren: reorderOperation.group_children?.length > 0
-            });
-
             onApplyLocalChange(reorderOperation);
-            console.log("🔥 REORDER OPERATION SUBMITTED TO EDIT QUEUE", {
-                dragId: currentDragId
-            });
             return;
         }
 
         // This should not happen - edit queue is always available
-        console.error('🔥 ERROR - Edit queue not available for reorder operation');
+        console.error('ERROR - Edit queue not available for reorder operation');
 
     };
 

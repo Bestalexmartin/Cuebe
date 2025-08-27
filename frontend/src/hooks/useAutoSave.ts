@@ -88,7 +88,7 @@ export const useAutoSave = ({
 
       onAutoSaveComplete?.(success);
     } catch (error) {
-      console.error("🔄 Auto-save: Error", error);
+      console.error("Auto-save: Error", error);
       onAutoSaveComplete?.(false);
     } finally {
       setIsAutoSaving(false);

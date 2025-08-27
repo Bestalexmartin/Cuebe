@@ -7,7 +7,6 @@ import {
     FormLabel,
     Switch,
     HStack,
-    Select,
     Text,
     Divider,
     Input
@@ -22,6 +21,7 @@ interface OptionsModalProps {
     onSave: (preferences: UserPreferences) => Promise<void>;
     onPreview?: (preferences: UserPreferences) => void;
     onAutoSortChange?: (value: boolean) => Promise<void>;
+    onColorizeChange?: (value: boolean) => Promise<void>;
     onClockTimesChange?: (value: boolean) => Promise<void>;
     onMilitaryTimeChange?: (value: boolean) => Promise<void>;
     onDangerModeChange?: (value: boolean) => Promise<void>;

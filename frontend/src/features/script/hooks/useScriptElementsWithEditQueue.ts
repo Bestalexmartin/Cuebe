@@ -102,21 +102,8 @@ export const useScriptElementsWithEditQueue = (
     (baseElements: ScriptElement[], operationsToApply: EditOperation[]) => {
       let rebuiltElements = [...baseElements];
 
-      console.log("🔄 REBUILD - Starting operation replay", {
-        totalOperations: operationsToApply.length,
-        operationTypes: operationsToApply.map((op) => op.type),
-        operationIds: operationsToApply.map((op) => op.id),
-      });
 
-      operationsToApply.forEach((operation, index) => {
-        console.log(
-          `🔄 REBUILD - Replaying operation ${index + 1}/${operationsToApply.length}`,
-          {
-            operationType: operation.type,
-            operationId: operation.id,
-            elementId: operation.element_id,
-          },
-        );
+      operationsToApply.forEach((operation) => {
         rebuiltElements = applyOperationToElements(rebuiltElements, operation);
       });
 
@@ -129,42 +116,18 @@ export const useScriptElementsWithEditQueue = (
 
   // Initialize current elements from server elements on first load or when server elements change
   useEffect(() => {
-    console.log("🔍 SERVER ELEMENTS EFFECT TRIGGERED", {
-      serverElementsLength: serverElements.length,
-      currentElementsLength: currentElements.length,
-      operationsLength: operations.length,
-      serverElementsRef:
-        serverElements.length > 0 ? serverElements[0]?.element_id : "empty",
-      timestamp: Date.now(),
-    });
 
     if (serverElements.length > 0) {
       if (currentElements.length === 0) {
         // First load - initialize currentElements
-        console.log(
-          "🔄 INIT - Setting initial currentElements from serverElements",
-          { count: serverElements.length },
-        );
         setCurrentElements([...serverElements]);
         setNeedsRebuild(false);
       } else if (operations.length === 0) {
         // Server elements changed and no pending operations - update currentElements
-        console.log(
-          "🔄 REFRESH - Updating currentElements from fresh serverElements",
-          { count: serverElements.length },
-        );
         setCurrentElements([...serverElements]);
         setNeedsRebuild(false);
       } else {
         // Server elements changed with pending operations - trigger rebuild
-        console.log(
-          "🔄 REFRESH - Server elements changed with pending operations, triggering rebuild",
-          {
-            operationsCount: operations.length,
-            serverElementsCount: serverElements.length,
-            currentElementsCount: currentElements.length,
-          },
-        );
         setNeedsRebuild(true);
       }
     }
@@ -173,10 +136,6 @@ export const useScriptElementsWithEditQueue = (
   // Handle rebuilds when needed
   useEffect(() => {
     if (needsRebuild && serverElements.length > 0) {
-      console.log("🔄 REBUILD - Rebuilding currentElements", {
-        serverElementsCount: serverElements.length,
-        operationsCount: operations.length,
-      });
       const rebuiltElements = rebuildCurrentElements(
         serverElements,
         operations,
@@ -303,41 +262,20 @@ export const useScriptElementsWithEditQueue = (
 
   const applyLocalChange = useCallback(
     (operation: Omit<EditOperation, "id" | "timestamp" | "description">) => {
-      const isGroupOperation = operation.type === 'GROUP_ELEMENTS' || 
-        operation.type === 'UNGROUP_ELEMENTS' ||
-        (operation.type === 'UPDATE_ELEMENT' && currentElements.find(el => 
-          el.element_id === operation.element_id && (el as any).element_type === 'GROUP'
-        ));
 
-      console.log("🎆 APPLY LOCAL CHANGE - Called", {
-        operationType: operation.type,
-        elementId: operation.element_id,
-        currentElementsCount: currentElements.length,
-        isGroupOperation,
-        groupElementsBeforeChange: currentElements.filter(el => 
-          (el as any).element_type === 'GROUP'
-        ).map(el => ({
-          id: el.element_id,
-          name: el.element_name,
-          sequence: el.sequence
-        }))
-      });
 
       // Add operation to edit queue first
       editQueue.addOperation(operation);
 
       // Apply operation directly to current elements for immediate UI update
       if (currentElements.length > 0) {
-        console.log(
-          "🎆 APPLY LOCAL CHANGE - Applying directly to currentElements",
-        );
         const updatedElements = applyOperationToElements(
           currentElements,
           operation as EditOperation,
         );
         
         // Only recalculate group timings if this isn't a manual group parent offset change
-        const isManualGroupParentOffsetChange = operation.type === 'update_element' && 
+        const isManualGroupParentOffsetChange = operation.type === 'UPDATE_ELEMENT' && 
           (operation as any).element_id &&
           updatedElements.find(el => el.element_id === (operation as any).element_id &&
             (el as any).element_type === 'GROUP') &&
@@ -347,25 +285,9 @@ export const useScriptElementsWithEditQueue = (
           ? updatedElements 
           : recalculateGroupTimings(updatedElements);
         
-        if (isGroupOperation) {
-          console.log("🎆 APPLY LOCAL CHANGE - Group operation applied", {
-            operationType: operation.type,
-            groupElementsAfterChange: finalElements.filter(el => 
-              (el as any).element_type === 'GROUP'
-            ).map(el => ({
-              id: el.element_id,
-              name: el.element_name,
-              sequence: el.sequence,
-              offsetMs: el.offset_ms
-            }))
-          });
-        }
         
         setCurrentElements(finalElements);
       } else {
-        console.log(
-          "🎆 APPLY LOCAL CHANGE - No currentElements yet, will rebuild later",
-        );
         setNeedsRebuild(true);
       }
     },
@@ -379,37 +301,8 @@ export const useScriptElementsWithEditQueue = (
       }
 
       try {
-        // Capture operation count and details before save (might be cleared after)
-        const operationCount = editQueueRef.current.operations.length;
-        const currentOperations = [...editQueueRef.current.operations];
 
-        // LOGGING: Track group-related operations
-        const saveType = "SAVE";
-        const groupOperations = currentOperations.filter(op => 
-          op.type === 'GROUP_ELEMENTS' || 
-          op.type === 'UNGROUP_ELEMENTS' || 
-          (op.type === 'UPDATE_ELEMENT' && currentElements.find(el => 
-            el.element_id === op.element_id && (el as any).element_type === 'GROUP'
-          ))
-        );
         
-        console.log(`🔥 ${saveType}: Starting save with group operations`, {
-          saveType,
-          totalOperations: operationCount,
-          groupOperations: groupOperations.map(op => ({
-            type: op.type,
-            elementId: op.element_id,
-            operation: op
-          })),
-          currentElementsBeforeSave: currentElements.filter(el => 
-            (el as any).element_type === 'GROUP'
-          ).map(el => ({
-            id: el.element_id,
-            name: el.element_name,
-            parentId: el.parent_element_id,
-            sequence: el.sequence
-          }))
-        });
 
         // Set saving flag to prevent flicker
         setIsSaving(true);
@@ -457,41 +350,9 @@ export const useScriptElementsWithEditQueue = (
 
         // Note: WebSocket broadcasting is handled by useScriptModalHandlers
         // to avoid duplicate messages and ensure proper coordination
-        console.log(`🔥 ${saveType}: Save completed successfully`, {
-          saveType,
-          operationCount,
-          timestamp: new Date().toISOString(),
-          operationTypes: currentOperations.map((op) => op.type),
-          note: "WebSocket broadcasting delegated to modal handlers",
-        });
 
-        // LOGGING: Track group elements after save
-        console.log(`🔥 ${saveType}: Group elements after save completion`, {
-          saveType,
-          groupElementsAfterSave: currentElements.filter(el => 
-            (el as any).element_type === 'GROUP'
-          ).map(el => ({
-            id: el.element_id,
-            name: el.element_name,
-            parentId: el.parent_element_id,
-            sequence: el.sequence,
-            offsetMs: el.offset_ms
-          }))
-        });
 
         // Fetch fresh data from database to ensure frontend/backend sync
-        console.log(`🔥 ${saveType}: Refreshing from database to ensure sync`, {
-          saveType,
-          beforeRefresh: {
-            currentElementsCount: currentElements.length,
-            groupElements: currentElements.filter(el => 
-              (el as any).element_type === 'GROUP'
-            ).map(el => ({
-              id: el.element_id,
-              name: el.element_name
-            }))
-          }
-        });
         
         // Fetch fresh data from database
         await fetchElements();
@@ -611,7 +472,6 @@ export const useScriptElementsWithEditQueue = (
       }
 
       // Trigger rebuild from serverElements + remaining operations after revert
-      console.log("🔄 REVERT TO CHECKPOINT - Triggering rebuild");
       setNeedsRebuild(true);
       return true;
     },
@@ -620,7 +480,6 @@ export const useScriptElementsWithEditQueue = (
 
   // Custom revert to point function that triggers rebuild
   const revertToPoint = useCallback((targetIndex: number) => {
-    console.log("🔄 REVERT TO POINT - Triggering rebuild", { targetIndex });
     editQueueRef.current.revertToPoint(targetIndex);
     setNeedsRebuild(true);
   }, []);
@@ -753,25 +612,12 @@ function applyOperationToElements(
   switch (operation.type) {
     case "REORDER":
       const reorderOp = operation as any;
-      console.log("🔥 EDIT QUEUE - Processing REORDER operation", {
-        operationType: operation.type,
-        elementId: operation.element_id,
-        oldSequence: reorderOp.old_sequence,
-        newSequence: reorderOp.new_sequence,
-        isGroupParent: reorderOp.is_group_parent,
-        groupChildrenCount: reorderOp.group_children?.length || 0,
-        totalElementsBeforeReorder: elements.length,
-      });
 
       const elementToMove = elements.find(
         (el) => el.element_id === operation.element_id,
       );
 
       if (!elementToMove) {
-        console.log("🔥 EDIT QUEUE - REORDER FAILED: Element not found", {
-          elementId: operation.element_id,
-          availableElementIds: elements.map((el) => el.element_id),
-        });
         return elements;
       }
 
@@ -922,21 +768,6 @@ function applyOperationToElements(
 
         const finalResult = updatedElements;
 
-        console.log("🔥 EDIT QUEUE - REORDER operation completed", {
-          originalSequence: reorderOp.old_sequence,
-          targetSequence: reorderOp.new_sequence,
-          actualFinalSequence: finalResult.find(
-            (el) => el.element_id === operation.element_id,
-          )?.sequence,
-          totalElementsAfterReorder: finalResult.length,
-          isGroupParent,
-          elementOrderAfterReorder: finalResult.map((el, idx) => ({
-            index: idx,
-            id: el.element_id,
-            name: el.element_name,
-            sequence: el.sequence,
-          })),
-        });
 
         return finalResult;
       }
@@ -1172,19 +1003,6 @@ function applyOperationToElements(
       const groupName = createGroupOp.group_name || "Untitled Group";
       const elementIds = createGroupOp.element_ids || [];
 
-      console.log("🔥 CREATE_GROUP: Processing group creation", {
-        operationId: operation.id,
-        groupName,
-        groupColor,
-        elementIds,
-        existingGroupElements: elements.filter(el => 
-          (el as any).element_type === 'GROUP'
-        ).map(el => ({
-          id: el.element_id,
-          name: el.element_name,
-          sequence: el.sequence
-        }))
-      });
 
       // Count the types of elements being grouped
       const childElements = elements.filter((el) =>
@@ -1222,14 +1040,6 @@ function applyOperationToElements(
       const operationId = operation.id || `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
       const groupParentId = `group-${operationId}`;
       
-      console.log("🔥 CREATE_GROUP: Creating group parent element", {
-        operationId,
-        groupParentId,
-        minTimeOffset,
-        maxTimeOffset,
-        groupDurationMs,
-        generatedNotes
-      });
       
       const groupParent = {
         element_id: groupParentId,
@@ -1281,18 +1091,6 @@ function applyOperationToElements(
         sequence: index + 1,
       }));
       
-      console.log("🔥 CREATE_GROUP: Group creation completed", {
-        operationId,
-        groupParentId,
-        totalElementsAfter: result.length,
-        groupElementsAfter: result.filter(el => 
-          (el as any).element_type === 'GROUP'
-        ).map(el => ({
-          id: el.element_id,
-          name: el.element_name,
-          sequence: el.sequence
-        }))
-      });
       
       return result;
 
@@ -1435,20 +1233,6 @@ function applyOperationToElements(
       const ungroupOp = operation as any;
       const groupElementId = ungroupOp.group_element_id;
 
-      console.log("🔥 UNGROUP_ELEMENTS: Processing ungroup operation", {
-        operationId: operation.id,
-        groupElementId,
-        groupName: ungroupOp.group_name,
-        existingGroupElements: elements.filter(el => 
-          (el as any).element_type === 'GROUP'
-        ).map(el => ({
-          id: el.element_id,
-          name: el.element_name,
-          sequence: el.sequence
-        })),
-        groupToDeleteExists: !!elements.find(el => el.element_id === groupElementId),
-        allElementIds: elements.map(el => el.element_id)
-      });
 
       // Remove the group parent element and clear parent_element_id from children
       const ungroupedElements = elements

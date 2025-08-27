@@ -70,15 +70,6 @@ export const useScriptSync = (
   const maxReconnectAttempts = 5;
   const baseReconnectDelay = 1000; // 1 second
   
-  const {
-    onUpdate,
-    onConnect,
-    onDisconnect,
-    onError,
-    onDataReceived,
-    onConnectionEstablished,
-    autoReconnect = true
-  } = options;
 
   // Use refs to capture latest callback values without triggering reconnections
   const optionsRef = useRef(options);
@@ -88,7 +79,7 @@ export const useScriptSync = (
   getTokenRef.current = getToken;
   
   // Create a stable ref for connectToWebSocket to avoid stale closures
-  const connectToWebSocketRef = useRef<() => Promise<void>>();
+  const connectToWebSocketRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
@@ -132,14 +123,14 @@ export const useScriptSync = (
     }
   }, []); // Remove callback dependencies to prevent reconnections
 
-  const handleClose = useCallback((event: CloseEvent) => {
+  const handleClose = useCallback((_event: CloseEvent) => {
     setIsConnected(false);
     setIsConnecting(false);
     setConnectionCount(0);
     optionsRef.current.onDisconnect?.();
     
     // Attempt reconnection if enabled and not manually disconnected
-    if (optionsRef.current.autoReconnect && reconnectAttemptsRef.current < maxReconnectAttempts && prevScriptIdRef.current) {
+    if (optionsRef.current.autoReconnect !== false && reconnectAttemptsRef.current < maxReconnectAttempts && prevScriptIdRef.current) {
       const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current); // Exponential backoff
       
       reconnectTimeoutRef.current = window.setTimeout(() => {
@@ -185,7 +176,7 @@ export const useScriptSync = (
         urlParams.append('share_token', currentShareToken);
       } else {
         // Authenticated user access
-        const authToken = await getTokenRef.current();
+        const authToken = await getTokenRef.current({});
         if (authToken) {
           urlParams.append('user_token', authToken);
         }
