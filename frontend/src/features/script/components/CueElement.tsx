@@ -156,18 +156,30 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
         // Compare both as strings to handle UUID vs string mismatch
         const groupParent = allElements.find((el: ScriptElement) => el && String(el.element_id) === String(element.parent_element_id));
         groupParentColor = groupParent?.custom_color || '#E2E8F0';
-
     }
 
     // Handle group collapse/expand toggle
     const handleToggleCollapse = useCallback((e: React.MouseEvent) => {
+        console.log('🔄 TOGGLE COLLAPSE:', {
+            elementName: element.element_name,
+            elementType: element.element_type,
+            isGroupParent,
+            hasOnToggle: !!onToggleGroupCollapse
+        });
+        
         e.preventDefault();
         e.stopPropagation();
 
         if (onToggleGroupCollapse && isGroupParent) {
+            console.log('🔄 TOGGLE COLLAPSE - EXECUTING TOGGLE');
             onToggleGroupCollapse(element.element_id);
+        } else {
+            console.log('🔄 TOGGLE COLLAPSE - NOT EXECUTING:', {
+                hasOnToggle: !!onToggleGroupCollapse,
+                isGroupParent
+            });
         }
-    }, [onToggleGroupCollapse, isGroupParent, element.element_id]);
+    }, [onToggleGroupCollapse, isGroupParent, element.element_id, element.element_name, element.element_type]);
 
     const backgroundColor = element.custom_color || "#E2E8F0";
     const hasCustomBackground = !!element.custom_color && element.custom_color !== "#E2E8F0";

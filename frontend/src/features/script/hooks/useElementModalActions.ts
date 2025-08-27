@@ -324,6 +324,7 @@ export const useElementModalActions = ({
             
             const groupOperation = {
                 type: 'CREATE_GROUP',
+                element_id: tempGroupId, // Add top-level element_id for operation processing
                 element_ids: selectedElementIds,
                 group_name: groupName,
                 background_color: backgroundColor,
@@ -350,12 +351,14 @@ export const useElementModalActions = ({
     }, [selectedElementIds, applyLocalChange, modalState, modalNames.GROUP_ELEMENTS, showSuccess, showError, clearSelection]);
 
     const handleElementUngroup = useCallback(() => {
+        
         if (!selectedElementId) {
             showError('Please select a group element to ungroup');
             return;
         }
 
         const groupElement = editQueueElements.find(el => el.element_id === selectedElementId);
+        
         
         if (!groupElement || (groupElement as any).element_type !== 'GROUP') {
             showError('Selected element is not a group');

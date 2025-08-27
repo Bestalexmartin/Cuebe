@@ -384,6 +384,12 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     // Track EditMode's selection state reactively
     const [currentSelectedElementIds, setCurrentSelectedElementIds] = useState<string[]>([]);
+    
+    // Wrapper function to log selection changes
+    const handleSelectionChange = useCallback((newSelectedIds: string[]) => {
+        
+        setCurrentSelectedElementIds(newSelectedIds);
+    }, [currentSelectedElementIds, editQueueElements]);
 
     // Sharing state
     const [isSharing, setIsSharing] = useState(false);
@@ -1097,7 +1103,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                                         useMilitaryTime={activePreferences.useMilitaryTime}
                                         onAutoSortChange={handleAutoSortToggle}
                                         onScrollStateChange={handleScrollStateChange}
-                                        onSelectionChange={setCurrentSelectedElementIds}
+                                        onSelectionChange={handleSelectionChange}
                                         onToggleGroupCollapse={toggleGroupCollapse}
                                         script={currentScript}
                                         elements={filteredEditQueueElements}
