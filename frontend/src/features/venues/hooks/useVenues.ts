@@ -40,21 +40,41 @@ export const useVenues = (): UseVenuesReturn => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchVenues = useCallback(async () => {
+    console.log('🏟️ [VENUES DEBUG] Starting fetchVenues');
     setIsLoading(true);
     setError(null);
     try {
       const token = await getToken();
+      console.log('🏟️ [VENUES DEBUG] Token obtained:', !!token);
       const response = await fetch('/api/me/venues', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!response.ok) throw new Error('Failed to fetch venues.');
+      console.log('🏟️ [VENUES DEBUG] Response status:', response.status, response.statusText);
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log('🏟️ [VENUES DEBUG] 404 - treating as empty list');
+          setVenues([]);
+          return;
+        }
+        if (response.status >= 500) {
+          const errorMsg = `Database or server error (${response.status}). Please check if the database is running.`;
+          console.log('🏟️ [VENUES DEBUG] 500+ error:', errorMsg);
+          throw new Error(errorMsg);
+        }
+        const errorMsg = `Failed to fetch venues: ${response.status}`;
+        console.log('🏟️ [VENUES DEBUG] Other error:', errorMsg);
+        throw new Error(errorMsg);
+      }
       const data: Venue[] = await response.json();
+      console.log('🏟️ [VENUES DEBUG] Success, venues count:', data.length);
       setVenues(data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load venues';
+      console.log('🏟️ [VENUES DEBUG] Catch block error:', errorMessage);
       setError(errorMessage);
     } finally {
       setIsLoading(false);
+      console.log('🏟️ [VENUES DEBUG] fetchVenues complete');
     }
   }, [getToken]);
 

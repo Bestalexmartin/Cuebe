@@ -55,6 +55,14 @@ export const useDepartments = (): UseDepartmentsReturn => {
             });
 
             if (!response.ok) {
+                if (response.status === 404) {
+                    console.log('🏛️ [DEPARTMENTS DEBUG] 404 - treating as empty list');
+                    setDepartments([]);
+                    return;
+                }
+                if (response.status >= 500) {
+                    throw new Error(`Database or server error (${response.status}). Please check if the database is running.`);
+                }
                 throw new Error(`Failed to fetch departments: ${response.status}`);
             }
 
