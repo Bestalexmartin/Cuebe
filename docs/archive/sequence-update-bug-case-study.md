@@ -201,6 +201,47 @@ The final in-memory processing system supports all edit queue operations:
 
 Each operation mirrors the exact logic from the frontend `applyOperationToElements` function, ensuring perfect consistency between UI state and database persistence.
 
+#### Critical Fix: CREATE_ELEMENT Persistence Gap
+During implementation, a critical bug was discovered in the persistence logic for newly created elements:
+
+**Problem**: CREATE_ELEMENT operations created MockElement objects successfully in-memory and broadcast them via WebSocket (visible on shared/scoped views), but the elements were never saved to the database.
+
+**Root Cause**: The batch commit logic only checked for sequence changes compared to original database values:
+```python
+# BROKEN: Only saved sequence changes, ignored new elements
+for element_id_str, element in elements_by_id.items():
+    if original_sequences.get(element_id_str) != element.sequence:
+        changed_elements.append(element)  # New elements missed!
+```
+
+**Symptoms**:
+- Frontend showed elements correctly (in-memory state)
+- WebSocket sync worked (scoped view updated) 
+- Database queries returned empty (no persistence)
+- Page refresh lost elements (database was source of truth)
+
+**Solution**: Extended batch commit logic to detect and convert MockElements to database models:
+```python
+# FIXED: Handle both new elements and sequence changes
+for element_id_str, element in elements_by_id.items():
+    if element_id_str not in original_sequences:
+        # New element - convert MockElement to SQLAlchemy model
+        if hasattr(element, '__class__') and 'MockElement' in str(element.__class__):
+            db_element = models.ScriptElement()
+            # Copy all attributes from MockElement to database model
+            for attr_name in dir(element):
+                if not attr_name.startswith('_'):
+                    attr_value = getattr(element, attr_name)
+                    if hasattr(db_element, attr_name) and not callable(attr_value):
+                        setattr(db_element, attr_name, attr_value)
+            db.add(db_element)
+    elif original_sequences.get(element_id_str) != element.sequence:
+        # Existing element with sequence change - already tracked by SQLAlchemy
+        pass
+```
+
+This fix ensures that MockElements created by CREATE_ELEMENT operations are properly converted to SQLAlchemy database models and persisted during the atomic commit.
+
 ### Performance Impact
 - **Before**: N database queries + N commits for N operations
 - **After**: 1 database query + 1 commit for N operations  

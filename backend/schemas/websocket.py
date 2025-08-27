@@ -1,7 +1,7 @@
 # backend/schemas/websocket.py
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union, List
 from pydantic import BaseModel, Field
 from uuid import UUID
 
@@ -30,7 +30,7 @@ class ScriptUpdateResponse(WebSocketBaseResponse):
     type: str = "script_update"
     script_id: str
     update_type: str
-    changes: Dict[str, Any]
+    changes: Union[Dict[str, Any], List[Dict[str, Any]]]  # Support both dict and list formats
     updated_by: str
     updated_by_id: str
     operation_id: Optional[str] = None

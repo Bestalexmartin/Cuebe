@@ -19,17 +19,13 @@ interface UpdateCallbacks {
   refreshScriptElementsOnly: () => void;
   refreshSharedData?: () => void; // For full data refresh if needed
   updateScriptInfo?: (changes: any) => void; // For direct script info updates
+  getCurrentElements?: () => any[]; // Get current elements for CREATE operations
 }
 
-export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
-  const handleUpdate = (update: ScriptUpdate) => {
-    console.log("🔄 SharedPage: Received websocket update:", {
-      update_type: update.update_type,
-      hasChanges: !!update.changes,
-      changesType: typeof update.changes,
-      changesLength: Array.isArray(update.changes) ? update.changes.length : 'not-array'
-    });
+import { useCallback } from 'react';
 
+export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
+  const handleUpdate = useCallback((update: ScriptUpdate) => {
     const {
       updateSingleElement,
       updateScriptElementsDirectly,
@@ -41,13 +37,11 @@ export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
 
     // Guard against updates without type
     if (!update.update_type) {
-      console.log("🔄 SharedPage: Ignoring update without type");
       return;
     }
 
     // Apply updates based on update type - now expecting operation objects
     if (update.update_type === "script_info") {
-      console.log("🔄 SharedPage: Handling script_info update");
       // Script info changes - apply directly if possible, otherwise refresh
       if (updateScriptInfo && update.changes) {
         updateScriptInfo(update.changes);
@@ -57,11 +51,37 @@ export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
         refreshScriptElementsOnly();
       }
     } else if (update.update_type === "elements_updated") {
-      console.log("🔄 SharedPage: Handling elements_updated - no refresh needed");
-      // Elements_updated contains operation data, but we don't need to refresh local data
-      // The purpose is just to notify that changes were made
+      // Elements_updated contains operation data that needs to be processed
+      if (Array.isArray(update.changes)) {
+        // Process each operation to update the UI
+        for (const operation of update.changes) {
+          if (operation.type === 'UPDATE_ELEMENT' && updateSingleElement) {
+            // Apply the element update directly - extract new_value from each change
+            const elementChanges: Record<string, any> = {};
+            Object.entries(operation.changes || {}).forEach(([field, changeData]: [string, any]) => {
+              if (changeData && typeof changeData === 'object' && 'new_value' in changeData) {
+                elementChanges[field] = changeData.new_value;
+              } else {
+                elementChanges[field] = changeData; // Fallback for direct values
+              }
+            });
+            
+            updateSingleElement(operation.element_id, elementChanges);
+          } else if (operation.type === 'CREATE_ELEMENT' && operation.element_data && callbacks.getCurrentElements) {
+            // Add the new element directly to local state
+            // Get current elements and add the new one
+            const currentElements = callbacks.getCurrentElements();
+            const newElements = [...currentElements, operation.element_data];
+            callbacks.updateScriptElementsDirectly(newElements);
+          } else if (operation.type === 'DELETE_ELEMENT' && deleteElement) {
+            // Remove the element directly from local state
+            deleteElement(operation.element_id);
+          }
+        }
+      } else {
+        refreshScriptElementsOnly();
+      }
     } else if (update.changes) {
-      console.log("🔄 SharedPage: Handling individual operation update");
       // Individual operation updates - the changes field contains the operation object
       const operation = update.changes;
       
@@ -70,17 +90,13 @@ export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
           operation.type === 'CREATE_GROUP' || operation.type === 'UNGROUP_ELEMENTS' ||
           operation.type === 'REORDER' || operation.type === 'BULK_REORDER' ||
           operation.type === 'ENABLE_AUTO_SORT' || operation.type === 'DISABLE_AUTO_SORT') {
-        console.log("🔄 SharedPage: Structural change - refreshing elements");
         refreshScriptElementsOnly();
       } else {
-        console.log("🔄 SharedPage: Field update - refreshing elements");
         // For simple field updates, we could be more granular but refresh is safer
         refreshScriptElementsOnly();
       }
-    } else {
-      console.log("🔄 SharedPage: Unknown update type or no changes:", update.update_type);
     }
-  };
+  }, [callbacks]);
 
   return { handleUpdate };
 };

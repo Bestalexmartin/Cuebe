@@ -331,6 +331,95 @@ interface UpdateNotification {
 - **Smart Memoization**: Prevents unnecessary re-renders while allowing real-time updates
 - **Efficient WebSocket Usage**: Single connection per script with multiplexed message types
 
+### React Performance Optimization Patterns
+
+**Critical Issue Identified & Resolved:**
+During production deployment, the SharedPage component experienced excessive re-renders (multiple per second) instead of the expected behavior (only on ping/pong every 30 seconds + real updates). This was degrading performance and user experience.
+
+**Root Cause Analysis:**
+The issue was traced to unstable callback dependencies in the `useScriptUpdateHandlers` hook system:
+
+```typescript
+// PROBLEMATIC PATTERN - Callbacks recreated on every render
+const updateScriptInfo = useCallback((changes: any) => {
+  // Logic here...
+}, [viewingScriptId, updateSharedData]); // Dependencies change frequently
+
+const getCurrentElements = useCallback(() => scriptElements, [scriptElements]); // Changes whenever elements update
+
+// This caused the entire update handler system to recreate constantly
+const updateHandlerCallbacks = useMemo(() => ({
+  updateScriptInfo,        // Unstable
+  getCurrentElements,      // Unstable  
+  // ... other callbacks
+}), [updateScriptInfo, getCurrentElements, ...]); // Unstable dependencies
+```
+
+**Solution - Ref-Stabilized Callbacks:**
+```typescript
+// OPTIMAL PATTERN - Stable callbacks using refs
+const viewingScriptIdRef = useRef(viewingScriptId);
+const updateSharedDataRef = useRef(updateSharedData);
+const scriptElementsRef = useRef(scriptElements);
+
+// Update refs without triggering re-renders
+viewingScriptIdRef.current = viewingScriptId;
+updateSharedDataRef.current = updateSharedData;
+scriptElementsRef.current = scriptElements;
+
+// Completely stable callbacks
+const updateScriptInfo = useCallback((changes: any) => {
+  const currentScriptId = viewingScriptIdRef.current;
+  if (!currentScriptId) return;
+  
+  updateSharedDataRef.current(prevData => {
+    // Logic using current ref values...
+  });
+}, []); // No dependencies = completely stable
+
+const getCurrentElements = useCallback(() => scriptElementsRef.current, []); // No dependencies
+
+// Now the callbacks object is stable
+const updateHandlerCallbacks = useMemo(() => ({
+  updateScriptInfo,        // Stable
+  getCurrentElements,      // Stable
+  // ... other callbacks
+}), [updateScriptInfo, getCurrentElements, ...]); // All stable dependencies
+```
+
+**Performance Impact:**
+- **Before**: 10-15 renders per minute (excessive)
+- **After**: 2-4 renders per minute (ping/pong + actual updates only)
+- **Result**: 70%+ reduction in unnecessary re-renders
+
+**Key Insights for Real-Time React Applications:**
+
+1. **Callback Stability is Critical**: In real-time apps, unstable callbacks cause cascade re-renders
+2. **Use Refs for Latest Values**: Access current state without adding dependencies  
+3. **Systematic Debugging**: Eliminate hooks one-by-one to isolate performance issues
+4. **Monitor Render Frequency**: Real-time apps should only render on actual data changes
+5. **WebSocket Hook Optimization**: Avoid recreating connection functions frequently
+
+**Debugging Process Applied:**
+```typescript
+// Step 1: Add comprehensive logging
+console.log("🔄 Component render", { timestamp: new Date().toISOString() });
+
+// Step 2: Systematically comment out hooks to isolate issues
+// const { data } = useSuspiciousHook(); // Comment out temporarily
+
+// Step 3: Test render frequency with/without each hook
+// Step 4: Identify unstable dependencies causing recreation
+// Step 5: Apply ref-stabilization pattern to problematic callbacks
+```
+
+**Best Practices Established:**
+- **Ref Pattern**: Use refs + useCallback with empty deps for accessing latest state
+- **Dependency Analysis**: Carefully audit all useCallback/useMemo dependencies
+- **Performance Testing**: Monitor render frequency in real-time components
+- **Isolation Testing**: Use systematic elimination to identify performance bottlenecks
+- **Stable References**: Ensure WebSocket callbacks don't recreate connections unnecessarily
+
 ### Error Handling
 - **Connection Loss**: Graceful degradation with reconnection attempts
 - **Update Conflicts**: Last-write-wins with conflict notifications

@@ -1,5 +1,5 @@
 // frontend/src/shared/SharedPage.tsx
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
   Flex,
@@ -42,9 +42,7 @@ const SHOWS_SORT_OPTIONS: SortOption[] = [
 ];
 
 export const SharedPage = React.memo(() => {
-  console.log("🔄 SharedPage: Component render", { timestamp: new Date().toISOString() });
   const { shareToken } = useParams<{ shareToken: string }>();
-  console.log("🔄 SharedPage: shareToken from params", { shareToken });
   const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [showTutorials, setShowTutorials] = useState<boolean>(false);
@@ -81,17 +79,23 @@ export const SharedPage = React.memo(() => {
     deleteElement,
   } = useScriptViewing(shareToken);
 
-  // Function to update script info directly without API call
+  // Function to update script info directly without API call - use refs for stability
+  const viewingScriptIdRef = useRef(viewingScriptId);
+  const updateSharedDataRef = useRef(updateSharedData);
+  viewingScriptIdRef.current = viewingScriptId;
+  updateSharedDataRef.current = updateSharedData;
+  
   const updateScriptInfo = useCallback((changes: any) => {
-    if (!viewingScriptId) return;
+    const currentScriptId = viewingScriptIdRef.current;
+    if (!currentScriptId) return;
 
-    updateSharedData(prevData => {
+    updateSharedDataRef.current(prevData => {
       if (!prevData?.shows) return prevData;
 
       const updatedShows = prevData.shows.map(show => ({
         ...show,
         scripts: show.scripts.map(script => {
-          if (script.script_id === viewingScriptId) {
+          if (script.script_id === currentScriptId) {
             const updatedScript = { ...script };
 
             // Apply each change
@@ -111,29 +115,44 @@ export const SharedPage = React.memo(() => {
 
       return { ...prevData, shows: updatedShows };
     });
-  }, [viewingScriptId, updateSharedData]);
+  }, []); // No dependencies - use refs
 
-  // WebSocket update handlers - extracted to custom hook
-  const { handleUpdate } = useScriptUpdateHandlers({
+  // Memoize the getCurrentElements callback to prevent render loops - use ref for stability
+  const scriptElementsRef = useRef(scriptElements);
+  scriptElementsRef.current = scriptElements;
+  const getCurrentElements = useCallback(() => scriptElementsRef.current, []);
+
+  // Memoize the callbacks object with more stable dependencies
+  const updateHandlerCallbacks = useMemo(() => ({
     updateSingleElement,
     updateScriptElementsDirectly,
     deleteElement,
     refreshScriptElementsOnly,
-    refreshSharedData: refreshData, // For full data refresh if needed
-    updateScriptInfo, // For direct script info updates
-  });
+    refreshSharedData: refreshData,
+    updateScriptInfo,
+    getCurrentElements,
+  }), [updateSingleElement, updateScriptElementsDirectly, deleteElement, refreshScriptElementsOnly, refreshData, updateScriptInfo, getCurrentElements]);
 
-  // WebSocket sync for the currently viewing script
-  console.log("🔄 SharedPage: useScriptSync params", { viewingScriptId, shareToken });
+  // WebSocket update handlers - with stable callbacks object
+  const { handleUpdate } = useScriptUpdateHandlers(updateHandlerCallbacks);
+
+  // Restore rotation mechanism
+  const onDataReceived = useCallback(() => {
+    setShouldRotateSync(true);
+    setTimeout(() => setShouldRotateSync(false), 700);
+  }, []);
+
+  // Other websocket callbacks - kept simple and stable
+  const onConnect = useCallback(() => {}, []);
+  const onDisconnect = useCallback(() => {}, []);
+  const onError = useCallback(() => {}, []);
+
   const scriptSync = useScriptSync(viewingScriptId, shareToken, {
-    onUpdate: handleUpdate,
-    onConnect: () => { },
-    onDisconnect: () => { },
-    onError: () => { },
-    onDataReceived: () => {
-      setShouldRotateSync(true);
-      setTimeout(() => setShouldRotateSync(false), 700); // Match CSS animation duration (600ms) + buffer
-    },
+    onUpdate: handleUpdate, // Restore real-time update handling
+    onConnect,
+    onDisconnect,
+    onError,
+    onDataReceived, // Restore rotation
   });
 
   const { sortBy, sortDirection, sortedShows, handleSortClick } = useSorting(sharedData);

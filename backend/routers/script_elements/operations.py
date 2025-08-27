@@ -339,17 +339,44 @@ def _apply_create_element_in_memory(elements_by_id: dict, script_id: UUID, opera
             for key, value in kwargs.items():
                 setattr(self, key, value)
     
-    # Calculate sequence based on insert_index or append to end
+    # Calculate sequence based on insert_index, incoming sequence, or append to end
+    incoming_sequence = element_data.get('sequence')
     if insert_index is not None:
         # Find elements with sequence >= insert_index and increment them
         for element in elements_by_id.values():
             if element.sequence >= insert_index:
                 element.sequence += 1
         new_sequence = insert_index
+    elif incoming_sequence is not None:
+        # Use sequence from frontend
+        new_sequence = incoming_sequence
     else:
         # Append to end
         max_sequence = max(el.sequence for el in elements_by_id.values()) if elements_by_id else 0
         new_sequence = max_sequence + 1
+    
+    # Preserve frontend timestamps if available, otherwise use current time
+    incoming_date_created = element_data.get('date_created') or element_data.get('created_at')
+    incoming_date_updated = element_data.get('date_updated') or element_data.get('updated_at')
+    
+    # Parse frontend timestamps if they're strings
+    if isinstance(incoming_date_created, str):
+        from datetime import datetime
+        try:
+            incoming_date_created = datetime.fromisoformat(incoming_date_created.replace('Z', '+00:00'))
+        except:
+            incoming_date_created = None
+    
+    if isinstance(incoming_date_updated, str):
+        try:
+            incoming_date_updated = datetime.fromisoformat(incoming_date_updated.replace('Z', '+00:00'))
+        except:
+            incoming_date_updated = None
+    
+    # Remove all explicitly provided parameters from element_data to prevent duplicate parameter errors
+    # Note: sequence and timestamps are handled above, so we exclude them to prevent conflicts
+    explicit_params = {'element_id', 'script_id', 'sequence', 'created_by', 'updated_by', 'date_created', 'date_updated', 'created_at', 'updated_at'}
+    element_data_clean = {k: v for k, v in element_data.items() if k not in explicit_params}
     
     new_element = MockElement(
         element_id=new_element_id,
@@ -357,9 +384,9 @@ def _apply_create_element_in_memory(elements_by_id: dict, script_id: UUID, opera
         sequence=new_sequence,
         created_by=user.user_id,
         updated_by=user.user_id,
-        date_created=datetime.now(timezone.utc),
-        date_updated=datetime.now(timezone.utc),
-        **element_data
+        date_created=incoming_date_created or datetime.now(timezone.utc),
+        date_updated=incoming_date_updated or datetime.now(timezone.utc),
+        **element_data_clean
     )
     
     elements_by_id[new_element_id] = new_element
@@ -658,12 +685,25 @@ def batch_update_from_edit_queue(
                 })
                 # Continue with other operations rather than failing the entire batch
         
-        # Now update only the elements that changed sequences
-        changed_elements = []
+        # Handle new elements, modified elements, and sequence changes
         for element_id_str, element in elements_by_id.items():
-            if original_sequences.get(element_id_str) != element.sequence:
-                changed_elements.append(element)
-        
+            if element_id_str not in original_sequences:
+                # New element - convert MockElement to SQLAlchemy model and add to database
+                if hasattr(element, '__class__') and 'MockElement' in str(element.__class__):
+                    # Convert MockElement to actual database model
+                    db_element = models.ScriptElement()
+                    
+                    # Copy all attributes from MockElement to database model
+                    for attr_name in dir(element):
+                        if not attr_name.startswith('_'):
+                            attr_value = getattr(element, attr_name)
+                            if hasattr(db_element, attr_name) and not callable(attr_value):
+                                setattr(db_element, attr_name, attr_value)
+                    
+                    db.add(db_element)
+            elif original_sequences.get(element_id_str) != element.sequence:
+                # Existing element with sequence change - already tracked by SQLAlchemy
+                pass
         
         # Commit all changes atomically
         db.commit()
