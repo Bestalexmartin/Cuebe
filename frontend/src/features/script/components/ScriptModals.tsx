@@ -58,12 +58,12 @@ interface ScriptModalsProps {
     onDuplicateConfirm: () => void;
     onElementCreated: (element: any) => void;
     onOptionsPreview: (preferences: UserPreferences) => void;
-    onOptionsSave: (preferences: UserPreferences) => void;
-    onAutoSortChange: (enabled: boolean) => void;
-    onColorizeChange: (enabled: boolean) => void;
-    onClockTimesChange: (enabled: boolean) => void;
-    onDangerModeChange: (enabled: boolean) => void;
-    onAutoSaveIntervalChange: (interval: number) => void;
+    onOptionsSave: (preferences: UserPreferences) => Promise<void>;
+    onAutoSortChange: (enabled: boolean) => Promise<void>;
+    onColorizeChange: (enabled: boolean) => Promise<void>;
+    onClockTimesChange: (enabled: boolean) => Promise<void>;
+    onDangerModeChange: (enabled: boolean) => Promise<void>;
+    onAutoSaveIntervalChange: (interval: number) => Promise<void>;
     onConfirmDeleteCue: () => void;
     onConfirmDuplicate: (element_name: string, offset_ms: number) => void;
     onConfirmGroupElements: (groupName: string, backgroundColor: string) => void;
@@ -254,12 +254,12 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                     autoSaveInterval
                 }}
                 onPreview={onOptionsPreview}
-                onSave={async (preferences) => { onOptionsSave(preferences); }}
-                onAutoSortChange={async (value) => { onAutoSortChange(value); }}
-                onColorizeChange={async (value) => { onColorizeChange(value); }}
-                onClockTimesChange={async (value) => { onClockTimesChange(value); }}
-                onDangerModeChange={async (value) => { onDangerModeChange(value); }}
-                onAutoSaveIntervalChange={async (value) => { onAutoSaveIntervalChange(value); }}
+                onSave={onOptionsSave}
+                onAutoSortChange={onAutoSortChange}
+                onColorizeChange={onColorizeChange}
+                onClockTimesChange={onClockTimesChange}
+                onDangerModeChange={onDangerModeChange}
+                onAutoSaveIntervalChange={onAutoSaveIntervalChange}
             />
 
             {/* Delete Cue Confirmation Modal */}

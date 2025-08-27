@@ -28,7 +28,6 @@ import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScri
 import { useScriptSync } from '../hooks/useScriptSync';
 import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
-import { EnableAutoSortOperation } from '../features/script/types/editQueue';
 import { useModalState } from '../hooks/useModalState';
 import { SaveConfirmationModal } from '../components/modals/SaveConfirmationModal';
 import { SaveProcessingModal } from '../components/modals/SaveProcessingModal';
@@ -130,17 +129,13 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     const modalState = useModalState(Object.values(MODAL_NAMES));
 
-    const { script: sourceScript, isLoading: isLoadingScript, error: scriptError, refetchScript } = useScript(scriptId);
+    const { script: sourceScript, isLoading: isLoadingScript, error: scriptError } = useScript(scriptId);
     const { show } = useShow(sourceScript?.show_id);
 
     // Moved this hook call after preferences are defined
 
     // Real-time sync for collaborative editing
     const scriptSyncOptions = useMemo(() => {
-        console.log("🔄 ManageScriptPage: scriptSyncOptions recreated", { 
-            timestamp: new Date().toISOString(),
-            setShouldRotateAuthRef: setShouldRotateAuth
-        });
         return {
             onConnect: () => { },
             onDisconnect: () => { },
@@ -209,10 +204,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         toggleGroupCollapse,
         expandAllGroups,
         collapseAllGroups,
-        checkpoints,
-        activeCheckpoint,
-        createCheckpoint,
-        revertToCheckpoint
     } = editQueueHook;
 
 
@@ -359,18 +350,9 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         hasInfoChanges: hasChanges,
         captureInfoChanges,
         onSaveSuccess: () => {
-            console.log("🔄 ManageScriptPage: onSaveSuccess callback triggered", { 
-                activeMode, 
-                timestamp: new Date().toISOString(),
-                pendingOpsCount: pendingOperations.length,
-                pendingOpsTypes: pendingOperations.map(op => op.type)
-            });
             // Clear pending changes in info mode to prevent duplicate operations
-            console.log("🔄 ManageScriptPage: Calling clearPendingChanges", { timestamp: new Date().toISOString() });
             clearPendingChanges();
-            console.log("🔄 ManageScriptPage: Setting activeMode to 'view'", { timestamp: new Date().toISOString() });
             setActiveMode('view');
-            console.log("🔄 ManageScriptPage: onSaveSuccess completed", { timestamp: new Date().toISOString() });
         },
         sendSyncUpdate: (message: any) => {
             sendSyncUpdate(message);
@@ -703,25 +685,6 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     }, [scriptId, editQueueElements, applyLocalChange, showSuccess, showError]);
 
     // Checkpoint revert functionality
-    const handleRevertAutoSort = useCallback(async () => {
-        if (!activeCheckpoint) {
-            showError('No checkpoint available to revert to');
-            return;
-        }
-
-        try {
-            const success = await revertToCheckpoint(activeCheckpoint);
-            if (success) {
-                // Disable auto-sort preference after reverting
-                await updatePreference('autoSortCues', false);
-                showSuccess('Auto-Sort Reverted', 'Script restored to pre-auto-sort state.');
-            } else {
-                showError('Failed to revert to checkpoint');
-            }
-        } catch (error) {
-            showError(error instanceof Error ? error.message : 'Failed to revert auto-sort');
-        }
-    }, [activeCheckpoint, revertToCheckpoint, updatePreference, showSuccess, showError]);
 
     const handleAutoSortToggle = useCallback(
         async (value: boolean) => {
@@ -1191,10 +1154,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                 onOptionsPreview={(preferences) => setPreviewPreferences(preferences)}
                 onOptionsSave={handleOptionsModalSave}
                 onAutoSortChange={handleAutoSortCheckboxChange}
-                onColorizeChange={async (value: boolean) => await updatePreference('colorizeDepNames', value)}
-                onClockTimesChange={async (value: boolean) => await updatePreference('showClockTimes', value)}
-                onDangerModeChange={async (value: boolean) => await updatePreference('dangerMode', value)}
-                onAutoSaveIntervalChange={async (value: number) => await updatePreference('autoSaveInterval', value)}
+                onColorizeChange={async (value: boolean) => { await updatePreference('colorizeDepNames', value); }}
+                onClockTimesChange={async (value: boolean) => { await updatePreference('showClockTimes', value); }}
+                onDangerModeChange={async (value: boolean) => { await updatePreference('dangerMode', value); }}
+                onAutoSaveIntervalChange={async (value: number) => { await updatePreference('autoSaveInterval', value); }}
                 onConfirmDeleteCue={elementActions.handleConfirmDeleteCue}
                 onConfirmDuplicate={elementActions.handleConfirmDuplicate}
                 onConfirmGroupElements={elementActions.handleConfirmGroupElements}

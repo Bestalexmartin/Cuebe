@@ -160,24 +160,12 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
 
     // Handle group collapse/expand toggle
     const handleToggleCollapse = useCallback((e: React.MouseEvent) => {
-        console.log('🔄 TOGGLE COLLAPSE:', {
-            elementName: element.element_name,
-            elementType: element.element_type,
-            isGroupParent,
-            hasOnToggle: !!onToggleGroupCollapse
-        });
 
         e.preventDefault();
         e.stopPropagation();
 
         if (onToggleGroupCollapse && isGroupParent) {
-            console.log('🔄 TOGGLE COLLAPSE - EXECUTING TOGGLE');
             onToggleGroupCollapse(element.element_id);
-        } else {
-            console.log('🔄 TOGGLE COLLAPSE - NOT EXECUTING:', {
-                hasOnToggle: !!onToggleGroupCollapse,
-                isGroupParent
-            });
         }
     }, [onToggleGroupCollapse, isGroupParent, element.element_id, element.element_name, element.element_type]);
 

@@ -28,7 +28,6 @@ export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
   const handleUpdate = useCallback((update: ScriptUpdate) => {
     const {
       updateSingleElement,
-      updateScriptElementsDirectly,
       deleteElement,
       refreshScriptElementsOnly,
       refreshSharedData,

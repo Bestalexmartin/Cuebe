@@ -68,12 +68,6 @@ export const useEditQueue = (): UseEditQueueReturn => {
         const id = generateOperationId();
         
         // ADDED: Operation source tracking
-        console.log("🔥 EDIT QUEUE - Adding operation to queue", {
-            operationType: operationData.type,
-            elementId: operationData.element_id,
-            operationData,
-            stackTrace: new Error().stack?.split('\n').slice(1, 8).map(line => line.trim())
-        });
         
         // Create base operation
         const baseOperation = {
@@ -105,7 +99,8 @@ export const useEditQueue = (): UseEditQueueReturn => {
                     operations: [...truncatedOperations, operation],
                     hasUnsavedChanges: true
                 },
-                currentIndex: -1 // Reset to latest
+                currentIndex: -1, // Reset to latest
+                checkpoints: prevState.checkpoints
             };
         });
     }, [generateOperationId]);
@@ -165,7 +160,8 @@ export const useEditQueue = (): UseEditQueueReturn => {
                 operations: [],
                 hasUnsavedChanges: false
             },
-            currentIndex: -1
+            currentIndex: -1,
+            checkpoints: []
         });
     }, []);
     
@@ -187,7 +183,8 @@ export const useEditQueue = (): UseEditQueueReturn => {
                     operations: truncatedOperations,
                     hasUnsavedChanges: truncatedOperations.length > 0
                 },
-                currentIndex: -1 // Reset to latest
+                currentIndex: -1, // Reset to latest
+                checkpoints: prevState.checkpoints
             };
         });
     }, []);
@@ -213,7 +210,8 @@ export const useEditQueue = (): UseEditQueueReturn => {
                     operations: [...prevState.queue.operations, operations[0]],
                     hasUnsavedChanges: true
                 },
-                currentIndex: -1
+                currentIndex: -1,
+                checkpoints: prevState.checkpoints
             }));
         } else {
             // Multiple operations, create a batch operation
@@ -237,7 +235,8 @@ export const useEditQueue = (): UseEditQueueReturn => {
                     operations: [...prevState.queue.operations, batchOperation],
                     hasUnsavedChanges: true
                 },
-                currentIndex: -1
+                currentIndex: -1,
+                checkpoints: prevState.checkpoints
             }));
         }
         
