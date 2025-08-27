@@ -275,7 +275,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                delay: 80, // Require 100ms hold before drag starts
+                delay: 150, // Require 150ms hold before drag starts
                 tolerance: 5, // Allow 5px of movement during delay
             }
         }),
@@ -289,7 +289,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         const { active } = event;
 
         // Generate unique drag ID for tracking
-        const dragId = `drag_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const dragId = `drag_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
         setCurrentDragId(dragId);
 
         // Find the dragged element
@@ -453,13 +453,13 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                     originalElementsCount: originalElementsBeforeDrag.length,
                     tempCollapsedGroupId: tempCollapsedGroupId
                 },
-                localElementsAfterDrag: localElements?.map(el => ({ 
-                    id: el.element_id, 
-                    name: el.element_name, 
-                    sequence: el.sequence 
+                localElementsAfterDrag: localElements?.map(el => ({
+                    id: el.element_id,
+                    name: el.element_name,
+                    sequence: el.sequence
                 }))
             });
-            
+
             setDraggedElement(null);
             setOriginalElementsBeforeDrag([]);
             setDraggedGroupWasExpanded(false);
@@ -489,7 +489,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         console.log("🔥 MODAL CHOICE - Disable Auto Sort", {
             willDisableAutoSort: !!onAutoSortChange
         });
-        
+
         if (onAutoSortChange) {
             onAutoSortChange(false);
         }
@@ -685,7 +685,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                         current_sequence: child.sequence
                     }));
                 }
-                
+
                 console.log("🔥 GROUP REORDER", {
                     isGroupParent,
                     childrenCount: groupChildren.length,

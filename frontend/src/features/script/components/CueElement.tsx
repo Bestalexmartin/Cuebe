@@ -166,7 +166,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
             isGroupParent,
             hasOnToggle: !!onToggleGroupCollapse
         });
-        
+
         e.preventDefault();
         e.stopPropagation();
 
@@ -286,6 +286,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
             overflow="visible"
             cursor={isDragEnabled ? "pointer" : "default"}
             pointerEvents={isDragEnabled || onSelect || onEdit ? "auto" : "none"}
+            userSelect="none"
             sx={isDragEnabled || onSelect || onEdit ? {} : {
                 '&:hover': {
                     borderColor: 'transparent !important',
