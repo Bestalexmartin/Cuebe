@@ -363,6 +363,13 @@ export const useScriptElementsWithEditQueue = (
         // Clear saving flag to allow normal rendering
         setIsSaving(false);
 
+        // Call onAfterSave callback if provided (for coordinated refresh)
+        if (options.onAfterSave) {
+            console.log(`🔄 Calling onAfterSave callback...`);
+            await options.onAfterSave();
+            console.log(`✅ onAfterSave callback completed`);
+        }
+
         return true;
       } catch (err) {
         console.error("Error saving changes:", err);

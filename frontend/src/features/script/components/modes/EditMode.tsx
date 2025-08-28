@@ -18,15 +18,14 @@ import {
     sortableKeyboardCoordinates,
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useScriptElements } from '../../hooks/useScriptElements';
-import { useScript } from '../../hooks/useScript';
+// Pure presentation component - no data fetching imports needed
 import { CueElement } from '../CueElement';
 import { ScriptElementsHeader } from '../ScriptElementsHeader';
 import { DragReorderModal } from '../modals/DragReorderModal';
 import { EditElementModal } from '../modals/EditElementModal';
 
 interface EditModeProps {
-    scriptId: string;
+    scriptId: string; // Required by parent but not used in pure presentation component
     colorizeDepNames?: boolean;
     showClockTimes?: boolean;
     autoSortCues?: boolean;
@@ -39,21 +38,20 @@ interface EditModeProps {
     }) => void;
     onSelectionChange?: (ids: string[]) => void;
     onToggleGroupCollapse?: (elementId: string) => void;
-    // Edit queue props
-    elements?: any[];
-    allElements?: any[]; // All elements including collapsed children for group calculations
-    script?: any; // Optional cached script to prevent refetching
+    // Required data props - always provided by ManageScriptPage
+    elements: any[];
+    allElements: any[]; // All elements including collapsed children for group calculations
+    script: any; // Always provided by parent
     onApplyLocalChange?: (operation: any) => void;
 }
 
 export interface EditModeRef {
-    refetchElements: () => Promise<void>;
     selectedElementIds: string[];
     clearSelection: () => void;
 }
 
 const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
-    scriptId,
+    scriptId: _scriptId, // Not used in pure presentation component
     colorizeDepNames = false,
     showClockTimes = false,
     autoSortCues = false,
@@ -62,22 +60,13 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     onScrollStateChange,
     onSelectionChange,
     onToggleGroupCollapse,
-    elements: externalElements,
-    allElements: externalAllElements,
-    script: providedScript,
+    elements,
+    allElements,
+    script,
     onApplyLocalChange
 }, ref) => {
-    // Use external elements if provided (from edit queue), otherwise fallback to direct hook
-    const shouldFetchElements = !externalElements;
-    const { elements: serverElements, isLoading, error, refetchElements } = useScriptElements(shouldFetchElements ? scriptId : undefined);
-
-    // Use provided script if available, otherwise fetch it
-    const shouldFetchScript = !providedScript;
-    const { script: scriptFromHook } = useScript(shouldFetchScript ? scriptId : undefined);
-    const script = providedScript || scriptFromHook;
-
-    const elements = externalElements || serverElements;
-    const allElementsForGroupCalculations = externalAllElements || elements;
+    // Pure presentation component - all data provided by ManageScriptPage
+    // No data fetching needed here
     const [localElements, setLocalElements] = useState(elements);
     const [dragModalOpen, setDragModalOpen] = useState(false);
     const [draggedElement, setDraggedElement] = useState<any>(null);
@@ -87,7 +76,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const [selectedElementIds, setSelectedElementIds] = useState<string[]>([]);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [elementToEdit, setElementToEdit] = useState<any>(null);
-    const [draggedGroupWasExpanded, setDraggedGroupWasExpanded] = useState(false);
     const [tempCollapsedGroupId, setTempCollapsedGroupId] = useState<string | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const lastScrollStateRef = useRef<{ isAtTop: boolean; isAtBottom: boolean; allElementsFitOnScreen: boolean } | null>(null);
@@ -96,7 +84,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const clearDragState = useCallback(() => {
         setDraggedElement(null);
         setOriginalElementsBeforeDrag([]);
-        setDraggedGroupWasExpanded(false);
         setTempCollapsedGroupId(null);
     }, []);
 
@@ -151,14 +138,13 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     useImperativeHandle(
         ref,
         () => ({
-            refetchElements,
             selectedElementIds,
             clearSelection: () => {
                 setSelectedElementIds([]);
                 onSelectionChange?.([]);
             },
         }),
-        [refetchElements, selectedElementIds, onSelectionChange]
+        [selectedElementIds, onSelectionChange]
     );
 
     // Drag sensors with activation constraints to distinguish click from drag
@@ -183,8 +169,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         const isGroupParent = draggedElement && (draggedElement as any).element_type === 'GROUP';
         const isExpanded = isGroupParent && !draggedElement.is_collapsed;
 
-        // Store the original expanded state before we modify it
-        setDraggedGroupWasExpanded(isExpanded || false);
+        // Store the original expanded state (not needed currently but kept for clarity)
 
         // If it's an expanded group, collapse it for visual effect during drag
         // Use temporary state instead of edit queue to avoid triggering operations
@@ -483,7 +468,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     // Check scroll state when elements change or component mounts
     useEffect(() => {
         checkScrollState();
-    }, [localElements, isLoading]);
+    }, [localElements]);
 
 
     // Add scroll event listener
@@ -624,19 +609,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
 
             {/* Elements List */}
             <Box ref={scrollContainerRef} flex={1} overflowY="auto" overflowX="hidden" className="hide-scrollbar">
-                {isLoading && (
-                    <Flex justify="center" align="center" height="200px">
-                        <Text color="gray.500">Loading script elements...</Text>
-                    </Flex>
-                )}
-
-                {error && (
-                    <Flex justify="center" align="center" height="200px">
-                        <Text color="red.500">Error: {error}</Text>
-                    </Flex>
-                )}
-
-                {!isLoading && !error && localElements.length === 0 && (
+                {localElements.length === 0 && (
                     <Flex justify="center" align="center" height="200px" direction="column" gap={4}>
                         <Text color="gray.500" fontSize="lg">
                             No script elements yet
@@ -647,7 +620,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                     </Flex>
                 )}
 
-                {!isLoading && !error && localElements.length > 0 && (
+                {localElements.length > 0 && (
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}
@@ -668,7 +641,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
                                                 key={`${element.element_id}-${index}`}
                                                 element={element}
                                                 index={index}
-                                                allElements={allElementsForGroupCalculations}
+                                                allElements={allElements}
                                                 colorizeDepNames={colorizeDepNames}
                                                 showClockTimes={shouldShowClockTimes}
                                                 useMilitaryTime={useMilitaryTime}
@@ -726,6 +699,7 @@ const areEqual = (prevProps: EditModeProps, nextProps: EditModeProps) => {
         prevProps.autoSortCues === nextProps.autoSortCues &&
         prevProps.useMilitaryTime === nextProps.useMilitaryTime &&
         prevProps.elements === nextProps.elements &&
+        prevProps.allElements === nextProps.allElements &&
         prevProps.script === nextProps.script
         // Deliberately ignoring onAutoSortChange, onScrollStateChange, onToggleGroupCollapse, and onApplyLocalChange
     );
