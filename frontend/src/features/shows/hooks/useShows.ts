@@ -47,41 +47,32 @@ export const useShows = (): UseShowsReturn => {
 
   // We wrap fetchShows in useCallback so it doesn't get recreated on every render
   const fetchShows = useCallback(async () => {
-    console.log('🎭 [SHOWS DEBUG] Starting fetchShows');
     setIsLoading(true);
     try {
       const token = await getToken();
-      console.log('🎭 [SHOWS DEBUG] Token obtained:', !!token);
       if (!token) {
-        console.log('🎭 [SHOWS DEBUG] No token, returning early');
         setIsLoading(false);
         return;
       }
       const response = await fetch("/api/me/shows", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('🎭 [SHOWS DEBUG] Response status:', response.status, response.statusText);
       if (!response.ok) {
         if (response.status >= 500) {
           const errorMsg = `Database or server error (${response.status}). Please check if the database is running.`;
-          console.log('🎭 [SHOWS DEBUG] 500+ error:', errorMsg);
           throw new Error(errorMsg);
         }
         const errorMsg = `Failed to fetch shows: ${response.status}`;
-        console.log('🎭 [SHOWS DEBUG] Other error:', errorMsg);
         throw new Error(errorMsg);
       }
       const data: Show[] = await response.json();
-      console.log('🎭 [SHOWS DEBUG] Success, shows count:', data.length);
       setShows(data);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to load shows";
-      console.log('🎭 [SHOWS DEBUG] Catch block error:', errorMessage);
       setError(errorMessage);
     } finally {
       setIsLoading(false);
-      console.log('🎭 [SHOWS DEBUG] fetchShows complete');
     }
   }, [getToken]);
 

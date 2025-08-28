@@ -87,8 +87,8 @@ async def handle_clerk_webhook(
                 clerk_user_id=new_clerk_id,
                 email_address=email,
                 user_name=user_data.get('username'),
-                fullname_first=user_data.get('first_name'),
-                fullname_last=user_data.get('last_name'),
+                fullname_first=user_data.get('first_name') or 'Demo',
+                fullname_last=user_data.get('last_name') or 'User',
                 profile_img_url=user_data.get('image_url'),
                 user_status=models.UserStatus.VERIFIED,
                 is_active=True
@@ -102,8 +102,8 @@ async def handle_clerk_webhook(
         if user_to_update:
             user_to_update.email_address = user_data['email_addresses'][0]['email_address']
             user_to_update.user_name = user_data.get('username')
-            user_to_update.fullname_first = user_data.get('first_name')
-            user_to_update.fullname_last = user_data.get('last_name')
+            user_to_update.fullname_first = user_data.get('first_name') or user_to_update.fullname_first
+            user_to_update.fullname_last = user_data.get('last_name') or user_to_update.fullname_last
             user_to_update.profile_img_url = user_data.get('image_url')
             db.commit()
             logger.info(f"User {user_data['id']} updated.")

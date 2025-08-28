@@ -56,7 +56,6 @@ export const useDepartments = (): UseDepartmentsReturn => {
 
             if (!response.ok) {
                 if (response.status === 404) {
-                    console.log('🏛️ [DEPARTMENTS DEBUG] 404 - treating as empty list');
                     setDepartments([]);
                     return;
                 }

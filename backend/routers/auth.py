@@ -34,6 +34,7 @@ def get_current_user_claims(credentials: HTTPAuthorizationCredentials = Depends(
             algorithms=["RS256"],
             options={"verify_signature": True}
         )
+        
         current_time = time.time()
         if decoded_claims.get("exp", 0) < current_time:
             raise HTTPException(status_code=401, detail="Token has expired")
