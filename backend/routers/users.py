@@ -18,11 +18,12 @@ from utils.user_preferences import (
 
 # Optional rate limiting import
 try:
-    from utils.rate_limiter import limiter, RateLimitConfig
+    from utils.rate_limiter import limiter, RateLimitConfig, rate_limit
     RATE_LIMITING_AVAILABLE = True
 except ImportError:
     limiter = None
     RateLimitConfig = None
+    rate_limit = lambda x: lambda f: f  # No-op decorator when not available
     RATE_LIMITING_AVAILABLE = False
 
 logger = logging.getLogger(__name__)

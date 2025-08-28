@@ -1,11 +1,11 @@
 // frontend/src/features/shows/components/ShowsView.tsx
 
 import React, { useMemo } from 'react';
-import { Flex } from "@chakra-ui/react";
+import { Flex, VStack, HStack, Text, Button, Image, Heading } from "@chakra-ui/react";
 import { ShowCard } from "./ShowCard";
 import { EntityViewHeader } from '../../../components/shared/EntityViewHeader';
 import { EntityViewContainer } from '../../../components/shared/EntityViewContainer';
-import { EntityEmptyState } from '../../../components/shared/EntityEmptyState';
+import { AppIcon } from '../../../components/AppIcon';
 import { SortOption } from '../../../components/shared/SortMenu';
 
 // TypeScript interfaces
@@ -121,13 +121,61 @@ export const ShowsView: React.FC<ShowsViewProps> = ({
         return showsToSort;
     }, [shows, sortBy, sortDirection]);
 
+    // Using semantic token for consistent theming
+
     const emptyState = (
-        <EntityEmptyState
-            entityIcon="show"
-            message="You haven't added any shows yet."
-            actionButtonText="Create Your First Show"
-            onActionClick={onCreateShow}
-        />
+        <VStack spacing={4} align="center" justify="center" py={16} px={8} textAlign="center">
+            {/* Large Cuebe Logo and Branding */}
+            <Flex align="center" justify="center" ml={-7}>
+                <Image boxSize="144px" src="/cuebe.svg" alt="Cuebe Logo" />
+                <Heading as="h1" fontSize="8xl" ml={-2}>
+                    <Text as="span" color="orange.400">
+                        Cue
+                    </Text>
+                    <Text as="span" color="blue.400">
+                        be
+                    </Text>
+                </Heading>
+            </Flex>
+
+            {/* Three Value Points */}
+            <VStack spacing={4} maxW="700px">
+                <Text fontSize="xl" fontWeight="medium" color="detail.text">
+                    • Dynamic script creation and crew management
+                </Text>
+
+                <Text fontSize="xl" fontWeight="medium" color="detail.text">
+                    • Seamless collaboration across departments and venues
+                </Text>
+
+                <Text fontSize="xl" fontWeight="medium" color="detail.text">
+                    • Tuned for mobile devices and live production environments
+                </Text>
+            </VStack>
+
+            {/* Dual Call to Action */}
+            <HStack spacing={8} pt={24}>
+                <Button
+                    variant="outline"
+                    colorScheme="blue"
+                    size="md"
+                    leftIcon={<AppIcon name="docs" boxSize="16px" />}
+                    _hover={{ borderColor: 'orange.400' }}
+                >
+                    View the Tutorials
+                </Button>
+                <Button
+                    bg="blue.400"
+                    color="white"
+                    size="md"
+                    leftIcon={<AppIcon name="show" boxSize="16px" />}
+                    onClick={onCreateShow}
+                    _hover={{ bg: 'orange.400' }}
+                >
+                    Create Your First Show
+                </Button>
+            </HStack>
+        </VStack>
     );
 
     return (

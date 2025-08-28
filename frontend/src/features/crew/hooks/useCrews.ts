@@ -48,7 +48,6 @@ export const useCrews = (): UseCrewsReturn => {
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('👥 [CREW DEBUG] 404 - treating as empty list');
           setCrews([]);
           return;
         }
