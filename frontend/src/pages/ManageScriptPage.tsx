@@ -129,7 +129,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     const modalState = useModalState(Object.values(MODAL_NAMES));
 
-    const { script: sourceScript, isLoading: isLoadingScript, error: scriptError } = useScript(scriptId);
+    const { script: sourceScript, isLoading: isLoadingScript, error: scriptError, refetchScript } = useScript(scriptId);
     const { show } = useShow(sourceScript?.show_id);
 
     // Moved this hook call after preferences are defined
@@ -371,7 +371,7 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     const handleSelectionChange = useCallback((newSelectedIds: string[]) => {
         
         setCurrentSelectedElementIds(newSelectedIds);
-    }, [currentSelectedElementIds, editQueueElements]);
+    }, []);
 
     // Sharing state
     const [isSharing, setIsSharing] = useState(false);
@@ -396,13 +396,24 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             const operationCount = pendingOperations.length;
 
             // Separate script info and element operations for broadcasting
+            console.log(`💾 Auto-save: Starting save operation at ${new Date().toISOString()} with ${operationCount} operations`);
             const scriptInfoOps = pendingOperations.filter(op => op.type === 'UPDATE_SCRIPT_INFO');
             const elementOps = pendingOperations.filter(op => op.type !== 'UPDATE_SCRIPT_INFO');
+            console.log(`💾 Auto-save: Script info ops: ${scriptInfoOps.length}, Element ops: ${elementOps.length}`);
             const success = await saveChanges(); // Auto-save now clears edit history
+            console.log(`💾 Auto-save: Save operation completed successfully: ${success} at ${new Date().toISOString()}`);
+            
+            // Refetch script data after successful save to ensure UI reflects database state
+            if (success) {
+                console.log(`🔄 Post-save: Refetching script data at ${new Date().toISOString()}`);
+                await refetchScript();
+                console.log(`✅ Post-save: Script data refreshed at ${new Date().toISOString()}`);
+            }
 
             // Broadcast WebSocket update after successful auto-save
             if (success && isSyncConnected && operationCount > 0) {
                 try {
+                    console.log(`📡 WebSocket: Broadcasting updates at ${new Date().toISOString()}`);
                     // Send targeted updates for script info changes
                     if (scriptInfoOps.length > 0) {
                         const scriptChanges = {};
@@ -410,23 +421,34 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
                             Object.assign(scriptChanges, op.changes);
                         });
 
-                        sendSyncUpdate({
+                        console.log(`📡 WebSocket: Sending script_info update:`, scriptChanges);
+                        await sendSyncUpdate({
                             update_type: 'script_info',
                             changes: scriptChanges,
                             operation_id: `autosave_script_info_${Date.now()}`
                         });
+                        console.log(`✅ WebSocket: Script info update sent at ${new Date().toISOString()}`);
                     }
                     
                     // Send targeted updates for element changes
                     if (elementOps.length > 0) {
-                        sendSyncUpdate({
+                        await sendSyncUpdate({
                             update_type: 'elements_updated',
                             changes: elementOps,
                             operation_id: `autosave_elements_${Date.now()}`
                         });
                     }
+
+                    // Trigger success indicator for broadcast
+                    setShouldRotateAuth(true);
+                    setTimeout(() => setShouldRotateAuth(false), 700);
+                    
                 } catch (error) {
-                    // Auto-save broadcast error - silent fail
+                    // Auto-save broadcast failed - log warning but don't block auto-save
+                    console.warn('Auto-save: WebSocket broadcast failed', error);
+                    // Still show rotation briefly to indicate auto-save succeeded
+                    setShouldRotateAuth(true);
+                    setTimeout(() => setShouldRotateAuth(false), 300);
                 }
             }
 
@@ -502,9 +524,10 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
     // Clear selection when exiting edit mode
     useEffect(() => {
         if (activeMode !== 'edit') {
-            elementActions.setSelectedElementIds([]);
+            editModeRef.current?.clearSelection();
+            setCurrentSelectedElementIds([]);
         }
-    }, [activeMode]); // Removed elementActions from dependencies to prevent infinite loop
+    }, [activeMode]);
 
     // Main mode change handler
     const handleModeChange = (modeId: string) => {

@@ -546,23 +546,34 @@ def _apply_script_operation_directly(script_id: UUID, operation_data: dict, user
     operation_type = operation_data.get("type")
     
     if operation_type == "UPDATE_SCRIPT_INFO":
+        logger.info(f"🔄 UPDATE_SCRIPT_INFO: Starting operation for script {script_id} at {datetime.now(timezone.utc).isoformat()}")
         changes = operation_data.get("changes", {})
+        logger.info(f"🔄 UPDATE_SCRIPT_INFO: Changes to apply: {changes}")
         
         # Load the script
         script = db.query(models.Script).filter(models.Script.script_id == script_id).first()
         if not script:
             raise ValueError(f"Script {script_id} not found")
         
-        # Apply changes
+        # Apply changes with proper type conversion
         for field, change_data in changes.items():
             new_value = change_data.get("new_value")
+            
+            # Handle datetime fields that come from frontend as ISO strings
+            if field in ['start_time', 'end_time', 'actual_start_time'] and isinstance(new_value, str):
+                new_value = parse_iso_datetime(new_value)
+            
+            old_value = getattr(script, field, None)
             setattr(script, field, new_value)
+            logger.info(f"🔄 UPDATE_SCRIPT_INFO: Field '{field}' changed from {old_value} to {new_value}")
         
         script.updated_by = user.user_id
         script.date_updated = datetime.now(timezone.utc)
         
         # Commit immediately since this is a separate table operation
+        logger.info(f"🔄 UPDATE_SCRIPT_INFO: Committing changes at {datetime.now(timezone.utc).isoformat()}")
         db.commit()
+        logger.info(f"✅ UPDATE_SCRIPT_INFO: Changes committed successfully at {datetime.now(timezone.utc).isoformat()}")
         
         return {
             "operation": "update_script_info",

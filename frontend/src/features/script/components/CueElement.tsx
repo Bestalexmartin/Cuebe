@@ -347,8 +347,8 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     <Box
                         position="absolute"
                         right="0"
-                        top="-3px"
-                        height="29px"
+                        top="-2px"
+                        height="28px"
                         width="1px"
                         bg="gray.400"
                     />
@@ -363,8 +363,8 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                         <Box
                             position="absolute"
                             right="0"
-                            top="-3px"
-                            height="29px"
+                            top="-2px"
+                            height="28px"
                             width="1px"
                             bg="gray.400"
                         />
@@ -410,8 +410,8 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                         <Box
                             position="absolute"
                             left="0"
-                            top="-3px"
-                            height="29px"
+                            top="-2px"
+                            height="28px"
                             width="1px"
                             bg="gray.400"
                         />
@@ -419,8 +419,8 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     <Box
                         position="absolute"
                         right="0"
-                        top="-3px"
-                        height="29px"
+                        top="-2px"
+                        height="28px"
                         width="1px"
                         bg="gray.400"
                     />
@@ -434,8 +434,8 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     <Box
                         position="absolute"
                         right="0"
-                        top="-3px"
-                        height="29px"
+                        top="-2px"
+                        height="28px"
                         width="1px"
                         bg="gray.400"
                     />
@@ -449,16 +449,16 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     <Box
                         position="absolute"
                         right="0"
-                        top="-3px"
-                        height="29px"
+                        top="-2px"
+                        height="28px"
                         width="1px"
                         bg="gray.400"
                     />
                     <Box
                         position="absolute"
                         right="0"
-                        top="-3px"
-                        height="29px"
+                        top="-2px"
+                        height="28px"
                         width="1px"
                         bg="gray.400"
                     />
@@ -473,8 +473,8 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                         <Box
                             position="absolute"
                             right="0"
-                            top="-3px"
-                            height="29px"
+                            top="-2px"
+                            height="28px"
                             width="1px"
                             bg="gray.400"
                         />

@@ -265,7 +265,7 @@ export const useScriptElementsWithEditQueue = (
 
 
       // Add operation to edit queue first
-      editQueue.addOperation(operation);
+      editQueueRef.current.addOperation(operation);
 
       // Apply operation directly to current elements for immediate UI update
       if (currentElements.length > 0) {
@@ -291,7 +291,7 @@ export const useScriptElementsWithEditQueue = (
         setNeedsRebuild(true);
       }
     },
-    [editQueue.addOperation, currentElements],
+    [currentElements],
   );
 
   const saveChanges = useCallback(

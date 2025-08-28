@@ -1,6 +1,6 @@
 // frontend/src/features/script/components/modes/EditMode.tsx
 
-import React, { forwardRef, useImperativeHandle, useState, useEffect, useRef, useMemo } from 'react';
+import React, { forwardRef, useImperativeHandle, useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { VStack, Text, Box, Flex } from '@chakra-ui/react';
 import {
     DndContext,
@@ -92,110 +92,29 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const lastScrollStateRef = useRef<{ isAtTop: boolean; isAtBottom: boolean; allElementsFitOnScreen: boolean } | null>(null);
 
+    // Consolidated drag state cleanup function
+    const clearDragState = useCallback(() => {
+        setDraggedElement(null);
+        setOriginalElementsBeforeDrag([]);
+        setDraggedGroupWasExpanded(false);
+        setTempCollapsedGroupId(null);
+    }, []);
 
-    // Helper function to handle element selection with shift-click support
-    const handleElementSelect = (elementId: string, shiftKey: boolean = false) => {
-        if (!shiftKey) {
-            // Regular click - single selection or deselection
-            const newSelection = selectedElementIds.includes(elementId) ? [] : [elementId];
-            setSelectedElementIds(newSelection);
-            onSelectionChange?.(newSelection);
-        } else {
-            // Shift-click - select adjacent range
-            if (selectedElementIds.length === 0) {
-                // No existing selection, treat as regular click
-                setSelectedElementIds([elementId]);
-                onSelectionChange?.([elementId]);
-                return;
-            }
+    // Helper functions for group selection logic
+    const isGroupElement = useCallback((element: any) => {
+        return (element as any).element_type === 'GROUP' || 
+               (element.parent_element_id && element.group_level && element.group_level > 0);
+    }, []);
 
-            // Check if any currently selected element or the clicked element is part of a group
-            const selectedElements = displayElements.filter(el => selectedElementIds.includes(el.element_id));
-            const clickedElement = displayElements.find(el => el.element_id === elementId);
-
-            const allElements = [...selectedElements];
-            if (clickedElement) allElements.push(clickedElement);
-
-            const hasGroupElements = allElements.some(el =>
-                (el as any).element_type === 'GROUP' ||
-                (el.parent_element_id && el.group_level && el.group_level > 0)
-            );
-
-            if (hasGroupElements) {
-                // Don't allow shift-selection when group elements are involved - just select clicked element
-                setSelectedElementIds([elementId]);
-                onSelectionChange?.([elementId]);
-                return;
-            }
-
-            const clickedIndex = displayElements.findIndex(el => el.element_id === elementId);
-            if (clickedIndex === -1) return;
-
-            // Find the range boundaries based on existing selection using displayElements
-            const selectedIndices = selectedElementIds
-                .map(id => displayElements.findIndex(el => el.element_id === id))
-                .filter(index => index !== -1)
-                .sort((a, b) => a - b);
-
-            if (selectedIndices.length === 0) return;
-
-            const minSelected = selectedIndices[0];
-            const maxSelected = selectedIndices[selectedIndices.length - 1];
-
-            // Determine the new range
-            let startIndex, endIndex;
-            if (clickedIndex < minSelected) {
-                startIndex = clickedIndex;
-                endIndex = maxSelected;
-            } else if (clickedIndex > maxSelected) {
-                startIndex = minSelected;
-                endIndex = clickedIndex;
-            } else {
-                // Clicked within existing range - deselect to clicked point
-                if (clickedIndex - minSelected < maxSelected - clickedIndex) {
-                    // Closer to start, keep from clicked to end
-                    startIndex = clickedIndex;
-                    endIndex = maxSelected;
-                } else {
-                    // Closer to end, keep from start to clicked
-                    startIndex = minSelected;
-                    endIndex = clickedIndex;
-                }
-            }
-
-            // Check for group boundaries in the selection range
-            const elementsInRange = displayElements.slice(startIndex, endIndex + 1);
-            const groupIds = new Set<string | undefined>();
-
-            // Collect all group IDs (parent_element_id for children, element_id for parents)
-            elementsInRange.forEach(el => {
-                if ((el as any).element_type === 'GROUP') {
-                    groupIds.add(el.element_id);
-                } else if (el.parent_element_id) {
-                    groupIds.add(el.parent_element_id);
-                } else {
-                    groupIds.add(undefined); // Ungrouped element
-                }
-            });
-
-            // If we have more than one group ID, we're crossing group boundaries
-            if (groupIds.size > 1) {
-                // Don't allow selection across groups - just select the clicked element
-                setSelectedElementIds([elementId]);
-                onSelectionChange?.([elementId]);
-                return;
-            }
-
-            // Create selection array for adjacent elements only
-            const newSelection: string[] = [];
-            for (let i = startIndex; i <= endIndex; i++) {
-                newSelection.push(displayElements[i].element_id);
-            }
-
-            setSelectedElementIds(newSelection);
-            onSelectionChange?.(newSelection);
+    const getElementGroupId = useCallback((element: any) => {
+        if ((element as any).element_type === 'GROUP') {
+            return element.element_id;
+        } else if (element.parent_element_id) {
+            return element.parent_element_id;
         }
-    };
+        return undefined; // Ungrouped element
+    }, []);
+
 
 
     useEffect(() => {
@@ -264,7 +183,6 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         const isGroupParent = draggedElement && (draggedElement as any).element_type === 'GROUP';
         const isExpanded = isGroupParent && !draggedElement.is_collapsed;
 
-
         // Store the original expanded state before we modify it
         setDraggedGroupWasExpanded(isExpanded || false);
 
@@ -280,9 +198,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         const { active, over } = event;
 
         if (!over || active.id === over.id) {
-            // Clear temporary visual collapse state
-            setTempCollapsedGroupId(null);
-            setDraggedGroupWasExpanded(false);
+            // Clear all drag state when no drop occurred
+            clearDragState();
             return;
         }
 
@@ -335,15 +252,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
             setDraggedElement(draggedEl);
             await applyReorderDirect({ reorderedElements }, draggedEl);
 
-            // Clear all state like the modal handlers do
-            setDraggedElement(null);
-            setOriginalElementsBeforeDrag([]);
-            setDraggedGroupWasExpanded(false);
-
-            // Delay clearing temp collapsed state to prevent visual jump
-            setTimeout(() => {
-                setTempCollapsedGroupId(null);
-            }, 100);
+            // Clear all state using consistent cleanup
+            clearDragState();
             return;
         }
 
@@ -439,15 +349,12 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         closeDragModal();
     };
 
-    const closeDragModal = () => {
+    const closeDragModal = useCallback(() => {
         setDragModalOpen(false);
-        setDraggedElement(null);
         setElementAbove(null);
         setElementBelow(null);
-        setOriginalElementsBeforeDrag([]);
-        setDraggedGroupWasExpanded(false);
-        setTempCollapsedGroupId(null);
-    };
+        clearDragState();
+    }, [clearDragState]);
 
     const handleCancelDrag = () => {
         // Revert local elements back to original position before drag
@@ -616,8 +523,99 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         return [...elementsToDisplay].sort((a, b) => {
             return a.offset_ms - b.offset_ms;
         });
-    }, [localElements, autoSortCues, dragModalOpen, draggedGroupWasExpanded, tempCollapsedGroupId, localElements?.map(el => el.sequence).join(',')]);
+    }, [localElements, autoSortCues, dragModalOpen, tempCollapsedGroupId]);
 
+    const canSelectRange = useCallback((startIndex: number, endIndex: number) => {
+        const elementsInRange = displayElements.slice(startIndex, endIndex + 1);
+        const groupIds = new Set<string | undefined>();
+
+        elementsInRange.forEach(el => {
+            groupIds.add(getElementGroupId(el));
+        });
+
+        // Allow selection only within single group or all ungrouped
+        return groupIds.size <= 1;
+    }, [displayElements, getElementGroupId]);
+
+    // Helper function to handle element selection with shift-click support
+    const handleElementSelect = useCallback((elementId: string, shiftKey: boolean = false) => {
+        if (!shiftKey) {
+            // Regular click - single selection or deselection
+            const newSelection = selectedElementIds.includes(elementId) ? [] : [elementId];
+            setSelectedElementIds(newSelection);
+            onSelectionChange?.(newSelection);
+            return;
+        }
+
+        // Shift-click - select adjacent range
+        if (selectedElementIds.length === 0) {
+            setSelectedElementIds([elementId]);
+            onSelectionChange?.([elementId]);
+            return;
+        }
+
+        const clickedIndex = displayElements.findIndex(el => el.element_id === elementId);
+        if (clickedIndex === -1) return;
+
+        // Check if any currently selected or clicked element is part of a group
+        const selectedElements = displayElements.filter(el => selectedElementIds.includes(el.element_id));
+        const clickedElement = displayElements.find(el => el.element_id === elementId);
+        
+        if (!clickedElement) return;
+
+        const hasGroupElements = [...selectedElements, clickedElement].some(isGroupElement);
+        
+        if (hasGroupElements) {
+            // Restrict to single selection for group elements
+            setSelectedElementIds([elementId]);
+            onSelectionChange?.([elementId]);
+            return;
+        }
+
+        // Calculate selection range
+        const selectedIndices = selectedElementIds
+            .map(id => displayElements.findIndex(el => el.element_id === id))
+            .filter(index => index !== -1)
+            .sort((a, b) => a - b);
+
+        if (selectedIndices.length === 0) return;
+
+        const minSelected = selectedIndices[0];
+        const maxSelected = selectedIndices[selectedIndices.length - 1];
+
+        let startIndex: number, endIndex: number;
+        if (clickedIndex < minSelected) {
+            startIndex = clickedIndex;
+            endIndex = maxSelected;
+        } else if (clickedIndex > maxSelected) {
+            startIndex = minSelected;
+            endIndex = clickedIndex;
+        } else {
+            // Within existing range - contract to clicked element
+            if (clickedIndex - minSelected < maxSelected - clickedIndex) {
+                startIndex = clickedIndex;
+                endIndex = maxSelected;
+            } else {
+                startIndex = minSelected;
+                endIndex = clickedIndex;
+            }
+        }
+
+        // Verify we can select this range (no group boundary crossing)
+        if (!canSelectRange(startIndex, endIndex)) {
+            setSelectedElementIds([elementId]);
+            onSelectionChange?.([elementId]);
+            return;
+        }
+
+        // Create the new selection
+        const newSelection = displayElements
+            .slice(startIndex, endIndex + 1)
+            .map(el => el.element_id);
+
+        setSelectedElementIds(newSelection);
+        onSelectionChange?.(newSelection);
+    }, [displayElements, selectedElementIds, onSelectionChange, isGroupElement, canSelectRange]);
 
     return (
         <VStack height="100%" spacing={0} align="stretch">
