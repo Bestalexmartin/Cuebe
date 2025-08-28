@@ -34,6 +34,7 @@ export const useScript = (scriptId: string | undefined): UseScriptReturn => {
     const fetchScript = useCallback(async () => {
         if (!scriptId) return;
         
+        console.log(`🔄 Script Fetch: Starting fetch for script ${scriptId} at ${new Date().toISOString()}`);
         setIsLoading(true);
         try {
             const token = await getToken();
@@ -50,6 +51,7 @@ export const useScript = (scriptId: string | undefined): UseScriptReturn => {
                 throw new Error('Failed to fetch script data.');
             }
             const data: Script = await response.json();
+            console.log(`✅ Script Fetch: Received script data at ${new Date().toISOString()}`, { start_time: data.start_time, end_time: data.end_time });
             setScript(data);
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to load script';

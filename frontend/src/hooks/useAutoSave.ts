@@ -32,6 +32,7 @@ export const useAutoSave = ({
   const performAutoSaveRef = useRef<(() => Promise<void>) | undefined>(
     undefined,
   );
+  const saveInProgressRef = useRef<boolean>(false);
 
   const [isAutoSaving, setIsAutoSaving] = useState<boolean>(false);
   const [lastAutoSaveTime, setLastAutoSaveTime] = useState<number | null>(null);
@@ -63,6 +64,12 @@ export const useAutoSave = ({
       return;
     }
 
+    // Additional race condition check - prevent multiple simultaneous saves
+    if (saveInProgressRef.current) {
+      return;
+    }
+
+    saveInProgressRef.current = true;
     setIsAutoSaving(true);
     onAutoSaveStart?.();
 
@@ -91,6 +98,7 @@ export const useAutoSave = ({
       console.error("Auto-save: Error", error);
       onAutoSaveComplete?.(false);
     } finally {
+      saveInProgressRef.current = false;
       setIsAutoSaving(false);
     }
   }, [

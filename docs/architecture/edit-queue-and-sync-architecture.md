@@ -126,6 +126,120 @@ interface ElementUpdate {
 4. **Real-Time Propagation** → All connected users receive updates
 5. **Direct State Application** → No database fetches on receiving end
 
+## Coordinated Data Fetching Architecture
+
+### Core Problem Solved
+Previously, script info and elements were fetched separately, leading to race conditions where element calculations (which depend on script start_time) could use stale script data. This caused UI state to revert after saves even when the database was correctly updated.
+
+### Solution: Dependency-Aware Data Loading
+All script data (info + elements) is fetched coordinately with proper dependency awareness:
+
+1. **Script info fetched first** (contains start_time, end_time needed for calculations)
+2. **Elements fetched second** (server uses fresh script data for offset calculations)
+3. **UI calculations applied** (start times, durations, etc. using consistent data)
+
+### Implementation Architecture
+
+#### Single Source of Truth: ManageScriptPage
+```typescript
+// ManageScriptPage is the ONLY place that fetches script data
+const useCoordinatedScriptData = (scriptId) => {
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const fetchAllScriptData = useCallback(async () => {
+    setIsLoading(true);
+    
+    // Step 1: Fetch script info first (dependency for calculations)
+    const scriptData = await fetchScript(scriptId);
+    
+    // Step 2: Fetch elements (server uses fresh script data) 
+    const elementsData = await fetchElements(scriptId);
+    
+    setScript(scriptData);
+    setElements(elementsData);
+    setIsLoading(false);
+  }, [scriptId]);
+  
+  return { fetchAllScriptData, isLoading };
+};
+```
+
+#### Pure Presentation Components
+```typescript
+// ViewMode and EditMode are now purely presentational
+const ViewMode = ({ script, elements, ...otherProps }) => {
+  // NO fetching logic - only receives data as props
+  // All calculations use consistent script + elements data
+  return <ScriptView script={script} elements={elements} />;
+};
+
+const EditMode = ({ script, elements, ...otherProps }) => {
+  // NO fetching logic - only receives data as props  
+  // Edit queue operations work with consistent data
+  return <ScriptEditor script={script} elements={elements} />;
+};
+```
+
+### Coordinated Fetch Timing
+
+#### Initial Page Load
+```typescript
+// User enters ManageScriptPage
+useEffect(() => {
+  fetchAllScriptData(); // Coordinated script + elements fetch
+}, [scriptId]);
+```
+
+#### Post-Save Refresh  
+```typescript
+const saveChanges = async () => {
+  // Save operations to server
+  const success = await batchUpdate(operations);
+  
+  if (success) {
+    // ALWAYS refetch both script and elements for saving client
+    await fetchAllScriptData();  // Fresh, coordinated data
+    
+    // Clear edit history now that we have pristine state
+    editQueue.clear();
+    
+    // Broadcast changes to other clients (they get incremental updates)
+    broadcastChanges(operations);
+  }
+};
+```
+
+### Dual Client Update Strategy
+
+#### Saving Client (Full Refresh)
+The client that initiated the save gets complete fresh data from database:
+```typescript
+// After save operation completes
+await fetchScript(scriptId);     // Fresh script info from DB
+await fetchElements(scriptId);   // Fresh elements from DB  
+editQueue.clear();               // Clear local edit history
+// Result: Guaranteed pristine database state
+```
+
+#### Other Clients (Incremental Updates)  
+Other connected clients receive targeted WebSocket updates:
+```typescript
+// WebSocket message received
+const handleScriptInfoUpdate = (changes) => {
+  // Apply incremental changes to local state
+  setScript(prev => ({ ...prev, ...changes }));
+  // No database fetch required - efficient updates
+};
+```
+
+### Benefits of Coordinated Architecture
+
+1. **Eliminates Race Conditions**: Script data always available before element calculations
+2. **Ensures Data Consistency**: Elements always calculated from correct script timing  
+3. **Prevents UI Reversion**: Post-save refresh shows actual database state
+4. **Hybrid Efficiency**: Saving client gets certainty, others get efficiency
+5. **Clean Separation**: Data coordination vs presentation cleanly separated
+
 ## Data Flow Architecture
 
 ### Complete Edit-to-Sync Pipeline

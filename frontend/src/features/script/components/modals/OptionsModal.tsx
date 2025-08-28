@@ -9,7 +9,8 @@ import {
     HStack,
     Text,
     Divider,
-    Input
+    Input,
+    Box
 } from '@chakra-ui/react';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { UserPreferences } from '../../../../hooks/useUserPreferences';
@@ -120,6 +121,11 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
             headerIconColor="page.text"
             isOpen={isOpen}
             onClose={handleClose}
+            primaryAction={{
+                label: "Update Options",
+                variant: "primary",
+                onClick: handleClose
+            }}
             secondaryAction={{
                 label: "Close",
                 variant: "secondary",
@@ -127,7 +133,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
             }}
             errorBoundaryContext="OptionsModal"
         >
-            <VStack spacing={3} align="stretch">
+            <VStack spacing={3} align="stretch" px="40px">
                 <FormControl>
                     <HStack align="center" spacing={5}>
                         <Switch
@@ -185,36 +191,41 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                     </HStack>
                 </FormControl>
 
-                <Divider mt={3} />
+                <Box mx="-40px" mt={3}>
+                    <Divider />
+                </Box>
                 
-                <Text fontSize="md" fontWeight="bold" color="red.500" mt={1}>
+                <Text fontSize="md" fontWeight="bold" color="red.500" mt={1} ml="-40px">
                     Advanced Options
                 </Text>
 
                 <FormControl>
-                    <HStack align="center" spacing={5}>
+                    <HStack align="start" spacing={5}>
                         <Switch
                             id="dangermode-switch"
                             isChecked={localPreferences.dangerMode}
                             onChange={(e) => handleDangerModeChange(e.target.checked)}
                             colorScheme="red"
                             size="md"
+                            mt="3px"
                         />
-                        <FormLabel
-                            mb="0"
-                            fontSize="md"
-                            htmlFor="dangermode-switch"
-                        >
-                            Danger Mode
-                        </FormLabel>
+                        <VStack align="start" spacing={0}>
+                            <FormLabel
+                                mb="0"
+                                fontSize="md"
+                                htmlFor="dangermode-switch"
+                            >
+                                Danger Mode
+                            </FormLabel>
+                            <Text fontSize="xs" color="gray.500" lineHeight="1.3" whiteSpace="normal" maxWidth="300px">
+                                Skip confirmation dialogs for delete and other destructive actions
+                            </Text>
+                        </VStack>
                     </HStack>
-                    <Text fontSize="xs" color="gray.500" mt={1}>
-                        Skip confirmation dialogs for delete and other destructive actions
-                    </Text>
                 </FormControl>
 
                 <FormControl>
-                    <HStack align="center" spacing={5} mb={1}>
+                    <HStack align="start" spacing={5} mb={1}>
                         <Switch
                             id="autosave-switch"
                             isChecked={localPreferences.autoSaveInterval > 0}
@@ -225,36 +236,54 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                                     : 0;
                                 handleAutoSaveIntervalChange(newInterval.toString());
                             }}
-                            colorScheme="blue"
+                            colorScheme="red"
                             size="md"
+                            mt="3px"
                         />
-                        <FormLabel mb={0} fontSize="md" htmlFor="autosave-switch">
-                            Auto-Save
-                        </FormLabel>
-{localPreferences.autoSaveInterval > 0 && (
-                            <HStack spacing={2} ml={-2}>
-                                <Input
-                                    type="number"
-                                    value={localPreferences.autoSaveInterval}
-                                    onChange={(e) => {
-                                        const value = parseInt(e.target.value);
-                                        if (!isNaN(value) && value >= 10 && value <= 300) {
-                                            handleAutoSaveIntervalChange(value.toString());
-                                        }
-                                    }}
-                                    min={10}
-                                    max={300}
-                                    size="xs"
-                                    width="60px"
-                                    textAlign="center"
-                                />
-                                <Text fontSize="xs" color="gray.600">seconds</Text>
+                        <VStack align="start" spacing={0} flex={1}>
+                            <HStack spacing={2} align="center" width="100%">
+                                <FormLabel mb={0} fontSize="md" htmlFor="autosave-switch">
+                                    Auto-Save
+                                </FormLabel>
+                                {localPreferences.autoSaveInterval > 0 && (
+                                    <HStack spacing={2}>
+                                        <Input
+                                            type="number"
+                                            value={localPreferences.autoSaveInterval}
+                                            onChange={(e) => {
+                                                const value = e.target.value;
+                                                // Allow empty string for editing
+                                                if (value === '' || value === '0') {
+                                                    const newPreferences = { ...localPreferences, autoSaveInterval: 0 };
+                                                    setLocalPreferences(newPreferences);
+                                                    onPreview?.(newPreferences);
+                                                } else {
+                                                    const numValue = parseInt(value);
+                                                    if (!isNaN(numValue) && numValue >= 10 && numValue <= 300) {
+                                                        handleAutoSaveIntervalChange(value);
+                                                    } else if (!isNaN(numValue)) {
+                                                        // Allow the input to show invalid values while typing, but don't save them
+                                                        const newPreferences = { ...localPreferences, autoSaveInterval: numValue };
+                                                        setLocalPreferences(newPreferences);
+                                                        onPreview?.(newPreferences);
+                                                    }
+                                                }
+                                            }}
+                                            min={10}
+                                            max={300}
+                                            size="xs"
+                                            width="60px"
+                                            textAlign="center"
+                                        />
+                                        <Text fontSize="xs" color="gray.600">seconds</Text>
+                                    </HStack>
+                                )}
                             </HStack>
-                        )}
+                            <Text fontSize="xs" color="gray.500" lineHeight="1.3" whiteSpace="normal" maxWidth="300px">
+                                Automatically save changes without preserving edit history
+                            </Text>
+                        </VStack>
                     </HStack>
-                    <Text fontSize="xs" color="gray.500" mt={1}>
-                        Automatically save changes without preserving edit history
-                    </Text>
                 </FormControl>
             </VStack>
         </BaseModal>

@@ -95,6 +95,9 @@ def get_script_elements(
     if not script:
         raise HTTPException(status_code=404, detail="Script not found")
     
+    # Debug log script timing data used for elements calculation
+    logger.info(f"📊 Elements Endpoint: Script {script_id} timing data - start_time: {script.start_time}, end_time: {script.end_time}")
+    
     # Access validation: either via share token OR user authentication
     crew_department_id = None  # For departmental filtering
     
