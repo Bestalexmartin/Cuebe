@@ -2,21 +2,19 @@
 
 import React, { forwardRef, useImperativeHandle, useRef, useEffect, useMemo } from 'react';
 import { VStack, Text, Box, Flex } from '@chakra-ui/react';
-import { useScriptElements } from '../../hooks/useScriptElements';
-import { useScript } from '../../hooks/useScript';
 import { CueElement } from '../CueElement';
 import { ScriptElementsHeader } from '../ScriptElementsHeader';
 import { ScriptElement } from '../../types/scriptElements';
 
 interface ViewModeProps {
-    scriptId: string;
+    scriptId: string; // Required by parent but not used in pure presentation component
     colorizeDepNames?: boolean;
     showClockTimes?: boolean;
     autoSortCues?: boolean;
     useMilitaryTime?: boolean;
-    elements?: ScriptElement[]; // Optional prop to override default fetching
-    allElements?: ScriptElement[]; // All elements including collapsed children for group calculations
-    script?: any; // Optional cached script to prevent refetching
+    elements: ScriptElement[];      // Always provided by parent (ManageScriptPage)
+    allElements: ScriptElement[];   // Always provided by parent (ManageScriptPage)
+    script: any;                    // Always provided by parent (ManageScriptPage)
     onScrollStateChange?: (state: {
         isAtTop: boolean;
         isAtBottom: boolean;
@@ -27,34 +25,24 @@ interface ViewModeProps {
 }
 
 export interface ViewModeRef {
-    refetchElements: () => Promise<void>;
+    // No methods needed - pure presentation component
 }
 
 const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
-    scriptId,
+    scriptId: _scriptId, // Not used in pure presentation component
     colorizeDepNames = false,
     showClockTimes = false,
     autoSortCues = false,
     useMilitaryTime = false,
-    elements: providedElements,
-    allElements: providedAllElements,
-    script: providedScript,
+    elements,
+    allElements,
+    script,
     onScrollStateChange,
     onToggleGroupCollapse
 }, ref) => {
 
-    // Only fetch elements if none are provided
-    const shouldFetchElements = !providedElements;
-    const { elements: fetchedElements, isLoading, error, refetchElements } = useScriptElements(
-        shouldFetchElements ? scriptId : undefined
-    );
-    // Use provided script if available, otherwise fetch it
-    const { script: scriptFromHook } = useScript(providedScript ? undefined : scriptId);
-    const script = providedScript || scriptFromHook;
-
-    // Use provided elements if available, otherwise use fetched elements
-    const elements = providedElements || fetchedElements;
-    const allElementsForGroupCalculations = providedAllElements || elements;
+    // Pure presentation component - no data fetching
+    // All data provided by ManageScriptPage via coordinated fetch
 
     // Create display elements with auto-sort applied when needed
     const displayElements = useMemo(() => {
@@ -72,10 +60,10 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    // Expose refetch function to parent via ref
+    // No ref methods needed - data managed by ManageScriptPage
     useImperativeHandle(ref, () => ({
-        refetchElements
-    }), [refetchElements]);
+        // No methods needed - pure presentation component
+    }), []);
 
     // Function to check scroll state
     const checkScrollState = () => {
@@ -98,7 +86,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     // Check scroll state when elements change or component mounts
     useEffect(() => {
         checkScrollState();
-    }, [elements, shouldFetchElements ? isLoading : false]);
+    }, [elements]);
 
     // Add scroll event listener
     useEffect(() => {
@@ -133,19 +121,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                     msUserSelect: "none"
                 }}
             >
-                {shouldFetchElements && isLoading && (
-                    <Flex justify="center" align="center" height="200px">
-                        <Text color="gray.500">Loading script elements...</Text>
-                    </Flex>
-                )}
-
-                {shouldFetchElements && error && (
-                    <Flex justify="center" align="center" height="200px">
-                        <Text color="red.500">Error: {error}</Text>
-                    </Flex>
-                )}
-
-                {(shouldFetchElements ? (!isLoading && !error) : true) && displayElements.length === 0 && (
+                {displayElements.length === 0 && (
                     <Flex justify="center" align="center" height="200px" direction="column" gap={4}>
                         <Text color="gray.500" fontSize="lg">
                             No script elements yet
@@ -156,7 +132,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                     </Flex>
                 )}
 
-                {(shouldFetchElements ? (!isLoading && !error) : true) && displayElements.length > 0 && (
+                {displayElements.length > 0 && (
                     <VStack
                         spacing={0}
                         align="stretch"
@@ -196,7 +172,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                                     key={element.element_id}
                                     element={element}
                                     index={index}
-                                    allElements={allElementsForGroupCalculations}
+                                    allElements={allElements}
                                     colorizeDepNames={colorizeDepNames}
                                     showClockTimes={shouldShowClockTimes}
                                     useMilitaryTime={useMilitaryTime}

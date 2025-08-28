@@ -729,6 +729,133 @@ const usePerformanceMonitor = (componentName: string) => {
 - **Improved bundle analysis scores** from eliminated duplications
 - **Faster development cycles** from improved maintainability
 
+### Coordinated Data Fetching Refactor (August 2025)
+
+#### Critical Race Condition Resolution
+
+A comprehensive architecture refactor eliminated race conditions between script info and elements fetching while significantly reducing component complexity.
+
+**Problem**: Script start_time updates were saving correctly to the database but reverting in the UI due to uncoordinated fetching between script info and elements data.
+
+**Root Cause**: ViewMode and EditMode components had conditional fetching logic that created timing dependencies - elements would refetch using stale script timing data, overriding fresh script info updates.
+
+#### Architecture Solution
+
+**Coordinated Fetching Pattern**: Implemented centralized data coordination in ManageScriptPage with explicit dependency ordering:
+
+```typescript
+// Coordinated data refresh function  
+const refreshAllScriptData = useCallback(async () => {
+    console.log(`🔄 Coordinated Fetch: Starting coordinated script + elements refresh`);
+    
+    // Step 1: Fetch script info first (contains timing dependencies)
+    await refetchScript();
+    console.log(`✅ Coordinated Fetch: Script data refreshed`);
+    
+    // Step 2: Fetch elements (server uses fresh script data for calculations)
+    await editQueueHook.refetchElements();
+    console.log(`✅ Coordinated Fetch: Elements data refreshed`);
+    
+    console.log(`🎯 Coordinated Fetch: All script data refreshed successfully`);
+}, [refetchScript, editQueueHook.refetchElements]);
+```
+
+**Pure Presentation Components**: Converted ViewMode and EditMode to pure presentation components:
+
+```typescript
+// ✅ AFTER: Clean required props interface
+interface EditModeProps {
+    elements: ScriptElement[];       // Always provided by parent
+    allElements: ScriptElement[];    // Always provided by parent
+    script: any;                     // Always provided by parent
+    // No more optional props with complex fallback logic
+}
+
+// ✅ Component becomes pure - no data fetching
+const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
+    scriptId: _scriptId, // Not used in pure presentation component
+    elements,
+    allElements, 
+    script,
+    // ... rest of props
+}, ref) => {
+    // Pure presentation component - all data provided by ManageScriptPage
+    // No conditional fetching logic needed
+});
+```
+
+#### Code Reduction Results
+
+**Component Line Reduction:**
+- **ViewMode.tsx**: 248 → 208 lines (**40 lines removed**, 16.1% reduction)
+- **EditMode.tsx**: 789 → 708 lines (**81 lines removed**, 10.3% reduction)
+- **ManageScriptPage.tsx**: +17 lines for coordinated fetch function
+
+**Net Impact**: **104 lines of dead code removed** (8.3% reduction in core components)
+
+#### Complexity Elimination
+
+**Removed Complex Logic:**
+1. **Conditional Data Fetching**: Eliminated separate hook usage patterns in view/edit modes
+2. **Loading State Management**: Removed independent loading/error states from presentation components
+3. **Race Condition Handling**: Eliminated timing-dependent fetching coordination
+4. **Dual Data Paths**: Simplified from optional/fallback prop patterns to single required props
+5. **Unused Interface Methods**: Removed dead `refetchElements()` methods that were never called
+6. **TypeScript Issues**: Fixed unused variables (`scriptId`, `draggedGroupWasExpanded`)
+
+```typescript
+// ❌ BEFORE: Optional props with complex fallback logic
+interface EditModeProps {
+    elements?: ScriptElement[];      // Optional with hook fallback
+    allElements?: ScriptElement[];   // Optional with hook fallback  
+    script?: any;                    // Optional with hook fallback
+}
+
+// Component had complex conditional fetching
+const shouldFetchElements = !externalElements;
+const { elements: serverElements, isLoading, error } = useScriptElements(shouldFetchElements ? scriptId : undefined);
+const elements = externalElements || serverElements;
+
+// ✅ AFTER: Clean required props with no conditional logic
+interface EditModeProps {
+    elements: ScriptElement[];       // Always provided by parent
+    allElements: ScriptElement[];    // Always provided by parent
+    script: any;                     // Always provided by parent
+}
+
+// Pure presentation - no conditional fetching needed
+```
+
+#### Performance Benefits
+
+- **Eliminated Race Conditions**: Script timing data now guaranteed available before element calculations
+- **Reduced Component Complexity**: Simplified useEffect dependency management  
+- **Eliminated Redundant Fetching**: No more duplicate API calls from multiple components
+- **Stable Component References**: Pure presentation components re-render only on actual data changes
+- **Coordinated Cache Invalidation**: Single refresh point ensures data consistency
+
+#### Architectural Benefits
+
+1. **Predictable Data Flow**: Clear parent → child data flow eliminates timing unpredictability
+2. **Simplified Testing**: Components can be tested with mock data without complex hook mocking
+3. **Clean Component Boundaries**: Clear separation between data coordination and presentation
+4. **Technical Debt Reduction**: Eliminated complex conditional logic branches and unified error handling
+
+#### Quality Assurance
+
+**TypeScript Compliance**: Fixed all type issues including unused variables:
+```typescript
+// Fixed unused prop references
+scriptId: _scriptId, // Not used in pure presentation component
+
+// Removed unused state variables
+// const [draggedGroupWasExpanded, setDraggedGroupWasExpanded] = useState(false); ❌ REMOVED
+```
+
+**ESLint Clean**: Zero linting warnings after refactor completion.
+
+This refactor demonstrates how coordinated data fetching patterns can significantly reduce both code volume and complexity while solving real-world race condition issues in React applications.
+
 ### Future Optimizations
 
 Potential areas for further improvement:

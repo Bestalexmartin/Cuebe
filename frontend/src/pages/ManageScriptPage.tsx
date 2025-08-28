@@ -129,8 +129,11 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     const modalState = useModalState(Object.values(MODAL_NAMES));
 
+    // Coordinated script data fetching - single source of truth
     const { script: sourceScript, isLoading: isLoadingScript, error: scriptError, refetchScript } = useScript(scriptId);
     const { show } = useShow(sourceScript?.show_id);
+
+    // Coordinated data refresh function will be defined after editQueueHook
 
     // Moved this hook call after preferences are defined
 
@@ -190,7 +193,8 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
 
     const editQueueHook = useScriptElementsWithEditQueue(scriptId, { 
         autoSortCues,
-        sendSyncUpdate: sendSyncUpdate
+        sendSyncUpdate: sendSyncUpdate,
+        onAfterSave: refreshAllScriptData  // Will be defined below
     });
     const {
         elements: editQueueElements,
@@ -206,6 +210,29 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
         collapseAllGroups,
     } = editQueueHook;
 
+    // Coordinated data refresh function - complete fresh start after save
+    const refreshAllScriptData = useCallback(async () => {
+        console.log(`🔄 Coordinated Refresh: Starting complete fresh data reload at ${new Date().toISOString()}`);
+        
+        try {
+            // Step 1: Fetch fresh script info from database
+            console.log(`📋 Refreshing script info...`);
+            await refetchScript();
+            
+            // Step 2: Fetch fresh elements from database  
+            console.log(`📄 Refreshing script elements...`);
+            await editQueueHook.refetchElements();
+            
+            // Step 3: Force component re-render by updating key if needed
+            console.log(`✅ Complete refresh successful - UI should show fresh database state`);
+            
+        } catch (error) {
+            console.error(`❌ Coordinated refresh failed:`, error);
+            throw error;
+        }
+    }, [refetchScript, editQueueHook.refetchElements]);
+
+    // saveChanges now has coordinated refresh built-in via onAfterSave callback
 
     const handleToggleAllGroups = useCallback(() => {
         if (!allEditQueueElements) return;
@@ -396,19 +423,13 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, 
             const operationCount = pendingOperations.length;
 
             // Separate script info and element operations for broadcasting
-            console.log(`💾 Auto-save: Starting save operation at ${new Date().toISOString()} with ${operationCount} operations`);
+            console.log(`💾 Auto-save: Starting auto-save with ${operationCount} operations`);
             const scriptInfoOps = pendingOperations.filter(op => op.type === 'UPDATE_SCRIPT_INFO');
             const elementOps = pendingOperations.filter(op => op.type !== 'UPDATE_SCRIPT_INFO');
             console.log(`💾 Auto-save: Script info ops: ${scriptInfoOps.length}, Element ops: ${elementOps.length}`);
-            const success = await saveChanges(); // Auto-save now clears edit history
-            console.log(`💾 Auto-save: Save operation completed successfully: ${success} at ${new Date().toISOString()}`);
             
-            // Refetch script data after successful save to ensure UI reflects database state
-            if (success) {
-                console.log(`🔄 Post-save: Refetching script data at ${new Date().toISOString()}`);
-                await refetchScript();
-                console.log(`✅ Post-save: Script data refreshed at ${new Date().toISOString()}`);
-            }
+            // saveChanges now includes coordinated refresh via onAfterSave callback
+            const success = await saveChanges();
 
             // Broadcast WebSocket update after successful auto-save
             if (success && isSyncConnected && operationCount > 0) {
