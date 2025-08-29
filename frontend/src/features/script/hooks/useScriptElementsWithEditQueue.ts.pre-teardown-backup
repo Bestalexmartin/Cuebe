@@ -1,7 +1,7 @@
 // frontend/src/features/script/hooks/useScriptElementsWithEditQueue.ts
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-// REMOVED: useAuth - no longer fetching
+import { useAuth } from "@clerk/clerk-react";
 import { ScriptElement } from "../types/scriptElements";
 import {
   EditOperation,
@@ -16,13 +16,16 @@ interface UseScriptElementsWithEditQueueReturn {
   allElements: ScriptElement[]; // All elements including collapsed children
   serverElements: ScriptElement[];
 
-  // Loading and error states - removed (no longer fetching)
+  // Loading and error states
+  isLoading: boolean;
+  error: string | null;
 
   // Edit queue integration
   hasUnsavedChanges: boolean;
   pendingOperations: EditOperation[];
 
-  // Operations - refetchElements removed (no longer needed with unified loading)
+  // Operations
+  refetchElements: () => Promise<void>;
   applyLocalChange: (
     operation: Omit<EditOperation, "id" | "timestamp" | "description">,
   ) => void;
@@ -71,19 +74,16 @@ interface UseScriptElementsOptions {
 }
 
 export const useScriptElementsWithEditQueue = (
-  _scriptId: string | undefined, // Keep for future operation tracking
-  initialElements: ScriptElement[] = [], // Accept elements instead of fetching
+  scriptId: string | undefined,
   options: UseScriptElementsOptions = {},
 ): UseScriptElementsWithEditQueueReturn => {
-  // RENDER TRACKING - DELETE AFTER DEBUGGING
-  const renderCount = useRef(0);
-  renderCount.current++;
-  
   const [serverElements, setServerElements] = useState<ScriptElement[]>([]);
-  const [currentElements, setCurrentElements] = useState<ScriptElement[]>([]);
-  // REMOVED: isLoading, error, isSaving, getToken - no longer fetching
-  const [needsRebuild, setNeedsRebuild] = useState(false);
-  const initializedRef = useRef(false);
+  const [currentElements, setCurrentElements] = useState<ScriptElement[]>([]); // NEW: Live UI state
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [needsRebuild, setNeedsRebuild] = useState(false); // NEW: Track when rebuild is needed
+  const { getToken } = useAuth();
 
   const editQueue = useEditQueue();
 
@@ -92,14 +92,7 @@ export const useScriptElementsWithEditQueue = (
   editQueueRef.current = editQueue;
 
   // Extract only the properties we need to avoid depending on the entire object
-  const { operations, hasUnsavedChanges, canUndo, canRedo, checkpoints, activeCheckpoint } = editQueue;
-  
-  // Track if operations is changing  
-  const prevOperationsRef = useRef();
-  if (prevOperationsRef.current !== operations) {
-      prevOperationsRef.current = operations;
-  } else {
-  }
+  const { operations, hasUnsavedChanges, canUndo, canRedo } = editQueue;
 
   // Keep a ref to the last computed elements to prevent flicker during save
   const lastComputedElementsRef = useRef<ScriptElement[]>([]);
@@ -154,7 +147,13 @@ export const useScriptElementsWithEditQueue = (
 
   // Compute display elements from current elements
   const { elements, allElements } = useMemo(() => {
-    // REMOVED: isSaving check - no longer tracking save state
+    // If we're saving, return the last computed state to prevent flicker
+    if (isSaving && lastComputedElementsRef.current.length > 0) {
+      return {
+        elements: lastComputedElementsRef.current,
+        allElements: lastComputedElementsRef.current, // This isn't ideal but prevents crashes during save
+      };
+    }
 
     // Filter out collapsed child elements for display
     const visibleElements = currentElements.filter((element) => {
@@ -179,9 +178,87 @@ export const useScriptElementsWithEditQueue = (
       elements: visibleElements,
       allElements: currentElements, // Include all elements for group summary calculations
     };
-  }, [currentElements]); // REMOVED: isSaving dependency
+  }, [currentElements, isSaving]);
 
-  // REMOVED: initializeElements callback - now handled directly in useEffect to avoid infinite loops
+  const fetchElements = useCallback(async () => {
+    if (!scriptId) {
+      setServerElements([]);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error("Authentication token not available");
+      }
+
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (options.element_type)
+        params.append("element_type", options.element_type);
+      if (options.departmentId)
+        params.append("department_id", options.departmentId);
+      if (options.skip !== undefined)
+        params.append("skip", options.skip.toString());
+      if (options.limit !== undefined)
+        params.append("limit", options.limit.toString());
+
+      const queryString = params.toString();
+      const url = `/api/scripts/${scriptId}/elements${queryString ? "?" + queryString : ""}`;
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch script elements: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Sort elements based on auto-sort preference
+      const sortedElements = data.sort((a: ScriptElement, b: ScriptElement) => {
+        if (options.autoSortCues) {
+          // Auto-sort enabled: sort by time offset first, then handle parent-child relationships
+          if (a.offset_ms !== b.offset_ms) {
+            return a.offset_ms - b.offset_ms;
+          }
+
+          // If same time offset, check if one is parent of the other
+          if (a.element_id === b.parent_element_id) {
+            // a is parent of b, a should come first
+            return -1;
+          }
+          if (b.element_id === a.parent_element_id) {
+            // b is parent of a, b should come first
+            return 1;
+          }
+
+          // If same time but no parent-child relationship, maintain sequence order
+          return a.sequence - b.sequence;
+        } else {
+          // Auto-sort disabled: respect sequence order from database
+          return a.sequence - b.sequence;
+        }
+      });
+
+      setServerElements(sortedElements);
+    } catch (err) {
+      console.error("Error fetching script elements:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch script elements",
+      );
+      setServerElements([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [scriptId, getToken, JSON.stringify(options)]);
 
   const applyLocalChange = useCallback(
     (operation: Omit<EditOperation, "id" | "timestamp" | "description">) => {
@@ -219,11 +296,89 @@ export const useScriptElementsWithEditQueue = (
 
   const saveChanges = useCallback(
     async (): Promise<boolean> => {
-      // This function will be overridden by the parent component
-      // Default implementation does nothing
-      return true;
+      if (!scriptId || editQueueRef.current.operations.length === 0) {
+        return true;
+      }
+
+      try {
+
+        
+
+        // Set saving flag to prevent flicker
+        setIsSaving(true);
+        const token = await getToken();
+        if (!token) {
+          throw new Error("Authentication token not available");
+        }
+
+        // Send batch of operations to server
+        const response = await fetch(
+          `/api/scripts/${scriptId}/elements/batch-update`,
+          {
+            method: "PATCH",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              operations: editQueueRef.current.operations,
+            }),
+          },
+        );
+
+        if (!response.ok) {
+          let errorData;
+          try {
+            const text = await response.text();
+            if (text) {
+              try {
+                errorData = JSON.parse(text);
+              } catch {
+                errorData = text;
+              }
+            } else {
+              errorData = "No error details available";
+            }
+          } catch {
+            errorData = "Failed to read error response";
+          }
+          console.error("Backend error response:", response.status, errorData);
+          throw new Error(
+            `Failed to save changes: ${response.status} - ${JSON.stringify(errorData)}`,
+          );
+        }
+
+        // Note: WebSocket broadcasting is handled by useScriptModalHandlers
+        // to avoid duplicate messages and ensure proper coordination
+
+
+        // Fetch fresh data from database to ensure frontend/backend sync
+        
+        // Fetch fresh data from database
+        await fetchElements();
+
+        // Always clear the edit queue after successful save
+        editQueueRef.current.clearQueue();
+
+        // Clear saving flag to allow normal rendering
+        setIsSaving(false);
+
+        // Call onAfterSave callback if provided (for coordinated refresh)
+        if (options.onAfterSave) {
+            console.log(`🔄 Calling onAfterSave callback...`);
+            await options.onAfterSave();
+            console.log(`✅ onAfterSave callback completed`);
+        }
+
+        return true;
+      } catch (err) {
+        console.error("Error saving changes:", err);
+        setError(err instanceof Error ? err.message : "Failed to save changes");
+        setIsSaving(false); // Clear saving flag on error too
+        return false;
+      }
     },
-    [],
+    [scriptId, getToken, currentElements, fetchElements],
   );
 
   const discardChanges = useCallback(() => {
@@ -306,19 +461,19 @@ export const useScriptElementsWithEditQueue = (
       description: string,
       scriptData?: any,
     ): string => {
-      return editQueueRef.current.createCheckpoint(
+      return editQueue.createCheckpoint(
         type,
         description,
         elements,
         scriptData,
       );
     },
-    [], // Remove dependencies to make function stable
+    [editQueue, elements],
   );
 
   const revertToCheckpoint = useCallback(
     async (checkpointId: string): Promise<boolean> => {
-      const checkpoint = editQueueRef.current.revertToCheckpoint(checkpointId);
+      const checkpoint = editQueue.revertToCheckpoint(checkpointId);
       if (!checkpoint) {
         return false;
       }
@@ -327,7 +482,7 @@ export const useScriptElementsWithEditQueue = (
       setNeedsRebuild(true);
       return true;
     },
-    [], // Remove dependencies to make function stable
+    [editQueue],
   );
 
   // Custom revert to point function that triggers rebuild
@@ -336,43 +491,28 @@ export const useScriptElementsWithEditQueue = (
     setNeedsRebuild(true);
   }, []);
 
-  // Initialize elements when data first becomes available
+  // Only fetch on mount or script ID change - not on options changes
   useEffect(() => {
-    if (initialElements && initialElements.length > 0 && !initializedRef.current) {
-      // Sort elements based on auto-sort preference
-      const sortedElements = [...initialElements].sort((a: ScriptElement, b: ScriptElement) => {
-        if (options.autoSortCues) {
-          if (a.offset_ms !== b.offset_ms) {
-            return a.offset_ms - b.offset_ms;
-          }
-          if (a.element_id === b.parent_element_id) return -1;
-          if (b.element_id === a.parent_element_id) return 1;
-          return a.sequence - b.sequence;
-        } else {
-          return a.sequence - b.sequence;
-        }
-      });
-      
-      setServerElements(sortedElements);
-      initializedRef.current = true;
-    }
-  }, [initialElements, options.autoSortCues]); // Direct dependencies, no callback
+    fetchElements();
+  }, [scriptId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return useMemo(
-    () => {
-      return {
-        // Current view state
-        elements,
-        allElements,
-        serverElements,
+    () => ({
+      // Current view state
+      elements,
+      allElements,
+      serverElements,
 
-      // Loading and error states - removed (no longer fetching)
+      // Loading and error states
+      isLoading,
+      error,
 
       // Edit queue integration
       hasUnsavedChanges,
       pendingOperations: operations,
 
-      // Operations - refetchElements removed (unified loading handles fresh data)
+      // Operations
+      refetchElements: fetchElements,
       applyLocalChange,
 
       // Save operations
@@ -391,27 +531,38 @@ export const useScriptElementsWithEditQueue = (
       collapseAllGroups,
 
       // Checkpoint operations
-      checkpoints,
-      activeCheckpoint,
+      checkpoints: editQueue.checkpoints,
+      activeCheckpoint: editQueue.activeCheckpoint,
       createCheckpoint,
       revertToCheckpoint,
 
       // Revert
       revertToPoint,
-    };
-  },
+    }),
     [
-      // Use array lengths instead of array references to reduce re-renders
-      elements.length,
-      allElements.length,
-      serverElements.length,
+      elements,
+      allElements,
+      serverElements,
+      isLoading,
+      error,
       hasUnsavedChanges,
-      operations.length, // Use length instead of array reference
+      operations,
+      fetchElements,
+      applyLocalChange,
+      saveChanges,
+      discardChanges,
+      undoOperation,
+      redoOperation,
       canUndo,
       canRedo,
-      checkpoints.length, // Use length instead of array reference
-      activeCheckpoint,
-      // Functions are already memoized with useCallback, no need to include them here
+      toggleGroupCollapse,
+      expandAllGroups,
+      collapseAllGroups,
+      editQueue.checkpoints,
+      editQueue.activeCheckpoint,
+      createCheckpoint,
+      revertToCheckpoint,
+      revertToPoint,
     ],
   );
 };

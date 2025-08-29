@@ -8,7 +8,7 @@ interface ScriptSyncData {
   connectionCount: number;
   connectionError?: string | null;
   userType: 'stage_manager' | 'crew_member';
-  shouldRotate?: boolean;
+  triggerRotation?: React.MutableRefObject<(() => void) | null>;
 }
 
 interface ScriptSyncContextType {

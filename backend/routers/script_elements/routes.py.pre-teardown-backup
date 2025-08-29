@@ -74,7 +74,7 @@ def rate_limit(limit_config):
 # SCRIPT ELEMENT ENDPOINTS
 # =============================================================================
 
-@router.get("/scripts/{script_id}/elements", response_model=Union[List[schemas.ScriptElement], schemas.SharedScriptElementsResponse])
+@router.get("/scripts/{script_id}/elements", response_model=Union[List[schemas.ScriptElementEnhanced], schemas.SharedScriptElementsResponse])
 def get_script_elements(
     script_id: UUID,
     db: Session = Depends(get_db),
@@ -86,7 +86,6 @@ def get_script_elements(
     user: Optional[models.User] = Depends(get_current_user_optional)
 ):
     """Get all elements for a script with optional filtering. Supports both authenticated and token-based access."""
-    logger.error(f"❌❌❌ SEPARATE ELEMENTS ENDPOINT CALLED - script {script_id} - should use unified endpoint instead!")  
     
     # First verify the script exists
     script = db.query(models.Script).options(
@@ -219,7 +218,6 @@ def get_script_element(
     db: Session = Depends(get_db)
 ):
     """Get a single script element by ID."""
-    logger.error(f"❌❌❌ SEPARATE ELEMENT ENDPOINT CALLED - element {element_id} - should use unified endpoint instead!")
     
     element = db.query(models.ScriptElement).options(
         joinedload(models.ScriptElement.script).joinedload(models.Script.show),
@@ -246,6 +244,5 @@ def batch_update_script_elements(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Process a batch of edit queue operations - STRIPPED FOR REBUILD"""
-    print("backend save clicked")
-    return {"success": True, "message": "Save stripped for rebuild"}
+    """Process a batch of edit queue operations."""
+    return batch_update_from_edit_queue(script_id, batch_request, user, db)

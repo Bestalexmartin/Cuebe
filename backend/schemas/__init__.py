@@ -56,7 +56,7 @@ from .script_element import (
     ScriptElement,
     ScriptElementCreate,
     ScriptElementUpdate,
-    ScriptElementEnhanced,
+    ScriptElement,
     CrewContext,
     SharedScriptElementsResponse,
 )
@@ -132,7 +132,7 @@ __all__ = [
     "ScriptElement",
     "ScriptElementCreate",
     "ScriptElementUpdate",
-    "ScriptElementEnhanced",
+    "ScriptElement",
     "CrewContext",
     "SharedScriptElementsResponse",
     

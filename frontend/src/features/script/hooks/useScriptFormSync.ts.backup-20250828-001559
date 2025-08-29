@@ -94,18 +94,17 @@ export const useScriptFormSync = ({
     }, [currentScript, form.setFormData]);
 
     // Clear pending changes after successful save
-    // STRIPPED FOR REBUILD: This was part of the broken coordinated refresh architecture
     const clearPendingChanges = useCallback(() => {
-        // TODO REBUILD: Restore clearing of pending changes after unified save
-        // if (activeMode === 'info') {
-        //     updateOriginalData({
-        //         script_name: form.formData.script_name,
-        //         script_status: form.formData.script_status,
-        //         start_time: convertLocalToUTC(form.formData.start_time),
-        //         end_time: convertLocalToUTC(form.formData.end_time),
-        //         script_notes: form.formData.script_notes
-        //     });
-        // }
+        if (activeMode === 'info') {
+            // Update the original data to match current form data, clearing the hasChanges flag
+            updateOriginalData({
+                script_name: form.formData.script_name,
+                script_status: form.formData.script_status,
+                start_time: convertLocalToUTC(form.formData.start_time),
+                end_time: convertLocalToUTC(form.formData.end_time),
+                script_notes: form.formData.script_notes
+            });
+        }
     }, [activeMode, form.formData, updateOriginalData]);
 
     // Handle exiting Info mode with unsaved changes

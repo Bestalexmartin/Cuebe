@@ -12,11 +12,7 @@ import {
     Divider,
     Button,
     Badge,
-    useBreakpointValue,
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalBody
+    useBreakpointValue
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useScript } from "../features/script/hooks/useScript";
@@ -31,7 +27,6 @@ import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences
 import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
 import { useScriptSync } from '../hooks/useScriptSync';
 import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
-import { saveScript } from '../utils/saveScript';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
 import { useModalState } from '../hooks/useModalState';
 import { SaveConfirmationModal } from '../components/modals/SaveConfirmationModal';
@@ -110,15 +105,11 @@ const INITIAL_FORM_STATE: ScriptFormData = {
 
 
 
-// Create a wrapper component that isolates the auth hook
-const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => Promise<string | null> }> = ({ 
-    isMenuOpen, 
-    onMenuClose, 
-    getToken 
-}) => {
+export const ManageScriptPage: React.FC<ManageScriptPageProps> = ({ isMenuOpen, onMenuClose }) => {
     const { scriptId } = useParams<{ scriptId: string }>();
+    const { getToken } = useAuth();
     const { showSuccess, showError } = useEnhancedToast();
-    // Removed shouldRotateAuth state - now using direct function calls
+    const [shouldRotateAuth, setShouldRotateAuth] = useState(false);
 
     const viewModeRef = useRef<ViewModeRef>(null);
     const editModeRef = useRef<EditModeRef>(null);
@@ -146,61 +137,45 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
     // Moved this hook call after preferences are defined
 
-    // Ref to hold the actual rotation function from the icon
-    const triggerRotationRef = useRef<(() => void) | null>(null);
-    
-    // Function to trigger rotation
-    const triggerRotation = useCallback(() => {
-        triggerRotationRef.current?.();
-    }, []);
-
     // Real-time sync for collaborative editing
     const scriptSyncOptions = useMemo(() => {
         return {
             onConnect: () => { },
             onDisconnect: () => { },
             onDataReceived: () => {
-                triggerRotation(); // Trigger rotation for ping/pong
+                setShouldRotateAuth(true);
+                setTimeout(() => setShouldRotateAuth(false), 700); // Match CSS animation duration (600ms) + buffer
             }
         };
-    }, [triggerRotation]);
+    }, [setShouldRotateAuth]);
 
-    // Real-time sync for collaborative editing - RESTORED
-    const { 
-        isConnected: isSyncConnected, 
-        isConnecting: isSyncConnecting, 
-        connectionCount: syncConnectionCount, 
-        connectionError: syncConnectionError, 
-        sendUpdate: sendSyncUpdate 
-    } = useScriptSync(
-        scriptId || '',
-        undefined, // shareToken
-        scriptSyncOptions
-    );
+    const {
+        isConnected: isSyncConnected,
+        isConnecting: isSyncConnecting,
+        connectionCount: syncConnectionCount,
+        connectionError: syncConnectionError,
+        sendUpdate: sendSyncUpdate
+    } = useScriptSync(scriptId || null, undefined, scriptSyncOptions);
 
-    // Update sync context for header display - FIXED FOR RENDER LOOP
+    // Update sync context for header display
     const { setSyncData } = useScriptSyncContext();
-    
-    // Memoize sync data to prevent unnecessary context updates
-    const syncData = useMemo(() => {
-        if (!scriptId) return null;
-        
-        return {
-            isConnected: isSyncConnected,
-            isConnecting: isSyncConnecting,
-            connectionCount: syncConnectionCount,
-            connectionError: syncConnectionError,
-            userType: 'stage_manager' as const,
-            triggerRotation: triggerRotationRef
-        };
-    }, [scriptId, isSyncConnected, isSyncConnecting, syncConnectionCount, syncConnectionError, triggerRotationRef]);
-    
     useEffect(() => {
-        setSyncData(syncData);
-        
+        if (scriptId) {
+            setSyncData({
+                isConnected: isSyncConnected,
+                isConnecting: isSyncConnecting,
+                connectionCount: syncConnectionCount,
+                connectionError: syncConnectionError,
+                userType: 'stage_manager',
+                shouldRotate: shouldRotateAuth
+            });
+        } else {
+            setSyncData(null);
+        }
+
         // Cleanup when component unmounts
         return () => setSyncData(null);
-    }, [syncData, setSyncData]);
+    }, [isSyncConnected, isSyncConnecting, syncConnectionCount, syncConnectionError, shouldRotateAuth, scriptId, setSyncData]);
 
     // applyLocalChangeWithSync will be defined after editQueueHook
 
@@ -216,32 +191,11 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         updatePreferences
     } = useUserPreferences();
 
-    // Memoize elements array to prevent unnecessary re-renders
-    // Use sourceScript object reference as dependency
-    const elementsToPass = useMemo(() => 
-        (sourceScript as any)?.elements || [], 
-        [sourceScript]
-    );
-    
-    // Debug logging moved to top of component
-    
-    // Track if arrays are changing references
-    const elementsRef = useRef();
-    if (elementsRef.current !== elementsToPass) {
-        elementsRef.current = elementsToPass;
-    }
-    
-
-    // Always call hooks (React requirement), but conditionally process data
-    const dataReady = sourceScript && !isLoadingScript;
-    
-    // Memoize options to prevent recreating on every render
-    const editQueueOptions = useMemo(() => ({ 
+    const editQueueHook = useScriptElementsWithEditQueue(scriptId, { 
         autoSortCues,
-        sendSyncUpdate: sendSyncUpdate
-    }), [autoSortCues, sendSyncUpdate]);
-
-    const editQueueHook = useScriptElementsWithEditQueue(scriptId, elementsToPass, editQueueOptions);
+        sendSyncUpdate: sendSyncUpdate,
+        onAfterSave: refreshAllScriptData  // Will be defined below
+    });
     const {
         elements: editQueueElements,
         allElements: allEditQueueElements,
@@ -250,33 +204,35 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         revertToPoint,
         applyLocalChange,
         discardChanges,
-        saveChanges: hookSaveChanges,
+        saveChanges,
         toggleGroupCollapse,
         expandAllGroups,
         collapseAllGroups,
     } = editQueueHook;
 
-    // Unified save function that both auto-save and manual save use
-    const saveChanges = useCallback(async (): Promise<boolean> => {        
-        if (!scriptId || pendingOperations.length === 0) {
-            return true;
-        }
-
-        const result = await saveScript({
-            scriptId,
-            operations: pendingOperations,
-            getToken,
-            onSuccess: (freshData) => {
-                refetchScript();
-                discardChanges();
-            },
-            onError: (error) => {
-                console.error("Save error:", error);
-            }
-        });
+    // Coordinated data refresh function - complete fresh start after save
+    const refreshAllScriptData = useCallback(async () => {
+        console.log(`🔄 Coordinated Refresh: Starting complete fresh data reload at ${new Date().toISOString()}`);
         
-        return result;
-    }, [scriptId, pendingOperations, getToken, refetchScript, discardChanges]);
+        try {
+            // Step 1: Fetch fresh script info from database
+            console.log(`📋 Refreshing script info...`);
+            await refetchScript();
+            
+            // Step 2: Fetch fresh elements from database  
+            console.log(`📄 Refreshing script elements...`);
+            await editQueueHook.refetchElements();
+            
+            // Step 3: Force component re-render by updating key if needed
+            console.log(`✅ Complete refresh successful - UI should show fresh database state`);
+            
+        } catch (error) {
+            console.error(`❌ Coordinated refresh failed:`, error);
+            throw error;
+        }
+    }, [refetchScript, editQueueHook.refetchElements]);
+
+    // saveChanges now has coordinated refresh built-in via onAfterSave callback
 
     const handleToggleAllGroups = useCallback(() => {
         if (!allEditQueueElements) return;
@@ -326,7 +282,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
     const { activeMode, setActiveMode } = useScriptModes('view');
 
-    // Script form synchronization hook - FIXED
+    // Script form synchronization hook
     const { currentScript, hasChanges, handleInfoModeExit, clearPendingChanges } = useScriptFormSync({
         sourceScript,
         pendingOperations,
@@ -408,8 +364,8 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         }
     });
 
-    // Memoize modal handlers config to prevent re-renders
-    const modalHandlersConfig = useMemo(() => ({
+    // Modal handlers hook
+    const modalHandlers = useScriptModalHandlers({
         scriptId,
         script: sourceScript,
         hasUnsavedChanges,
@@ -428,30 +384,12 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         sendSyncUpdate: (message: any) => {
             sendSyncUpdate(message);
             // Trigger websocket icon rotation for successful user transmission
-            triggerRotation();
+            setShouldRotateAuth(true);
+            setTimeout(() => setShouldRotateAuth(false), 700);
         },
         pendingOperations: pendingOperations,
         dangerMode: activePreferences.dangerMode
-    }), [
-        scriptId,
-        sourceScript,
-        hasUnsavedChanges,
-        saveChanges,
-        discardChanges,
-        modalState,
-        activeMode,
-        hasChanges,
-        captureInfoChanges,
-        clearPendingChanges,
-        setActiveMode,
-        sendSyncUpdate,
-        triggerRotation,
-        pendingOperations,
-        activePreferences.dangerMode
-    ]);
-
-    // Modal handlers hook
-    const modalHandlers = useScriptModalHandlers(modalHandlersConfig);
+    });
 
     // Track EditMode's selection state reactively
     const [currentSelectedElementIds, setCurrentSelectedElementIds] = useState<string[]>([]);
@@ -475,42 +413,69 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     // Navigation
     const navigate = useNavigate();
 
-    // Auto-save functionality - OPTIMIZED to prevent render loops
+    // Auto-save functionality
     const { isAutoSaving, secondsUntilNextSave, showSaveSuccess, isPaused, togglePause } = useAutoSave({
         autoSaveInterval: activePreferences.autoSaveInterval,
         hasUnsavedChanges,
         pendingOperations,
-        saveChanges,
-    });
+        saveChanges: async () => {
+            // Capture operation count before save (might be cleared after)
+            const operationCount = pendingOperations.length;
 
-    // Track what values are changing between renders - EXPANDED TRACKING
-    const currentValues = {
-        sourceScript: !!sourceScript,
-        isLoadingScript,
-        elementsLength: elementsToPass.length,
-        autoSortCues,
-        scriptId,
-        activeMode,
-        isSyncConnected,
-        // Add more potential render triggers
-        hasUnsavedChanges,
-        pendingOperationsLength: pendingOperations.length,
-        isAutoSaving,
-        secondsUntilNextSave,
-        showSaveSuccess,
-        isPaused,
-        hasChanges,
-        currentScriptExists: !!currentScript,
-        crewMembersLength: crewMembers.length
-    };
-    
-    const prevValues = useRef({});
-    const changedKeys = Object.keys(currentValues).filter(key => 
-        prevValues.current[key] !== currentValues[key]
-    );
-    
-    
-    prevValues.current = currentValues;
+            // Separate script info and element operations for broadcasting
+            console.log(`💾 Auto-save: Starting auto-save with ${operationCount} operations`);
+            const scriptInfoOps = pendingOperations.filter(op => op.type === 'UPDATE_SCRIPT_INFO');
+            const elementOps = pendingOperations.filter(op => op.type !== 'UPDATE_SCRIPT_INFO');
+            console.log(`💾 Auto-save: Script info ops: ${scriptInfoOps.length}, Element ops: ${elementOps.length}`);
+            
+            // saveChanges now includes coordinated refresh via onAfterSave callback
+            const success = await saveChanges();
+
+            // Broadcast WebSocket update after successful auto-save
+            if (success && isSyncConnected && operationCount > 0) {
+                try {
+                    console.log(`📡 WebSocket: Broadcasting updates at ${new Date().toISOString()}`);
+                    // Send targeted updates for script info changes
+                    if (scriptInfoOps.length > 0) {
+                        const scriptChanges = {};
+                        scriptInfoOps.forEach(op => {
+                            Object.assign(scriptChanges, op.changes);
+                        });
+
+                        console.log(`📡 WebSocket: Sending script_info update:`, scriptChanges);
+                        await sendSyncUpdate({
+                            update_type: 'script_info',
+                            changes: scriptChanges,
+                            operation_id: `autosave_script_info_${Date.now()}`
+                        });
+                        console.log(`✅ WebSocket: Script info update sent at ${new Date().toISOString()}`);
+                    }
+                    
+                    // Send targeted updates for element changes
+                    if (elementOps.length > 0) {
+                        await sendSyncUpdate({
+                            update_type: 'elements_updated',
+                            changes: elementOps,
+                            operation_id: `autosave_elements_${Date.now()}`
+                        });
+                    }
+
+                    // Trigger success indicator for broadcast
+                    setShouldRotateAuth(true);
+                    setTimeout(() => setShouldRotateAuth(false), 700);
+                    
+                } catch (error) {
+                    // Auto-save broadcast failed - log warning but don't block auto-save
+                    console.warn('Auto-save: WebSocket broadcast failed', error);
+                    // Still show rotation briefly to indicate auto-save succeeded
+                    setShouldRotateAuth(true);
+                    setTimeout(() => setShouldRotateAuth(false), 300);
+                }
+            }
+
+            return success;
+        },
+    });
 
     // Element modal actions hook
     const elementActions = useElementModalActions({
@@ -916,7 +881,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     };
 
     // Handle department filter application
-    // Handle department filter application
     const handleApplyDepartmentFilter = useCallback((selectedDepartmentIds: string[]) => {
         setFilteredDepartmentIds(selectedDepartmentIds);
         setHasUserSetFilter(true);
@@ -1291,72 +1255,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 toolButtons={toolButtons}
                 onModeChange={handleModeChange}
             />
-
-            {/* Loading Modal - NO EMPTY TRUCKS */}
-            <Modal
-                isOpen={!dataReady}
-                onClose={() => {}}
-                closeOnOverlayClick={false}
-                closeOnEsc={false}
-            >
-                <ModalOverlay />
-                <ModalContent 
-                    maxWidth="400px" 
-                    mx="4"
-                    bg="page.background"
-                    border="2px solid"
-                    borderColor="gray.600"
-                >
-                    <ModalBody py="8">
-                        <VStack spacing={6} align="center">
-                            <Box>
-                                <Spinner
-                                    size="xl"
-                                    thickness="4px"
-                                    speed="0.8s"
-                                    color="blue.400"
-                                />
-                            </Box>
-                            <VStack spacing={2} textAlign="center">
-                                <Text
-                                    fontSize="lg"
-                                    fontWeight="semibold"
-                                    color="gray.700"
-                                    _dark={{ color: "gray.200" }}
-                                >
-                                    Loading Script
-                                </Text>
-                                <Text
-                                    fontSize="sm"
-                                    color="gray.600"
-                                    _dark={{ color: "gray.400" }}
-                                >
-                                    Loading script data and elements...
-                                </Text>
-                            </VStack>
-                        </VStack>
-                    </ModalBody>
-                </ModalContent>
-            </Modal>
         </ErrorBoundary>
     );
 };
-
-// Outer component that handles auth and passes getToken down
-export const ManageScriptPage: React.FC<ManageScriptPageProps> = React.memo(({ isMenuOpen, onMenuClose }) => {
-    const auth = useAuth();
-    const authRef = useRef(auth);
-    authRef.current = auth; // Keep ref up to date
-    
-    const getToken = useCallback(async () => {
-        return await authRef.current.getToken();
-    }, []); // Stable function reference
-    
-    return (
-        <ManageScriptPageInner 
-            isMenuOpen={isMenuOpen}
-            onMenuClose={onMenuClose}
-            getToken={getToken}
-        />
-    );
-});
