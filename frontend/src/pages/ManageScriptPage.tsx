@@ -226,7 +226,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     // Debug logging moved to top of component
     
     // Track if arrays are changing references
-    const elementsRef = useRef();
+    const elementsRef = useRef<any[]>([]);
     if (elementsRef.current !== elementsToPass) {
         elementsRef.current = elementsToPass;
     }
@@ -250,7 +250,8 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         revertToPoint,
         applyLocalChange,
         discardChanges,
-        saveChanges: hookSaveChanges,
+        updateServerElements,
+        saveChanges: _hookSaveChanges,
         toggleGroupCollapse,
         expandAllGroups,
         collapseAllGroups,
@@ -267,8 +268,18 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             operations: pendingOperations,
             getToken,
             onSuccess: (freshData) => {
-                refetchScript();
+                console.log('🔄 SAVE SUCCESS - about to discard changes');
+                console.log('🔄 SAVE SUCCESS - current editQueueElements count:', editQueueElements?.length);
+                console.log('🔄 SAVE SUCCESS - freshData elements count:', freshData?.elements?.length);
+                
+                // CRITICAL FIX: Clear queue FIRST, then update with fresh data
+                console.log('🔄 SAVE SUCCESS - clearing edit queue first');
                 discardChanges();
+                
+                console.log('🔄 SAVE SUCCESS - updating with fresh data from backend');
+                updateServerElements(freshData.elements || []);
+                
+                console.log('🔄 SAVE SUCCESS - refresh complete using fresh backend data');
             },
             onError: (error) => {
                 console.error("Save error:", error);
@@ -504,10 +515,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         crewMembersLength: crewMembers.length
     };
     
-    const prevValues = useRef({});
-    const changedKeys = Object.keys(currentValues).filter(key => 
-        prevValues.current[key] !== currentValues[key]
-    );
+    const prevValues = useRef<typeof currentValues>(currentValues);
     
     
     prevValues.current = currentValues;
@@ -751,7 +759,8 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 element_id: 'auto-sort-preference',
                 old_preference_value: false,
                 new_preference_value: true,
-                resequenced_elements: resequencedElements,
+                element_moves: resequencedElements,
+                resequenced_elements: resequencedElements, // Keep both for backend compatibility
                 total_elements: currentElements.length
             };
 

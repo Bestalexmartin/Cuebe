@@ -89,8 +89,8 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
 
     // Helper functions for group selection logic
     const isGroupElement = useCallback((element: any) => {
-        return (element as any).element_type === 'GROUP' || 
-               (element.parent_element_id && element.group_level && element.group_level > 0);
+        return (element as any).element_type === 'GROUP' ||
+            (element.parent_element_id && element.group_level && element.group_level > 0);
     }, []);
 
     const getElementGroupId = useCallback((element: any) => {
@@ -151,7 +151,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                delay: 150, // Require 150ms hold before drag starts
+                delay: 120, // Require 120ms hold before drag starts
                 tolerance: 5, // Allow 5px of movement during delay
             }
         }),
@@ -545,11 +545,11 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         // Check if any currently selected or clicked element is part of a group
         const selectedElements = displayElements.filter(el => selectedElementIds.includes(el.element_id));
         const clickedElement = displayElements.find(el => el.element_id === elementId);
-        
+
         if (!clickedElement) return;
 
         const hasGroupElements = [...selectedElements, clickedElement].some(isGroupElement);
-        
+
         if (hasGroupElements) {
             // Restrict to single selection for group elements
             setSelectedElementIds([elementId]);

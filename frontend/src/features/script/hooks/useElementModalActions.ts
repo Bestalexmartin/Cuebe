@@ -327,7 +327,7 @@ export const useElementModalActions = ({
                 element_id: tempGroupId, // Add top-level element_id for operation processing
                 element_ids: selectedElementIds,
                 group_name: groupName,
-                background_color: backgroundColor,
+                custom_color: backgroundColor,
                 element_data: {
                     element_id: tempGroupId,
                     element_name: groupName,

@@ -46,7 +46,6 @@ export const SharedPage = React.memo(() => {
   const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [showTutorials, setShowTutorials] = useState<boolean>(false);
-  const [shouldRotateSync, setShouldRotateSync] = useState(false);
 
   // Tutorial search - extracted to custom hook
   const {
@@ -138,8 +137,7 @@ export const SharedPage = React.memo(() => {
 
   // Restore rotation mechanism
   const onDataReceived = useCallback(() => {
-    setShouldRotateSync(true);
-    setTimeout(() => setShouldRotateSync(false), 700);
+    // Rotation is now handled via ScriptSyncIcon ref
   }, []);
 
   // Other websocket callbacks - kept simple and stable
@@ -204,7 +202,6 @@ export const SharedPage = React.memo(() => {
               connectionCount={scriptSync.connectionCount}
               connectionError={scriptSync.connectionError}
               userType="crew_member"
-              shouldRotate={shouldRotateSync}
             />
           </BorderedContainer>
         </SharedPageHeader>
