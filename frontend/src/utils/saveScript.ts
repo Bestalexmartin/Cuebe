@@ -23,21 +23,19 @@ export const saveScript = async ({
       throw new Error("Authentication token not available");
     }
 
-    
     const requestBody = {
-      operations: operations.map(op => ({
-        id: op.id,
-        timestamp: op.timestamp,
-        element_id: op.element_id,
-        description: op.description,
-        type: op.type,
-        // Include operation-specific data based on type
-        ...('old_index' in op && 'new_index' in op ? {
-          old_index: op.old_index,
-          new_index: op.new_index,
-          old_sequence: op.old_sequence,
-          new_sequence: op.new_sequence
-        } : {}),
+      operations: operations.map(op => {
+        return {
+          id: op.id,
+          timestamp: op.timestamp,
+          element_id: op.element_id,
+          description: op.description,
+          type: op.type,
+          // Include operation-specific data based on type
+          ...('old_sequence' in op && 'new_sequence' in op ? {
+            old_sequence: (op as any).old_sequence,
+            new_sequence: (op as any).new_sequence
+          } : {}),
         ...('field' in op ? {
           field: op.field,
           old_value: op.old_value,
@@ -62,10 +60,26 @@ export const saveScript = async ({
         ...('group_name' in op ? {
           group_name: op.group_name
         } : {}),
+        ...('custom_color' in op ? {
+          custom_color: op.custom_color
+        } : {}),
         ...('element_ids' in op ? {
           element_ids: op.element_ids
+        } : {}),
+        ...('field_updates' in op ? {
+          field_updates: op.field_updates
+        } : {}),
+        ...('old_values' in op ? {
+          old_values: op.old_values
+        } : {}),
+        ...('offset_delta_ms' in op ? {
+          offset_delta_ms: op.offset_delta_ms
+        } : {}),
+        ...('affected_children' in op ? {
+          affected_children: op.affected_children
         } : {})
-      }))
+        };
+      })
     };
     
     const response = await fetch(`/api/scripts/${scriptId}`, {
@@ -79,15 +93,14 @@ export const saveScript = async ({
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("🚨 SAVE ERROR Response status:", response.status);
-      console.error("🚨 SAVE ERROR Response text:", errorText);
+      console.error("Save failed - Response status:", response.status);
+      console.error("Save failed - Response text:", errorText);
       
-      let errorData = {};
+      let errorData: any = {};
       try {
         errorData = JSON.parse(errorText);
-        console.error("🚨 SAVE ERROR Parsed error data:", errorData);
       } catch (e) {
-        console.error("🚨 SAVE ERROR Could not parse error response as JSON");
+        console.error("Could not parse error response as JSON");
       }
       throw new Error(errorData.detail || `Save failed with status ${response.status}: ${errorText}`);
     }

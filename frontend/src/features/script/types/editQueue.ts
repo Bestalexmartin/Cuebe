@@ -9,8 +9,6 @@ export interface BaseEditOperation {
 
 export interface ReorderOperation extends BaseEditOperation {
     type: 'REORDER';
-    old_index: number;
-    new_index: number;
     old_sequence: number;
     new_sequence: number;
 }
@@ -116,7 +114,7 @@ export interface BatchCollapseGroupsOperation extends BaseEditOperation {
 export interface CreateGroupOperation extends BaseEditOperation {
     type: 'CREATE_GROUP';
     group_name: string;
-    background_color?: string;
+    custom_color?: string;
     element_ids: string[];
 }
 

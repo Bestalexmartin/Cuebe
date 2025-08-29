@@ -30,6 +30,7 @@ interface UseScriptElementsWithEditQueueReturn {
   // Save operations
   saveChanges: () => Promise<boolean>;
   discardChanges: () => void;
+  updateServerElements: (freshElements: ScriptElement[]) => void;
 
   // Undo/Redo
   undo: () => void;
@@ -95,7 +96,7 @@ export const useScriptElementsWithEditQueue = (
   const { operations, hasUnsavedChanges, canUndo, canRedo, checkpoints, activeCheckpoint } = editQueue;
   
   // Track if operations is changing  
-  const prevOperationsRef = useRef();
+  const prevOperationsRef = useRef(operations);
   if (prevOperationsRef.current !== operations) {
       prevOperationsRef.current = operations;
   } else {
@@ -226,9 +227,16 @@ export const useScriptElementsWithEditQueue = (
     [],
   );
 
+  const updateServerElements = useCallback((freshElements: ScriptElement[]) => {
+    setServerElements(freshElements);
+    setCurrentElements([...freshElements]); // Also update current elements
+  }, []);
+
   const discardChanges = useCallback(() => {
     editQueueRef.current.clearQueue();
-  }, []);
+    // Reset currentElements to serverElements since we've cleared all edits
+    setCurrentElements([...serverElements]);
+  }, [serverElements]);
 
   const undoOperation = useCallback(() => {
     editQueueRef.current.undo();
@@ -378,6 +386,7 @@ export const useScriptElementsWithEditQueue = (
       // Save operations
       saveChanges,
       discardChanges,
+      updateServerElements,
 
       // Undo/Redo
       undo: undoOperation,
@@ -855,7 +864,7 @@ function applyOperationToElements(
     case "CREATE_GROUP":
       // Handle element grouping
       const createGroupOp = operation as any;
-      const groupColor = createGroupOp.background_color || "#E2E8F0";
+      const groupColor = createGroupOp.custom_color || "#E2E8F0";
       const groupName = createGroupOp.group_name || "Untitled Group";
       const elementIds = createGroupOp.element_ids || [];
 

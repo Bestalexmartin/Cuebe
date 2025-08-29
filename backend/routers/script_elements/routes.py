@@ -246,6 +246,5 @@ def batch_update_script_elements(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Process a batch of edit queue operations - STRIPPED FOR REBUILD"""
-    print("backend save clicked")
-    return {"success": True, "message": "Save stripped for rebuild"}
+    """Process a batch of edit queue operations"""
+    return batch_update_from_edit_queue(script_id, batch_request, user, db)
