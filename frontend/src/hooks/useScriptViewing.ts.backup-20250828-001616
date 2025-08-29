@@ -94,37 +94,40 @@ export const useScriptViewing = (shareToken: string | undefined) => {
   }, []);
 
   const refreshScriptData = useCallback(() => {
-    // STRIPPED FOR REBUILD: This was part of the broken coordinated refresh architecture
-    // TODO REBUILD: May not be needed if unified save handles refresh via single response
-    // if (viewingScriptId) {
-    //   handleScriptClick(viewingScriptId);
-    // }
+    if (viewingScriptId) {
+      handleScriptClick(viewingScriptId);
+    }
   }, [viewingScriptId, handleScriptClick]);
 
   const refreshScriptElementsOnly = useCallback(async () => {
-    // STRIPPED FOR REBUILD: This was part of the broken coordinated refresh architecture
-    // TODO REBUILD: May not be needed if unified save handles refresh via single response
-    // if (!viewingScriptId || !validateShareToken(shareToken)) {
-    //   return;
-    // }
-    // try {
-    //   const elementsResponse = await fetch(
-    //     buildSharedApiUrl(`/api/scripts/${viewingScriptId}/elements`, shareToken!)
-    //   );
-    //   if (!elementsResponse.ok) {
-    //     return;
-    //   }
-    //   const elementsData = await elementsResponse.json();
-    //   let elements: ScriptElement[];
-    //   if (Array.isArray(elementsData)) {
-    //     elements = elementsData;
-    //   } else {
-    //     elements = elementsData.elements || [];
-    //   }
-    //   const elementsWithGroupDurations = recalculateGroupDurations(elements);
-    //   setScriptElements(elementsWithGroupDurations);
-    // } catch (err) {
-    // }
+    if (!viewingScriptId || !validateShareToken(shareToken)) {
+      return;
+    }
+
+    try {
+      const elementsResponse = await fetch(
+        buildSharedApiUrl(`/api/scripts/${viewingScriptId}/elements`, shareToken!)
+      );
+
+      if (!elementsResponse.ok) {
+        return;
+      }
+
+      const elementsData = await elementsResponse.json();
+      
+      let elements: ScriptElement[];
+      if (Array.isArray(elementsData)) {
+        elements = elementsData;
+      } else {
+        elements = elementsData.elements || [];
+        // Don't update crew context to avoid unnecessary re-renders
+      }
+      
+      // Recalculate group durations for all group elements
+      const elementsWithGroupDurations = recalculateGroupDurations(elements);
+      setScriptElements(elementsWithGroupDurations);
+    } catch (err) {
+    }
   }, [viewingScriptId, shareToken]);
 
   const updateScriptElementsDirectly = useCallback((newElements: ScriptElement[]) => {

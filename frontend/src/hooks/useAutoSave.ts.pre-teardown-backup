@@ -6,7 +6,7 @@ interface UseAutoSaveParams {
   autoSaveInterval: number; // 0 = off, 10, 60, 120, 300 seconds (10s, 1min, 2min, 5min)
   hasUnsavedChanges: boolean;
   pendingOperations: any[];
-  saveChanges: () => Promise<boolean>; // Stub - will be replaced with new save function
+  saveChanges: () => Promise<boolean>;
   onAutoSaveStart?: () => void;
   onAutoSaveComplete?: (success: boolean) => void;
 }
@@ -50,12 +50,9 @@ export const useAutoSave = ({
     }
   }, [isPaused]);
 
-  // RENDER LOOP FIX: Optimize dependencies to prevent excessive re-renders
   const performAutoSave = useCallback(async () => {
-    
     // Don't auto-save if paused, already saving, or no changes
     if (isPaused || isAutoSaving || !hasUnsavedChanges || pendingOperations.length === 0) {
-      
       if (pendingOperations.length === 0) {
         // Clear the timer completely when no changes
         if (countdownRef.current) {
@@ -94,24 +91,21 @@ export const useAutoSave = ({
           countdownRef.current = null;
         }
         setSecondsUntilNextSave(0);
-      } else {
-        console.error(`❌ AUTO-SAVE DEBUG: Auto-save failed`);
       }
 
       onAutoSaveComplete?.(success);
     } catch (error) {
-      console.error("❌ AUTO-SAVE DEBUG: Auto-save error:", error);
+      console.error("Auto-save: Error", error);
       onAutoSaveComplete?.(false);
     } finally {
       saveInProgressRef.current = false;
       setIsAutoSaving(false);
     }
   }, [
-    // RENDER LOOP FIX: Use only length instead of full array to reduce re-renders
     isPaused,
     isAutoSaving,
     hasUnsavedChanges,
-    pendingOperations.length, // Changed from full array
+    pendingOperations,
     saveChanges,
     onAutoSaveStart,
     onAutoSaveComplete,
@@ -122,7 +116,7 @@ export const useAutoSave = ({
     performAutoSaveRef.current = performAutoSave;
   }, [performAutoSave]);
 
-  // Set up auto-save interval - OPTIMIZED to prevent render loops
+  // Set up auto-save interval
   useEffect(() => {
     // Clear existing intervals
     if (countdownRef.current) {
@@ -142,21 +136,18 @@ export const useAutoSave = ({
       return;
     }
 
-    // Set up countdown timer (updates every second) - RENDER LOOP FIX
+    // Set up countdown timer (updates every second)
     setSecondsUntilNextSave(autoSaveInterval);
     countdownRef.current = window.setInterval(() => {
       setSecondsUntilNextSave((prev) => {
-        // RENDER LOOP FIX: Only update state when value actually changes
-        const next = Math.max(0, prev - 1);
-        if (next !== prev) {
-          if (next <= 0) {
-            // Time to auto-save
-            performAutoSaveRef.current && performAutoSaveRef.current();
-            return 0;
-          }
-          return next;
+        const next = prev - 1;
+        if (next <= 0) {
+          // Time to auto-save
+          performAutoSaveRef.current && performAutoSaveRef.current();
+          // Don't reset countdown here - let the performAutoSave function handle timer state
+          return 0;
         }
-        return prev; // Return same value to prevent unnecessary re-render
+        return next;
       });
     }, 1000);
 

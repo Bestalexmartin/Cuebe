@@ -1,12 +1,12 @@
 // frontend/src/components/layout/Header.tsx
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import { SignedIn, UserButton } from "@clerk/clerk-react";
 import { Flex, Text, Heading, Image, IconButton, useColorModeValue } from "@chakra-ui/react";
 import { AppIcon } from '../AppIcon';
 import { useIntegratedColorMode } from '../../hooks/useIntegratedColorMode';
 import { BorderedContainer } from '../shared/BorderedContainer';
-import { ScriptSyncIcon } from '../shared/ScriptSyncIcon';
+import { ScriptSyncIcon, ScriptSyncIconRef } from '../shared/ScriptSyncIcon';
 import { useScriptSyncContextOptional } from '../../contexts/ScriptSyncContext';
 
 const DarkModeSwitch: React.FC = () => {
@@ -40,12 +40,23 @@ interface HeaderProps {
 
 
 const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
+  const scriptSyncIconRef = useRef<ScriptSyncIconRef>(null);
+  
   const handleMenuOpen = (): void => {
     onMenuOpen();
   };
 
   const syncContext = useScriptSyncContextOptional();
   const syncData = syncContext?.syncData;
+  
+  // Wire up the context triggerRotation to the actual icon
+  useEffect(() => {
+    if (syncData?.triggerRotation) {
+      syncData.triggerRotation.current = () => {
+        scriptSyncIconRef.current?.triggerRotation();
+      };
+    }
+  }, [syncData]);
 
   const headerBgColor = useColorModeValue('white', 'gray.800');
 
@@ -86,12 +97,12 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
             </BorderedContainer>
             <BorderedContainer>
               <ScriptSyncIcon
+                ref={scriptSyncIconRef}
                 isConnected={syncData?.isConnected || false}
                 isConnecting={syncData?.isConnecting || false}
                 connectionCount={syncData?.connectionCount || 0}
                 connectionError={syncData?.connectionError}
                 userType={syncData?.userType || 'stage_manager'}
-                shouldRotate={syncData?.shouldRotate || false}
               />
             </BorderedContainer>
             <BorderedContainer>

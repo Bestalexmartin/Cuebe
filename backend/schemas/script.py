@@ -31,7 +31,7 @@ class Script(BaseModel):
     date_created: datetime
     date_updated: datetime
     
-    # Forward reference to ScriptElement (defined below) - Optional for dashboard performance
+    # Forward reference to ScriptElement for complete element data
     elements: Optional[List['ScriptElement']] = []
 
     class Config:
@@ -44,6 +44,7 @@ class ScriptUpdate(BaseModel):
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None  # Planned end time
     is_shared: Optional[bool] = None
+
 
 class BatchUpdateResponse(BaseModel):
     """Response for batch update operations on script elements"""

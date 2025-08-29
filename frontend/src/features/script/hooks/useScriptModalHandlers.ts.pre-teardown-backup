@@ -10,7 +10,7 @@ interface UseScriptModalHandlersParams {
   scriptId: string | undefined;
   script: any;
   hasUnsavedChanges: boolean;
-  saveChanges: () => Promise<boolean>; // Stub - will be replaced with new save function
+  saveChanges: () => Promise<boolean>;
   discardChanges: () => void;
   modalState: {
     openModal: (name: string) => void;
@@ -209,7 +209,7 @@ export const useScriptModalHandlers = ({
     modalState.openModal(modalNames.SAVE_PROCESSING);
 
     try {
-      const success = true; // Stub for rebuild
+      const success = await saveChanges();
 
       if (success) {
         await new Promise((resolve) => setTimeout(resolve, 500));

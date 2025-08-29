@@ -1,35 +1,12 @@
-# backend/routers/script_elements.py
+# backend/routers/script_elements/processors.py
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Query, Request
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
+from sqlalchemy import and_
 from uuid import UUID
-from datetime import datetime, timezone, timedelta
-from typing import List, Optional
-import logging
-
+from datetime import datetime, timezone
 import models
-import schemas
-from database import get_db
-from .auth import get_current_user
 from utils.datetime_utils import parse_iso_datetime
 
-# Optional rate limiting import
-try:
-    from utils.rate_limiter import limiter, RateLimitConfig
-    RATE_LIMITING_AVAILABLE = True
-except ImportError:
-    limiter = None
-    RateLimitConfig = None
-    RATE_LIMITING_AVAILABLE = False
-
-logger = logging.getLogger(__name__)
-
-router = APIRouter(prefix="/api", tags=["script-elements"])
-
-def _auto_populate_show_start_duration(db: Session, script: models.Script, elements: List[models.ScriptElement]):
-    """Auto-populate SHOW START duration based on script start and end times."""
-    pass
 
 def _process_bulk_reorder_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process a bulk reorder operation."""
@@ -54,14 +31,11 @@ def _process_bulk_reorder_operation(db: Session, script_id: UUID, operation_data
             element.date_updated = datetime.now(timezone.utc)
             updated_count += 1
     
-    return schemas.script.BatchUpdateResponse(
-        updated_count=updated_count,
-        total_changes=len(element_changes)
-    )
+    return {
+        "updated_count": updated_count,
+        "total_changes": len(element_changes)
+    }
 
-def _process_disable_auto_sort_operation(operation_data: dict):
-    """Process a disable auto-sort operation (preference only, no element changes)."""
-    return {"preference_updated": True, "auto_sort_disabled": True}
 
 def _process_create_group_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process a group creation operation."""
@@ -85,8 +59,6 @@ def _process_create_group_operation(db: Session, script_id: UUID, operation_data
     # Find the minimum sequence and time offset for the group parent
     min_sequence = min(element.sequence for element in elements_to_group)
     min_time_offset = min(element.offset_ms for element in elements_to_group)
-    
-    # Don't generate group summary notes - will be calculated dynamically on frontend
     
     # Create the group parent element
     group_parent = models.ScriptElement(
@@ -151,6 +123,7 @@ def _process_create_group_operation(db: Session, script_id: UUID, operation_data
         "group_name": group_name
     }
 
+
 def _process_ungroup_elements_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process an ungroup elements operation."""
     
@@ -185,8 +158,7 @@ def _process_ungroup_elements_operation(db: Session, script_id: UUID, operation_
         updated_children += 1
     
     # Delete the group parent element
-    group_element.updated_by = user.user_id
-    group_element.date_updated = datetime.now(timezone.utc)
+    db.delete(group_element)
     
     return {
         "operation": "ungroup_elements",
@@ -194,6 +166,7 @@ def _process_ungroup_elements_operation(db: Session, script_id: UUID, operation_
         "updated_children": updated_children,
         "group_deleted": True
     }
+
 
 def _process_update_script_info_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
     """Process a script info update operation."""
@@ -237,3 +210,138 @@ def _process_update_script_info_operation(db: Session, script_id: UUID, operatio
     script.updated_by = user.user_id
     script.date_updated = datetime.now(timezone.utc)
     return {"script_id": str(script_id), "updated_fields": updated_fields}
+
+
+def _process_update_element_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+    """Process an update element operation."""
+    
+    element_id = operation_data.get("element_id")
+    changes = operation_data.get("changes", {})
+    
+    # Find the element to update
+    element = db.query(models.ScriptElement).filter(
+        and_(
+            models.ScriptElement.element_id == UUID(element_id),
+            models.ScriptElement.script_id == script_id
+        )
+    ).first()
+    
+    if not element:
+        raise ValueError(f"Element {element_id} not found")
+    
+    updated_fields = []
+    
+    # Apply each field change
+    for field, change_data in changes.items():
+        new_value = change_data.get("new_value")
+        
+        if field == "offset_ms":
+            element.offset_ms = new_value
+            updated_fields.append("offset_ms")
+        elif field == "element_name":
+            element.element_name = new_value
+            updated_fields.append("element_name")
+        elif field == "cue_notes":
+            element.cue_notes = new_value
+            updated_fields.append("cue_notes")
+        elif field == "custom_color":
+            element.custom_color = new_value
+            updated_fields.append("custom_color")
+        # Add other fields as needed
+    
+    # Update metadata
+    element.updated_by = user.user_id
+    element.date_updated = datetime.now(timezone.utc)
+    
+    return {"element_id": str(element_id), "updated_fields": updated_fields}
+
+
+def _process_create_element_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+    """Process a create element operation."""
+    
+    element_data = operation_data.get("element_data", {})
+    
+    # Create new element from provided data
+    new_element = models.ScriptElement(
+        script_id=script_id,
+        element_type=element_data.get("element_type", "CUE"),
+        sequence=element_data.get("sequence", 1),
+        offset_ms=element_data.get("offset_ms", 0),
+        element_name=element_data.get("element_name", "New Element"),
+        cue_notes=element_data.get("cue_notes", ""),
+        custom_color=element_data.get("custom_color"),
+        department_id=element_data.get("department_id"),
+        priority=element_data.get("priority", models.PriorityLevel.NORMAL),
+        group_level=element_data.get("group_level", 0),
+        is_collapsed=element_data.get("is_collapsed", False),
+        parent_element_id=element_data.get("parent_element_id"),
+        created_by=user.user_id,
+        updated_by=user.user_id
+    )
+    
+    db.add(new_element)
+    db.flush()  # Get the ID
+    
+    return {
+        "element_id": str(new_element.element_id),
+        "element_type": new_element.element_type,
+        "sequence": new_element.sequence
+    }
+
+
+def _process_delete_element_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+    """Process a delete element operation."""
+    
+    element_id = operation_data.get("element_id")
+    
+    # Find the element to delete
+    element = db.query(models.ScriptElement).filter(
+        and_(
+            models.ScriptElement.element_id == UUID(element_id),
+            models.ScriptElement.script_id == script_id
+        )
+    ).first()
+    
+    if not element:
+        raise ValueError(f"Element {element_id} not found")
+    
+    # Store info for response before deletion
+    element_info = {
+        "element_id": str(element_id),
+        "element_name": element.element_name,
+        "element_type": element.element_type
+    }
+    
+    # Delete the element
+    db.delete(element)
+    
+    return element_info
+
+
+def _process_reorder_operation(db: Session, script_id: UUID, operation_data: dict, user: models.User):
+    """Process a single element reorder operation."""
+    
+    element_id = operation_data.get("element_id")
+    new_sequence = operation_data.get("new_sequence")
+    
+    # Find the element to reorder
+    element = db.query(models.ScriptElement).filter(
+        and_(
+            models.ScriptElement.element_id == UUID(element_id),
+            models.ScriptElement.script_id == script_id
+        )
+    ).first()
+    
+    if not element:
+        raise ValueError(f"Element {element_id} not found")
+    
+    old_sequence = element.sequence
+    element.sequence = new_sequence
+    element.updated_by = user.user_id
+    element.date_updated = datetime.now(timezone.utc)
+    
+    return {
+        "element_id": str(element_id),
+        "old_sequence": old_sequence,
+        "new_sequence": new_sequence
+    }

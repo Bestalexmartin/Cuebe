@@ -1,6 +1,6 @@
 // frontend/src/components/shared/ScriptSyncIcon.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react';
 import {
   IconButton,
   Box,
@@ -115,44 +115,54 @@ interface ScriptSyncIconProps {
   connectionError?: string | null;
   userType: 'stage_manager' | 'crew_member';
   onClick?: () => void;
-  shouldRotate?: boolean; // Triggers rotation animation
 }
 
-export const ScriptSyncIcon: React.FC<ScriptSyncIconProps> = ({
+export interface ScriptSyncIconRef {
+  triggerRotation: () => void;
+}
+
+export const ScriptSyncIcon = forwardRef<ScriptSyncIconRef, ScriptSyncIconProps>(({
   isConnected,
   isConnecting,
   connectionError,
-  onClick,
-  shouldRotate = false
-}) => {
+  onClick
+}, ref) => {
   const [displayedIcon, setDisplayedIcon] = useState<React.ReactNode>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [internalRotate, setInternalRotate] = useState(false);
+  const [shouldRotate, setShouldRotate] = useState(false);
   const [hasShownWelcomeRotation, setHasShownWelcomeRotation] = useState(false);
   
+  // Internal rotation trigger function
+  const handleRotation = useCallback(() => {
+    setShouldRotate(true);
+    setTimeout(() => setShouldRotate(false), 700);
+  }, []);
+  
+  // Expose rotation function to parent via ref
+  useImperativeHandle(ref, () => ({
+    triggerRotation: handleRotation
+  }), [handleRotation]);
+  
 
-  const getCurrentIcon = () => {
+  const getCurrentIcon = useMemo(() => {
     if (connectionError) return <ThickRingIcon size="22px" />;
     if (isConnecting) return <DualSpinningRingIcon size="22px" />;
     if (isConnected) {
-      const finalShouldRotate = shouldRotate || internalRotate;
-      return <ConnectedIcon size="22px" shouldRotate={finalShouldRotate} />;
+      return <ConnectedIcon size="22px" shouldRotate={shouldRotate} />;
     }
     return <ThickRingIcon size="22px" />;
-  };
+  }, [connectionError, isConnecting, isConnected, shouldRotate]);
 
   useEffect(() => {
-    const newIcon = getCurrentIcon();
-    
     if (displayedIcon === null) {
       // First render - no transition needed
-      setDisplayedIcon(newIcon);
+      setDisplayedIcon(getCurrentIcon);
     } else if (isConnecting && !isConnected) {
       // Transition to connecting state
       setIsTransitioning(true);
       
       setTimeout(() => {
-        setDisplayedIcon(newIcon);
+        setDisplayedIcon(getCurrentIcon);
         setIsTransitioning(false);
       }, 200); // 0.2 second transition to connecting state
     } else if (isConnected || connectionError || (!isConnecting && !isConnected)) {
@@ -160,25 +170,17 @@ export const ScriptSyncIcon: React.FC<ScriptSyncIconProps> = ({
       setIsTransitioning(true);
       
       setTimeout(() => {
-        setDisplayedIcon(newIcon);
+        setDisplayedIcon(getCurrentIcon);
         setIsTransitioning(false);
         
         // Trigger welcome rotation when connected icon is displayed
         if (isConnected && !hasShownWelcomeRotation) {
-          setInternalRotate(true);
           setHasShownWelcomeRotation(true);
-          setTimeout(() => setInternalRotate(false), 700);
+          handleRotation(); // Use internal rotation handler
         }
       }, 1000); // 1 second delay to show connecting state longer
     }
-  }, [isConnected, isConnecting, connectionError]); // Remove shouldRotate from deps
-  
-  // Handle rotation updates separately without triggering transitions
-  useEffect(() => {
-    if (isConnected && displayedIcon !== null) {
-      setDisplayedIcon(getCurrentIcon());
-    }
-  }, [shouldRotate, internalRotate]); // Update for both external and internal rotation changes
+  }, [isConnected, isConnecting, connectionError, getCurrentIcon, handleRotation]); // Add handleRotation for welcome rotation
 
   // Reset welcome rotation state when component unmounts or disconnects
   useEffect(() => {
@@ -210,4 +212,4 @@ export const ScriptSyncIcon: React.FC<ScriptSyncIconProps> = ({
       }
     />
   );
-};
+});

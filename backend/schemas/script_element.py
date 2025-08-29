@@ -21,14 +21,60 @@ class ScriptElement(BaseModel):
     """Schema for script elements going TO the frontend"""
     element_id: UUID
     script_id: UUID
-    department_id: Optional[UUID] = None
     element_type: str
+    sequence: Optional[int] = None
+    
+    # Timing fields
+    offset_ms: int = 0  # Timing in milliseconds
+    duration_ms: Optional[int] = None
+    priority: str = "normal"
+    
+    # Content
+    element_name: str = ""
+    cue_notes: Optional[str] = None
+    
+    # Location and visual
+    department_id: Optional[UUID] = None
+    department_name: Optional[str] = None  # Computed from department relationship
+    department_initials: Optional[str] = None  # Computed from department relationship
+    department_color: Optional[str] = None  # Computed from department relationship
+    location_details: Optional[str] = None
+    custom_color: Optional[str] = None
+    
+    # Grouping and hierarchy
+    parent_element_id: Optional[UUID] = None
+    group_level: int = 0
+    is_collapsed: bool = False
+    
+    # System fields
+    created_by: Optional[UUID] = None
+    updated_by: Optional[UUID] = None
+    date_created: datetime
+    date_updated: datetime
 
     class Config:
         from_attributes = True
+    
+    @model_validator(mode='before')
+    @classmethod
+    def populate_department_fields(cls, data):
+        """Populate department name, initials, and color from department relationship"""
+        if hasattr(data, 'department') and data.department:
+            # If this is a SQLAlchemy model instance with department relationship
+            data.department_name = data.department.department_name
+            data.department_initials = data.department.department_initials
+            data.department_color = data.department.department_color
+        elif isinstance(data, dict):
+            # If this is already a dict, check if department data is available
+            department = data.get('department')
+            if department:
+                data['department_name'] = department.get('department_name')
+                data['department_initials'] = department.get('department_initials')
+                data['department_color'] = department.get('department_color')
+        return data
 
 # =============================================================================
-# ENHANCED SCRIPT ELEMENT SCHEMAS
+# CREATE/UPDATE SCHEMAS
 # =============================================================================
 
 class ScriptElementCreate(BaseModel):
@@ -62,68 +108,6 @@ class ScriptElementUpdate(BaseModel):
     is_collapsed: Optional[bool] = None
     custom_color: Optional[str] = None
 
-# Note: Some schemas have been removed to simplify the codebase
-
-class ScriptElementEnhanced(BaseModel):
-    """Enhanced schema for script elements with all new fields"""
-    element_id: UUID
-    script_id: UUID
-    element_type: str
-    sequence: Optional[int] = None
-    
-    # Timing fields
-    offset_ms: int = 0  # Timing in milliseconds
-    duration_ms: Optional[int] = None
-    priority: str = "normal"
-    
-    # Content
-    element_name: str = ""
-    cue_notes: Optional[str] = None
-    
-    # Location and visual
-    department_id: Optional[UUID] = None
-    department_name: Optional[str] = None  # Computed from department relationship
-    department_initials: Optional[str] = None  # Computed from department relationship
-    department_color: Optional[str] = None  # Computed from department relationship
-    location_details: Optional[str] = None
-    custom_color: Optional[str] = None
-    
-    # Grouping and hierarchy
-    parent_element_id: Optional[UUID] = None
-    group_level: int = 0
-    is_collapsed: bool = False
-    
-    # System fields
-    created_by: Optional[UUID] = None
-    updated_by: Optional[UUID] = None
-    date_created: datetime
-    date_updated: datetime
-    
-    # Relationships (removed unused features)
-    
-    class Config:
-        from_attributes = True
-    
-    @model_validator(mode='before')
-    @classmethod
-    def populate_department_fields(cls, data):
-        """Populate department name, initials, and color from department relationship"""
-        if hasattr(data, 'department') and data.department:
-            # If this is a SQLAlchemy model instance with department relationship
-            data.department_name = data.department.department_name
-            data.department_initials = data.department.department_initials
-            data.department_color = data.department.department_color
-        elif isinstance(data, dict):
-            # If this is already a dict, check if department data is available
-            department = data.get('department')
-            if department:
-                data['department_name'] = department.get('department_name')
-                data['department_initials'] = department.get('department_initials')
-                data['department_color'] = department.get('department_color')
-        return data
-
-# Note: ScriptElement and ScriptElementEnhanced are separate schemas for different use cases
-
 # =============================================================================
 # SHARED ACCESS SCHEMAS
 # =============================================================================
@@ -138,5 +122,5 @@ class CrewContext(BaseModel):
 
 class SharedScriptElementsResponse(BaseModel):
     """Response schema for shared script elements with crew context"""
-    elements: List[ScriptElementEnhanced]
+    elements: List[ScriptElement]
     crew_context: Optional[CrewContext] = None
