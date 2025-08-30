@@ -257,7 +257,7 @@ export const AuthenticationTest: React.FC = () => {
               showInfo('Token Issue', 'Signed in but could not retrieve token. May be a session issue.');
             }
           } catch (e) {
-            console.warn('Could not retrieve Clerk token:', e);
+            warn('Could not retrieve Clerk token:', e);
             showInfo('Token Error', 'Failed to retrieve authentication token from Clerk.');
           }
         } else {
@@ -574,3 +574,4 @@ export const AuthenticationTest: React.FC = () => {
     </VStack>
   );
 };
+import { warn } from '../../utils/logger';

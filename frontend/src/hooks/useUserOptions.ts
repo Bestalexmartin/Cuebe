@@ -23,7 +23,7 @@ const saveOptionsToStorage = (options: UserOptions) => {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(options));
     } catch (error) {
-        console.warn('Failed to save options to localStorage:', error);
+        warn('Failed to save options to localStorage:', error);
     }
 };
 
@@ -42,7 +42,7 @@ const loadOptionsFromStorage = (): UserOptions | null => {
             }
         }
     } catch (error) {
-        console.warn('Failed to load options from localStorage:', error);
+        warn('Failed to load options from localStorage:', error);
     }
     return null;
 };
@@ -80,7 +80,7 @@ export const useUserOptions = () => {
                     setOptions(userOptions);
                     saveOptionsToStorage(userOptions);
                 } else {
-                    console.warn('Failed to load user options, using stored or defaults');
+                    warn('Failed to load user options, using stored or defaults');
                     const storedOptions = loadOptionsFromStorage();
                     if (storedOptions) {
                         setOptions(storedOptions);
@@ -231,3 +231,4 @@ export const useUserOptions = () => {
         updateOptions
     }), [options, isLoading, isSaving, updateOption, updateOptions]);
 };
+import { warn } from '../utils/logger';

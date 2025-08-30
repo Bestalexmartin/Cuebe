@@ -179,7 +179,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
             setExistingDepartments(departments);
           }
         } catch (error) {
-          console.warn('Failed to fetch existing departments:', error);
+          warn('Failed to fetch existing departments:', error);
           setExistingDepartments([]);
         }
       };
@@ -678,3 +678,4 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
     </BaseModal>
   );
 };
+import { warn } from '../../../../utils/logger';

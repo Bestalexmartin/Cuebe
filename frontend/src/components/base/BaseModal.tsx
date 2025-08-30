@@ -123,32 +123,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
   size,
   ...modalContentProps
 }) => {
-  const getButtonVariant = (variant: BaseModalAction['variant'] = 'secondary') => {
-    switch (variant) {
-      case 'primary':
-        return {
-          bg: 'blue.400',
-          color: 'white',
-          _hover: { bg: 'orange.400' }
-        };
-      case 'danger':
-        return {
-          bg: 'red.500',
-          color: 'white',
-          _hover: { bg: 'red.600' }
-        };
-      case 'outline':
-        return {
-          variant: 'outline',
-          _hover: { bg: 'card.background' }
-        };
-      case 'secondary':
-      default:
-        return {
-          _hover: { bg: 'gray.100', _dark: { bg: 'gray.700' } }
-        };
-    }
-  };
+  // Buttons use Chakra theme variants (primary, secondary, danger, outline)
 
   const defaultSecondaryAction: BaseModalAction = {
     label: 'Cancel',
@@ -318,7 +293,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
           isDisabled={action.isDisabled}
           loadingText={action.loadingText}
           mr={index < customActions.length - 1 ? 3 : 0}
-          {...getButtonVariant(action.variant)}
+          variant={action.variant || 'secondary'}
         >
           {action.label}
         </Button>
@@ -331,7 +306,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
           size="sm"
           onClick={finalSecondaryAction.onClick}
           isDisabled={finalSecondaryAction.isDisabled}
-          {...getButtonVariant(finalSecondaryAction.variant)}
+          variant={finalSecondaryAction.variant || 'secondary'}
         >
           {finalSecondaryAction.label}
         </Button>
@@ -345,7 +320,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
             isLoading={primaryAction.isLoading}
             isDisabled={primaryAction.isDisabled}
             loadingText={primaryAction.loadingText}
-            {...getButtonVariant(primaryAction.variant)}
+            variant={primaryAction.variant || 'primary'}
           >
             {primaryAction.label}
           </Button>

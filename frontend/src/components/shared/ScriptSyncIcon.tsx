@@ -11,13 +11,14 @@ import { IoSyncCircleSharp } from "react-icons/io5";
 // Connected Icon Component
 const ConnectedIcon: React.FC<{ size: string; shouldRotate?: boolean }> = ({ size, shouldRotate = false }) => {
   const [animationKey, setAnimationKey] = React.useState(0);
-  
+
   React.useEffect(() => {
+    console.log('🎯 ConnectedIcon shouldRotate changed:', shouldRotate);
     if (shouldRotate) {
       setAnimationKey(prev => prev + 1);
     }
   }, [shouldRotate]);
-  
+
   return (
     <Box
       width={size}
@@ -57,7 +58,7 @@ const ThickRingIcon: React.FC<{ size: string }> = ({ size }) => (
 
 // Dual Spinning Rings Icon Component (for connecting state)
 const DualSpinningRingIcon: React.FC<{ size: string }> = ({ size }) => (
-  <Box
+    <Box
     width={size}
     height={size}
     position="relative"
@@ -128,59 +129,75 @@ export const ScriptSyncIcon = forwardRef<ScriptSyncIconRef, ScriptSyncIconProps>
   onClick
 }, ref) => {
   const [displayedIcon, setDisplayedIcon] = useState<React.ReactNode>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [shouldRotate, setShouldRotate] = useState(false);
   const [hasShownWelcomeRotation, setHasShownWelcomeRotation] = useState(false);
-  
+  const [isConnectedWithFade, setIsConnectedWithFade] = useState(false);
+  const [animationStage, setAnimationStage] = useState<'initial' | 'connecting' | 'connected'>('initial');
+
   // Internal rotation trigger function
   const handleRotation = useCallback(() => {
+    console.log('🔄 handleRotation called, animationStage:', animationStage, 'isConnected:', isConnected);
     setShouldRotate(true);
     setTimeout(() => setShouldRotate(false), 700);
-  }, []);
-  
+  }, [animationStage, isConnected]);
+
   // Expose rotation function to parent via ref
   useImperativeHandle(ref, () => ({
     triggerRotation: handleRotation
   }), [handleRotation]);
-  
+
 
   const getCurrentIcon = useMemo(() => {
     if (connectionError) return <ThickRingIcon size="22px" />;
-    if (isConnecting) return <DualSpinningRingIcon size="22px" />;
-    if (isConnected) {
+    if (animationStage === 'connecting') return <DualSpinningRingIcon size="22px" />;
+    if (animationStage === 'connected') {
       return <ConnectedIcon size="22px" shouldRotate={shouldRotate} />;
     }
     return <ThickRingIcon size="22px" />;
-  }, [connectionError, isConnecting, isConnected, shouldRotate]);
+  }, [connectionError, animationStage, shouldRotate]);
 
+  // Staged animation sequence - always plays full duration regardless of actual connection speed
   useEffect(() => {
     if (displayedIcon === null) {
-      // First render - no transition needed
+      // First render - show initial state
       setDisplayedIcon(getCurrentIcon);
-    } else if (isConnecting && !isConnected) {
-      // Transition to connecting state
-      setIsTransitioning(true);
-      
+    } else if ((isConnecting || isConnected) && animationStage === 'initial') {
+      // Start connecting animation sequence
+      setAnimationStage('connecting');
       setTimeout(() => {
-        setDisplayedIcon(getCurrentIcon);
-        setIsTransitioning(false);
-      }, 200); // 0.2 second transition to connecting state
-    } else if (isConnected || connectionError || (!isConnecting && !isConnected)) {
-      // Transition from connecting to other states
-      setIsTransitioning(true);
+        setDisplayedIcon(<DualSpinningRingIcon size="22px" />);
+      }, 200);
       
+      // Always wait for full connecting animation before showing connected state
       setTimeout(() => {
+        setAnimationStage('connected');
+        setIsConnectedWithFade(true);
         setDisplayedIcon(getCurrentIcon);
-        setIsTransitioning(false);
         
-        // Trigger welcome rotation when connected icon is displayed
-        if (isConnected && !hasShownWelcomeRotation) {
+        // Mark welcome rotation as shown
+        if (!hasShownWelcomeRotation) {
           setHasShownWelcomeRotation(true);
-          handleRotation(); // Use internal rotation handler
         }
-      }, 1000); // 1 second delay to show connecting state longer
+        
+        // Stop initial rotation after animation completes, keep fade state
+        setTimeout(() => {
+          setShouldRotate(false);
+        }, 700);
+      }, 1400); // 200ms + 1200ms for full connecting sequence
+    } else if (connectionError || (!isConnecting && !isConnected && animationStage !== 'initial')) {
+      // Error or disconnection - immediate change
+      setAnimationStage('initial');
+      setDisplayedIcon(getCurrentIcon);
+      setHasShownWelcomeRotation(false);
     }
-  }, [isConnected, isConnecting, connectionError, getCurrentIcon, handleRotation]); // Add handleRotation for welcome rotation
+  }, [isConnected, isConnecting, connectionError, animationStage, hasShownWelcomeRotation]);
+
+  // Update displayed icon when shouldRotate changes (for ping/pong rotations)
+  useEffect(() => {
+    if (animationStage === 'connected') {
+      setDisplayedIcon(getCurrentIcon);
+    }
+  }, [shouldRotate, getCurrentIcon, animationStage]); // Add handleRotation for welcome rotation
 
   // Reset welcome rotation state when component unmounts or disconnects
   useEffect(() => {
@@ -203,8 +220,8 @@ export const ScriptSyncIcon = forwardRef<ScriptSyncIconRef, ScriptSyncIconProps>
       icon={
         <Box
           sx={{
-            transition: 'opacity 0.2s ease-in-out',
-            opacity: isTransitioning ? 0.3 : 1
+            transition: isConnectedWithFade ? 'opacity 0.3s ease-in-out' : 'none',
+            opacity: isConnectedWithFade && animationStage === 'connected' ? 1 : (animationStage === 'connected' ? 0.3 : 1)
           }}
         >
           {displayedIcon}

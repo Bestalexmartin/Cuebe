@@ -1,6 +1,7 @@
 // frontend/src/features/script/export/utils/csvExporter.ts
 
 import { formatTimeOffset } from '../../../../utils/timeUtils';
+import { warn } from '../../../../utils/logger';
 
 export interface ScriptExportData {
   script: {
@@ -163,7 +164,7 @@ export const downloadCSV = async (csvContent: string, filename: string): Promise
         return;
       }
       // For other errors, fall back to automatic download
-      console.warn('Failed to use File System Access API, falling back to automatic download:', error);
+      warn('Failed to use File System Access API, falling back to automatic download:', error);
     }
   }
   

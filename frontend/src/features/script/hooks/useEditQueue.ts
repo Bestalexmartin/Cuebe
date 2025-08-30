@@ -171,7 +171,7 @@ export const useEditQueue = (): UseEditQueueReturn => {
             
             // Validate target index
             if (targetIndex < 0 || targetIndex >= operations.length) {
-                console.warn('Invalid target index for revert:', targetIndex);
+                warn('Invalid target index for revert:', targetIndex);
                 return prevState;
             }
             
@@ -386,3 +386,4 @@ export const useEditQueue = (): UseEditQueueReturn => {
         clearCheckpoints
     ]);
 };
+import { warn } from '../../../utils/logger';
