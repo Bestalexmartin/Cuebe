@@ -13,7 +13,6 @@ const ConnectedIcon: React.FC<{ size: string; shouldRotate?: boolean }> = ({ siz
   const [animationKey, setAnimationKey] = React.useState(0);
 
   React.useEffect(() => {
-    console.log('🎯 ConnectedIcon shouldRotate changed:', shouldRotate);
     if (shouldRotate) {
       setAnimationKey(prev => prev + 1);
     }
@@ -128,6 +127,8 @@ export const ScriptSyncIcon = forwardRef<ScriptSyncIconRef, ScriptSyncIconProps>
   connectionError,
   onClick
 }, ref) => {
+  console.log('🔄 ScriptSyncIcon props:', { isConnected, isConnecting, connectionError });
+  
   const [displayedIcon, setDisplayedIcon] = useState<React.ReactNode>(null);
   const [shouldRotate, setShouldRotate] = useState(false);
   const [hasShownWelcomeRotation, setHasShownWelcomeRotation] = useState(false);
@@ -136,7 +137,6 @@ export const ScriptSyncIcon = forwardRef<ScriptSyncIconRef, ScriptSyncIconProps>
 
   // Internal rotation trigger function
   const handleRotation = useCallback(() => {
-    console.log('🔄 handleRotation called, animationStage:', animationStage, 'isConnected:', isConnected);
     setShouldRotate(true);
     setTimeout(() => setShouldRotate(false), 700);
   }, [animationStage, isConnected]);

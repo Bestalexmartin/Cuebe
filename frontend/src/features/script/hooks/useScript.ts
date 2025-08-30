@@ -25,7 +25,11 @@ interface UseScriptReturn {
   refetchScript: () => Promise<void>;
 }
 
-export const useScript = (scriptId: string | undefined): UseScriptReturn => {
+interface UseScriptOptions {
+  onSuccess?: (script: Script) => void;
+}
+
+export const useScript = (scriptId: string | undefined, shareToken?: string, options?: UseScriptOptions): UseScriptReturn => {
     const { getToken } = useAuth();
     const [script, setScript] = useState<Script | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -38,25 +42,32 @@ export const useScript = (scriptId: string | undefined): UseScriptReturn => {
         setError(null);
         
         try {
-            const token = await getToken();
-            if (!token) {
-                setIsLoading(false);
-                return;
-            }
+            let response: Response;
             
-            const response = await fetch(`/api/scripts/${scriptId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            if (shareToken) {
+                // Use share token authentication
+                response = await fetch(`/api/scripts/${scriptId}?share_token=${encodeURIComponent(shareToken)}`);
+            } else {
+                // Use bearer token authentication
+                const token = await getToken();
+                if (!token) {
+                    setIsLoading(false);
+                    return;
+                }
+                response = await fetch(`/api/scripts/${scriptId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            }
             
             if (!response.ok) {
                 throw new Error('Failed to fetch script data.');
             }
             
             const data: Script = await response.json();
-            
-            
+            console.log('📄 Script loaded:', data.script_id, data.script_name);
             
             setScript(data);
+            options?.onSuccess?.(data);
             
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to load script';
@@ -64,7 +75,7 @@ export const useScript = (scriptId: string | undefined): UseScriptReturn => {
         } finally {
             setIsLoading(false);
         }
-    }, [scriptId, getToken]);
+    }, [scriptId, getToken, shareToken]);
 
     useEffect(() => {
         fetchScript();
