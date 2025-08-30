@@ -23,37 +23,32 @@ interface UpdateCallbacks {
 }
 
 import { useCallback } from 'react';
+import { debug } from '../../utils/logger';
 import { applyOperationToElements } from '../utils/elementOperations';
 
 export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
   const handleUpdate = useCallback((update: ScriptUpdate) => {
-    console.log('🔄 SHARED: Received websocket update:', update);
+    debug('🔄 SHARED: Received websocket update:', update);
     
     const {
-      updateSingleElement,
-      deleteElement,
-      refreshScriptElementsOnly,
-      refreshSharedData,
       updateScriptInfo,
     } = callbacks;
 
     // Guard against updates without type
     if (!update.update_type) {
-      console.log('❌ SHARED: Update missing type, ignoring');
+      debug('❌ SHARED: Update missing type, ignoring');
       return;
     }
 
     // Apply updates based on update type - now expecting operation objects
     if (update.update_type === "script_info") {
-      console.log('📋 SHARED: Processing script_info update:', update.changes);
+      debug('📋 SHARED: Processing script_info update:', update.changes);
       // Script info changes - apply directly (no API calls)
       if (updateScriptInfo && update.changes) {
         updateScriptInfo(update.changes);
-      } else {
-        console.log('⚠️ SHARED: No updateScriptInfo handler available, skipping script info update');
       }
     } else if (update.update_type === "elements_updated") {
-      console.log('📝 SHARED: Processing elements_updated:', update.changes);
+      debug('📝 SHARED: Processing elements_updated:', update.changes);
       // Use shared operation logic to apply all changes at once
       if (Array.isArray(update.changes) && callbacks.getCurrentElements && callbacks.updateScriptElementsDirectly) {
         const currentElements = callbacks.getCurrentElements();
@@ -64,20 +59,18 @@ export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
           updatedElements = applyOperationToElements(updatedElements, operation);
         }
         
-        console.log('✅ SHARED: Applied', update.changes.length, 'operations locally');
+        debug('✅ SHARED: Applied', update.changes.length, 'operations locally');
         callbacks.updateScriptElementsDirectly(updatedElements);
       } else {
-        console.log('⚠️ SHARED: Missing required callbacks for elements_updated');
+        debug('⚠️ SHARED: Missing required callbacks for elements_updated');
       }
     } else if (update.changes) {
-      console.log('🔧 SHARED: Processing individual operation update:', update.changes);
+      debug('🔧 SHARED: Processing individual operation update:', update.changes);
       // Use shared operation logic for individual updates too
       if (callbacks.getCurrentElements && callbacks.updateScriptElementsDirectly) {
         const currentElements = callbacks.getCurrentElements();
         const updatedElements = applyOperationToElements(currentElements, update.changes);
         callbacks.updateScriptElementsDirectly(updatedElements);
-      } else {
-        console.log('⚠️ SHARED: Missing required callbacks for individual operation');
       }
     }
   }, [callbacks]);

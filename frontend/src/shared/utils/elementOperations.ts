@@ -1,5 +1,6 @@
 // frontend/src/shared/utils/elementOperations.ts
 // Shared element operation logic - mirrors backend operations.py
+import { debug } from '../../utils/logger';
 
 interface ElementLike {
   element_id: string;
@@ -14,7 +15,7 @@ export function applyOperationToElements(
   elements: ElementLike[], 
   operation: any
 ): ElementLike[] {
-  console.log('🔧 SHARED OPERATIONS: Applying operation:', operation.type, operation.element_id);
+  debug('🔧 SHARED OPERATIONS: Applying operation:', operation.type, operation.element_id);
   
   // Create a working copy
   const elementsById = new Map(elements.map(el => [el.element_id, { ...el }]));
@@ -33,7 +34,7 @@ export function applyOperationToElements(
     case 'BULK_REORDER':
       return applyBulkReorder(elementsById, operation);
     default:
-      console.log('⚠️ SHARED OPERATIONS: Unhandled operation type:', operation.type);
+      debug('⚠️ SHARED OPERATIONS: Unhandled operation type:', operation.type);
       return elements; // Return unchanged
   }
 }
@@ -41,7 +42,7 @@ export function applyOperationToElements(
 function applyUpdateElement(elementsById: Map<string, ElementLike>, operation: any): ElementLike[] {
   const element = elementsById.get(operation.element_id);
   if (!element) {
-    console.log('❌ SHARED OPERATIONS: Element not found for UPDATE_ELEMENT:', operation.element_id);
+    debug('❌ SHARED OPERATIONS: Element not found for UPDATE_ELEMENT:', operation.element_id);
     return Array.from(elementsById.values());
   }
   
@@ -54,14 +55,14 @@ function applyUpdateElement(elementsById: Map<string, ElementLike>, operation: a
     }
   });
   
-  console.log('✏️ SHARED OPERATIONS: Updated element:', operation.element_id);
+  debug('✏️ SHARED OPERATIONS: Updated element:', operation.element_id);
   return Array.from(elementsById.values());
 }
 
 function applyUpdateGroupWithPropagation(elementsById: Map<string, ElementLike>, operation: any): ElementLike[] {
   const element = elementsById.get(operation.element_id);
   if (!element) {
-    console.log('❌ SHARED OPERATIONS: Group element not found:', operation.element_id);
+    debug('❌ SHARED OPERATIONS: Group element not found:', operation.element_id);
     return Array.from(elementsById.values());
   }
   
@@ -70,7 +71,7 @@ function applyUpdateGroupWithPropagation(elementsById: Map<string, ElementLike>,
     Object.entries(operation.field_updates).forEach(([field, value]) => {
       element[field] = value;
     });
-    console.log('🎨 SHARED OPERATIONS: Applied group field updates:', operation.field_updates);
+    debug('🎨 SHARED OPERATIONS: Applied group field updates:', operation.field_updates);
   }
   
   // Propagate offset changes to children
@@ -79,7 +80,7 @@ function applyUpdateGroupWithPropagation(elementsById: Map<string, ElementLike>,
       const child = elementsById.get(childId);
       if (child) {
         child.offset_ms += operation.offset_delta_ms;
-        console.log('📍 SHARED OPERATIONS: Updated child offset:', childId, 'new offset:', child.offset_ms);
+        debug('📍 SHARED OPERATIONS: Updated child offset:', childId, 'new offset:', child.offset_ms);
       }
     });
   }
@@ -89,34 +90,34 @@ function applyUpdateGroupWithPropagation(elementsById: Map<string, ElementLike>,
 
 function applyCreateElement(elementsById: Map<string, ElementLike>, operation: any): ElementLike[] {
   if (!operation.element_data) {
-    console.log('❌ SHARED OPERATIONS: No element_data for CREATE_ELEMENT');
+    debug('❌ SHARED OPERATIONS: No element_data for CREATE_ELEMENT');
     return Array.from(elementsById.values());
   }
   
   elementsById.set(operation.element_data.element_id, operation.element_data);
-  console.log('➕ SHARED OPERATIONS: Created element:', operation.element_data.element_id);
+  debug('➕ SHARED OPERATIONS: Created element:', operation.element_data.element_id);
   return Array.from(elementsById.values());
 }
 
 function applyDeleteElement(elementsById: Map<string, ElementLike>, operation: any): ElementLike[] {
   if (!elementsById.has(operation.element_id)) {
-    console.log('❌ SHARED OPERATIONS: Element not found for DELETE_ELEMENT:', operation.element_id);
+    debug('❌ SHARED OPERATIONS: Element not found for DELETE_ELEMENT:', operation.element_id);
     return Array.from(elementsById.values());
   }
   
   elementsById.delete(operation.element_id);
-  console.log('🗑️ SHARED OPERATIONS: Deleted element:', operation.element_id);
+  debug('🗑️ SHARED OPERATIONS: Deleted element:', operation.element_id);
   return Array.from(elementsById.values());
 }
 
-function applyReorder(elementsById: Map<string, ElementLike>, operation: any): ElementLike[] {
+function applyReorder(elementsById: Map<string, ElementLike>, _operation: any): ElementLike[] {
   // TODO: Implement reorder logic mirroring backend
-  console.log('🔄 SHARED OPERATIONS: REORDER not yet implemented');
+  debug('🔄 SHARED OPERATIONS: REORDER not yet implemented');
   return Array.from(elementsById.values());
 }
 
-function applyBulkReorder(elementsById: Map<string, ElementLike>, operation: any): ElementLike[] {
+function applyBulkReorder(elementsById: Map<string, ElementLike>, _operation: any): ElementLike[] {
   // TODO: Implement bulk reorder logic mirroring backend  
-  console.log('🔄 SHARED OPERATIONS: BULK_REORDER not yet implemented');
+  debug('🔄 SHARED OPERATIONS: BULK_REORDER not yet implemented');
   return Array.from(elementsById.values());
 }

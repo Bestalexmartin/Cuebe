@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { ScriptElement } from '../features/script/types/scriptElements';
-import { validateShareToken, buildSharedApiUrl, INVALID_SHARE_TOKEN_ERROR } from '../utils/tokenValidation';
+import { validateShareToken, INVALID_SHARE_TOKEN_ERROR } from '../utils/tokenValidation';
 
 /**
  * Recalculate durations for all group elements based on their children

@@ -144,7 +144,7 @@ export const SharedPage = React.memo(() => {
 
   // Trigger rotation on data received (ping/pong and incoming updates)
   const onDataReceived = useCallback(() => {
-    console.log('🔄 SharedPage: Triggering icon rotation');
+    // Trigger a brief rotation on websocket activity
     triggerRotationRef.current?.();
   }, []);
 

@@ -2,6 +2,7 @@
 
 import React, { forwardRef, useImperativeHandle, useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { VStack, Text, Box, Flex } from '@chakra-ui/react';
+import { getGroupChildren } from '../../utils/groupUtils';
 import {
     DndContext,
     closestCenter,
@@ -264,21 +265,45 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         // Note: applyReorderDirect was already called, no need to call applyReorder again
 
         if (elementAbove && draggedElement && onApplyLocalChange) {
-            // Create UPDATE_ELEMENT operation with time offset change
-            const updateElementOperation = {
-                type: 'UPDATE_ELEMENT',
-                element_id: draggedElement.element_id,
-                changes: {
-                    offset_ms: {
-                        old_value: draggedElement.offset_ms,
-                        new_value: elementAbove.offset_ms
-                    }
-                },
-                autoSort: autoSortCues, // Pass current auto-sort state
-                description: `Updated time offset for "${draggedElement.element_name}" to match preceding element`
-            };
+            const isGroup = (draggedElement as any).element_type === 'GROUP';
+            
+            if (isGroup) {
+                // For groups, use UPDATE_GROUP_WITH_PROPAGATION to update children
+                const childrenIds = getGroupChildren(draggedElement.element_id, elements).map(el => el.element_id);
+                const offsetDelta = elementAbove.offset_ms - draggedElement.offset_ms;
+                
+                const updateGroupOperation = {
+                    type: 'UPDATE_GROUP_WITH_PROPAGATION',
+                    element_id: draggedElement.element_id,
+                    field_updates: {
+                        offset_ms: elementAbove.offset_ms
+                    },
+                    old_values: {
+                        offset_ms: draggedElement.offset_ms
+                    },
+                    offset_delta_ms: offsetDelta,
+                    affected_children: childrenIds,
+                    description: `Updated group "${draggedElement.element_name}" time to match preceding element${childrenIds.length > 0 ? ` and propagated to ${childrenIds.length} children` : ''}`
+                };
+                
+                onApplyLocalChange(updateGroupOperation);
+            } else {
+                // Create UPDATE_ELEMENT operation with time offset change
+                const updateElementOperation = {
+                    type: 'UPDATE_ELEMENT',
+                    element_id: draggedElement.element_id,
+                    changes: {
+                        offset_ms: {
+                            old_value: draggedElement.offset_ms,
+                            new_value: elementAbove.offset_ms
+                        }
+                    },
+                    autoSort: autoSortCues, // Pass current auto-sort state
+                    description: `Updated time offset for "${draggedElement.element_name}" to match preceding element`
+                };
 
-            onApplyLocalChange(updateElementOperation);
+                onApplyLocalChange(updateElementOperation);
+            }
         }
 
         closeDragModal();
@@ -289,21 +314,45 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         // Note: applyReorderDirect was already called, no need to call applyReorder again
 
         if (elementBelow && draggedElement && onApplyLocalChange) {
-            // Create UPDATE_ELEMENT operation with time offset change
-            const updateElementOperation = {
-                type: 'UPDATE_ELEMENT',
-                element_id: draggedElement.element_id,
-                changes: {
-                    offset_ms: {
-                        old_value: draggedElement.offset_ms,
-                        new_value: elementBelow.offset_ms
-                    }
-                },
-                autoSort: autoSortCues, // Pass current auto-sort state
-                description: `Updated time offset for "${draggedElement.element_name}" to match following element`
-            };
+            const isGroup = (draggedElement as any).element_type === 'GROUP';
+            
+            if (isGroup) {
+                // For groups, use UPDATE_GROUP_WITH_PROPAGATION to update children
+                const childrenIds = getGroupChildren(draggedElement.element_id, elements).map(el => el.element_id);
+                const offsetDelta = elementBelow.offset_ms - draggedElement.offset_ms;
+                
+                const updateGroupOperation = {
+                    type: 'UPDATE_GROUP_WITH_PROPAGATION',
+                    element_id: draggedElement.element_id,
+                    field_updates: {
+                        offset_ms: elementBelow.offset_ms
+                    },
+                    old_values: {
+                        offset_ms: draggedElement.offset_ms
+                    },
+                    offset_delta_ms: offsetDelta,
+                    affected_children: childrenIds,
+                    description: `Updated group "${draggedElement.element_name}" time to match following element${childrenIds.length > 0 ? ` and propagated to ${childrenIds.length} children` : ''}`
+                };
+                
+                onApplyLocalChange(updateGroupOperation);
+            } else {
+                // Create UPDATE_ELEMENT operation with time offset change
+                const updateElementOperation = {
+                    type: 'UPDATE_ELEMENT',
+                    element_id: draggedElement.element_id,
+                    changes: {
+                        offset_ms: {
+                            old_value: draggedElement.offset_ms,
+                            new_value: elementBelow.offset_ms
+                        }
+                    },
+                    autoSort: autoSortCues, // Pass current auto-sort state
+                    description: `Updated time offset for "${draggedElement.element_name}" to match following element`
+                };
 
-            onApplyLocalChange(updateElementOperation);
+                onApplyLocalChange(updateElementOperation);
+            }
         }
 
         closeDragModal();
@@ -314,21 +363,45 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
         // Note: applyReorderDirect was already called, no need to call applyReorder again
 
         if (draggedElement && onApplyLocalChange) {
-            // Create UPDATE_ELEMENT operation with custom time offset change
-            const updateElementOperation = {
-                type: 'UPDATE_ELEMENT',
-                element_id: draggedElement.element_id,
-                changes: {
-                    offset_ms: {
-                        old_value: draggedElement.offset_ms,
-                        new_value: timeMs
-                    }
-                },
-                autoSort: autoSortCues, // Pass current auto-sort state
-                description: `Updated time offset for "${draggedElement.element_name}" to custom time`
-            };
+            const isGroup = (draggedElement as any).element_type === 'GROUP';
+            
+            if (isGroup) {
+                // For groups, use UPDATE_GROUP_WITH_PROPAGATION to update children
+                const childrenIds = getGroupChildren(draggedElement.element_id, elements).map(el => el.element_id);
+                const offsetDelta = timeMs - draggedElement.offset_ms;
+                
+                const updateGroupOperation = {
+                    type: 'UPDATE_GROUP_WITH_PROPAGATION',
+                    element_id: draggedElement.element_id,
+                    field_updates: {
+                        offset_ms: timeMs
+                    },
+                    old_values: {
+                        offset_ms: draggedElement.offset_ms
+                    },
+                    offset_delta_ms: offsetDelta,
+                    affected_children: childrenIds,
+                    description: `Updated group "${draggedElement.element_name}" to custom time${childrenIds.length > 0 ? ` and propagated to ${childrenIds.length} children` : ''}`
+                };
+                
+                onApplyLocalChange(updateGroupOperation);
+            } else {
+                // Create UPDATE_ELEMENT operation with custom time offset change
+                const updateElementOperation = {
+                    type: 'UPDATE_ELEMENT',
+                    element_id: draggedElement.element_id,
+                    changes: {
+                        offset_ms: {
+                            old_value: draggedElement.offset_ms,
+                            new_value: timeMs
+                        }
+                    },
+                    autoSort: autoSortCues, // Pass current auto-sort state
+                    description: `Updated time offset for "${draggedElement.element_name}" to custom time`
+                };
 
-            onApplyLocalChange(updateElementOperation);
+                onApplyLocalChange(updateElementOperation);
+            }
         }
 
         closeDragModal();

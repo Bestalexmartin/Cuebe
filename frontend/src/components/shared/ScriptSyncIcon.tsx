@@ -130,7 +130,6 @@ export interface ScriptSyncIconRef {
 export const ScriptSyncIcon = forwardRef<ScriptSyncIconRef, ScriptSyncIconProps>(({
   isConnected,
   isConnecting,
-  connectionError,
   onClick
 }, ref) => {
   const [rotationTrigger, setRotationTrigger] = useState(0);

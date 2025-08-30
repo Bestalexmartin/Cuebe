@@ -10,7 +10,8 @@ interface UseScriptModalHandlersParams {
   scriptId: string | undefined;
   script: any;
   hasUnsavedChanges: boolean;
-  saveChanges: () => Promise<boolean>; // Stub - will be replaced with new save function
+  // Save API; may support an ops snapshot parameter
+  saveChanges: ((opsSnapshot?: any[]) => Promise<boolean>) | (() => Promise<boolean>);
   discardChanges: () => void;
   modalState: {
     openModal: (name: string) => void;
@@ -26,6 +27,7 @@ interface UseScriptModalHandlersParams {
     SAVE_CONFIRMATION: string;
     FINAL_SAVE_CONFIRMATION: string;
     SAVE_PROCESSING: string;
+    SAVE_FAILURE?: string;
   };
   // New parameters for Info mode
   activeMode: string;
@@ -37,7 +39,8 @@ interface UseScriptModalHandlersParams {
     update_type: string;
     changes?: any;
     operation_id?: string;
-  }) => void;
+  }) => boolean;
+  connectSync?: () => void;
   pendingOperations?: any[]; // For targeted WebSocket broadcasts
   // Danger mode - skip confirmation dialogs
   dangerMode?: boolean;
@@ -55,8 +58,6 @@ export const useScriptModalHandlers = ({
   hasInfoChanges,
   captureInfoChanges,
   onSaveSuccess,
-  sendSyncUpdate,
-  pendingOperations = [],
   dangerMode = false,
 }: UseScriptModalHandlersParams) => {
   const navigate = useNavigate();
@@ -111,62 +112,18 @@ export const useScriptModalHandlers = ({
   ]);
 
   const handleFinalSaveConfirm = useCallback(async () => {
+    // Close final confirmation and delegate complete pipeline to useSaveScript
     modalState.closeModal(modalNames.FINAL_SAVE_CONFIRMATION);
-    modalState.openModal(modalNames.SAVE_PROCESSING);
 
     try {
-      const success = await saveChanges();
+      const success = await (saveChanges as (ops?: any[]) => Promise<boolean>)();
 
       if (success) {
-        // Broadcast targeted script info changes via WebSocket IMMEDIATELY after save success
-
-        if (sendSyncUpdate && scriptId && pendingOperations.length > 0) {
-          try {
-            // Send targeted updates for all saved changes (single coordination point)
-            const scriptInfoOps = pendingOperations.filter(
-              (op) => op.type === "UPDATE_SCRIPT_INFO",
-            );
-            const elementOps = pendingOperations.filter(
-              (op) => op.type !== "UPDATE_SCRIPT_INFO",
-            );
-            
-            
-            // Broadcast script info changes
-            if (scriptInfoOps.length > 0) {
-              const scriptChanges = {};
-              scriptInfoOps.forEach((op) => {
-                Object.assign(scriptChanges, op.changes);
-              });
-
-              sendSyncUpdate({
-                update_type: "script_info",
-                changes: scriptChanges,
-                operation_id: `manual_save_script_info_${Date.now()}`,
-              });
-            }
-            
-            // Broadcast element changes
-            if (elementOps.length > 0) {
-              sendSyncUpdate({
-                update_type: "elements_updated",
-                changes: elementOps, // Clean list format - backend now supports both dict and list
-                operation_id: `manual_save_elements_${Date.now()}`,
-              });
-            }
-          } catch (error) {
-            console.error("Manual Save: WebSocket broadcast error:", error);
-          }
-        }
-
-
-        modalState.closeModal(modalNames.SAVE_PROCESSING);
         showSuccess(
           "Changes Saved",
           "All pending changes have been saved successfully.",
         );
 
-        // For regular saves, stay in the current page and go to View mode
-        // Only navigate if there was pending navigation (abandon flow)
         if (pendingNavigation) {
           if (pendingNavigation === "/dashboard") {
             navigateWithCurrentContext(script, scriptId);
@@ -175,15 +132,12 @@ export const useScriptModalHandlers = ({
           }
           setPendingNavigation(null);
         } else {
-          // Regular save - call success callback to change to View mode
           onSaveSuccess?.();
         }
       } else {
-        modalState.closeModal(modalNames.SAVE_PROCESSING);
         showError("Failed to save changes. Please try again.");
       }
     } catch (error) {
-      modalState.closeModal(modalNames.SAVE_PROCESSING);
       showError("An error occurred while saving changes.");
     }
   }, [
@@ -197,9 +151,6 @@ export const useScriptModalHandlers = ({
     script,
     scriptId,
     navigate,
-    activeMode,
-    hasInfoChanges,
-    captureInfoChanges,
   ]);
 
   // Legacy handler for unsaved changes flow that needs to save before navigation
