@@ -31,7 +31,8 @@ import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences
 import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
 import { useScriptSync } from '../hooks/useScriptSync';
 import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
-import { saveScript } from '../utils/saveScript';
+// Save flow extracted into hook
+import { useSaveScript } from '../features/script/hooks/useSaveScript';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
 import { useModalState } from '../hooks/useModalState';
 import { SaveConfirmationModal } from '../components/modals/SaveConfirmationModal';
@@ -258,64 +259,22 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         collapseAllGroups,
     } = editQueueHook;
 
-    // Unified save function that both auto-save and manual save use
-    const saveChanges = useCallback(async (): Promise<boolean> => {        
-        if (!scriptId || pendingOperations.length === 0) {
-            return true;
+    // Unified save function via hook (auto-save and manual save use this)
+    const { saveChanges } = useSaveScript({
+        scriptId,
+        pendingOperations,
+        getToken,
+        discardChanges,
+        updateServerElements,
+        refetchScript,
+        modalState,
+        failureModalName: MODAL_NAMES.SAVE_FAILURE,
+        setSaveErrorMessage,
+        showError,
+        onSuccess: () => {
+            // Optional additional success side-effects can be added here
         }
-
-        const result = await saveScript({
-            scriptId,
-            operations: pendingOperations,
-            getToken,
-            onSuccess: (freshData) => {
-                console.log('🔄 SAVE SUCCESS - replacing current data with fresh data');
-                console.log('🔄 SAVE SUCCESS - current editQueueElements count:', editQueueElements?.length);
-                console.log('🔄 SAVE SUCCESS - freshData elements count:', freshData?.elements?.length);
-                console.log('🔄 SAVE SUCCESS - freshData script info:', {
-                    script_name: freshData?.script_name,
-                    start_time: freshData?.start_time,
-                    end_time: freshData?.end_time
-                });
-                
-                // Clear edit queue and gracefully replace with fresh data
-                console.log('🔄 SAVE SUCCESS - clearing edit queue and replacing data');
-                discardChanges();
-                updateServerElements(freshData.elements || []);
-                
-                // Trigger script refresh to get updated script info
-                console.log('🔄 SAVE SUCCESS - refreshing script info from server');
-                refetchScript();
-                
-                // Clear failure state on successful save
-                modalState.closeModal(MODAL_NAMES.SAVE_FAILURE);
-                setSaveErrorMessage('');
-                console.log('🔄 SAVE SUCCESS - data replacement complete, no screen flash');
-            },
-            onError: (error) => {
-                console.error("🚨🚨🚨 SAVE ERROR:", error);
-                
-                // Capture full error message for modal
-                const fullErrorMessage = error.stack || error.message || String(error);
-                setSaveErrorMessage(fullErrorMessage);
-                
-                // Show LOUD error toast
-                showError(`🚨 SAVE FAILED`, {
-                    duration: 8000,
-                    isClosable: true,
-                    description: "Save operation failed. Choose Continue or Revert Data."
-                });
-                
-                // PRESERVE current data - do NOT invalidate on save failure
-                console.error('🚨🚨🚨 SAVE FAILED - preserving current data for Continue option');
-                
-                // Show failure modal with Continue/Revert options
-                modalState.openModal(MODAL_NAMES.SAVE_FAILURE);
-            }
-        });
-        
-        return result;
-    }, [scriptId, pendingOperations, getToken, discardChanges, updateServerElements, refetchScript, modalState, setSaveErrorMessage, showError]);
+    });
 
     const handleToggleAllGroups = useCallback(() => {
         if (!allEditQueueElements) return;

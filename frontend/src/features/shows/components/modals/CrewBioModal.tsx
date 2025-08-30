@@ -73,7 +73,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
         try {
           const token = await getToken();
           if (!token) {
-            console.warn('No auth token available for share URL');
+            warn('No auth token available for share URL');
             return;
           }
 
@@ -89,7 +89,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
             const shareData = await response.json();
             setShareUrl(`${window.location.origin}${shareData.share_url}`);
           } else {
-            console.warn('Failed to get share URL');
+            warn('Failed to get share URL');
           }
         } catch (error) {
           console.error('Error getting share URL:', error);
@@ -337,3 +337,4 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
     </BaseModal>
   );
 };
+import { warn } from '../../../../utils/logger';

@@ -76,9 +76,11 @@ export const useScriptElementsWithEditQueue = (
   initialElements: ScriptElement[] = [], // Accept elements instead of fetching
   options: UseScriptElementsOptions = {},
 ): UseScriptElementsWithEditQueueReturn => {
-  // RENDER TRACKING - DELETE AFTER DEBUGGING
+  // RENDER TRACKING (dev-only)
   const renderCount = useRef(0);
-  renderCount.current++;
+  if (process.env.NODE_ENV !== 'production') {
+    renderCount.current++;
+  }
   
   const [serverElements, setServerElements] = useState<ScriptElement[]>([]);
   const [currentElements, setCurrentElements] = useState<ScriptElement[]>([]);

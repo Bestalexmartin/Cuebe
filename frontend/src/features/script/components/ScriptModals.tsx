@@ -14,7 +14,7 @@ import { FinalDeleteConfirmationModal } from '../../../components/modals/FinalDe
 import { FinalSaveConfirmationModal } from '../../../components/modals/FinalSaveConfirmationModal';
 import { AbandonChangesModal } from '../../../components/modals/AbandonChangesModal';
 import { DuplicateScriptModal } from './modals/DuplicateScriptModal';
-import { ProcessingModal } from './modals/ProcessingModal';
+// Processing modal is handled via BaseModal variant="processing"
 import { OptionsModal } from './modals/OptionsModal';
 import { DeleteCueModal } from './modals/DeleteCueModal';
 import { DuplicateElementModal } from './modals/DuplicateElementModal';
@@ -247,8 +247,13 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 onProcessingStart={() => modalState.openModal(modalNames.PROCESSING)}
             />
 
-            {/* Processing Modal */}
-            <ProcessingModal isOpen={modalState.isOpen(modalNames.PROCESSING)} />
+            {/* Processing Modal (unified via BaseModal) */}
+            <BaseModal
+                isOpen={modalState.isOpen(modalNames.PROCESSING)}
+                onClose={() => {}}
+                variant="processing"
+                isCentered={true}
+            />
 
             {/* Delete Script Confirmation Modals */}
             <DeleteConfirmationModal

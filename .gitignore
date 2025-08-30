@@ -27,3 +27,7 @@ devlog.txt
 
 # AI Assistant Instructions (local only)
 /.ai-instructions.md
+
+# Local SQLite/DB files (do not commit test/dev databases)
+backend/test.db
+backend/tests/test.db

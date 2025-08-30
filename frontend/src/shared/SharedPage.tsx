@@ -26,7 +26,7 @@ import { LoadingSpinner, ErrorState, ScriptLoadingState } from '../components/sh
 import { SortMenu, SortOption } from '../components/shared/SortMenu';
 import { SharedPageHeader } from '../components/shared/SharedPageHeader';
 import { SearchInput } from '../components/shared/SearchInput';
-import { ScriptSyncIcon } from '../components/shared/ScriptSyncIcon';
+import { ScriptSyncIcon, ScriptSyncIconRef } from '../components/shared/ScriptSyncIcon';
 import { BorderedContainer } from '../components/shared/BorderedContainer';
 import { useScriptSync } from '../hooks/useScriptSync';
 import { SharedTutorialsPage } from './components/SharedTutorialsPage';
@@ -46,6 +46,7 @@ export const SharedPage = React.memo(() => {
   const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [showTutorials, setShowTutorials] = useState<boolean>(false);
+  const scriptSyncIconRef = useRef<ScriptSyncIconRef>(null);
 
   // Tutorial search - extracted to custom hook
   const {
@@ -135,9 +136,9 @@ export const SharedPage = React.memo(() => {
   // WebSocket update handlers - with stable callbacks object
   const { handleUpdate } = useScriptUpdateHandlers(updateHandlerCallbacks);
 
-  // Restore rotation mechanism
+  // Trigger rotation on data received (ping/pong and incoming updates)
   const onDataReceived = useCallback(() => {
-    // Rotation is now handled via ScriptSyncIcon ref
+    scriptSyncIconRef.current?.triggerRotation();
   }, []);
 
   // Other websocket callbacks - kept simple and stable
@@ -197,6 +198,7 @@ export const SharedPage = React.memo(() => {
           </BorderedContainer>
           <BorderedContainer>
             <ScriptSyncIcon
+              ref={scriptSyncIconRef}
               isConnected={scriptSync.isConnected}
               isConnecting={scriptSync.isConnecting}
               connectionCount={scriptSync.connectionCount}
