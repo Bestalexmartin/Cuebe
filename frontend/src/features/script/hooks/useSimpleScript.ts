@@ -65,12 +65,6 @@ export const useScript = (scriptId: string | undefined, shareToken?: string, opt
             }
             
             const data: Script = await response.json();
-            console.log('📄 Script loaded:', data.script_id, data.script_name);
-            
-            console.log('🔍 SETSCRIPT_WATCHER: Setting script with name:', data.script_name, {
-                scriptId: data.script_id,
-                stack: new Error().stack
-            });
             setScript(data);
             options?.onSuccess?.(data);
             

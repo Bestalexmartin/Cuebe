@@ -36,7 +36,7 @@ import { useSaveScript } from '../features/script/hooks/useSaveScript';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
 import { useModalState } from '../hooks/useModalState';
 import { SaveConfirmationModal } from '../components/modals/SaveConfirmationModal';
-import { SaveProcessingModal } from '../components/modals/SaveProcessingModal';
+import { BaseModal } from '../components/base/BaseModal';
 import { useAuth } from '@clerk/clerk-react';
 
 import { ScriptToolbar } from '../features/script/components/ScriptToolbar';
@@ -144,15 +144,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     const { script: sourceScript, isLoading: isLoadingScript, error: scriptError, setScript: setSourceScript } = useScript(scriptId);
     const { show } = useShow(sourceScript?.show_id);
 
-    // DEBUG: Watch for script name changes to trace source of overwrites
-    React.useEffect(() => {
-        if (sourceScript) {
-            console.log('🔍 SCRIPT_NAME_WATCHER: Current script name:', sourceScript.script_name, {
-                scriptId: sourceScript.script_id,
-                stack: new Error().stack
-            });
-        }
-    }, [sourceScript?.script_name]);
+    // Removed debug watcher for script name
 
     // Coordinated data refresh function will be defined after editQueueHook
 
@@ -183,7 +175,8 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         isConnecting: isSyncConnecting, 
         connectionCount: syncConnectionCount, 
         connectionError: syncConnectionError, 
-        sendUpdate: sendSyncUpdate 
+        sendUpdate: sendSyncUpdate,
+        connect: connectSync
     } = useScriptSync(
         scriptId || '',
         undefined, // shareToken
@@ -277,6 +270,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         discardChanges,
         updateServerElements,
         modalState,
+        processingModalName: MODAL_NAMES.SAVE_PROCESSING,
         failureModalName: MODAL_NAMES.SAVE_FAILURE,
         setSaveErrorMessage,
         showError,
@@ -285,11 +279,11 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             // Optional additional success side-effects can be added here
         },
         setSourceScript,
+        sendSyncUpdate: (message) => sendSyncUpdate(message),
+        connectSync,
     });
 
     const handleToggleAllGroups = useCallback(() => {
-        if (!allEditQueueElements) return;
-
         // Use the new batch operations that will be saved to the edit queue
         if (buttonShowsOpen) {
             // Button shows "Open All" so we want to expand all groups
@@ -304,7 +298,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
         // Clear group overrides since we're now using the edit queue
         setGroupOverrides({});
-    }, [allEditQueueElements, buttonShowsOpen, expandAllGroups, collapseAllGroups]);
+    }, [buttonShowsOpen, expandAllGroups, collapseAllGroups]);
 
     // Calculate the current auto-sort state from edit queue operations
     const currentAutoSortState = useMemo(() => {
@@ -435,10 +429,12 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             setActiveMode('view');
         },
         sendSyncUpdate: (message: any) => {
-            sendSyncUpdate(message);
+            const result = sendSyncUpdate(message);
             // Trigger websocket icon rotation for successful user transmission
             triggerRotation();
+            return result;
         },
+        connectSync,
         pendingOperations: pendingOperations,
         dangerMode: activePreferences.dangerMode
     }), [
@@ -454,6 +450,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         clearPendingChanges,
         setActiveMode,
         sendSyncUpdate,
+        connectSync,
         triggerRotation,
         pendingOperations,
         activePreferences.dangerMode
@@ -1285,10 +1282,14 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 changesCount={totalChangesCount}
             />
 
-            {/* Save Processing Modal */}
-            <SaveProcessingModal
+            {/* Save Processing Modal (standardized via BaseModal) */}
+            <BaseModal
                 isOpen={modalState.isOpen(MODAL_NAMES.SAVE_PROCESSING)}
-                changesCount={totalChangesCount}
+                onClose={() => {}}
+                variant="processing"
+                processingTitle="Saving Changes"
+                processingMessage={`Applying ${totalChangesCount} change${totalChangesCount !== 1 ? 's' : ''}...`}
+                isCentered
             />
 
             {/* Mobile Drawer Menu */}

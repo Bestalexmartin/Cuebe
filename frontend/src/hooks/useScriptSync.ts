@@ -1,6 +1,7 @@
 // frontend/src/hooks/useScriptSync.ts
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { debug } from '../utils/logger';
 import { useAuth } from '@clerk/clerk-react';
 
 interface ScriptUpdate {
@@ -40,7 +41,7 @@ interface UseScriptSyncReturn {
   connectionCount: number;
   lastUpdate: ScriptUpdate | null;
   connectionError: string | null;
-  sendUpdate: (message: Partial<OutgoingMessage>) => void;
+  sendUpdate: (message: Partial<OutgoingMessage>) => boolean;
   sendPing: () => void;
   getConnectionInfo: () => void;
   connect: () => void;
@@ -83,8 +84,8 @@ export const useScriptSync = (
       
       switch (message.type) {
         case 'connection_established':
-          console.log('🟢 WebSocket: Connection established, users:', message.connected_users || 0);
-          console.log('🔗 WebSocket: isConnected state set to true');
+          debug('🟢 WebSocket: Connection established, users:', message.connected_users || 0);
+          debug('🔗 WebSocket: isConnected state set to true');
           setIsConnected(true);
           setConnectionCount(message.connected_users || 0);
           setConnectionError(null);
@@ -93,7 +94,7 @@ export const useScriptSync = (
           break;
           
         case 'script_update':
-          console.log('📡 WebSocket: Received script update:', message.update_type);
+          debug('📡 WebSocket: Received script update:', message.update_type);
           setLastUpdate(message);
           optionsRef.current.onDataReceived?.(); // Trigger rotation for script updates
           try {
@@ -112,7 +113,7 @@ export const useScriptSync = (
           break;
           
         case 'pong':
-          console.log('🏓 WebSocket: Pong received');
+          debug('🏓 WebSocket: Pong received');
           // Heartbeat response - connection is alive
           optionsRef.current.onDataReceived?.(); // Trigger rotation to show connection is alive
           break;
@@ -158,7 +159,7 @@ export const useScriptSync = (
       wsRef.current.close();
     }
 
-    console.log('🔌 WebSocket: Connecting to script', scriptId);
+    debug('🔌 WebSocket: Connecting to script', scriptId);
     setIsConnecting(true);
     setConnectionError(null);
     
@@ -190,7 +191,7 @@ export const useScriptSync = (
       const ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {
-        console.log('🔌 WebSocket: Connected to script', scriptId);
+        debug('🔌 WebSocket: Connected to script', scriptId);
         setIsConnecting(false);
         setConnectionError(null);
       };
@@ -209,28 +210,34 @@ export const useScriptSync = (
   }, [scriptId, shareToken, handleMessage, handleClose, handleError]); // Include dependencies
 
 
-  const sendMessage = useCallback((message: OutgoingMessage) => {
+  const sendMessage = useCallback((message: OutgoingMessage): boolean => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       try {
         wsRef.current.send(JSON.stringify(message));
+        return true;
       } catch (error) {
         setConnectionError('Failed to send message');
+        return false;
       }
     } else { 
       setConnectionError('Not connected to sync server');
+      return false;
     }
   }, []);
 
-  const sendUpdate = useCallback((message: Partial<OutgoingMessage>) => {
-    sendMessage({
+  const sendUpdate = useCallback((message: Partial<OutgoingMessage>): boolean => {
+    const ok = sendMessage({
       type: 'script_update',
       ...message
     });
-    optionsRef.current.onDataReceived?.(); // Trigger rotation for outgoing script update
+    if (ok) {
+      optionsRef.current.onDataReceived?.(); // Trigger rotation for outgoing script update
+    }
+    return ok;
   }, [sendMessage]);
 
   const sendPing = useCallback(() => {
-    console.log('🏓 WebSocket: Sending ping');
+    debug('🏓 WebSocket: Sending ping');
     sendMessage({ type: 'ping' });
     optionsRef.current.onDataReceived?.(); // Trigger rotation for outgoing ping
   }, [sendMessage]);
