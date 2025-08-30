@@ -19,7 +19,7 @@ import {
     ModalBody
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useScript } from "../features/script/hooks/useScript";
+import { useScript } from "../features/script/hooks/useSimpleScript";
 import { useShow } from "../features/shows/hooks/useShow";
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { AppIcon } from '../components/AppIcon';
@@ -141,8 +141,18 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     const modalState = useModalState(Object.values(MODAL_NAMES));
 
     // Coordinated script data fetching - single source of truth
-    const { script: sourceScript, isLoading: isLoadingScript, error: scriptError, refetchScript } = useScript(scriptId);
+    const { script: sourceScript, isLoading: isLoadingScript, error: scriptError, setScript: setSourceScript } = useScript(scriptId);
     const { show } = useShow(sourceScript?.show_id);
+
+    // DEBUG: Watch for script name changes to trace source of overwrites
+    React.useEffect(() => {
+        if (sourceScript) {
+            console.log('🔍 SCRIPT_NAME_WATCHER: Current script name:', sourceScript.script_name, {
+                scriptId: sourceScript.script_id,
+                stack: new Error().stack
+            });
+        }
+    }, [sourceScript?.script_name]);
 
     // Coordinated data refresh function will be defined after editQueueHook
 
@@ -266,14 +276,15 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         getToken,
         discardChanges,
         updateServerElements,
-        refetchScript,
         modalState,
         failureModalName: MODAL_NAMES.SAVE_FAILURE,
         setSaveErrorMessage,
         showError,
+        triggerRotation,
         onSuccess: () => {
             // Optional additional success side-effects can be added here
-        }
+        },
+        setSourceScript,
     });
 
     const handleToggleAllGroups = useCallback(() => {

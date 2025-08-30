@@ -14,7 +14,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _apply_operation_in_memory(elements_by_id: dict, script_id: UUID, operation_data: dict, user: models.User, temp_id_mapping: dict):
+def _apply_operation_in_memory(elements_by_id: dict, script: models.Script, operation_data: dict, user: models.User, temp_id_mapping: dict):
     """Apply a single operation to in-memory element state, mimicking frontend logic."""
     
     operation_type = operation_data.get("type")
@@ -26,13 +26,13 @@ def _apply_operation_in_memory(elements_by_id: dict, script_id: UUID, operation_
     elif operation_type == "UPDATE_ELEMENT":
         return _apply_update_element_in_memory(elements_by_id, operation_data, user)
     elif operation_type == "CREATE_GROUP":
-        return _apply_create_group_in_memory(elements_by_id, script_id, operation_data, user, temp_id_mapping)
+        return _apply_create_group_in_memory(elements_by_id, script.script_id, operation_data, user, temp_id_mapping)
     elif operation_type == "TOGGLE_GROUP_COLLAPSE":
         return _apply_toggle_group_collapse_in_memory(elements_by_id, operation_data, user)
     elif operation_type == "UPDATE_FIELD":
         return _apply_update_field_in_memory(elements_by_id, operation_data, user)
     elif operation_type == "CREATE_ELEMENT":
-        return _apply_create_element_in_memory(elements_by_id, script_id, operation_data, user, temp_id_mapping)
+        return _apply_create_element_in_memory(elements_by_id, script.script_id, operation_data, user, temp_id_mapping)
     elif operation_type == "DELETE_ELEMENT":
         return _apply_delete_element_in_memory(elements_by_id, operation_data, user)
     elif operation_type == "UPDATE_TIME_OFFSET":
@@ -47,6 +47,8 @@ def _apply_operation_in_memory(elements_by_id: dict, script_id: UUID, operation_
         return _apply_batch_collapse_groups_in_memory(elements_by_id, operation_data, user)
     elif operation_type == "UPDATE_GROUP_WITH_PROPAGATION":
         return _apply_update_group_with_propagation_in_memory(elements_by_id, operation_data, user)
+    elif operation_type == "UPDATE_SCRIPT_INFO":
+        return _apply_update_script_info_in_memory(script, operation_data, user)
     else:
         logger.warning(f"Unknown operation type: {operation_type}")
         raise ValueError(f"Unknown operation type: {operation_type}")
@@ -318,47 +320,6 @@ def _apply_create_group_in_memory(elements_by_id: dict, script_id: UUID, operati
         ]
     }
 
-
-def _apply_script_operation_directly(script_id: UUID, operation_data: dict, user, db: Session):
-    """Apply script-level operations directly to database."""
-    from datetime import datetime, timezone
-    
-    operation_type = operation_data.get("type")
-    
-    if operation_type == "UPDATE_SCRIPT_INFO":
-        logger.info(f"🔄 UPDATE_SCRIPT_INFO: Starting operation for script {script_id}")
-        changes = operation_data.get("changes", {})
-        logger.info(f"🔄 UPDATE_SCRIPT_INFO: Changes to apply: {changes}")
-        
-        # Load the script
-        script = db.query(models.Script).filter(models.Script.script_id == script_id).first()
-        if not script:
-            raise ValueError(f"Script {script_id} not found")
-        
-        # Apply changes with proper type conversion
-        for field, change_data in changes.items():
-            new_value = change_data.get("new_value")
-            
-            old_value = getattr(script, field, None)
-            setattr(script, field, new_value)
-            logger.info(f"🔄 UPDATE_SCRIPT_INFO: Field '{field}' changed from {old_value} to {new_value}")
-        
-        script.updated_by = user.user_id
-        script.date_updated = datetime.now(timezone.utc)
-        
-        # Commit immediately since this is a separate table operation
-        logger.info(f"🔄 UPDATE_SCRIPT_INFO: Committing changes")
-        db.commit()
-        logger.info(f"✅ UPDATE_SCRIPT_INFO: Changes committed successfully")
-        
-        return {
-            "operation": "update_script_info",
-            "script_id": str(script_id),
-            "changes_count": len(changes)
-        }
-    
-    else:
-        raise ValueError(f"Unknown script operation type: {operation_type}")
 
 
 def _apply_toggle_group_collapse_in_memory(elements_by_id: dict, operation_data: dict, user):
@@ -636,6 +597,34 @@ def _apply_update_group_with_propagation_in_memory(elements_by_id: dict, operati
     }
 
 
+def _apply_update_script_info_in_memory(script: models.Script, operation_data: dict, user: models.User):
+    """Apply UPDATE_SCRIPT_INFO operation to in-memory script object."""
+    from datetime import datetime, timezone
+    
+    logger.info(f"🔄 UPDATE_SCRIPT_INFO: Starting in-memory operation for script {script.script_id}")
+    changes = operation_data.get("changes", {})
+    logger.info(f"🔄 UPDATE_SCRIPT_INFO: Changes to apply: {changes}")
+    
+    # Apply changes with proper type conversion
+    for field, change_data in changes.items():
+        new_value = change_data.get("new_value")
+        
+        old_value = getattr(script, field, None)
+        setattr(script, field, new_value)
+        logger.info(f"🔄 UPDATE_SCRIPT_INFO: Field '{field}' changed from {old_value} to {new_value}")
+    
+    script.updated_by = user.user_id
+    script.date_updated = datetime.now(timezone.utc)
+    
+    logger.info(f"🔄 UPDATE_SCRIPT_INFO: Changes applied to in-memory script object")
+    
+    return {
+        "operation": "update_script_info",
+        "script_id": str(script.script_id),
+        "changes_count": len(changes)
+    }
+
+
 def batch_update_from_edit_queue(
     script_id: UUID,
     batch_request: schemas.EditQueueBatchRequest,
@@ -646,20 +635,18 @@ def batch_update_from_edit_queue(
     
     logger.info(f"Processing batch update for script {script_id} with {len(batch_request.operations)} operations")
     
-    # Separate script operations from element operations
-    script_operations = []
-    element_operations = []
-    
-    for operation in batch_request.operations:
-        if operation.get("type") == "UPDATE_SCRIPT_INFO":
-            script_operations.append(operation)
-        else:
-            element_operations.append(operation)
+    # Process all operations together in unified in-memory system
+    operations = batch_request.operations
     
     # Load all elements once at the start
     all_elements = db.query(models.ScriptElement).filter(
         models.ScriptElement.script_id == script_id
     ).order_by(models.ScriptElement.sequence.asc()).all()
+    
+    # Load script object once for metadata operations
+    script = db.query(models.Script).filter(models.Script.script_id == script_id).first()
+    if not script:
+        raise ValueError(f"Script {script_id} not found")
     
     # Convert to dict for efficient lookup and modification tracking
     elements_by_id = {}
@@ -677,27 +664,8 @@ def batch_update_from_edit_queue(
     deleted_element_ids = []  # Track elements that need to be deleted from database
     
     try:
-        # Process script operations first (directly to database)
-        for operation_data in script_operations:
-            try:
-                result = _apply_script_operation_directly(script_id, operation_data, user, db)
-                operation_results.append({
-                    "operation_id": operation_data.get("id"),
-                    "status": "success", 
-                    "result": result
-                })
-                processed_operations += 1
-                
-            except Exception as op_error:
-                logger.error(f"Failed to process script operation {operation_data.get('id')}: {str(op_error)}", exc_info=True)
-                operation_results.append({
-                    "operation_id": operation_data.get("id"),
-                    "status": "error",
-                    "error": str(op_error)
-                })
-        
-        # Process element operations in-memory, sequentially
-        for operation_data in element_operations:
+        # Process all operations in-memory, sequentially
+        for operation_data in operations:
             logger.info(f"Processing operation: {operation_data.get('type')} with data: {operation_data}")
             try:
                 # Apply temporary ID mapping before processing  
@@ -723,7 +691,7 @@ def batch_update_from_edit_queue(
                 
                 # Process operation on in-memory state
                 result = _apply_operation_in_memory(
-                    elements_by_id, script_id, operation_data, user, temp_id_mapping
+                    elements_by_id, script, operation_data, user, temp_id_mapping
                 )
                 
                 # Check for deferred child updates from CREATE_GROUP operations
