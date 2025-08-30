@@ -169,7 +169,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
           icon: headerIcon || 'warning',
           iconColor: headerIconColor || 'red.300',
           title: title || 'FINAL WARNING',
-          finalBottomText: bottomText || 'THIS ACTION CAN NOT BE UNDONE!',
+          finalBottomText: bottomText !== undefined ? bottomText : 'THIS ACTION CAN NOT BE UNDONE!',
           showHeader: showHeader,
           showFooter: showFooter,
           closeOnOverlayClick: closeOnOverlayClick,
@@ -244,6 +244,7 @@ const BaseModalComponent: React.FC<BaseModalProps> = ({
                 {subText}
               </Text>
             )}
+            {children}
             {variantConfig.finalBottomText && warningLevel === 'final' && (
               <Text 
                 fontSize={variant === 'danger' ? 'md' : 'lg'} 

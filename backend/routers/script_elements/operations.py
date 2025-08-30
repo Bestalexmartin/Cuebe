@@ -280,10 +280,26 @@ def _apply_create_group_in_memory(elements_by_id: dict, script_id: UUID, operati
     # Add group to elements dict
     elements_by_id[group_id] = group_element
     
-    # Store temp ID mapping if provided
+    # Store temp ID mapping if provided - handle multiple temp ID formats
     temp_id = operation_data.get("element_id")
+    element_data_temp_id = operation_data.get("element_data", {}).get("element_id")
+    
     if temp_id and temp_id_mapping is not None:
         temp_id_mapping[temp_id] = group_id
+        
+    # Also map element_data temp ID if different (frontend sometimes sends both)
+    if element_data_temp_id and element_data_temp_id != temp_id and temp_id_mapping is not None:
+        temp_id_mapping[element_data_temp_id] = group_id
+        
+    # Store timestamp-based mapping for related operations (frontend inconsistency fix)
+    # Extract timestamp pattern from temp ID like "group-1756502143188-..."
+    if temp_id and "group-" in temp_id and temp_id_mapping is not None:
+        import re
+        timestamp_match = re.search(r'group-(\d+)-', temp_id)
+        if timestamp_match:
+            timestamp = timestamp_match.group(1)
+            # Map any other temp IDs with the same timestamp to this group
+            temp_id_mapping[f"group-{timestamp}"] = group_id
     
     # DON'T update child elements here - defer until after parent is inserted
     return {
@@ -480,7 +496,8 @@ def _apply_delete_element_in_memory(elements_by_id: dict, operation_data: dict, 
     return {
         "operation": "delete_element",
         "element_id": element_id,
-        "deleted_sequence": deleted_sequence
+        "deleted_sequence": deleted_sequence,
+        "element_to_delete": element_id
     }
 
 
@@ -684,10 +701,25 @@ def batch_update_from_edit_queue(
             logger.info(f"Processing operation: {operation_data.get('type')} with data: {operation_data}")
             try:
                 # Apply temporary ID mapping before processing  
-                if operation_data.get("element_id") and operation_data.get("element_id") in temp_id_mapping:
-                    old_id = operation_data.get("element_id")
-                    new_id = temp_id_mapping[old_id]
-                    operation_data["element_id"] = new_id
+                element_id = operation_data.get("element_id")
+                if element_id and temp_id_mapping:
+                    # Direct mapping first
+                    if element_id in temp_id_mapping:
+                        operation_data["element_id"] = temp_id_mapping[element_id]
+                        logger.info(f"🔄 Mapped temp ID {element_id} → {temp_id_mapping[element_id]}")
+                    # Timestamp-based fallback for inconsistent temp IDs
+                    elif element_id.startswith("group-"):
+                        import re
+                        timestamp_match = re.search(r'group-(\d+)-', element_id)
+                        if timestamp_match:
+                            timestamp = timestamp_match.group(1)
+                            timestamp_key = f"group-{timestamp}"
+                            if timestamp_key in temp_id_mapping:
+                                operation_data["element_id"] = temp_id_mapping[timestamp_key]
+                                logger.info(f"🔄 Mapped via timestamp {element_id} → {temp_id_mapping[timestamp_key]}")
+                            else:
+                                logger.warning(f"❌ No mapping found for temp ID {element_id} or timestamp {timestamp_key}")
+                                logger.warning(f"❌ Available mappings: {list(temp_id_mapping.keys())}")
                 
                 # Process operation on in-memory state
                 result = _apply_operation_in_memory(
@@ -815,16 +847,30 @@ def batch_update_from_edit_queue(
                     element.updated_by = user.user_id
                     element.date_updated = datetime.now(timezone.utc)
         
-        # Commit all changes atomically
-        logger.info(f"Committing transaction with {len(deleted_element_ids)} deletions pending")
-        db.commit()
-        logger.info("Transaction committed successfully")
+        # Check if any operations failed BEFORE committing
+        failed_operations = [r for r in operation_results if r.get("status") == "error"]
+        total_operations = len(batch_request.operations)
         
-        logger.info(f"Processed {processed_operations} operations for script {script_id}")
+        if failed_operations:
+            # If ANY operation failed, rollback and fail the entire batch
+            db.rollback()
+            error_details = "; ".join([f"Op {r['operation_id']}: {r['error']}" for r in failed_operations])
+            logger.error(f"🚨 BATCH FAILED - {len(failed_operations)}/{total_operations} operations failed: {error_details}")
+            raise HTTPException(
+                status_code=422, 
+                detail=f"Save failed: {len(failed_operations)}/{total_operations} operations failed. {error_details}"
+            )
+        
+        # All operations succeeded - commit atomically
+        logger.info(f"All operations succeeded - committing transaction with {len(deleted_element_ids)} deletions")
+        db.commit()
+        logger.info("✅ Transaction committed successfully")
+        
+        logger.info(f"✅ Processed all {total_operations} operations for script {script_id}")
         
         return {
             "success": True,
-            "message": f"Processed {processed_operations} operations successfully",
+            "message": f"All {total_operations} operations processed successfully",
             "script_id": str(script_id),
             "operations_count": processed_operations,
             "results": operation_results
