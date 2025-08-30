@@ -50,7 +50,7 @@ interface UseScriptSyncReturn {
 export const useScriptSync = (
   scriptId: string | null,
   shareToken?: string,
-  options: UseScriptSyncOptions = {}
+  options: UseScriptSyncOptions & { autoConnect?: boolean } = {}
 ): UseScriptSyncReturn => {
   
   const { getToken } = useAuth();
@@ -65,8 +65,6 @@ export const useScriptSync = (
   const reconnectAttemptsRef = useRef(0);
   const prevScriptIdRef = useRef(scriptId);
   const prevShareTokenRef = useRef(shareToken);
-  const scriptIdRef = useRef(scriptId);
-  const shareTokenRef = useRef(shareToken);
   const maxReconnectAttempts = 5;
   const baseReconnectDelay = 1000; // 1 second
   
@@ -78,8 +76,6 @@ export const useScriptSync = (
   const getTokenRef = useRef(getToken);
   getTokenRef.current = getToken;
   
-  // Create a stable ref for connectToWebSocket to avoid stale closures
-  const connectToWebSocketRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
@@ -87,6 +83,8 @@ export const useScriptSync = (
       
       switch (message.type) {
         case 'connection_established':
+          console.log('🟢 WebSocket: Connection established, users:', message.connected_users || 0);
+          console.log('🔗 WebSocket: isConnected state set to true');
           setIsConnected(true);
           setConnectionCount(message.connected_users || 0);
           setConnectionError(null);
@@ -95,6 +93,7 @@ export const useScriptSync = (
           break;
           
         case 'script_update':
+          console.log('📡 WebSocket: Received script update:', message.update_type);
           setLastUpdate(message);
           optionsRef.current.onDataReceived?.(); // Trigger rotation for script updates
           try {
@@ -113,6 +112,7 @@ export const useScriptSync = (
           break;
           
         case 'pong':
+          console.log('🏓 WebSocket: Pong received');
           // Heartbeat response - connection is alive
           optionsRef.current.onDataReceived?.(); // Trigger rotation to show connection is alive
           break;
@@ -124,6 +124,8 @@ export const useScriptSync = (
   }, []); // Remove callback dependencies to prevent reconnections
 
   const handleClose = useCallback((_event: CloseEvent) => {
+    console.log('🔌 WebSocket: Disconnected from script');
+    console.log('🔗 WebSocket: isConnected state set to false');
     setIsConnected(false);
     setIsConnecting(false);
     setConnectionCount(0);
@@ -135,7 +137,7 @@ export const useScriptSync = (
       
       reconnectTimeoutRef.current = window.setTimeout(() => {
         reconnectAttemptsRef.current++;
-        connectToWebSocketRef.current?.();
+        connectToWebSocket();
       }, delay);
     }
   }, []); // Remove dependencies to prevent reconnections
@@ -146,10 +148,7 @@ export const useScriptSync = (
   }, []); // Remove dependencies to prevent reconnections
 
   const connectToWebSocket = useCallback(async () => {
-    const currentScriptId = scriptIdRef.current;
-    const currentShareToken = shareTokenRef.current;
-    
-    if (!currentScriptId) {
+    if (!scriptId) {
       setConnectionError('No script ID provided');
       return;
     }
@@ -159,6 +158,7 @@ export const useScriptSync = (
       wsRef.current.close();
     }
 
+    console.log('🔌 WebSocket: Connecting to script', scriptId);
     setIsConnecting(true);
     setConnectionError(null);
     
@@ -166,14 +166,14 @@ export const useScriptSync = (
       // Build WebSocket URL
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = process.env.NODE_ENV === 'development' ? 'localhost:8000' : window.location.host;
-      let wsUrl = `${protocol}//${host}/ws/script/${currentScriptId}`;
+      let wsUrl = `${protocol}//${host}/ws/script/${scriptId}`;
       
       // Add authentication parameters
       const urlParams = new URLSearchParams();
       
-      if (currentShareToken) {
+      if (shareToken) {
         // Guest access with share token
-        urlParams.append('share_token', currentShareToken);
+        urlParams.append('share_token', shareToken);
       } else {
         // Authenticated user access
         const authToken = await getTokenRef.current({});
@@ -190,6 +190,7 @@ export const useScriptSync = (
       const ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {
+        console.log('🔌 WebSocket: Connected to script', scriptId);
         setIsConnecting(false);
         setConnectionError(null);
       };
@@ -205,16 +206,8 @@ export const useScriptSync = (
       setConnectionError('Failed to establish connection');
       optionsRef.current.onError?.('Failed to establish connection');
     }
-  }, []); // No dependencies to prevent frequent recreation
-  
-  // Update the ref with the latest connectToWebSocket function
-  connectToWebSocketRef.current = connectToWebSocket;
+  }, [scriptId, shareToken, handleMessage, handleClose, handleError]); // Include dependencies
 
-  // Update refs when scriptId or shareToken change
-  useEffect(() => {
-    scriptIdRef.current = scriptId;
-    shareTokenRef.current = shareToken;
-  }, [scriptId, shareToken]);
 
   const sendMessage = useCallback((message: OutgoingMessage) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -236,6 +229,7 @@ export const useScriptSync = (
   }, [sendMessage]);
 
   const sendPing = useCallback(() => {
+    console.log('🏓 WebSocket: Sending ping');
     sendMessage({ type: 'ping' });
   }, [sendMessage]);
 
@@ -244,8 +238,8 @@ export const useScriptSync = (
   }, [sendMessage]);
 
   const connect = useCallback(() => {
-    connectToWebSocketRef.current?.();
-  }, []);
+    connectToWebSocket();
+  }, [connectToWebSocket]);
 
   const disconnect = useCallback(() => {
     // Clear reconnect timeout
@@ -272,9 +266,10 @@ export const useScriptSync = (
     prevScriptIdRef.current = scriptId;
     prevShareTokenRef.current = shareToken;
     
-    if (scriptId) {
-      connectToWebSocketRef.current?.();
-    } else {
+    if (scriptId && options.autoConnect !== false) {
+      console.log('🔄 Auto-connecting to script:', scriptId);
+      connectToWebSocket();
+    } else if (!scriptId) {
       disconnect();
     }
     

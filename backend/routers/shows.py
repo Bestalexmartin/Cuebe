@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.orm import Session, joinedload
 from uuid import UUID
 from datetime import datetime, timezone
+from typing import Optional
 import logging
 
 import models
@@ -601,13 +602,26 @@ def duplicate_script(
 
 
 @router.get("/scripts/{script_id}", response_model=schemas.Script)
-def get_script(
+async def get_script(
+    request: Request,
     script_id: UUID,
-    user: models.User = Depends(get_current_user),
+    share_token: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """Get a single script by ID with complete element data."""
     logger.info(f"✅ UNIFIED ENDPOINT: Loading script {script_id} with complete element data")
+    
+    # Get user if authenticated (optional)
+    user = None
+    if not share_token:
+        try:
+            user = await get_current_user(request, db)
+        except HTTPException:
+            if not share_token:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Authentication or share token required"
+                )
     
     # Query the script from database with show relationship for authorization
     # Include proper department joins for complete element display data
@@ -622,12 +636,26 @@ def get_script(
             detail="Script not found"
         )
     
-    # Check if user has access to this script (through direct ownership or show ownership)
-    if script.owner_id != user.user_id and script.show.owner_id != user.user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to access this script"
-        )
+    # Check access - either via authenticated user or share token
+    if share_token:
+        # Validate share token access via crew assignment
+        crew_assignment = db.query(models.CrewAssignment).filter(
+            models.CrewAssignment.share_token == share_token,
+            models.CrewAssignment.show_id == script.show_id
+        ).first()
+        
+        if not crew_assignment:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid share token for this script"
+            )
+    elif user:
+        # Check authenticated user access (direct ownership or show ownership)
+        if script.owner_id != user.user_id and script.show.owner_id != user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to access this script"
+            )
     
     return script
 
