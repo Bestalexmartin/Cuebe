@@ -10,7 +10,7 @@ import logging
 import models
 import schemas
 from database import get_db
-from .auth import get_current_user
+from .auth import get_current_user, get_current_user_optional
 
 # Optional rate limiting import
 try:
@@ -602,26 +602,21 @@ def duplicate_script(
 
 
 @router.get("/scripts/{script_id}", response_model=schemas.Script)
-async def get_script(
-    request: Request,
+def get_script(
     script_id: UUID,
     share_token: Optional[str] = None,
+    user: Optional[models.User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     """Get a single script by ID with complete element data."""
     logger.info(f"✅ UNIFIED ENDPOINT: Loading script {script_id} with complete element data")
     
-    # Get user if authenticated (optional)
-    user = None
-    if not share_token:
-        try:
-            user = await get_current_user(request, db)
-        except HTTPException:
-            if not share_token:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Authentication or share token required"
-                )
+    # If no user authentication and no share_token, require one or the other
+    if not user and not share_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication or share token required"
+        )
     
     # Query the script from database with show relationship for authorization
     # Include proper department joins for complete element display data
@@ -637,6 +632,8 @@ async def get_script(
         )
     
     # Check access - either via authenticated user or share token
+    access_granted = False
+    
     if share_token:
         # Validate share token access via crew assignment
         crew_assignment = db.query(models.CrewAssignment).filter(
@@ -644,18 +641,24 @@ async def get_script(
             models.CrewAssignment.show_id == script.show_id
         ).first()
         
-        if not crew_assignment:
+        if crew_assignment:
+            access_granted = True
+        else:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Invalid share token for this script"
             )
-    elif user:
+    
+    if user and not access_granted:
         # Check authenticated user access (direct ownership or show ownership)
-        if script.owner_id != user.user_id and script.show.owner_id != user.user_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to access this script"
-            )
+        if script.owner_id == user.user_id or script.show.owner_id == user.user_id:
+            access_granted = True
+    
+    if not access_granted:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this script"
+        )
     
     return script
 

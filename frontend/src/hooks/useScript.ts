@@ -37,7 +37,7 @@ interface CrewContext {
   user_name?: string;
 }
 
-export const useScriptViewing = (shareToken: string | undefined) => {
+export const useScript = (shareToken: string | undefined) => {
   const [viewingScriptId, setViewingScriptId] = useState<string | null>(null);
   const [scriptElements, setScriptElements] = useState<ScriptElement[]>([]);
   const [isLoadingScript, setIsLoadingScript] = useState(false);
@@ -57,7 +57,7 @@ export const useScriptViewing = (shareToken: string | undefined) => {
 
     try {
       const elementsResponse = await fetch(
-        buildSharedApiUrl(`/api/scripts/${scriptId}/elements`, shareToken!)
+        `/api/scripts/${scriptId}?share_token=${encodeURIComponent(shareToken!)}`
       );
 
       if (!elementsResponse.ok) {

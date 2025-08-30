@@ -14,12 +14,13 @@ export interface UseSaveScriptParams {
   getToken: () => Promise<string | null>;
   discardChanges: () => void;
   updateServerElements: (freshElements: any[]) => void;
-  refetchScript: () => void | Promise<void>;
   modalState: ModalStateLike;
   failureModalName: string;
   setSaveErrorMessage: (message: string) => void;
   showError: (title: string, opts?: any) => void;
   onSuccess?: () => void;
+  triggerRotation?: () => void;
+  setSourceScript?: (fresh: any) => void;
 }
 
 export function useSaveScript({
@@ -28,12 +29,13 @@ export function useSaveScript({
   getToken,
   discardChanges,
   updateServerElements,
-  refetchScript,
   modalState,
   failureModalName,
   setSaveErrorMessage,
   showError,
   onSuccess,
+  triggerRotation,
+  setSourceScript,
 }: UseSaveScriptParams) {
   const saveChanges = useCallback(async (): Promise<boolean> => {
     if (!scriptId || pendingOperations.length === 0) {
@@ -45,10 +47,14 @@ export function useSaveScript({
       operations: pendingOperations,
       getToken,
       onSuccess: (freshData: any) => {
+        // Immediately replace source script with the fresh server data
+        setSourceScript?.(freshData);
         // Reset local state to fresh server data
         discardChanges();
         updateServerElements(freshData?.elements || []);
 
+        // Trigger rotation to show save activity
+        triggerRotation?.();
 
         // Close any failure modal state
         modalState.closeModal(failureModalName);
@@ -78,14 +84,14 @@ export function useSaveScript({
     getToken,
     discardChanges,
     updateServerElements,
-    refetchScript,
     modalState,
     failureModalName,
     setSaveErrorMessage,
     showError,
     onSuccess,
+    triggerRotation,
+    setSourceScript,
   ]);
 
   return { saveChanges };
 }
-

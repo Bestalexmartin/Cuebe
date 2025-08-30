@@ -1,6 +1,6 @@
 // frontend/src/components/shared/SharedPageHeader.tsx
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   Flex,
   Heading,
@@ -10,6 +10,8 @@ import {
   useColorModeValue
 } from '@chakra-ui/react';
 import { BorderedContainer } from './BorderedContainer';
+import { ScriptSyncIcon, ScriptSyncIconRef } from './ScriptSyncIcon';
+import { useScriptSyncContextOptional } from '../../contexts/ScriptSyncContext';
 
 interface SharedPageHeaderProps {
   userName?: string;
@@ -23,6 +25,19 @@ export const SharedPageHeader: React.FC<SharedPageHeaderProps> = ({
   children
 }) => {
   const cardBgColor = useColorModeValue('white', 'gray.800');
+  const scriptSyncIconRef = useRef<ScriptSyncIconRef>(null);
+  
+  const syncContext = useScriptSyncContextOptional();
+  const syncData = syncContext?.syncData;
+  
+  // Wire up the context triggerRotation to the actual icon
+  useEffect(() => {
+    if (syncData?.triggerRotation) {
+      syncData.triggerRotation.current = () => {
+        scriptSyncIconRef.current?.triggerRotation();
+      };
+    }
+  }, [syncData]);
 
   return (
     <Flex
@@ -54,8 +69,20 @@ export const SharedPageHeader: React.FC<SharedPageHeaderProps> = ({
       </Flex>
 
       <Flex align="center" gap={4}>
-        {/* Dark mode switch, sync icon, and user profile */}
+        {/* Dark mode switch and other controls */}
         {children}
+
+        {/* Script Sync Icon - now handled in header like main Header */}
+        <BorderedContainer>
+          <ScriptSyncIcon
+            ref={scriptSyncIconRef}
+            isConnected={syncData?.isConnected || false}
+            isConnecting={syncData?.isConnecting || false}
+            connectionCount={syncData?.connectionCount || 0}
+            connectionError={syncData?.connectionError}
+            userType={syncData?.userType || 'crew_member'}
+          />
+        </BorderedContainer>
 
         {/* Shared user profile */}
         <BorderedContainer>

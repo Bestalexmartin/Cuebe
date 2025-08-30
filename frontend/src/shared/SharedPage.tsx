@@ -18,7 +18,7 @@ import { AppIcon } from '../components/AppIcon';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { ViewMode } from '../features/script/components/modes/ViewMode';
 import { useSharedData } from '../hooks/useSharedData';
-import { useScript } from '../features/script/hooks/useScript';
+import { useScript } from '../hooks/useScript';
 import { useSorting } from '../hooks/useSorting';
 import { ScriptHeader } from '../components/shared/ScriptHeader';
 import { ShowsList } from '../components/shared/ShowsList';
@@ -26,13 +26,13 @@ import { LoadingSpinner, ErrorState, ScriptLoadingState } from '../components/sh
 import { SortMenu, SortOption } from '../components/shared/SortMenu';
 import { SharedPageHeader } from '../components/shared/SharedPageHeader';
 import { SearchInput } from '../components/shared/SearchInput';
-import { ScriptSyncIcon, ScriptSyncIconRef } from '../components/shared/ScriptSyncIcon';
 import { BorderedContainer } from '../components/shared/BorderedContainer';
 import { useScriptSync } from '../hooks/useScriptSync';
 import { SharedTutorialsPage } from './components/SharedTutorialsPage';
 import { GuestDarkModeSwitch } from './components/GuestDarkModeSwitch';
 import { useTutorialSearch } from './hooks/useTutorialSearch';
 import { useScriptUpdateHandlers } from './hooks/useScriptUpdateHandlers';
+import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
 
 const SHOWS_SORT_OPTIONS: SortOption[] = [
   { value: 'show_name', label: 'Name' },
@@ -46,8 +46,6 @@ export const SharedPage = React.memo(() => {
   const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [showTutorials, setShowTutorials] = useState<boolean>(false);
-  const [viewingScriptId, setViewingScriptId] = useState<string | null>(null);
-  const scriptSyncIconRef = useRef<ScriptSyncIconRef>(null);
   const triggerRotationRef = useRef<(() => void) | null>(null);
 
   // Tutorial search - extracted to custom hook
@@ -68,36 +66,32 @@ export const SharedPage = React.memo(() => {
   // Custom hooks
   const { sharedData, isLoading, error, refreshData, updateSharedData } = useSharedData(shareToken);
   
-  // Script navigation handlers  
-  const handleScriptClick = useCallback((scriptId: string) => {
-    setViewingScriptId(scriptId);
-  }, []);
-  
-  const handleBackToShows = useCallback(() => {
-    setViewingScriptId(null);
-  }, []);
+  // Custom hooks - useScript provides script viewing functionality with element handlers
+  const {
+    viewingScriptId,
+    scriptElements,
+    isLoadingScript,
+    scriptError,
+    crewContext,
+    handleScriptClick,
+    handleBackToShows,
+    refreshScriptElementsOnly,
+    updateScriptElementsDirectly,
+    updateSingleElement,
+    deleteElement,
+  } = useScript(shareToken);
 
-  const { script: currentScript, isLoading: isLoadingScript, error: scriptError } = useScript(
-    viewingScriptId, 
-    shareToken
-  );
-
-  // Function to update script info directly without API call - use refs for stability
-  const viewingScriptIdRef = useRef(viewingScriptId);
-  const updateSharedDataRef = useRef(updateSharedData);
-  viewingScriptIdRef.current = viewingScriptId;
-  updateSharedDataRef.current = updateSharedData;
-  
+  // Function to update script info directly without API call
   const updateScriptInfo = useCallback((changes: any) => {
-    if (!viewingScriptIdRef.current) return;
+    if (!viewingScriptId) return;
 
-    updateSharedDataRef.current(prevData => {
+    updateSharedData(prevData => {
       if (!prevData?.shows) return prevData;
 
       const updatedShows = prevData.shows.map(show => ({
         ...show,
         scripts: show.scripts.map(script => {
-          if (script.script_id === viewingScriptIdRef.current) {
+          if (script.script_id === viewingScriptId) {
             const updatedScript = { ...script };
 
             // Apply each change
@@ -117,21 +111,21 @@ export const SharedPage = React.memo(() => {
 
       return { ...prevData, shows: updatedShows };
     });
-  }, []); // No dependencies - use refs
-
-  // Get script elements from the unified script response
-  const scriptElements = currentScript?.elements || [];
+  }, [viewingScriptId, updateSharedData]);
 
   // Memoize the getCurrentElements callback to prevent render loops - use ref for stability
   const scriptElementsRef = useRef(scriptElements);
   scriptElementsRef.current = scriptElements;
   const getCurrentElements = useCallback(() => scriptElementsRef.current, []);
 
-  // TEMP: Simplified update handlers for debugging
-  const updateSingleElement = useCallback(() => {}, []);
-  const updateScriptElementsDirectly = useCallback(() => {}, []);
-  const deleteElement = useCallback(() => {}, []);
-  const refreshScriptElementsOnly = useCallback(() => {}, []);
+  // Get current script from shared data (for script metadata) - preserve old functionality
+  const currentScript = useMemo(() => {
+    if (!viewingScriptId || !sharedData?.shows) return null;
+    const foundScript = sharedData.shows
+      .flatMap(show => show.scripts)
+      .find(script => script.script_id === viewingScriptId) || null;
+    return foundScript;
+  }, [viewingScriptId, sharedData?.shows]);
 
   // Memoize the callbacks object with more stable dependencies
   const updateHandlerCallbacks = useMemo(() => ({
@@ -147,12 +141,6 @@ export const SharedPage = React.memo(() => {
   // WebSocket update handlers - with stable callbacks object
   const { handleUpdate } = useScriptUpdateHandlers(updateHandlerCallbacks);
 
-  // Wire up rotation trigger like auth side
-  useEffect(() => {
-    triggerRotationRef.current = () => {
-      scriptSyncIconRef.current?.triggerRotation();
-    };
-  }, []);
 
   // Trigger rotation on data received (ping/pong and incoming updates)
   const onDataReceived = useCallback(() => {
@@ -174,16 +162,36 @@ export const SharedPage = React.memo(() => {
     onDataReceived,
   });
 
-  // Wire up rotation trigger like auth side
-  useEffect(() => {
-    const triggerRotation = () => {
-      scriptSyncIconRef.current?.triggerRotation();
-    };
+  // Update sync context for header display
+  const { setSyncData } = useScriptSyncContext();
+  
+  // Simple sync data - only update when connection actually changes
+  const syncData = useMemo(() => {
+    if (!viewingScriptId) return null;
     
-    if (scriptSync.isConnected) {
-      triggerRotation();
+    return {
+      isConnected: scriptSync.isConnected,
+      isConnecting: scriptSync.isConnecting,
+      connectionCount: scriptSync.connectionCount,
+      connectionError: scriptSync.connectionError,
+      userType: 'crew_member' as const,
+      triggerRotation: triggerRotationRef
+    };
+  }, [viewingScriptId, scriptSync.isConnected, scriptSync.isConnecting]);
+  
+  useEffect(() => {
+    setSyncData(syncData);
+    
+    // Cleanup when component unmounts
+    return () => setSyncData(null);
+  }, [syncData, setSyncData]);
+
+  // Force clear sync data immediately when leaving script view
+  useEffect(() => {
+    if (!viewingScriptId) {
+      setSyncData(null);
     }
-  }, [scriptSync.isConnected]);
+  }, [viewingScriptId, setSyncData]);
 
 
   const { sortBy, sortDirection, sortedShows, handleSortClick } = useSorting(sharedData);
@@ -219,16 +227,6 @@ export const SharedPage = React.memo(() => {
         >
           <BorderedContainer>
             <GuestDarkModeSwitch shareToken={shareToken} />
-          </BorderedContainer>
-          <BorderedContainer>
-            <ScriptSyncIcon
-              ref={scriptSyncIconRef}
-              isConnected={scriptSync.isConnected}
-              isConnecting={scriptSync.isConnecting}
-              connectionCount={scriptSync.connectionCount}
-              connectionError={scriptSync.connectionError}
-              userType="crew_member"
-            />
           </BorderedContainer>
         </SharedPageHeader>
 
@@ -339,7 +337,7 @@ export const SharedPage = React.memo(() => {
               <>
                 <ScriptHeader
                   currentScript={currentScript}
-                  crewContext={currentScript?.crew_context || null}
+                  crewContext={crewContext}
                   onBackToShows={handleBackToShows}
                 />
 

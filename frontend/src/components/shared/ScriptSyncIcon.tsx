@@ -1,6 +1,6 @@
 // frontend/src/components/shared/ScriptSyncIcon.tsx
 
-import React, { useState, useEffect, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, forwardRef, useImperativeHandle } from 'react';
 import {
   IconButton,
   Box,
@@ -8,16 +8,90 @@ import {
 } from '@chakra-ui/react';
 import { IoSyncCircleSharp } from "react-icons/io5";
 
-// Connected Icon Component
-const ConnectedIcon: React.FC<{ size: string; shouldRotate?: boolean }> = ({ size, shouldRotate = false }) => {
-  const [animationKey, setAnimationKey] = React.useState(0);
+// CSS keyframes for all animations
+const animationStyles = {
+  '@keyframes dual-ring-spin': {
+    '0%': { transform: 'rotate(0deg)' },
+    '100%': { transform: 'rotate(360deg)' }
+  },
+  '@keyframes single-rotation': {
+    '0%': { transform: 'rotate(0deg)' },
+    '100%': { transform: 'rotate(360deg)' }
+  }
+};
 
-  React.useEffect(() => {
-    if (shouldRotate) {
-      setAnimationKey(prev => prev + 1);
-    }
-  }, [shouldRotate]);
+interface ScriptSyncIconState {
+  connectionState: 'disconnected' | 'connecting' | 'connected';
+  rotationTrigger: number;
+}
 
+// Single unified icon component that handles all states
+const UnifiedSyncIcon: React.FC<{ 
+  state: ScriptSyncIconState; 
+  size: string; 
+}> = ({ state, size }) => {
+  const { connectionState, rotationTrigger } = state;
+  
+  if (connectionState === 'disconnected') {
+    // Grey ring
+    return (
+      <Box
+        width={size}
+        height={size}
+        borderRadius="50%"
+        border="3px solid"
+        borderColor="gray.600"
+        background="transparent"
+      />
+    );
+  }
+  
+  if (connectionState === 'connecting') {
+    // Dual spinning rings animation
+    return (
+      <Box
+        width={size}
+        height={size}
+        position="relative"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        sx={animationStyles}
+      >
+        {/* Outer grey ring */}
+        <Box
+          width={size}
+          height={size}
+          borderRadius="50%"
+          border="3px solid transparent"
+          borderTopColor="gray.600"
+          borderRightColor="gray.600"
+          borderBottomColor="gray.600"
+          background="transparent"
+          position="absolute"
+          sx={{
+            animation: 'dual-ring-spin 1s linear infinite reverse'
+          }}
+        />
+        {/* Inner green ring */}
+        <Box
+          width={`${parseInt(size) * 0.65}px`}
+          height={`${parseInt(size) * 0.65}px`}
+          borderRadius="50%"
+          border="3px solid transparent"
+          borderTopColor="green.400"
+          borderRightColor="green.400"
+          background="transparent"
+          position="absolute"
+          sx={{
+            animation: 'dual-ring-spin 1.2s linear infinite'
+          }}
+        />
+      </Box>
+    );
+  }
+  
+  // Connected - green icon with rotation on trigger
   return (
     <Box
       width={size}
@@ -26,87 +100,19 @@ const ConnectedIcon: React.FC<{ size: string; shouldRotate?: boolean }> = ({ siz
       alignItems="center"
       justifyContent="center"
       sx={{
-        '@keyframes heartbeat-rotate': {
-          '0%': { transform: 'rotate(0deg)' },
-          '100%': { transform: 'rotate(360deg)' }
-        },
-        animation: shouldRotate ? 'heartbeat-rotate 0.6s ease-in-out' : 'none',
+        ...animationStyles,
+        animation: rotationTrigger > 0 ? 'single-rotation 0.6s ease-in-out' : 'none'
       }}
-      key={animationKey} // Force re-render to restart animation
+      key={rotationTrigger} // Force re-render to restart animation
     >
       <Icon
         as={IoSyncCircleSharp}
-        boxSize="28px" // Perfect size for visibility
-        color="green.400" // Match the connecting ring color
+        boxSize="28px"
+        color="green.400"
       />
     </Box>
   );
 };
-
-// Thicker Ring Icon Component
-const ThickRingIcon: React.FC<{ size: string }> = ({ size }) => (
-  <Box
-    width={size}
-    height={size}
-    borderRadius="50%"
-    border="3px solid"
-    borderColor="gray.600"
-    background="transparent"
-  />
-);
-
-// Dual Spinning Rings Icon Component (for connecting state)
-const DualSpinningRingIcon: React.FC<{ size: string }> = ({ size }) => (
-    <Box
-    width={size}
-    height={size}
-    position="relative"
-    display="flex"
-    alignItems="center"
-    justifyContent="center"
-  >
-    {/* Outer ring - grey, 70% complete with 30% gap */}
-    <Box
-      width={size}
-      height={size}
-      borderRadius="50%"
-      border="3px solid transparent"
-      borderTopColor="gray.600"
-      borderRightColor="gray.600"
-      borderBottomColor="gray.600"
-      borderLeftColor="transparent"
-      background="transparent"
-      position="absolute"
-      sx={{
-        '@keyframes spin-clockwise': {
-          '0%': { transform: 'rotate(0deg)' },
-          '100%': { transform: 'rotate(-360deg)' }
-        },
-        animation: 'spin-clockwise 0.84s linear infinite'
-      }}
-    />
-    {/* Inner ring - green, 30% complete arc */}
-    <Box
-      width={`${parseInt(size) * 0.65}px`}
-      height={`${parseInt(size) * 0.65}px`}
-      borderRadius="50%"
-      border="3px solid transparent"
-      borderTopColor="green.400"
-      borderRightColor="green.400"
-      borderBottomColor="transparent"
-      borderLeftColor="transparent"
-      background="transparent"
-      position="absolute"
-      sx={{
-        '@keyframes spin-counter': {
-          '0%': { transform: 'rotate(0deg)' },
-          '100%': { transform: 'rotate(360deg)' }
-        },
-        animation: 'spin-counter 1.19s linear infinite'
-      }}
-    />
-  </Box>
-);
 
 interface ScriptSyncIconProps {
   isConnected: boolean;
@@ -127,86 +133,42 @@ export const ScriptSyncIcon = forwardRef<ScriptSyncIconRef, ScriptSyncIconProps>
   connectionError,
   onClick
 }, ref) => {
-  console.log('🔄 ScriptSyncIcon props:', { isConnected, isConnecting, connectionError });
+  const [rotationTrigger, setRotationTrigger] = useState(0);
+  const [animationState, setAnimationState] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [isPlayingSequence, setIsPlayingSequence] = useState(false);
   
-  const [displayedIcon, setDisplayedIcon] = useState<React.ReactNode>(null);
-  const [shouldRotate, setShouldRotate] = useState(false);
-  const [hasShownWelcomeRotation, setHasShownWelcomeRotation] = useState(false);
-  const [isConnectedWithFade, setIsConnectedWithFade] = useState(false);
-  const [animationStage, setAnimationStage] = useState<'initial' | 'connecting' | 'connected'>('initial');
-
-  // Internal rotation trigger function
-  const handleRotation = useCallback(() => {
-    setShouldRotate(true);
-    setTimeout(() => setShouldRotate(false), 700);
-  }, [animationStage, isConnected]);
-
+  // Start full animation sequence when connection completes
+  React.useEffect(() => {
+    if (isConnected && !isPlayingSequence && animationState !== 'connected') {
+      setIsPlayingSequence(true);
+      setAnimationState('connecting');
+      
+      // Play connecting animation for 1.5 seconds, then transition to connected
+      setTimeout(() => {
+        setAnimationState('connected');
+        setRotationTrigger(prev => prev + 1); // Initial welcome rotation
+        setIsPlayingSequence(false);
+      }, 1500);
+    } else if (!isConnected && !isConnecting) {
+      // Immediate disconnect
+      setAnimationState('disconnected');
+      setIsPlayingSequence(false);
+    }
+  }, [isConnected, isConnecting, animationState, isPlayingSequence]);
+  
+  const iconState: ScriptSyncIconState = {
+    connectionState: animationState,
+    rotationTrigger
+  };
+  
   // Expose rotation function to parent via ref
   useImperativeHandle(ref, () => ({
-    triggerRotation: handleRotation
-  }), [handleRotation]);
-
-
-  const getCurrentIcon = useMemo(() => {
-    if (connectionError) return <ThickRingIcon size="22px" />;
-    if (animationStage === 'connecting') return <DualSpinningRingIcon size="22px" />;
-    if (animationStage === 'connected') {
-      return <ConnectedIcon size="22px" shouldRotate={shouldRotate} />;
+    triggerRotation: () => {
+      if (animationState === 'connected') {
+        setRotationTrigger(prev => prev + 1);
+      }
     }
-    return <ThickRingIcon size="22px" />;
-  }, [connectionError, animationStage, shouldRotate]);
-
-  // Staged animation sequence - always plays full duration regardless of actual connection speed
-  useEffect(() => {
-    if (displayedIcon === null) {
-      // First render - show initial state
-      setDisplayedIcon(getCurrentIcon);
-    } else if ((isConnecting || isConnected) && animationStage === 'initial') {
-      // Start connecting animation sequence
-      setAnimationStage('connecting');
-      setTimeout(() => {
-        setDisplayedIcon(<DualSpinningRingIcon size="22px" />);
-      }, 200);
-      
-      // Always wait for full connecting animation before showing connected state
-      setTimeout(() => {
-        setAnimationStage('connected');
-        setIsConnectedWithFade(true);
-        setDisplayedIcon(getCurrentIcon);
-        
-        // Mark welcome rotation as shown
-        if (!hasShownWelcomeRotation) {
-          setHasShownWelcomeRotation(true);
-        }
-        
-        // Stop initial rotation after animation completes, keep fade state
-        setTimeout(() => {
-          setShouldRotate(false);
-        }, 700);
-      }, 1400); // 200ms + 1200ms for full connecting sequence
-    } else if (connectionError || (!isConnecting && !isConnected && animationStage !== 'initial')) {
-      // Error or disconnection - immediate change
-      setAnimationStage('initial');
-      setDisplayedIcon(getCurrentIcon);
-      setHasShownWelcomeRotation(false);
-    }
-  }, [isConnected, isConnecting, connectionError, animationStage, hasShownWelcomeRotation]);
-
-  // Update displayed icon when shouldRotate changes (for ping/pong rotations)
-  useEffect(() => {
-    if (animationStage === 'connected') {
-      setDisplayedIcon(getCurrentIcon);
-    }
-  }, [shouldRotate, getCurrentIcon, animationStage]); // Add handleRotation for welcome rotation
-
-  // Reset welcome rotation state when component unmounts or disconnects
-  useEffect(() => {
-    if (!isConnected) {
-      setHasShownWelcomeRotation(false);
-    }
-  }, [isConnected]);
-
-  // Welcome rotation is now handled in the main transition logic above
+  }), [animationState]);
 
   return (
     <IconButton
@@ -217,16 +179,7 @@ export const ScriptSyncIcon = forwardRef<ScriptSyncIconRef, ScriptSyncIconProps>
       _hover={{
         bg: 'whiteAlpha.200'
       }}
-      icon={
-        <Box
-          sx={{
-            transition: isConnectedWithFade ? 'opacity 0.3s ease-in-out' : 'none',
-            opacity: isConnectedWithFade && animationStage === 'connected' ? 1 : (animationStage === 'connected' ? 0.3 : 1)
-          }}
-        >
-          {displayedIcon}
-        </Box>
-      }
+      icon={<UnifiedSyncIcon state={iconState} size="22px" />}
     />
   );
 });

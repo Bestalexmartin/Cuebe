@@ -23,6 +23,7 @@ interface UseScriptReturn {
   isLoading: boolean;
   error: string | null;
   refetchScript: () => Promise<void>;
+  setScript: (script: Script | null) => void;
 }
 
 interface UseScriptOptions {
@@ -66,6 +67,10 @@ export const useScript = (scriptId: string | undefined, shareToken?: string, opt
             const data: Script = await response.json();
             console.log('📄 Script loaded:', data.script_id, data.script_name);
             
+            console.log('🔍 SETSCRIPT_WATCHER: Setting script with name:', data.script_name, {
+                scriptId: data.script_id,
+                stack: new Error().stack
+            });
             setScript(data);
             options?.onSuccess?.(data);
             
@@ -85,6 +90,7 @@ export const useScript = (scriptId: string | undefined, shareToken?: string, opt
         script, 
         isLoading, 
         error, 
-        refetchScript: fetchScript 
+        refetchScript: fetchScript,
+        setScript,
     }), [script, isLoading, error, fetchScript]);
 };

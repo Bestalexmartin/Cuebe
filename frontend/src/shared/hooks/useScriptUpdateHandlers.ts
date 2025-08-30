@@ -23,9 +23,12 @@ interface UpdateCallbacks {
 }
 
 import { useCallback } from 'react';
+import { applyOperationToElements } from '../utils/elementOperations';
 
 export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
   const handleUpdate = useCallback((update: ScriptUpdate) => {
+    console.log('🔄 SHARED: Received websocket update:', update);
+    
     const {
       updateSingleElement,
       deleteElement,
@@ -36,63 +39,45 @@ export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
 
     // Guard against updates without type
     if (!update.update_type) {
+      console.log('❌ SHARED: Update missing type, ignoring');
       return;
     }
 
     // Apply updates based on update type - now expecting operation objects
     if (update.update_type === "script_info") {
-      // Script info changes - apply directly if possible, otherwise refresh
+      console.log('📋 SHARED: Processing script_info update:', update.changes);
+      // Script info changes - apply directly (no API calls)
       if (updateScriptInfo && update.changes) {
         updateScriptInfo(update.changes);
-      } else if (refreshSharedData) {
-        refreshSharedData();
       } else {
-        refreshScriptElementsOnly();
+        console.log('⚠️ SHARED: No updateScriptInfo handler available, skipping script info update');
       }
     } else if (update.update_type === "elements_updated") {
-      // Elements_updated contains operation data that needs to be processed
-      if (Array.isArray(update.changes)) {
-        // Process each operation to update the UI
+      console.log('📝 SHARED: Processing elements_updated:', update.changes);
+      // Use shared operation logic to apply all changes at once
+      if (Array.isArray(update.changes) && callbacks.getCurrentElements && callbacks.updateScriptElementsDirectly) {
+        const currentElements = callbacks.getCurrentElements();
+        let updatedElements = currentElements;
+        
+        // Apply each operation using shared logic
         for (const operation of update.changes) {
-          if (operation.type === 'UPDATE_ELEMENT' && updateSingleElement) {
-            // Apply the element update directly - extract new_value from each change
-            const elementChanges: Record<string, any> = {};
-            Object.entries(operation.changes || {}).forEach(([field, changeData]: [string, any]) => {
-              if (changeData && typeof changeData === 'object' && 'new_value' in changeData) {
-                elementChanges[field] = changeData.new_value;
-              } else {
-                elementChanges[field] = changeData; // Fallback for direct values
-              }
-            });
-            
-            updateSingleElement(operation.element_id, elementChanges);
-          } else if (operation.type === 'CREATE_ELEMENT' && operation.element_data && callbacks.getCurrentElements) {
-            // Add the new element directly to local state
-            // Get current elements and add the new one
-            const currentElements = callbacks.getCurrentElements();
-            const newElements = [...currentElements, operation.element_data];
-            callbacks.updateScriptElementsDirectly(newElements);
-          } else if (operation.type === 'DELETE_ELEMENT' && deleteElement) {
-            // Remove the element directly from local state
-            deleteElement(operation.element_id);
-          }
+          updatedElements = applyOperationToElements(updatedElements, operation);
         }
+        
+        console.log('✅ SHARED: Applied', update.changes.length, 'operations locally');
+        callbacks.updateScriptElementsDirectly(updatedElements);
       } else {
-        refreshScriptElementsOnly();
+        console.log('⚠️ SHARED: Missing required callbacks for elements_updated');
       }
     } else if (update.changes) {
-      // Individual operation updates - the changes field contains the operation object
-      const operation = update.changes;
-      
-      // For individual operations that significantly change structure, refresh
-      if (operation.type === 'CREATE_ELEMENT' || operation.type === 'DELETE_ELEMENT' || 
-          operation.type === 'CREATE_GROUP' || operation.type === 'UNGROUP_ELEMENTS' ||
-          operation.type === 'REORDER' || operation.type === 'BULK_REORDER' ||
-          operation.type === 'ENABLE_AUTO_SORT' || operation.type === 'DISABLE_AUTO_SORT') {
-        refreshScriptElementsOnly();
+      console.log('🔧 SHARED: Processing individual operation update:', update.changes);
+      // Use shared operation logic for individual updates too
+      if (callbacks.getCurrentElements && callbacks.updateScriptElementsDirectly) {
+        const currentElements = callbacks.getCurrentElements();
+        const updatedElements = applyOperationToElements(currentElements, update.changes);
+        callbacks.updateScriptElementsDirectly(updatedElements);
       } else {
-        // For simple field updates, we could be more granular but refresh is safer
-        refreshScriptElementsOnly();
+        console.log('⚠️ SHARED: Missing required callbacks for individual operation');
       }
     }
   }, [callbacks]);

@@ -226,11 +226,13 @@ export const useScriptSync = (
       type: 'script_update',
       ...message
     });
+    optionsRef.current.onDataReceived?.(); // Trigger rotation for outgoing script update
   }, [sendMessage]);
 
   const sendPing = useCallback(() => {
     console.log('🏓 WebSocket: Sending ping');
     sendMessage({ type: 'ping' });
+    optionsRef.current.onDataReceived?.(); // Trigger rotation for outgoing ping
   }, [sendMessage]);
 
   const getConnectionInfo = useCallback(() => {
