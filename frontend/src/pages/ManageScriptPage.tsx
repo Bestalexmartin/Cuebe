@@ -81,6 +81,7 @@ const MODAL_NAMES = {
     SAVE_CONFIRMATION: 'save_confirmation',
     FINAL_SAVE_CONFIRMATION: 'final_save_confirmation',
     SAVE_PROCESSING: 'save_processing',
+    SAVE_FAILURE: 'save_failure',
     SHARE_CONFIRMATION: 'share_confirmation',
     HIDE_SCRIPT: 'hide_script',
     FINAL_HIDE_SCRIPT: 'final_hide_script'
@@ -118,7 +119,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 }) => {
     const { scriptId } = useParams<{ scriptId: string }>();
     const { showSuccess, showError } = useEnhancedToast();
-    // Removed shouldRotateAuth state - now using direct function calls
+    const [saveErrorMessage, setSaveErrorMessage] = useState<string>('');
 
     const viewModeRef = useRef<ViewModeRef>(null);
     const editModeRef = useRef<EditModeRef>(null);
@@ -268,26 +269,53 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             operations: pendingOperations,
             getToken,
             onSuccess: (freshData) => {
-                console.log('🔄 SAVE SUCCESS - about to discard changes');
+                console.log('🔄 SAVE SUCCESS - replacing current data with fresh data');
                 console.log('🔄 SAVE SUCCESS - current editQueueElements count:', editQueueElements?.length);
                 console.log('🔄 SAVE SUCCESS - freshData elements count:', freshData?.elements?.length);
+                console.log('🔄 SAVE SUCCESS - freshData script info:', {
+                    script_name: freshData?.script_name,
+                    start_time: freshData?.start_time,
+                    end_time: freshData?.end_time
+                });
                 
-                // CRITICAL FIX: Clear queue FIRST, then update with fresh data
-                console.log('🔄 SAVE SUCCESS - clearing edit queue first');
+                // Clear edit queue and gracefully replace with fresh data
+                console.log('🔄 SAVE SUCCESS - clearing edit queue and replacing data');
                 discardChanges();
-                
-                console.log('🔄 SAVE SUCCESS - updating with fresh data from backend');
                 updateServerElements(freshData.elements || []);
                 
-                console.log('🔄 SAVE SUCCESS - refresh complete using fresh backend data');
+                // Trigger script refresh to get updated script info
+                console.log('🔄 SAVE SUCCESS - refreshing script info from server');
+                refetchScript();
+                
+                // Clear failure state on successful save
+                modalState.closeModal(MODAL_NAMES.SAVE_FAILURE);
+                setSaveErrorMessage('');
+                console.log('🔄 SAVE SUCCESS - data replacement complete, no screen flash');
             },
             onError: (error) => {
-                console.error("Save error:", error);
+                console.error("🚨🚨🚨 SAVE ERROR:", error);
+                
+                // Capture full error message for modal
+                const fullErrorMessage = error.stack || error.message || String(error);
+                setSaveErrorMessage(fullErrorMessage);
+                
+                // Show LOUD error toast
+                showError(`🚨 SAVE FAILED`, {
+                    duration: 8000,
+                    isClosable: true,
+                    description: "Save operation failed. Choose Continue or Revert Data."
+                });
+                
+                // PRESERVE current data - do NOT invalidate on save failure
+                console.error('🚨🚨🚨 SAVE FAILED - preserving current data for Continue option');
+                
+                // Show failure modal with Continue/Revert options
+                modalState.openModal(MODAL_NAMES.SAVE_FAILURE);
             }
         });
         
         return result;
-    }, [scriptId, pendingOperations, getToken, refetchScript, discardChanges]);
+    }, [scriptId, pendingOperations, getToken, discardChanges, updateServerElements, refetchScript, modalState, setSaveErrorMessage, showError]);
 
     const handleToggleAllGroups = useCallback(() => {
         if (!allEditQueueElements) return;
@@ -1258,6 +1286,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 onElementEdit={elementActions.handleElementEditSave}
                 onGroupEdit={elementActions.handleGroupEditSave}
                 allElements={allEditQueueElements}
+                saveErrorMessage={saveErrorMessage}
                 scriptName={currentScript?.script_name || 'Script'}
                 crewCount={Array.from(new Map(crewMembers.map(member => [member.user_id, member])).values()).length}
                 shareCount={shareCount}

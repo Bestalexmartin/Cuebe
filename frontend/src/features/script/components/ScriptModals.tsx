@@ -1,6 +1,14 @@
 // frontend/src/features/script/components/ScriptModals.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
+import {
+    VStack,
+    Box,
+    Code,
+    IconButton,
+    HStack,
+    Text
+} from '@chakra-ui/react';
 import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfirmationModal';
 import { FinalDeleteConfirmationModal } from '../../../components/modals/FinalDeleteConfirmationModal';
 import { FinalSaveConfirmationModal } from '../../../components/modals/FinalSaveConfirmationModal';
@@ -15,8 +23,12 @@ import { EditGroupModal } from './modals/EditGroupModal';
 import { AddScriptElementModal } from './AddScriptElementModal';
 import { GroupElementsModal } from './modals/GroupElementsModal';
 import { ShareConfirmationModal } from './modals/ShareConfirmationModal';
+import { BaseModal } from '../../../components/base/BaseModal';
+import { AppIcon } from '../../../components/AppIcon';
 import { ModalStateReturn } from '../../../hooks/useModalState';
 import { UserPreferences } from '../../../hooks/useUserPreferences';
+import { useEnhancedToast } from '../../../utils/toastUtils';
+
 
 interface ScriptModalsProps {
     // Modal state management
@@ -87,7 +99,72 @@ interface ScriptModalsProps {
     onElementEdit: (changes: Record<string, { old_value: any; new_value: any }>) => void;
     onGroupEdit: (changes: Record<string, { old_value: any; new_value: any }>, offsetDelta: number, affectedChildren: string[]) => void;
     allElements: any[]; // For group calculations
+    saveErrorMessage?: string; // For save failure modal
 }
+
+interface ErrorDisplayProps {
+    errorMessage: string;
+}
+
+const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ errorMessage }) => {
+    const [isCopying, setIsCopying] = useState(false);
+    const { showSuccess, showError } = useEnhancedToast();
+    const codeBlockBg = 'card.background';
+
+    const handleCopyError = async () => {
+        setIsCopying(true);
+        try {
+            const textToCopy = `Save Error Report - ${new Date().toLocaleString()}\n` +
+                              `=${'='.repeat(60)}\n` +
+                              errorMessage;
+            await navigator.clipboard.writeText(textToCopy);
+            showSuccess("Error copied", "The error report has been copied to your clipboard");
+        } catch (err) {
+            console.error('Failed to copy error:', err);
+            showError("Copy failed", { description: "Failed to copy error to clipboard" });
+        } finally {
+            setIsCopying(false);
+        }
+    };
+
+    return (
+        <VStack spacing={2} align="stretch" width="100%">
+            <HStack justify="space-between" align="center">
+                <Text fontSize="xs" fontWeight="semibold" color="red.300">
+                    Error Details:
+                </Text>
+                <IconButton
+                    aria-label="Copy error details"
+                    icon={<AppIcon name="copy" boxSize="12px" />}
+                    size="xs"
+                    variant="ghost"
+                    isLoading={isCopying}
+                    onClick={handleCopyError}
+                    colorScheme="red"
+                    color="red.300"
+                    _hover={{ bg: 'red.800' }}
+                />
+            </HStack>
+            <Box
+                as="pre"
+                bg={codeBlockBg}
+                p={2}
+                borderRadius="md"
+                overflowX="auto"
+                overflowY="auto"
+                maxHeight="120px"
+                border="1px solid"
+                borderColor="red.400"
+                fontSize="xs"
+                className="hide-scrollbar"
+            >
+                <Code fontSize="xs" whiteSpace="pre-wrap" bg="transparent" color="red.600" _dark={{ color: "red.300" }} wordBreak="break-word">
+                    {errorMessage}
+                </Code>
+            </Box>
+        </VStack>
+    );
+};
 
 /**
  * ScriptModals Component
@@ -150,7 +227,8 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     onSaveCancel,
     onElementEdit,
     onGroupEdit,
-    allElements
+    allElements,
+    saveErrorMessage
 }) => {
     return (
         <>
@@ -355,6 +433,40 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 customBottomWarning="All sharing links will be deactivated immediately."
                 hideMiddleWarning={true}
             />
+
+            {/* Save Failure Modal */}
+            <BaseModal
+                isOpen={modalState.isOpen(modalNames.SAVE_FAILURE)}
+                onClose={() => {}}
+                title="SAVE FAILED"
+                size="lg"
+                variant="danger"
+                warningLevel="standard"
+                bottomText=""
+                closeOnOverlayClick={false}
+                closeOnEsc={false}
+                mainText="A System Error Has Occurred"
+                subText="Your save operation has failed. You may continue and attempt to save again or revert to the previously successful save."
+                primaryAction={{
+                    label: "Revert Data",
+                    variant: "danger",
+                    onClick: () => {
+                        modalState.closeModal(modalNames.SAVE_FAILURE);
+                        window.location.reload();
+                    }
+                }}
+                secondaryAction={{
+                    label: "Continue",
+                    variant: "secondary",
+                    onClick: () => {
+                        modalState.closeModal(modalNames.SAVE_FAILURE);
+                    }
+                }}
+            >
+                {saveErrorMessage && (
+                    <ErrorDisplay errorMessage={saveErrorMessage} />
+                )}
+            </BaseModal>
         </>
     );
 };

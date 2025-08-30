@@ -22,7 +22,7 @@ interface UseScriptElementsWithEditQueueReturn {
   hasUnsavedChanges: boolean;
   pendingOperations: EditOperation[];
 
-  // Operations - refetchElements removed (no longer needed with unified loading)
+  // Operations
   applyLocalChange: (
     operation: Omit<EditOperation, "id" | "timestamp" | "description">,
   ) => void;
@@ -380,7 +380,7 @@ export const useScriptElementsWithEditQueue = (
       hasUnsavedChanges,
       pendingOperations: operations,
 
-      // Operations - refetchElements removed (unified loading handles fresh data)
+      // Operations
       applyLocalChange,
 
       // Save operations

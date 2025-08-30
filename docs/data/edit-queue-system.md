@@ -314,9 +314,9 @@ The system maintains a current index in the operations array:
 
 When saving, the system:
 1. Collects all pending operations
-2. Sends batch request to `/api/scripts/{id}/elements/batch-update`
-3. Clears local queue on success
-4. Refreshes from server to ensure consistency
+2. Sends batch request to `/api/scripts/{script_id}` (unified save endpoint)
+3. Server processes operations and returns fresh complete data
+4. Frontend clears local queue and updates with fresh server data
 5. Rolls back on failure with error handling
 
 ## Script Info Operations
