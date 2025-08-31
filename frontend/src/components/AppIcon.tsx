@@ -10,6 +10,8 @@ import { CiMenuBurger } from "react-icons/ci";
 import { BiSolidMegaphone, BiSolidMoviePlay } from "react-icons/bi";
 import { FaMasksTheater, FaMapLocationDot, FaScroll } from "react-icons/fa6";
 import { FaCompass, FaPlay, FaEye, FaEdit, FaShare, FaInfoCircle, FaClipboardList, FaPlus, FaLayerGroup, FaPencilAlt, FaAngleDoubleUp, FaAngleDoubleDown, FaHistory, FaEllipsisV, FaRedo, FaCircle, FaSync, FaSun, FaRegCircle } from "react-icons/fa";
+import { GiPauseButton } from "react-icons/gi";
+import { PiPauseFill, PiPauseLight } from "react-icons/pi";
 import { FaArrowRightLong } from "react-icons/fa6";
 import { LuLayers3 } from "react-icons/lu";
 import { RiDashboard2Fill } from "react-icons/ri";
@@ -50,6 +52,9 @@ export type IconName =
   | 'script'
   | 'view'
   | 'play'
+  | 'pause'
+  | 'pause-fill'
+  | 'pause-light'
   | 'script-edit'
   | 'share'
   | 'info'
@@ -140,6 +145,12 @@ export const AppIcon: React.FC<AppIconProps> = ({ name, ...props }) => {
       return <Icon as={FaEye} {...props} />;
     case 'play':
       return <Icon as={FaPlay} {...props} />;
+    case 'pause':
+      return <Icon as={GiPauseButton} {...props} />;
+    case 'pause-fill':
+      return <Icon as={PiPauseFill} {...props} />;
+    case 'pause-light':
+      return <Icon as={PiPauseLight} {...props} />;
     case 'script-edit':
       return <Icon as={FaPencilAlt} {...props} />;
     case 'share':

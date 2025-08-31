@@ -22,6 +22,7 @@ interface ViewModeProps {
     }) => void;
     onToggleGroupCollapse?: (elementId: string) => void;
     groupOverrides?: Record<string, boolean>; // UI-only group collapse overrides
+    onAutoSortActivation?: () => void; // Callback when auto-sort needs to be activated
 }
 
 export interface ViewModeRef {
@@ -38,9 +39,17 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     allElements,
     script,
     onScrollStateChange,
-    onToggleGroupCollapse
+    onToggleGroupCollapse,
+    onAutoSortActivation
 }, ref) => {
 
+    // Check if auto-sort needs to be activated when component mounts
+    useEffect(() => {
+        if (!autoSortCues && onAutoSortActivation) {
+            onAutoSortActivation();
+        }
+    }, []); // Only run on mount
+    
     // Pure presentation component - no data fetching
     // All data provided by ManageScriptPage via coordinated fetch
 

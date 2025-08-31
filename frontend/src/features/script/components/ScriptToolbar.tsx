@@ -9,12 +9,14 @@ interface ScriptToolbarProps {
     toolButtons: ToolButton[];
     onModeChange: (modeId: string) => void;
     activeMode: string;
+    playbackState?: string;
 }
 
 export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({ 
     toolButtons, 
     onModeChange,
-    activeMode
+    activeMode,
+    playbackState
 }) => {
     // Define left column buttons based on mode
     const getLeftColumnButtons = () => {
@@ -23,11 +25,11 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
         );
 
         if (activeMode === 'view') {
-            // View mode: Head, Tail, Play, Toggle Groups, Share/Hide
-            const modeButtons = toolButtons.filter(tool => 
-                ['play', 'toggle-all-groups', 'share', 'hide'].includes(tool.id)
-            );
-            return [...navigationButtons, ...modeButtons];
+            // View mode: Head, Tail, Open/Close, Share/Hide, Play/Pause
+            const toggleButton = toolButtons.filter(tool => tool.id === 'toggle-all-groups');
+            const shareHideButton = toolButtons.filter(tool => ['share', 'hide'].includes(tool.id));
+            const playButton = toolButtons.filter(tool => tool.id === 'play');
+            return [...navigationButtons, ...toggleButton, ...shareHideButton, ...playButton];
         } else if (activeMode === 'edit') {
             // Edit mode: Head, Tail, Add, Modify, Copy, Stack/Unstack, Trash
             const modeButtons = toolButtons.filter(tool => 
@@ -53,19 +55,29 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
 
     const leftColumnButtons = getLeftColumnButtons();
 
-    const renderButton = (tool: ToolButton) => (
-        <Button
-            key={tool.id}
-            width="50px"
-            height="50px"
-            minWidth="50px"
-            p={1}
-            bg={tool.isActive && !tool.isDisabled ? "blue.400" : tool.isDisabled ? "button.disabled.bg" : "card.background"}
-            color={tool.isActive && !tool.isDisabled ? "white" : tool.isDisabled ? "button.disabled.text" : "button.text"}
-            border="1px solid"
-            borderColor={tool.isActive && !tool.isDisabled ? "blue.400" : "container.border"}
-            borderRadius="md"
-            _hover={tool.isDisabled ? {} : {
+    const renderButton = (tool: ToolButton) => {
+        const isPlayButton = tool.id === 'play';
+        const isPauseFlashing = isPlayButton && playbackState === 'PAUSED';
+        const isSafetyFlashing = isPlayButton && playbackState === 'SAFETY';
+        
+        return (
+            <Button
+                key={tool.id}
+                width="50px"
+                height="50px"
+                minWidth="50px"
+                p={1}
+                bg={tool.isActive && !tool.isDisabled && !isPlayButton ? "blue.400" : tool.isDisabled ? "button.disabled.bg" : "card.background"}
+                color={tool.isActive && !tool.isDisabled ? (isPlayButton ? "red.500" : "white") : (isSafetyFlashing ? "red.500" : (tool.isDisabled ? "button.disabled.text" : "button.text"))}
+                border="1px solid"
+                borderColor={tool.isActive && !tool.isDisabled ? (isPlayButton ? "red.500" : "blue.400") : (isSafetyFlashing ? "red.500" : "container.border")}
+                borderRadius="md"
+            _hover={tool.isDisabled ? {} : isPlayButton ? {
+                bg: "red.700",
+                color: "white",
+                borderColor: "red.500",
+                transform: "scale(1.05)"
+            } : {
                 bg: "orange.400",
                 color: "white",
                 borderColor: "orange.400",
@@ -81,11 +93,24 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
             opacity={tool.isDisabled ? 0.4 : 1}
             flexDirection="column"
             gap={1}
+            animation={(isPauseFlashing || isSafetyFlashing) ? "flash 1s infinite" : undefined}
+            sx={(isPauseFlashing || isSafetyFlashing) ? {
+                "@keyframes flash": {
+                    "0%, 100%": { opacity: 1 },
+                    "50%": { opacity: 0.3 }
+                }
+            } : {}}
         >
             <AppIcon
                 name={tool.icon}
                 boxSize="16px"
                 transform={tool.id === 'hide' ? 'scaleX(-1)' : undefined}
+                color={(tool.isActive && !tool.isDisabled && isPlayButton) || isSafetyFlashing ? "red.500" : undefined}
+                sx={isPlayButton && !tool.isDisabled ? {
+                    "button:hover &": {
+                        color: tool.isActive ? "button.text !important" : "white !important"
+                    }
+                } : {}}
             />
             <Text 
                 fontSize="8px" 
@@ -97,7 +122,8 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
                 {tool.label}
             </Text>
         </Button>
-    );
+        );
+    };
 
     return (
         <HStack spacing={0} align="flex-start" width="100%">

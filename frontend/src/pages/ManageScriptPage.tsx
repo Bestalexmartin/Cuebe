@@ -31,6 +31,7 @@ import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences
 import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
 import { useScriptSync } from '../hooks/useScriptSync';
 import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
+import { usePlayContext, PlayProvider } from '../contexts/PlayContext';
 // Save flow extracted into hook
 import { useSaveScript } from '../features/script/hooks/useSaveScript';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
@@ -62,6 +63,190 @@ import { createActionMenuConfig } from '../features/script/config/actionMenuConf
 import { FloatingValidationErrorPanel } from '../components/base/FloatingValidationErrorPanel';
 import { exportScriptAsCSV } from '../features/script/export/utils/csvExporter';
 
+// Unified timing hook using requestAnimationFrame for efficient updates
+const useUnifiedTiming = () => {
+    const [timestamp, setTimestamp] = useState(Date.now());
+    const lastSecondRef = useRef<number>(-1);
+
+    useEffect(() => {
+        let rafId: number;
+        
+        const updateTime = () => {
+            const now = Date.now();
+            const currentSecond = Math.floor(now / 1000);
+            
+            // Only update state when the second actually changes
+            if (currentSecond !== lastSecondRef.current) {
+                lastSecondRef.current = currentSecond;
+                setTimestamp(now);
+            }
+            
+            rafId = requestAnimationFrame(updateTime);
+        };
+
+        rafId = requestAnimationFrame(updateTime);
+
+        return () => {
+            cancelAnimationFrame(rafId);
+        };
+    }, []);
+
+    return timestamp;
+};
+
+// Time and Status Components
+const RealtimeClock: React.FC<{ useMilitaryTime: boolean; timestamp: number }> = ({ useMilitaryTime, timestamp }) => {
+    const formatTime = (timestamp: number) => {
+        const date = new Date(timestamp);
+        const hours = useMilitaryTime ? date.getHours() : date.getHours() % 12 || 12;
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
+    };
+
+    return (
+        <Box 
+            bg="transparent" 
+            color="gray.300" 
+            pl="16px" pr="8px" py="2px" 
+            borderRadius="none" 
+            fontSize="2xl" 
+            fontFamily="mono"
+            minWidth="100px"
+            textAlign="center"
+        >
+            {formatTime(timestamp)}
+        </Box>
+    );
+};
+
+const ShowTimer: React.FC<{ script: any; playbackState: string; timestamp: number }> = ({ script, playbackState, timestamp }) => {
+    const calculateTMinusTime = useCallback((timestamp: number) => {
+        if (!script?.start_time) {
+            return "00:00:00";
+        }
+
+        const scriptStart = new Date(script.start_time);
+        
+        // Time difference between now and script start time
+        const diffMs = scriptStart.getTime() - timestamp;
+        const diffSeconds = Math.round(diffMs / 1000);
+        
+        const hours = Math.floor(Math.abs(diffSeconds) / 3600);
+        const minutes = Math.floor((Math.abs(diffSeconds) % 3600) / 60);
+        const seconds = Math.abs(diffSeconds) % 60;
+        
+        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        return diffSeconds < 0 ? timeStr : `–${timeStr}`;
+    }, [script?.start_time]);
+
+    const tMinusTime = calculateTMinusTime(timestamp);
+
+
+    return (
+        <Box 
+            bg="transparent" 
+            color="red.500" 
+            px="8px" py="2px" 
+            borderRadius="none" 
+            fontSize="2xl" 
+            fontFamily="mono"
+            minWidth="110px"
+            textAlign="center"
+        >
+            {tMinusTime}
+        </Box>
+    );
+};
+
+const PlaybackStatus: React.FC<{ playbackState: string }> = ({ playbackState }) => {
+    if (playbackState === 'STOPPED') return null;
+
+    const getStatusColor = () => {
+        if (playbackState === 'SAFETY') return 'orange.500';
+        return 'red.500';
+    };
+
+    return (
+        <Box 
+            bg="transparent" 
+            color={getStatusColor()} 
+            px="8px" py="2px" 
+            borderRadius="none" 
+            fontSize="2xl" 
+            fontFamily="mono"
+            fontWeight="bold"
+            minWidth="100px"
+            textAlign="center"
+            animation={playbackState === 'PAUSED' ? "flash 1s infinite" : undefined}
+            sx={playbackState === 'PAUSED' ? {
+                "@keyframes flash": {
+                    "0%, 100%": { opacity: 1 },
+                    "50%": { opacity: 0.3 }
+                }
+            } : {}}
+            pr={playbackState === 'PLAYING' ? "14px" : "8px"}
+        >
+            {playbackState}
+        </Box>
+    );
+};
+
+const DelayTimer: React.FC<{ 
+    playbackState: string; 
+    onOffsetAdjustment: (delayMs: number, currentTimeMs: number) => void;
+    timestamp: number;
+}> = ({ playbackState, onOffsetAdjustment, timestamp }) => {
+    const [currentSessionStart, setCurrentSessionStart] = useState<number | null>(null);
+    const { currentTime: playContextTime } = usePlayContext();
+
+    useEffect(() => {
+        if (playbackState === 'PAUSED' || playbackState === 'SAFETY') {
+            if (!currentSessionStart) {
+                setCurrentSessionStart(Date.now());
+            }
+        } else if (playbackState === 'PLAYING' && currentSessionStart) {
+            // When transitioning from paused to playing, apply offset adjustments
+            const sessionDurationMs = Date.now() - currentSessionStart;
+            onOffsetAdjustment(sessionDurationMs, playContextTime || 0);
+            setCurrentSessionStart(null);
+        } else if (playbackState === 'STOPPED') {
+            setCurrentSessionStart(null);
+        }
+    }, [playbackState, currentSessionStart, playContextTime, onOffsetAdjustment]);
+
+    if (playbackState !== 'PAUSED' && playbackState !== 'SAFETY') return null;
+
+    // Calculate delay seconds based on unified timestamp
+    const totalDelaySeconds = currentSessionStart ? Math.floor((timestamp - currentSessionStart) / 1000) : 0;
+    const minutes = Math.floor(totalDelaySeconds / 60);
+    const seconds = totalDelaySeconds % 60;
+    const displayTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+    return (
+        <Box 
+            bg="transparent" 
+            color={playbackState === 'SAFETY' ? 'orange.500' : 'red.500'} 
+            pl="8px" pr="16px" py="2px" 
+            borderRadius="none" 
+            fontSize="2xl" 
+            fontFamily="mono"
+            fontWeight="bold"
+            minWidth="80px"
+            textAlign="center"
+            animation={playbackState === 'PAUSED' ? "flash 1s infinite" : undefined}
+            sx={playbackState === 'PAUSED' ? {
+                "@keyframes flash": {
+                    "0%, 100%": { opacity: 1 },
+                    "50%": { opacity: 0.3 }
+                }
+            } : {}}
+        >
+            {displayTime}
+        </Box>
+    );
+};
+
 const MODAL_NAMES = {
     DELETE: 'delete',
     FINAL_DELETE: 'final_delete',
@@ -85,7 +270,9 @@ const MODAL_NAMES = {
     SAVE_FAILURE: 'save_failure',
     SHARE_CONFIRMATION: 'share_confirmation',
     HIDE_SCRIPT: 'hide_script',
-    FINAL_HIDE_SCRIPT: 'final_hide_script'
+    FINAL_HIDE_SCRIPT: 'final_hide_script',
+    AUTO_SORT_ACTIVATED: 'auto_sort_activated',
+    EMERGENCY_EXIT: 'emergency_exit'
 } as const;
 
 interface ManageScriptPageProps {
@@ -118,6 +305,9 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     onMenuClose, 
     getToken 
 }) => {
+    const contentAreaRef = useRef<HTMLDivElement>(null);
+    const [contentAreaBounds, setContentAreaBounds] = useState<DOMRect | null>(null);
+    const [safetyStopTime, setSafetyStopTime] = useState<number | null>(null);
     const { scriptId } = useParams<{ scriptId: string }>();
     const { showSuccess, showError } = useEnhancedToast();
     const [saveErrorMessage, setSaveErrorMessage] = useState<string>('');
@@ -328,6 +518,18 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     );
 
     const { activeMode, setActiveMode } = useScriptModes('view');
+    
+    // Play state from context
+    const { playbackState, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, startPlayback, pausePlayback, stopPlayback, safetyStop } = usePlayContext();
+
+    // Unified timing for synchronized clocks
+    const unifiedTimestamp = useUnifiedTiming();
+
+    // Safety stop handler
+    const handleSafetyStop = useCallback(() => {
+        setSafetyStopTime(Date.now());
+        safetyStop();
+    }, [safetyStop]);
 
     // Script form synchronization hook - FIXED
     const { currentScript, hasChanges, handleInfoModeExit, clearPendingChanges } = useScriptFormSync({
@@ -411,6 +613,18 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         }
     });
 
+    // Emergency exit handler - defined after navigation
+    const handleEmergencyExit = useCallback(() => {
+        modalState.closeModal();
+        
+        // Stop playback first, then exit
+        if (playbackState !== 'STOPPED') {
+            stopPlayback();
+        }
+        
+        navigation.handleCancel();
+    }, [modalState, navigation, playbackState, stopPlayback]);
+
     // Memoize modal handlers config to prevent re-renders
     const modalHandlersConfig = useMemo(() => ({
         scriptId,
@@ -426,7 +640,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         onSaveSuccess: () => {
             // Clear pending changes in info mode to prevent duplicate operations
             clearPendingChanges();
-            setActiveMode('view');
+            setActiveMode('edit');
         },
         sendSyncUpdate: (message: any) => {
             const result = sendSyncUpdate(message);
@@ -575,8 +789,11 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         pendingOperationsCount: pendingOperations.length,
         selectedElement,
         isScriptShared,
-        groupsOpenToggle: buttonShowsOpen
-    }), [activeMode, scrollState, elementActions.selectedElementIds.length, hasUnsavedChanges, pendingOperations.length, selectedElement, isScriptShared, buttonShowsOpen]);
+        groupsOpenToggle: buttonShowsOpen,
+        isPlaying: isPlaybackPlaying,
+        isPaused: isPlaybackPaused,
+        isSafety: isPlaybackSafety
+    }), [activeMode, scrollState, elementActions.selectedElementIds.length, hasUnsavedChanges, pendingOperations.length, selectedElement, isScriptShared, buttonShowsOpen, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety]);
 
     const toolButtons = useMemo(() => getToolbarButtons(toolbarContext), [toolbarContext]);
 
@@ -588,6 +805,41 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         }
     }, [activeMode]);
 
+    // Update content area bounds for overlay positioning
+    useEffect(() => {
+        if ((isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) && contentAreaRef.current) {
+            const updateBounds = () => {
+                setContentAreaBounds(contentAreaRef.current!.getBoundingClientRect());
+            };
+            
+            updateBounds();
+            window.addEventListener('resize', updateBounds);
+            window.addEventListener('scroll', updateBounds);
+            
+            return () => {
+                window.removeEventListener('resize', updateBounds);
+                window.removeEventListener('scroll', updateBounds);
+            };
+        } else {
+            setContentAreaBounds(null);
+        }
+    }, [isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety]);
+
+    // Handle browser events during playback
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) {
+                e.preventDefault();
+                e.returnValue = 'This will end playback of this script.';
+                modalState.openModal(MODAL_NAMES.EMERGENCY_EXIT);
+                return e.returnValue;
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, modalState]);
+
     // Main mode change handler
     const handleModeChange = (modeId: string) => {
         // Handle TOGGLE ALL GROUPS button
@@ -598,7 +850,11 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
         // Handle EXIT button
         if (modeId === 'exit') {
-            navigation.handleCancel();
+            if (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) {
+                modalState.openModal(MODAL_NAMES.EMERGENCY_EXIT);
+            } else {
+                navigation.handleCancel();
+            }
             return;
         }
 
@@ -653,7 +909,15 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         if (activeMode === 'view') {
             switch (modeId) {
                 case 'play':
-                    setActiveMode('play' as ScriptMode);
+                    if (playbackState === 'STOPPED') {
+                        startPlayback();
+                    } else if (playbackState === 'PLAYING') {
+                        pausePlayback();
+                    } else if (playbackState === 'PAUSED') {
+                        startPlayback();
+                    } else if (playbackState === 'SAFETY') {
+                        startPlayback();
+                    }
                     return;
                 case 'share':
                     setActiveMode('share' as ScriptMode);
@@ -771,6 +1035,11 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
     const handleAutoSortToggle = useCallback(
         async (value: boolean) => {
+            // Prevent disabling auto-sort while in view mode
+            if (!value && activeMode === 'view') {
+                return;
+            }
+            
             if (value && !activePreferences.autoSortCues && scriptId) {
                 handleAutoSortElements();
             } else if (!value && activePreferences.autoSortCues) {
@@ -785,13 +1054,37 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             }
             await updatePreference('autoSortCues', value);
         },
-        [updatePreference, scriptId, activePreferences.autoSortCues, handleAutoSortElements, applyLocalChange, editQueueElements]
+        [updatePreference, scriptId, activePreferences.autoSortCues, handleAutoSortElements, applyLocalChange, editQueueElements, activeMode]
     );
 
     const handleAutoSortCheckboxChange = async (newAutoSortValue: boolean) => {
         // Use the same logic as handleAutoSortToggle
         await handleAutoSortToggle(newAutoSortValue);
     };
+
+    const handleClockTimesCheckboxChange = async (newClockTimesValue: boolean) => {
+        await updatePreference('showClockTimes', newClockTimesValue);
+    };
+    
+    // Handle auto-sort and clock times activation when entering view mode
+    const handleViewModeActivation = useCallback(async () => {
+        const needsAutoSort = !activePreferences.autoSortCues;
+        const needsClockTimes = !activePreferences.showClockTimes;
+        
+        if (needsAutoSort) {
+            await handleAutoSortToggle(true);
+        }
+        if (needsClockTimes) {
+            await updatePreference('showClockTimes', true);
+        }
+        
+        if (needsAutoSort || needsClockTimes) {
+            modalState.openModal(MODAL_NAMES.AUTO_SORT_ACTIVATED);
+            setTimeout(() => {
+                modalState.closeModal(MODAL_NAMES.AUTO_SORT_ACTIVATED);
+            }, 2000);
+        }
+    }, [activePreferences.autoSortCues, activePreferences.showClockTimes, handleAutoSortToggle, updatePreference, modalState]);
 
     const handleOptionsModalSave = async (newPreferences: UserPreferences) => {
         await updatePreferences(newPreferences);
@@ -843,7 +1136,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             }
             modalState.closeModal(MODAL_NAMES.SHARE_CONFIRMATION);
             setIsScriptShared(true);
-            setActiveMode('view' as ScriptMode); // Return to view mode to show HIDE button
+            setActiveMode('edit' as ScriptMode); // Return to edit mode
             showSuccess('Script Shared', 'Script has been shared with all crew members');
         } catch (error) {
             showError('Failed to enable script sharing', {
@@ -883,7 +1176,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             modalState.closeModal(MODAL_NAMES.FINAL_HIDE_SCRIPT);
             setIsScriptShared(false);
             setShareCount(0);
-            setActiveMode('view' as ScriptMode); // Return to view mode to show SHARE button
+            setActiveMode('edit' as ScriptMode); // Return to edit mode
             showSuccess('Script Hidden', 'Script has been hidden from all crew members');
         } catch (error) {
             showError('Failed to disable script sharing', {
@@ -968,6 +1261,64 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         }) || [];
     }, [allEditQueueElements, filteredDepartmentIds, allEditQueueElements?.map(el => el.sequence).join(',')]);
 
+    // Offset adjustment handler for playback delays - defined after filtered elements
+    const handleOffsetAdjustment = useCallback((delayMs: number, currentTimeMs: number) => {
+        if (!scriptId || delayMs <= 0 || !currentScript) return;
+        
+        // Round delay up to nearest second for synchronized timing
+        const roundedDelayMs = Math.ceil(delayMs / 1000) * 1000;
+        
+        console.log(`[OFFSET ADJUSTMENT] Raw delay: ${delayMs}ms, Rounded: ${roundedDelayMs}ms, Current time: ${currentTimeMs}ms`);
+        
+        // Check if we're before the show has actually started
+        const now = new Date();
+        const scriptStartTime = new Date(currentScript.start_time);
+        const isBeforeShowStart = now < scriptStartTime;
+        
+        console.log(`[OFFSET ADJUSTMENT] Is before show start: ${isBeforeShowStart}`);
+        
+        if (isBeforeShowStart) {
+            // Pre-show delay: adjust the actual script start_time
+            const newStartTime = new Date(scriptStartTime.getTime() + roundedDelayMs);
+            console.log(`[OFFSET ADJUSTMENT] Adjusting script start time: ${scriptStartTime.toISOString()} -> ${newStartTime.toISOString()}`);
+            
+            // Create script info update operation
+            const scriptUpdateOperation = {
+                type: 'UPDATE_SCRIPT_INFO' as const,
+                element_id: scriptId,
+                changes: {
+                    start_time: {
+                        old_value: currentScript.start_time,
+                        new_value: newStartTime.toISOString()
+                    }
+                }
+            };
+            
+            applyLocalChange(scriptUpdateOperation);
+        } else {
+            // Mid-show delay: adjust individual element offsets
+            const unplayedElements = filteredEditQueueElements.filter(element => 
+                element.offset_ms >= currentTimeMs
+            );
+            
+            console.log(`[OFFSET ADJUSTMENT] Found ${unplayedElements.length} unplayed elements:`, 
+                unplayedElements.map(el => `${el.element_name} (${el.offset_ms}ms)`));
+            
+            if (unplayedElements.length === 0) return;
+            
+            const adjustmentOperation = {
+                type: 'BULK_OFFSET_ADJUSTMENT' as const,
+                element_id: 'playback-delay-adjustment',
+                delay_ms: roundedDelayMs,
+                affected_element_ids: unplayedElements.map(el => el.element_id),
+                current_time_ms: currentTimeMs
+            };
+            
+            console.log('[OFFSET ADJUSTMENT] Applying element offset operation:', adjustmentOperation);
+            applyLocalChange(adjustmentOperation);
+        }
+    }, [scriptId, filteredEditQueueElements, applyLocalChange, currentScript]);
+
     // Initialize department filter with all departments when elements first load (only if user hasn't set a filter)
     useEffect(() => {
         if (allEditQueueElements && filteredDepartmentIds.length === 0 && !hasUserSetFilter) {
@@ -1049,6 +1400,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                         </HStack>
                     </HStack>
 
+
                     {/* Right: Action Buttons positioned to align with scroll area */}
                     <Box flex={1} position="relative">
                         <Box
@@ -1072,7 +1424,13 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                                 <Button
                                     size="xs"
                                     variant="outline"
-                                    onClick={navigation.handleCancel}
+                                    onClick={() => {
+                                        if (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) {
+                                            modalState.openModal(MODAL_NAMES.EMERGENCY_EXIT);
+                                        } else {
+                                            navigation.handleCancel();
+                                        }
+                                    }}
                                     _hover={{ bg: 'gray.100' }}
                                     _dark={{ _hover: { bg: 'gray.700' } }}
                                 >
@@ -1111,7 +1469,8 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                         display="flex"
                         flexDirection="column"
                         border="1px solid"
-                        borderColor="container.border"
+                        borderColor={isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety ? "transparent" : "container.border"}
+                        ref={contentAreaRef}
                         width={isMobile ? "100%" : "calc(100% - 106px)"} // Full width on mobile, account for toolbar on desktop
                         zIndex={1}
                     >
@@ -1147,7 +1506,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
                                 {activeMode === 'view' && (
-                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} useMilitaryTime={activePreferences.useMilitaryTime} onScrollStateChange={handleScrollStateChange} elements={filteredEditQueueElements} allElements={filteredAllEditQueueElements} script={currentScript} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} />
+                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} useMilitaryTime={activePreferences.useMilitaryTime} onScrollStateChange={handleScrollStateChange} elements={filteredEditQueueElements} allElements={filteredAllEditQueueElements} script={currentScript} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} onAutoSortActivation={handleViewModeActivation} />
                                 )}
                                 {activeMode === 'edit' && (
                                     <EditMode
@@ -1167,7 +1526,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                                         onApplyLocalChange={applyLocalChange}
                                     />
                                 )}
-                                {activeMode === 'play' && <PlayMode />}
                                 {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={filteredAllEditQueueElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} onRevertSuccess={() => setActiveMode('edit')} />}
                             </Box>
                         )}
@@ -1193,7 +1551,82 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                                 toolButtons={toolButtons}
                                 onModeChange={handleModeChange}
                                 activeMode={activeMode}
+                                playbackState={playbackState}
                             />
+                            
+                            {/* Safety Stop Button - visible during playback, ghosted in safety mode */}
+                            {(isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) && (
+                                <Box
+                                width="100%"
+                                height="50px"
+                                mt="4"
+                                position="relative"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                cursor={isPlaybackSafety ? "not-allowed" : "pointer"}
+                                transition="all 0.2s"
+                                onClick={isPlaybackSafety ? undefined : handleSafetyStop}
+                                opacity={isPlaybackSafety ? 0.4 : 1}
+                                _hover={isPlaybackSafety ? {} : {
+                                    "& .safety-stripes": {
+                                        background: `repeating-linear-gradient(
+                                            -45deg,
+                                            #FEF08A 0px,
+                                            #FEF08A 8px,
+                                            #000000 8px,
+                                            #000000 16px
+                                        )`
+                                    },
+                                    "& .safety-text": {
+                                        color: "#FCD34D",
+                                        textShadow: "0 0 3px #FCD34D, 0 0 6px #FCD34D"
+                                    }
+                                }}
+                            >
+                                {/* Striped border background */}
+                                <Box
+                                    className="safety-stripes"
+                                    position="absolute"
+                                    top="0"
+                                    left="0"
+                                    right="0"
+                                    bottom="0"
+                                    background={`repeating-linear-gradient(
+                                        -45deg,
+                                        #EAB308 0px,
+                                        #EAB308 8px,
+                                        #000000 8px,
+                                        #000000 16px
+                                    )`}
+                                    borderRadius="none"
+                                />
+                                
+                                {/* Inner content background */}
+                                <Box
+                                    position="absolute"
+                                    top="4px"
+                                    left="4px"
+                                    right="4px"
+                                    bottom="4px"
+                                    background="gray.50"
+                                    _dark={{ background: "gray.900" }}
+                                    borderRadius="none"
+                                />
+                                
+                                {/* Text */}
+                                <Text
+                                    className="safety-text"
+                                    fontSize="sm"
+                                    fontWeight="bold"
+                                    color="#EAB308"
+                                    position="relative"
+                                    zIndex="1"
+                                >
+                                    SAFETY STOP
+                                </Text>
+                            </Box>
+                            )}
                         </Box>
                     )}
                 </Flex>
@@ -1224,6 +1657,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 useMilitaryTime={activePreferences.useMilitaryTime}
                 dangerMode={activePreferences.dangerMode}
                 autoSaveInterval={activePreferences.autoSaveInterval}
+                activeMode={activeMode}
                 onDeleteCancel={modalHandlers.handleDeleteCancel}
                 onInitialDeleteConfirm={modalHandlers.handleInitialDeleteConfirm}
                 onFinalDeleteConfirm={modalHandlers.handleFinalDeleteConfirm}
@@ -1239,7 +1673,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 onOptionsSave={handleOptionsModalSave}
                 onAutoSortChange={handleAutoSortCheckboxChange}
                 onColorizeChange={async (value: boolean) => { await updatePreference('colorizeDepNames', value); }}
-                onClockTimesChange={async (value: boolean) => { await updatePreference('showClockTimes', value); }}
+                onClockTimesChange={handleClockTimesCheckboxChange}
                 onDangerModeChange={async (value: boolean) => { await updatePreference('dangerMode', value); }}
                 onAutoSaveIntervalChange={async (value: number) => { await updatePreference('autoSaveInterval', value); }}
                 onConfirmDeleteCue={elementActions.handleConfirmDeleteCue}
@@ -1292,6 +1726,29 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 isCentered
             />
 
+            {/* Emergency Exit Modal */}
+            <BaseModal
+                isOpen={modalState.isOpen(MODAL_NAMES.EMERGENCY_EXIT)}
+                onClose={() => modalState.closeModal()}
+                variant="danger"
+                warningLevel="final"
+                title="EXIT SCRIPT PLAYBACK"
+                mainText="This will end playbook of this script."
+                primaryAction={{
+                    label: "Exit Script",
+                    onClick: handleEmergencyExit,
+                    variant: "danger"
+                }}
+                secondaryAction={{
+                    label: "Cancel",
+                    onClick: () => modalState.closeModal(MODAL_NAMES.EMERGENCY_EXIT),
+                    variant: "secondary"
+                }}
+                isCentered={false}
+                closeOnOverlayClick={false}
+                closeOnEsc={false}
+            />
+
             {/* Mobile Drawer Menu */}
             <MobileScriptDrawer
                 isOpen={isMenuOpen}
@@ -1328,7 +1785,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                             </Box>
                             <VStack spacing={2} textAlign="center">
                                 <Text
-                                    fontSize="lg"
+                                    fontSize="2xl"
                                     fontWeight="semibold"
                                     color="gray.700"
                                     _dark={{ color: "gray.200" }}
@@ -1347,6 +1804,89 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                     </ModalBody>
                 </ModalContent>
             </Modal>
+
+            {/* Playback overlay with border and time displays */}
+            {(isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) && contentAreaBounds && (
+                <>
+                    {/* Border overlay */}
+                    <Box
+                        position="fixed"
+                        top={`${contentAreaBounds.top - 1}px`}
+                        left={`${contentAreaBounds.left - 1}px`}
+                        width={`${contentAreaBounds.width + 2}px`}
+                        height={`${contentAreaBounds.height + 2}px`}
+                        border="2px solid"
+                        borderColor={isPlaybackSafety ? "#EAB308" : "red.500"}
+                        borderRadius="md"
+                        pointerEvents="none"
+                        zIndex={1000}
+                        animation={isPlaybackPaused ? "flash 1s infinite" : undefined}
+                        sx={isPlaybackPaused ? {
+                            "@keyframes flash": {
+                                "0%, 100%": { opacity: 1 },
+                                "50%": { opacity: 0.3 }
+                            }
+                        } : {}}
+                    />
+                    
+                    {/* Time and Status Display - positioned at top center */}
+                    <Box
+                        position="fixed"
+                        top="16px"
+                        left="50%"
+                        transform="translateX(-50%)"
+                        zIndex={1001}
+                        pointerEvents="none"
+                    >
+                        <Box border="2px solid" borderColor="gray.700" bg="#0F0F0F">
+                            <HStack spacing={0} align="center">
+                                {/* Realtime Clock */}
+                                <RealtimeClock useMilitaryTime={activePreferences.useMilitaryTime} timestamp={unifiedTimestamp} />
+                                
+                                {/* Bullet separator */}
+                                <Box bg="#0F0F0F" px="4px" py="2px">
+                                    <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
+                                </Box>
+                                
+                                {/* Show Timer */}
+                                <ShowTimer 
+                                    script={currentScript}
+                                    playbackState={playbackState}
+                                    timestamp={unifiedTimestamp}
+                                />
+                                
+                                {/* Bullet separator */}
+                                <Box bg="#0F0F0F" px="4px" py="2px">
+                                    <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
+                                </Box>
+                                
+                                {/* Playback Status */}
+                                <PlaybackStatus playbackState={playbackState} />
+                                
+                                {/* Bullet separator for paused/safety mode */}
+                                {(playbackState === 'PAUSED' || playbackState === 'SAFETY') && (
+                                    <Box 
+                                        bg="transparent" 
+                                        px="2px" py="2px"
+                                        animation={playbackState === 'PAUSED' ? "flash 1s infinite" : undefined}
+                                        sx={playbackState === 'PAUSED' ? {
+                                            "@keyframes flash": {
+                                                "0%, 100%": { opacity: 1 },
+                                                "50%": { opacity: 0.3 }
+                                            }
+                                        } : {}}
+                                    >
+                                        <Text fontSize="2xl" color={playbackState === 'SAFETY' ? 'orange.500' : 'red.500'} fontFamily="mono">•</Text>
+                                    </Box>
+                                )}
+                                
+                                {/* Delay Timer - in PAUSED and SAFETY modes */}
+                                <DelayTimer playbackState={playbackState} onOffsetAdjustment={handleOffsetAdjustment} timestamp={unifiedTimestamp} />
+                            </HStack>
+                        </Box>
+                    </Box>
+                </>
+            )}
         </ErrorBoundary>
     );
 };

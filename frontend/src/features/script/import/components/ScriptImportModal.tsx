@@ -25,6 +25,7 @@ import { formatTimeOffset } from '../../../../utils/timeUtils';
 import { matchDepartment } from '../utils/departmentMatcher';
 import { loadSavedDepartmentMappings, saveDepartmentMappings } from '../utils/departmentMappingStorage';
 import { DepartmentMappingStep } from './DepartmentMappingStep';
+import { warn, error, debug } from '../../../../utils/logger';
 
 interface ScriptImportModalProps {
   isOpen: boolean;
@@ -356,6 +357,12 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
         show_id: showId
       };
 
+      // Dev-only: log outgoing request shape
+      debug('Import request payload', {
+        script_name: importRequest.script_metadata?.script_name,
+        elements: importRequest.script_elements?.length,
+        show_id: importRequest.show_id
+      });
 
       const response = await fetch('/api/scripts/import', {
         method: 'POST',
@@ -366,12 +373,34 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
         body: JSON.stringify(importRequest)
       });
 
+      // Dev-only: log response status line
+      debug('Import response status', { status: response.status, ok: response.ok, statusText: response.statusText });
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Import failed');
+        // Try to extract meaningful error details
+        const text = await response.text();
+        let detail = 'Import failed';
+        try {
+          const data = JSON.parse(text);
+          detail = (data && (data.detail || data.error)) || detail;
+        } catch {}
+        // Log full failure context for debugging
+        error('Import API error', {
+          status: response.status,
+          statusText: response.statusText,
+          detail,
+          raw: text
+        });
+        // Fallback direct console error to ensure visibility
+        // (in case custom logger is filtered)
+        // eslint-disable-next-line no-console
+        console.error('Import API error (fallback):', { status: response.status, statusText: response.statusText, detail, raw: text });
+        throw new Error(detail);
       }
 
       const result = await response.json();
+      // Dev-only: log the success payload for verification
+      debug('Import API success', result);
       
       showSuccess('Script Imported', `Successfully imported ${result.elements_created} elements`);
       
@@ -380,6 +409,9 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
       onClose();
 
     } catch (error) {
+      // Log unexpected exceptions from the import flow
+      // eslint-disable-next-line no-console
+      console.error('Import exception', error);
       showError('Import Failed', {
         description: error instanceof Error ? error.message : 'Failed to import script'
       });
@@ -678,4 +710,3 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
     </BaseModal>
   );
 };
-import { warn } from '../../../../utils/logger';
