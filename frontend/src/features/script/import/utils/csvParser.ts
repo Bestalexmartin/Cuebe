@@ -273,10 +273,18 @@ const validateColor = (colorString: string): { isValid: boolean; normalizedColor
   // Add # if missing
   const withHash = trimmed.startsWith('#') ? trimmed : `#${trimmed}`;
   
-  // Validate hex format
+  // Validate hex format (support 3 or 6 digits)
   const hexPattern = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
   if (hexPattern.test(withHash)) {
-    return { isValid: true, normalizedColor: withHash.toUpperCase() };
+    // Expand 3-digit hex to 6-digit to satisfy backend validator
+    const hex = withHash.toUpperCase();
+    if (hex.length === 4) {
+      const r = hex[1];
+      const g = hex[2];
+      const b = hex[3];
+      return { isValid: true, normalizedColor: `#${r}${r}${g}${g}${b}${b}` };
+    }
+    return { isValid: true, normalizedColor: hex };
   }
   
   return { 

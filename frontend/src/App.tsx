@@ -21,6 +21,7 @@ import { TutorialsPage } from './pages/TutorialsPage';
 import { SharedPage } from './shared/SharedPage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ScriptSyncProvider } from './contexts/ScriptSyncContext';
+import { PlayProvider } from './contexts/PlayContext';
 
 // TypeScript interfaces
 interface ProtectedRouteProps {
@@ -41,6 +42,7 @@ const App: React.FC = () => {
   return (
     <ErrorBoundary context="Application Root">
       <ScriptSyncProvider>
+        <PlayProvider>
         <Routes>
         {/* Shared page route - no header layout */}
         <Route path="/shared/:shareToken" element={<SharedPage />} />
@@ -143,6 +145,7 @@ const App: React.FC = () => {
           </Box>
         } />
       </Routes>
+        </PlayProvider>
       </ScriptSyncProvider>
     </ErrorBoundary>
   );

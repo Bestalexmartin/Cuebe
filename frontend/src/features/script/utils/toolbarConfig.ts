@@ -18,6 +18,9 @@ export interface ToolbarContext {
     selectedElement?: any;
     isScriptShared?: boolean;
     groupsOpenToggle?: boolean;
+    isPlaying?: boolean;
+    isPaused?: boolean;
+    isSafety?: boolean;
 }
 
 /**
@@ -47,7 +50,8 @@ export const getNavigationButtons = (scrollState: ScrollState): ToolButton[] => 
 /**
  * View state buttons configuration
  */
-export const getViewStateButtons = (activeMode: string, pendingOperationsCount: number): ToolButton[] => {
+export const getViewStateButtons = (activeMode: string, pendingOperationsCount: number, isPlaying: boolean = false, isPaused: boolean = false, isSafety: boolean = false): ToolButton[] => {
+    const isPlaybackActive = isPlaying || isPaused || isSafety;
     return [
         {
             id: 'view',
@@ -63,7 +67,7 @@ export const getViewStateButtons = (activeMode: string, pendingOperationsCount: 
             label: 'EDIT',
             description: 'Edit Mode',
             isActive: activeMode === 'edit',
-            isDisabled: false
+            isDisabled: isPlaybackActive
         },
         {
             id: 'info',
@@ -71,7 +75,7 @@ export const getViewStateButtons = (activeMode: string, pendingOperationsCount: 
             label: 'INFO',
             description: 'Script Information',
             isActive: activeMode === 'info',
-            isDisabled: false
+            isDisabled: isPlaybackActive
         },
         {
             id: 'history',
@@ -79,7 +83,7 @@ export const getViewStateButtons = (activeMode: string, pendingOperationsCount: 
             label: 'HIST',
             description: 'Edit History',
             isActive: activeMode === 'history',
-            isDisabled: pendingOperationsCount === 0
+            isDisabled: isPlaybackActive || pendingOperationsCount === 0
         }
     ];
 };
@@ -87,7 +91,8 @@ export const getViewStateButtons = (activeMode: string, pendingOperationsCount: 
 /**
  * Action buttons for different modes
  */
-export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean, isScriptShared: boolean = false, groupsOpenToggle: boolean = true): ToolButton[] => {
+export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean, isScriptShared: boolean = false, groupsOpenToggle: boolean = true, isPlaying: boolean = false, isPaused: boolean = false, isSafety: boolean = false): ToolButton[] => {
+    const isPlaybackActive = isPlaying || isPaused || isSafety;
     const buttons: ToolButton[] = [];
 
     // Exit button - available in all modes (replaces dashboard)
@@ -97,18 +102,23 @@ export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean,
         label: 'EXIT',
         description: 'Return to Dashboard',
         isActive: false,
-        isDisabled: false
+        isDisabled: isPlaying
     });
 
     // Mode-specific actions
     if (activeMode === 'view') {
+        const getPlayIcon = () => {
+            if (isSafety || (!isPlaying && !isPaused)) return 'play';
+            return isPaused ? 'pause-light' : 'pause-fill';
+        };
+        
         buttons.push({
             id: 'play',
-            icon: 'play',
-            label: 'PLAY',
-            description: 'Performance Mode',
-            isActive: false,
-            isDisabled: true // Not implemented yet
+            icon: getPlayIcon(),
+            label: isSafety ? 'PLAY' : (isPlaybackActive ? 'PAUSE' : 'PLAY'),
+            description: isSafety ? 'Resume Performance' : (isPlaybackActive ? 'Pause Performance' : 'Performance Mode'),
+            isActive: isPlaybackActive && !isSafety,
+            isDisabled: false
         });
 
         // Add OPEN/CLOSE all groups toggle button
@@ -128,7 +138,7 @@ export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean,
                 label: 'HIDE',
                 description: 'Hide Script from Crew',
                 isActive: false,
-                isDisabled: false
+                isDisabled: isPlaybackActive
             });
         } else {
             buttons.push({
@@ -213,7 +223,7 @@ export const getElementManagementButtons = (hasSelection: boolean, hasMultipleSe
  * Generates all toolbar buttons based on current context
  */
 export const getToolbarButtons = (context: ToolbarContext): ToolButton[] => {
-    const { activeMode, scrollState, hasSelection, hasMultipleSelection, hasUnsavedChanges, pendingOperationsCount, selectedElement, isScriptShared, groupsOpenToggle } = context;
+    const { activeMode, scrollState, hasSelection, hasMultipleSelection, hasUnsavedChanges, pendingOperationsCount, selectedElement, isScriptShared, groupsOpenToggle, isPlaying, isPaused, isSafety } = context;
     
     const buttons: ToolButton[] = [];
     
@@ -221,10 +231,10 @@ export const getToolbarButtons = (context: ToolbarContext): ToolButton[] => {
     buttons.push(...getNavigationButtons(scrollState));
     
     // View state buttons
-    buttons.push(...getViewStateButtons(activeMode, pendingOperationsCount));
+    buttons.push(...getViewStateButtons(activeMode, pendingOperationsCount, isPlaying || false, isPaused || false, isSafety || false));
     
     // Action buttons
-    buttons.push(...getActionButtons(activeMode, hasUnsavedChanges, isScriptShared || false, groupsOpenToggle ?? true));
+    buttons.push(...getActionButtons(activeMode, hasUnsavedChanges, isScriptShared || false, groupsOpenToggle ?? true, isPlaying || false, isPaused || false, isSafety || false));
     
     // Element management buttons (only in edit mode)
     if (activeMode === 'edit') {

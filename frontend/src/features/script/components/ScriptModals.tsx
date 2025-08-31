@@ -58,6 +58,7 @@ interface ScriptModalsProps {
     useMilitaryTime: boolean;
     dangerMode: boolean;
     autoSaveInterval: number;
+    activeMode: string;
 
     // Event handlers
     onDeleteCancel: () => void;
@@ -192,6 +193,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     useMilitaryTime,
     dangerMode,
     autoSaveInterval,
+    activeMode,
     scriptName,
     crewCount,
     shareCount,
@@ -330,7 +332,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 initialOptions={{
                     darkMode,
                     colorizeDepNames,
-                    autoSortCues,
+                    autoSortCues: autoSortCues,
                     showClockTimes,
                     useMilitaryTime,
                     dangerMode,
@@ -343,6 +345,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 onClockTimesChange={onClockTimesChange}
                 onDangerModeChange={onDangerModeChange}
                 onAutoSaveIntervalChange={onAutoSaveIntervalChange}
+                activeMode={activeMode}
             />
 
             {/* Delete Cue Confirmation Modal */}
@@ -471,6 +474,32 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 {saveErrorMessage && (
                     <ErrorDisplay errorMessage={saveErrorMessage} />
                 )}
+            </BaseModal>
+
+            {/* Auto-Sort Activated Modal */}
+            <BaseModal
+                isOpen={modalState.isOpen(modalNames.AUTO_SORT_ACTIVATED)}
+                onClose={() => {}}
+                title=""
+                size="md"
+                variant="info"
+                closeOnOverlayClick={false}
+                closeOnEsc={false}
+                showFooter={false}
+            >
+                <VStack height="120px" align="center" justify="center" spacing={2}>
+                    <Text fontSize="xl" fontWeight="bold" textAlign="center">
+                        View Mode Activated
+                    </Text>
+                    <VStack spacing={1}>
+                        <Text fontSize="md" textAlign="center" color="gray.600" _dark={{ color: "gray.400" }}>
+                            Auto-Sort Enabled
+                        </Text>
+                        <Text fontSize="md" textAlign="center" color="gray.600" _dark={{ color: "gray.400" }}>
+                            Displaying Clock Times
+                        </Text>
+                    </VStack>
+                </VStack>
             </BaseModal>
         </>
     );

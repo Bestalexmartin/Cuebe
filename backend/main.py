@@ -68,9 +68,10 @@ app.include_router(users.router)        # User management at /api/users/*
 app.include_router(crews.router)        # Crew management at /api/me/crews, /api/crew/*
 app.include_router(venues.router)       # Venue management at /api/me/venues, /api/venues/*
 app.include_router(departments.router)  # Department management at /api/me/departments, /api/departments/*
+# Important: register import routes BEFORE dynamic /scripts/{script_id} to avoid path capture of 'import'
+app.include_router(script_import.router) # Script import endpoints at /api/scripts/import/*
 app.include_router(shows.router)        # Show and script management at /api/shows/*, /api/scripts/*
 app.include_router(script_elements.router)  # Script elements CRUD at /api/scripts/*/elements, /api/elements/*
-app.include_router(script_import.router) # Script import endpoints at /api/scripts/import/*
 app.include_router(show_sharing.router) # Show-level sharing at /api/shows/*/crew/*/share, /shared/*
 app.include_router(docs_search.router)  # Documentation search at /api/docs/search
 app.include_router(script_sync.router)  # WebSocket script synchronization at /ws/script/*

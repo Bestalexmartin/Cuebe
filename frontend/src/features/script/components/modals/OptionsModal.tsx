@@ -27,6 +27,7 @@ interface OptionsModalProps {
     onMilitaryTimeChange?: (value: boolean) => Promise<void>;
     onDangerModeChange?: (value: boolean) => Promise<void>;
     onAutoSaveIntervalChange?: (value: number) => Promise<void>;
+    activeMode?: string; // Current script mode
 }
 
 export const OptionsModal: React.FC<OptionsModalProps> = ({
@@ -39,17 +40,18 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
     onClockTimesChange,
     onMilitaryTimeChange,
     onDangerModeChange,
-    onAutoSaveIntervalChange
+    onAutoSaveIntervalChange,
+    activeMode
 }) => {
     const [localPreferences, setLocalPreferences] = useState<UserPreferences>(initialOptions);
 
-    // Update local state when modal opens - always refresh with current values
+    // Update local state when modal opens or when initialOptions change
     useEffect(() => {
         if (isOpen) {
-            // Force update with fresh initialOptions every time modal opens
+            // Force update with fresh initialOptions every time modal opens or options change
             setLocalPreferences({...initialOptions});
         }
-    }, [isOpen]); // Only depend on isOpen to force refresh every time modal opens
+    }, [isOpen, initialOptions, initialOptions.autoSortCues]); // Depend on isOpen, initialOptions, and specific autoSortCues value
 
 
     const handleClockTimesChange = async (checked: boolean) => {
@@ -142,13 +144,14 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                             onChange={(e) => handleAutoSortChange(e.target.checked)}
                             colorScheme="blue"
                             size="md"
+                            isDisabled={activeMode === 'view'}
                         />
                         <FormLabel
                             mb="0"
                             fontSize="md"
                             htmlFor="autosort-switch"
                         >
-                            Auto-Sort Cues
+                            Auto-Sort Cues{activeMode === 'view' ? ' (locked)' : ''}
                         </FormLabel>
                     </HStack>
                 </FormControl>
@@ -161,13 +164,14 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                             onChange={(e) => handleClockTimesChange(e.target.checked)}
                             colorScheme="blue"
                             size="md"
+                            isDisabled={activeMode === 'view'}
                         />
                         <FormLabel
                             mb="0"
                             fontSize="md"
                             htmlFor="clocktimes-switch"
                         >
-                            Show Clock Times
+                            Show Clock Times{activeMode === 'view' ? ' (locked)' : ''}
                         </FormLabel>
                     </HStack>
                 </FormControl>
