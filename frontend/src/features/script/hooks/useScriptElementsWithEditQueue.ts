@@ -1122,8 +1122,6 @@ function applyOperationToElements(
       const bulkOffsetOp = operation as any;
       const affectedIds = bulkOffsetOp.affected_element_ids || [];
       const delayMs = bulkOffsetOp.delay_ms || 0;
-
-
       const adjustedElements = elements.map((el) => {
         if (affectedIds.includes(el.element_id)) {
           const baseOffset = typeof el.offset_ms === 'number' ? el.offset_ms : 0;
