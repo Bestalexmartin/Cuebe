@@ -91,7 +91,6 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
             if (prev.pauseStartTime) {
                 const thisPauseDurationMs = now - prev.pauseStartTime;
                 const newCumulativeDelay = prev.cumulativeDelayMs + thisPauseDurationMs;
-                const currentPlaybackTime = prev.currentTime || 0;
                 return {
                     ...prev,
                     playbackState: 'PLAYING',

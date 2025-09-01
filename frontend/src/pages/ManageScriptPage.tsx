@@ -1,17 +1,12 @@
 // frontend/src/pages/ManageScriptPage.tsx
 
-import React, { useState, useRef, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
     Box,
     VStack,
-    HStack,
     Text,
     Spinner,
     Flex,
-    Heading,
-    Divider,
-    Button,
-    Badge,
     useBreakpointValue,
     Modal,
     ModalOverlay,
@@ -19,25 +14,23 @@ import {
     ModalBody
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useScript } from "../features/script/hooks/useSimpleScript";
-import { useShow } from "../features/shows/hooks/useShow";
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { AppIcon } from '../components/AppIcon';
-import { ActionsMenu } from '../components/ActionsMenu';
 import { useValidatedFormSchema } from '../components/forms/ValidatedForm';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { convertLocalToUTC } from '../utils/timeUtils';
 import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
-import { useScriptElementsWithEditQueue } from '../features/script/hooks/useScriptElementsWithEditQueue';
 import { useScriptSync } from '../hooks/useScriptSync';
 import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
-import { usePlayContext, PlayProvider } from '../contexts/PlayContext';
+import { usePlayContext } from '../contexts/PlayContext';
 // Save flow extracted into hook
 import { useSaveScript } from '../features/script/hooks/useSaveScript';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
-import { useModalState } from '../hooks/useModalState';
 import { SaveConfirmationModal } from '../components/modals/SaveConfirmationModal';
 import { BaseModal } from '../components/base/BaseModal';
+import { PlaybackOverlay } from '../features/script/components/PlaybackOverlay';
+import { ScriptHeader } from '../features/script/components/ScriptHeader';
+import { ScriptDataProvider, useScriptData } from '../contexts/ScriptDataContext';
+import { ModalProvider, useModalContext } from '../contexts/ModalContext';
 import { useAuth } from '@clerk/clerk-react';
 
 import { ScriptToolbar } from '../features/script/components/ScriptToolbar';
@@ -51,406 +44,18 @@ import { FilterDepartmentsModal } from '../features/script/components/modals/Fil
 import { MobileScriptDrawer } from '../features/script/components/MobileScriptDrawer';
 import { getToolbarButtons, ToolbarContext } from '../features/script/utils/toolbarConfig';
 import { InfoMode } from '../features/script/components/modes/InfoMode';
-import { PlayMode } from '../features/script/components/modes/PlayMode';
 import { EditHistoryView } from '../components/EditHistoryView';
 
 import { useElementModalActions } from '../features/script/hooks/useElementModalActions';
 import { useScriptModalHandlers } from '../features/script/hooks/useScriptModalHandlers';
 import { useScriptNavigation } from '../hooks/useScriptNavigation';
 import { useScriptFormSync } from '../features/script/hooks/useScriptFormSync';
-import { useShowCrew } from '../features/shows/hooks/useShowCrew';
+import { useScriptUIState } from '../features/script/hooks/useScriptUIState';
 import { createActionMenuConfig } from '../features/script/config/actionMenuConfig';
 import { FloatingValidationErrorPanel } from '../components/base/FloatingValidationErrorPanel';
 import { exportScriptAsCSV } from '../features/script/export/utils/csvExporter';
 
-// Clock timing context - isolated to prevent page-wide re-renders
-const ClockTimingContext = createContext<{ timestamp: number }>({ timestamp: Date.now() });
 
-// Playback timing context - isolated for boundary processing
-const PlaybackTimingContext = createContext<{ 
-    currentPlaybackTime: number | null;
-    processBoundariesForTime: (timeMs: number) => void;
-}>({ 
-    currentPlaybackTime: null,
-    processBoundariesForTime: () => {}
-});
-
-const ClockTimingProvider: React.FC<{ children: React.ReactNode }> = React.memo(({ children }) => {
-    const [timestamp, setTimestamp] = useState(Date.now());
-    const lastSecondRef = useRef<number>(-1);
-
-    useEffect(() => {
-        let rafId: number;
-        
-        const updateTime = () => {
-            const now = Date.now();
-            const currentSecond = Math.floor(now / 1000);
-            
-            // Only update state when the second actually changes
-            if (currentSecond !== lastSecondRef.current) {
-                lastSecondRef.current = currentSecond;
-                setTimestamp(now);
-            }
-            
-            rafId = requestAnimationFrame(updateTime);
-        };
-
-        rafId = requestAnimationFrame(updateTime);
-
-        return () => {
-            cancelAnimationFrame(rafId);
-        };
-    }, []);
-
-    return (
-        <ClockTimingContext.Provider value={{ timestamp }}>
-            {children}
-        </ClockTimingContext.Provider>
-    );
-});
-
-const useClockTiming = () => {
-    const context = useContext(ClockTimingContext);
-    return context.timestamp;
-};
-
-const PlaybackTimingProvider: React.FC<{ 
-    children: React.ReactNode;
-    script: any;
-    isPlaybackPlaying: boolean;
-    isPlaybackComplete: boolean;
-    isPlaybackPaused: boolean;
-    isPlaybackSafety: boolean;
-    processBoundariesForTime: (timeMs: number) => void;
-}> = React.memo(({ children, script, isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, processBoundariesForTime }) => {
-    const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number | null>(null);
-    const finalShowTimeRef = useRef<number | null>(null);
-    const timerRef = useRef<number | null>(null);
-    const nextIndexRef = useRef<number>(0);
-    const { timingBoundaries, setCurrentTime } = usePlayContext();
-
-    const computeShowTime = useCallback(() => {
-        if (!script?.start_time) return null;
-        return Date.now() - new Date(script.start_time).getTime();
-    }, [script?.start_time]);
-
-    const clearTimer = useCallback(() => {
-        if (timerRef.current !== null) {
-            window.clearTimeout(timerRef.current);
-            timerRef.current = null;
-        }
-    }, []);
-
-    const findNextIndex = useCallback((t: number) => {
-        const arr = timingBoundaries || [];
-        let lo = 0, hi = arr.length;
-        while (lo < hi) {
-            const mid = (lo + hi) >>> 1;
-            if (arr[mid].time <= t) lo = mid + 1; else hi = mid;
-        }
-        return lo;
-    }, [timingBoundaries]);
-
-    const scheduleNext = useCallback(() => {
-        clearTimer();
-        const now = computeShowTime();
-        if (now === null) return;
-
-        setCurrentPlaybackTime(now);
-        setCurrentTime(now);
-        processBoundariesForTime(now);
-
-        const arr = timingBoundaries || [];
-        nextIndexRef.current = findNextIndex(now);
-        if (nextIndexRef.current >= arr.length) {
-            return;
-        }
-        const nextTime = arr[nextIndexRef.current].time;
-        const delay = Math.max(0, nextTime - now);
-        timerRef.current = window.setTimeout(() => {
-            const current = computeShowTime();
-            if (current === null) return;
-            setCurrentPlaybackTime(current);
-            setCurrentTime(current);
-            processBoundariesForTime(current);
-            nextIndexRef.current = findNextIndex(current);
-            if (isPlaybackPlaying && script?.start_time) {
-                scheduleNext();
-            }
-        }, delay);
-    }, [clearTimer, computeShowTime, findNextIndex, isPlaybackPlaying, processBoundariesForTime, timingBoundaries, script?.start_time]);
-
-    useEffect(() => {
-        if (!script?.start_time) {
-            clearTimer();
-            setCurrentPlaybackTime(null);
-            return;
-        }
-
-        if (isPlaybackComplete) {
-            clearTimer();
-            if (finalShowTimeRef.current !== null) {
-                setCurrentPlaybackTime(finalShowTimeRef.current);
-            }
-            return;
-        }
-
-        if (isPlaybackPaused || isPlaybackSafety) {
-            clearTimer();
-            const now = computeShowTime();
-            if (now !== null) {
-                finalShowTimeRef.current = now;
-                setCurrentPlaybackTime(now);
-                setCurrentTime(now);
-                processBoundariesForTime(now);
-            }
-            return;
-        }
-
-        if (isPlaybackPlaying) {
-            finalShowTimeRef.current = null;
-            scheduleNext();
-            return () => clearTimer();
-        }
-
-        clearTimer();
-        setCurrentPlaybackTime(null);
-    }, [isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, script?.start_time, scheduleNext, clearTimer, computeShowTime, processBoundariesForTime]);
-
-    useEffect(() => {
-        if (isPlaybackPlaying && script?.start_time) {
-            scheduleNext();
-            return () => clearTimer();
-        }
-    }, [timingBoundaries, isPlaybackPlaying, script?.start_time, scheduleNext, clearTimer]);
-
-    return (
-        <PlaybackTimingContext.Provider value={{ currentPlaybackTime, processBoundariesForTime }}>
-            {children}
-        </PlaybackTimingContext.Provider>
-    );
-});
-
-const usePlaybackTiming = () => {
-    const context = useContext(PlaybackTimingContext);
-    return context;
-};
-
-// Time and Status Components
-const RealtimeClock: React.FC<{ useMilitaryTime: boolean }> = ({ useMilitaryTime }) => {
-    const timestamp = useClockTiming();
-    const formatTime = (timestamp: number) => {
-        const date = new Date(timestamp);
-        const hours = useMilitaryTime ? date.getHours() : date.getHours() % 12 || 12;
-        const minutes = date.getMinutes().toString().padStart(2, '0');
-        const seconds = date.getSeconds().toString().padStart(2, '0');
-        return `${hours}:${minutes}:${seconds}`;
-    };
-
-    return (
-        <Box 
-            bg="transparent" 
-            color="gray.300" 
-            pl="16px" pr="8px" py="2px" 
-            borderRadius="none" 
-            fontSize="2xl" 
-            fontFamily="mono"
-            minWidth="100px"
-            textAlign="center"
-        >
-            {formatTime(timestamp)}
-        </Box>
-    );
-};
-
-const ShowTimer: React.FC<{ script: any; playbackState: string }> = ({ script, playbackState }) => {
-    const liveTimestamp = useClockTiming();
-    const [frozenTimestamp, setFrozenTimestamp] = useState<number | null>(null);
-    
-    useEffect(() => {
-        if ((playbackState === 'COMPLETE' || playbackState === 'PAUSED' || playbackState === 'SAFETY') && frozenTimestamp === null) {
-            setFrozenTimestamp(liveTimestamp);
-        } else if (playbackState === 'PLAYING') {
-            setFrozenTimestamp(null);
-        }
-    }, [playbackState, liveTimestamp, frozenTimestamp]);
-    
-    // Use frozen timestamp in COMPLETE, PAUSED, or SAFETY states, live timestamp otherwise  
-    const timestamp = (playbackState === 'COMPLETE' || playbackState === 'PAUSED' || playbackState === 'SAFETY') && frozenTimestamp ? frozenTimestamp : liveTimestamp;
-    
-    const calculateTMinusTime = useCallback((timestamp: number) => {
-        if (!script?.start_time) {
-            return "00:00:00";
-        }
-
-        const scriptStart = new Date(script.start_time);
-        
-        // Time difference between now and script start time
-        const diffMs = scriptStart.getTime() - timestamp;
-        const diffSeconds = Math.round(diffMs / 1000);
-        
-        const hours = Math.floor(Math.abs(diffSeconds) / 3600);
-        const minutes = Math.floor((Math.abs(diffSeconds) % 3600) / 60);
-        const seconds = Math.abs(diffSeconds) % 60;
-        
-        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        return diffSeconds < 0 ? timeStr : `–${timeStr}`;
-    }, [script?.start_time]);
-
-    const tMinusTime = calculateTMinusTime(frozenTimestamp || timestamp);
-
-
-    return (
-        <Box 
-            bg="transparent" 
-            color="red.500" 
-            px="8px" py="2px" 
-            borderRadius="none" 
-            fontSize="2xl" 
-            fontFamily="mono"
-            minWidth="110px"
-            textAlign="center"
-        >
-            {tMinusTime}
-        </Box>
-    );
-};
-
-const PlaybackStatus: React.FC<{ playbackState: string; cumulativeDelayMs?: number }> = ({ playbackState, cumulativeDelayMs = 0 }) => {
-    if (playbackState === 'STOPPED') return null;
-
-    const getStatusColor = () => {
-        if (playbackState === 'SAFETY') return 'orange.500';
-        if (playbackState === 'COMPLETE') return 'green.500';
-        return 'red.500';
-    };
-
-    const formatDelay = (delayMs: number) => {
-        const totalSeconds = Math.floor(delayMs / 1000);
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        return `+${minutes}:${seconds.toString().padStart(2, '0')}`;
-    };
-
-    const isComplete = playbackState === 'COMPLETE';
-    return (
-        <Box 
-            bg="transparent" 
-            color={getStatusColor()} 
-            px="8px" py="2px" 
-            borderRadius="none" 
-            fontSize="2xl" 
-            fontFamily="mono"
-            fontWeight="bold"
-            minWidth="100px"
-            textAlign="center"
-            animation={playbackState === 'PAUSED' ? "flash 1s infinite" : undefined}
-            sx={playbackState === 'PAUSED' ? {
-                "@keyframes flash": {
-                    "0%, 100%": { opacity: 1 },
-                    "50%": { opacity: 0.3 }
-                }
-            } : {}}
-            pr={playbackState === 'PLAYING' ? "14px" : "8px"}
-        >
-            {isComplete ? 'COMPLETE' : playbackState}
-        </Box>
-    );
-};
-
-const DelayTimer: React.FC<{ 
-    playbackState: string; 
-    cumulativeDelayMs?: number;
-}> = React.memo(({ playbackState, cumulativeDelayMs = 0 }) => {
-    const liveTimestamp = useClockTiming();
-    const { pauseStartTime } = usePlayContext();
-    // Don't update timestamp during COMPLETE state to prevent re-renders
-    const timestamp = playbackState === 'COMPLETE' ? 0 : liveTimestamp;
-
-    if (playbackState !== 'PAUSED' && playbackState !== 'SAFETY' && playbackState !== 'COMPLETE') return null;
-
-    // Calculate delay seconds for display
-    let displayTime: string;
-    if (playbackState === 'COMPLETE') {
-        if (!cumulativeDelayMs || cumulativeDelayMs <= 0) return null; // Hide entirely if zero
-        const totalCumulativeSeconds = Math.floor((cumulativeDelayMs || 0) / 1000);
-        const minutes = Math.floor(totalCumulativeSeconds / 60);
-        const seconds = totalCumulativeSeconds % 60;
-        displayTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    } else {
-        const sessionMs = pauseStartTime ? (timestamp - pauseStartTime) : 0;
-        const totalDelaySeconds = Math.max(0, Math.ceil(sessionMs / 1000));
-        const minutes = Math.floor(totalDelaySeconds / 60);
-        const seconds = totalDelaySeconds % 60;
-        displayTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    }
-
-    return (
-        <Box 
-            bg="transparent" 
-            color={playbackState === 'SAFETY' ? 'orange.500' : 'red.500'} 
-            pl="8px" pr="16px" py="2px" 
-            borderRadius="none" 
-            fontSize="2xl" 
-            fontFamily="mono"
-            fontWeight="normal"
-            minWidth="80px"
-            textAlign="center"
-            animation={playbackState === 'PAUSED' ? "flash 1s infinite" : undefined}
-            sx={playbackState === 'PAUSED' ? {
-                "@keyframes flash": {
-                    "0%, 100%": { opacity: 1 },
-                    "50%": { opacity: 0.3 }
-                }
-            } : {}}
-        >
-            {playbackState === 'COMPLETE' ? (
-                <>
-                    <Text as="span" fontSize="2xl" color="gray.500" fontFamily="mono" fontWeight="normal">•</Text>
-                    <Text as="span" color="red.500"> +{displayTime}</Text>
-                </>
-            ) : (
-                displayTime
-            )}
-        </Box>
-    );
-}, (prevProps, nextProps) => {
-    // Prevent re-renders in COMPLETE state when only timestamp changes
-    if (prevProps.playbackState === 'COMPLETE' && nextProps.playbackState === 'COMPLETE') {
-        return prevProps.cumulativeDelayMs === nextProps.cumulativeDelayMs;
-    }
-    // For other states, do normal comparison
-    return prevProps.playbackState === nextProps.playbackState && 
-           prevProps.cumulativeDelayMs === nextProps.cumulativeDelayMs;
-});
-
-const MODAL_NAMES = {
-    DELETE: 'delete',
-    FINAL_DELETE: 'final_delete',
-    DUPLICATE: 'duplicate',
-    PROCESSING: 'processing',
-    ADD_ELEMENT: 'add_element',
-    EDIT_CUE: 'edit_cue',
-    EDIT_GROUP: 'edit_group',
-    OPTIONS: 'options',
-    FILTER_DEPARTMENTS: 'filter_departments',
-    DELETE_CUE: 'delete_cue',
-    DUPLICATE_ELEMENT: 'duplicate_element',
-    GROUP_ELEMENTS: 'group_elements',
-    UNSAVED_CHANGES: 'unsaved_changes',
-    FINAL_UNSAVED_CHANGES: 'final_unsaved_changes',
-    CLEAR_HISTORY: 'clear_history',
-    FINAL_CLEAR_HISTORY: 'final_clear_history',
-    SAVE_CONFIRMATION: 'save_confirmation',
-    FINAL_SAVE_CONFIRMATION: 'final_save_confirmation',
-    SAVE_PROCESSING: 'save_processing',
-    SAVE_FAILURE: 'save_failure',
-    SHARE_CONFIRMATION: 'share_confirmation',
-    HIDE_SCRIPT: 'hide_script',
-    FINAL_HIDE_SCRIPT: 'final_hide_script',
-    AUTO_SORT_ACTIVATED: 'auto_sort_activated',
-    EMERGENCY_EXIT: 'emergency_exit'
-} as const;
 
 interface ManageScriptPageProps {
     isMenuOpen: boolean;
@@ -484,15 +89,13 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 }) => {
     const contentAreaRef = useRef<HTMLDivElement>(null);
     const [contentAreaBounds, setContentAreaBounds] = useState<DOMRect | null>(null);
-    const [safetyStopTime, setSafetyStopTime] = useState<number | null>(null);
-    const { scriptId } = useParams<{ scriptId: string }>();
     const { showSuccess, showError } = useEnhancedToast();
     const [saveErrorMessage, setSaveErrorMessage] = useState<string>('');
 
     const viewModeRef = useRef<ViewModeRef>(null);
     const editModeRef = useRef<EditModeRef>(null);
 
-    const isMobile = useBreakpointValue({ base: true, lg: false });
+    const isMobile = useBreakpointValue({ base: true, lg: false }) ?? false;
 
     const form = useValidatedFormSchema<ScriptFormData>(
         INITIAL_FORM_STATE,
@@ -505,13 +108,31 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         }
     );
 
-    const modalState = useModalState(Object.values(MODAL_NAMES));
+    // Modal state from context
+    const { modalNames: MODAL_NAMES, ...modalState } = useModalContext();
 
-    // Coordinated script data fetching - single source of truth
-    const { script: sourceScript, isLoading: isLoadingScript, error: scriptError, setScript: setSourceScript } = useScript(scriptId);
-    const { show } = useShow(sourceScript?.show_id);
-
-    // Removed debug watcher for script name
+    // Script data from context
+    const {
+        scriptId,
+        sourceScript,
+        currentScript: contextCurrentScript,
+        isLoadingScript,
+        scriptError,
+        setSourceScript,
+        show,
+        crewMembers,
+        elements,
+        allEditQueueElements,
+        hasUnsavedChanges,
+        pendingOperations,
+        applyLocalChange: contextApplyLocalChange,
+        discardChanges,
+        updateServerElements,
+        toggleGroupCollapse,
+        expandAllGroups,
+        collapseAllGroups,
+        revertToPoint
+    } = useScriptData();
 
     // Coordinated data refresh function will be defined after editQueueHook
 
@@ -526,15 +147,13 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     }, []);
 
     // Real-time sync for collaborative editing
-    const scriptSyncOptions = useMemo(() => {
-        return {
-            onConnect: () => { },
-            onDisconnect: () => { },
-            onDataReceived: () => {
-                triggerRotation(); // Trigger rotation for ping/pong
-            }
-        };
-    }, [triggerRotation]);
+    const scriptSyncOptions = {
+        onConnect: () => { },
+        onDisconnect: () => { },
+        onDataReceived: () => {
+            triggerRotation(); // Trigger rotation for ping/pong
+        }
+    };
 
     // Real-time sync for collaborative editing - RESTORED
     const { 
@@ -577,8 +196,43 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     // applyLocalChangeWithSync will be defined after editQueueHook
 
     const [previewPreferences, setPreviewPreferences] = useState<UserPreferences | null>(null);
-    const [buttonShowsOpen, setButtonShowsOpen] = useState<boolean>(true);
-    const [groupOverrides, setGroupOverrides] = useState<Record<string, boolean>>({});
+    
+    // Selection state (managed locally, used by elementActions)
+    const [currentSelectedElementIds, setCurrentSelectedElementIds] = useState<string[]>([]);
+    
+    // UI state management (non-selection)
+    const {
+        isSharing,
+        setIsSharing,
+        isHiding,
+        setIsHiding,
+        isScriptShared,
+        setIsScriptShared,
+        shareCount,
+        setShareCount,
+        filteredDepartmentIds,
+        setFilteredDepartmentIds,
+        hasUserSetFilter,
+        handleApplyDepartmentFilter,
+        isHighlightingEnabled,
+        handleHighlightingToggle,
+        buttonShowsOpen,
+        setButtonShowsOpen,
+        groupOverrides,
+        setGroupOverrides,
+        scrollState,
+        handleScrollStateChange
+    } = useScriptUIState();
+
+    // Derived selection state
+    const hasSelection = currentSelectedElementIds.length > 0;
+    const hasMultipleSelection = currentSelectedElementIds.length > 1;
+    const selectedElement = useMemo(() => {
+        if (currentSelectedElementIds.length === 1) {
+            return elements?.find(el => el.element_id === currentSelectedElementIds[0]);
+        }
+        return undefined;
+    }, [elements, currentSelectedElementIds]);
 
     // handleToggleAllGroups will be defined after editQueueHook
 
@@ -607,27 +261,8 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     // Always call hooks (React requirement), but conditionally process data
     const dataReady = sourceScript && !isLoadingScript;
     
-    // Memoize options to prevent recreating on every render
-    const editQueueOptions = useMemo(() => ({ 
-        autoSortCues,
-        sendSyncUpdate: sendSyncUpdate
-    }), [autoSortCues, sendSyncUpdate]);
-
-    const editQueueHook = useScriptElementsWithEditQueue(scriptId, elementsToPass, editQueueOptions);
-    const {
-        elements: editQueueElements,
-        allElements: allEditQueueElements,
-        pendingOperations,
-        hasUnsavedChanges,
-        revertToPoint,
-        applyLocalChange: applyLocalChangeRaw,
-        discardChanges,
-        updateServerElements,
-        saveChanges: _hookSaveChanges,
-        toggleGroupCollapse,
-        expandAllGroups,
-        collapseAllGroups,
-    } = editQueueHook;
+    // Edit queue data now comes from context
+    const editQueueElements = elements;
 
     // Unified save function via hook (auto-save and manual save use this)
     const { saveChanges } = useSaveScript({
@@ -690,7 +325,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
     const { activeMode, setActiveMode } = useScriptModes('view');
     
-    const applyLocalChange = applyLocalChangeRaw;
+    const applyLocalChange = contextApplyLocalChange;
 
     const { insertElement } = useElementActions(
         editQueueElements,
@@ -699,7 +334,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     );
     
     // Play state from context
-    const { playbackState, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, startPlayback, pausePlayback, stopPlayback, safetyStop, completePlayback, setElementBoundaries, processBoundariesForTime, currentTime, clearAllElementStates, cumulativeDelayMs, lastPauseDurationMs } = usePlayContext();
+    const { playbackState, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, startPlayback, pausePlayback, stopPlayback, safetyStop, setElementBoundaries, processBoundariesForTime, currentTime, cumulativeDelayMs, lastPauseDurationMs } = usePlayContext();
 
     // Wipe edit history when entering COMPLETE state
     useEffect(() => {
@@ -711,11 +346,10 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
     // Safety stop handler
     const handleSafetyStop = useCallback(() => {
-        setSafetyStopTime(Date.now());
         safetyStop();
     }, [safetyStop]);
 
-    // Script form synchronization hook - FIXED
+    // Script form synchronization hook - FIXED  
     const { currentScript, hasChanges, handleInfoModeExit, clearPendingChanges } = useScriptFormSync({
         sourceScript,
         pendingOperations,
@@ -724,10 +358,13 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         applyLocalChange,
         setActiveMode
     });
+    
+    // Use form sync result or context fallback
+    const effectiveCurrentScript = currentScript || contextCurrentScript;
 
     // Offset adjustment handler for playback delays - defined after currentScript
     const handleOffsetAdjustment = useCallback((delayMs: number, currentTimeMs: number) => {
-        if (!scriptId || delayMs <= 0 || !currentScript) {
+        if (!scriptId || delayMs <= 0 || !effectiveCurrentScript) {
             return;
         }
         
@@ -736,7 +373,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         
         // Check if we're before the show has actually started
         const now = new Date();
-        const scriptStartTime = new Date(currentScript.start_time);
+        const scriptStartTime = new Date(effectiveCurrentScript.start_time);
         // Guard against invalid script start time
         if (isNaN(scriptStartTime.getTime())) {
             return; // Cannot adjust start time if current value is invalid
@@ -757,7 +394,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 element_id: scriptId,
                 changes: {
                     start_time: {
-                        old_value: currentScript.start_time,
+                        old_value: effectiveCurrentScript.start_time,
                         new_value: newStartTime.toISOString()
                     }
                 }
@@ -787,14 +424,14 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             };
             applyLocalChange(adjustmentOperation);
 
-            // Note: timing boundaries will be refreshed by the useEffect that watches filteredEditQueueElements
+            // Note: timing boundaries will be refreshed by the useEffect that watches departmentFilteredElements
         }
-    }, [scriptId, allEditQueueElements, applyLocalChange, currentScript, activePreferences.lookaheadSeconds, setElementBoundaries]);
+    }, [scriptId, allEditQueueElements, applyLocalChange, effectiveCurrentScript, activePreferences.lookaheadSeconds, setElementBoundaries]);
 
     // Simple: Watch for pause duration changes and apply offset adjustment
-    const lastProcessedPauseRef = useRef<number | undefined>();
+    const lastProcessedPauseRef = useRef<number | undefined>(undefined);
     useEffect(() => {
-        if (!lastPauseDurationMs || !currentScript || !currentTime) {
+        if (!lastPauseDurationMs || !effectiveCurrentScript || !currentTime) {
             return;
         }
         
@@ -805,34 +442,33 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         
         lastProcessedPauseRef.current = lastPauseDurationMs;
         handleOffsetAdjustment(lastPauseDurationMs, currentTime);
-    }, [lastPauseDurationMs, currentTime, currentScript, handleOffsetAdjustment]);
+    }, [lastPauseDurationMs, currentTime, effectiveCurrentScript]);
 
-    // Crew data for sharing
-    const { crewMembers } = useShowCrew(currentScript?.show_id || '');
+    // Crew data now comes from context
 
     // Function to capture Info mode changes without changing mode
     const captureInfoChanges = useCallback(() => {
-        if (activeMode === 'info' && hasChanges && currentScript) {
+        if (activeMode === 'info' && hasChanges && effectiveCurrentScript) {
             // Use the same logic as handleInfoModeExit but don't change mode
             const formChanges = {
                 script_name: {
-                    old_value: currentScript.script_name,
+                    old_value: effectiveCurrentScript.script_name,
                     new_value: form.formData.script_name
                 },
                 script_status: {
-                    old_value: currentScript.script_status,
+                    old_value: effectiveCurrentScript.script_status,
                     new_value: form.formData.script_status
                 },
                 start_time: {
-                    old_value: currentScript.start_time,
+                    old_value: effectiveCurrentScript.start_time,
                     new_value: convertLocalToUTC(form.formData.start_time)
                 },
                 end_time: {
-                    old_value: currentScript.end_time,
-                    new_value: (form.formData.end_time && form.formData.end_time.trim()) ? convertLocalToUTC(form.formData.end_time) : currentScript.end_time
+                    old_value: effectiveCurrentScript.end_time,
+                    new_value: (form.formData.end_time && form.formData.end_time.trim()) ? convertLocalToUTC(form.formData.end_time) : effectiveCurrentScript.end_time
                 },
                 script_notes: {
-                    old_value: currentScript.script_notes || '',
+                    old_value: effectiveCurrentScript.script_notes || '',
                     new_value: form.formData.script_notes
                 }
             };
@@ -854,7 +490,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 applyLocalChange(infoFormOperation);
             }
         }
-    }, [activeMode, hasChanges, currentScript, form.formData, applyLocalChange]);
+    }, [activeMode, hasChanges, effectiveCurrentScript, form.formData, applyLocalChange]);
 
     // Navigation hook
     const navigation = useScriptNavigation({
@@ -881,7 +517,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
     // Emergency exit handler - defined after navigation
     const handleEmergencyExit = useCallback(() => {
-        modalState.closeModal();
+        modalState.closeModal(MODAL_NAMES.EMERGENCY_EXIT);
         
         // Stop playback first, then exit
         if (playbackState !== 'STOPPED') {
@@ -940,31 +576,9 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     const modalHandlers = useScriptModalHandlers(modalHandlersConfig);
 
     // Track EditMode's selection state reactively
-    const [currentSelectedElementIds, setCurrentSelectedElementIds] = useState<string[]>([]);
-    
-    // Wrapper function to log selection changes
-    const handleSelectionChange = useCallback((newSelectedIds: string[]) => {
-        
-        setCurrentSelectedElementIds(newSelectedIds);
-    }, []);
 
-    // Sharing state
-    const [isSharing, setIsSharing] = useState(false);
-    const [isHiding, setIsHiding] = useState(false);
-    const [isScriptShared, setIsScriptShared] = useState(false);
-    const [shareCount, setShareCount] = useState(0);
 
-    // Department filtering state
-    const [filteredDepartmentIds, setFilteredDepartmentIds] = useState<string[]>([]);
-    const [hasUserSetFilter, setHasUserSetFilter] = useState(false);
     
-    // Highlighting toggle state
-    const [isHighlightingEnabled, setIsHighlightingEnabled] = useState(true);
-    
-    // Toggle highlighting on/off
-    const handleHighlightingToggle = useCallback(() => {
-        setIsHighlightingEnabled(!isHighlightingEnabled);
-    }, [isHighlightingEnabled]);
 
     // Navigation
     const navigate = useNavigate();
@@ -994,7 +608,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         showSaveSuccess,
         isPaused,
         hasChanges,
-        currentScriptExists: !!currentScript,
+        currentScriptExists: !!effectiveCurrentScript,
         crewMembersLength: crewMembers.length
     };
     
@@ -1016,49 +630,21 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             editModeRef.current?.clearSelection();
             setCurrentSelectedElementIds([]);
         },
-        setSelectedElementIds: () => {
-            // Delegate to EditMode's selection management
-            if (editModeRef.current) {
-                editModeRef.current.clearSelection();
-                setCurrentSelectedElementIds([]);
-                // If setting non-empty selection, would need EditMode method for that
-            }
+        setSelectedElementIds: (ids: string[]) => {
+            setCurrentSelectedElementIds(ids);
+            // EditMode manages its own selection state
         }
     });
+    
+    const handleSelectionChange = elementActions.setSelectedElementIds;
 
-    // Scroll state for jump button ghosting
-    const [scrollState, setScrollState] = useState<{
-        isAtTop: boolean;
-        isAtBottom: boolean;
-        allElementsFitOnScreen: boolean;
-    }>({
-        isAtTop: true,
-        isAtBottom: false,
-        allElementsFitOnScreen: true
-    });
 
-    // Callback for child components to update scroll state
-    const handleScrollStateChange = useCallback((newScrollState: {
-        isAtTop: boolean;
-        isAtBottom: boolean;
-        allElementsFitOnScreen: boolean;
-    }) => {
-        setScrollState(newScrollState);
-    }, []);
-
-    // Get the selected element for toolbar context
-    const selectedElement = useMemo(() => {
-        if (elementActions.selectedElementIds.length === 1) {
-            return editQueueElements.find(el => el.element_id === elementActions.selectedElementIds[0]);
-        }
-        return undefined;
-    }, [editQueueElements, elementActions.selectedElementIds]);
 
     const toolbarContext = useMemo((): ToolbarContext => ({
         activeMode,
         scrollState,
-        hasSelection: elementActions.selectedElementIds.length > 0,
-        hasMultipleSelection: elementActions.selectedElementIds.length > 1,
+        hasSelection,
+        hasMultipleSelection,
         hasUnsavedChanges,
         pendingOperationsCount: pendingOperations.length,
         selectedElement,
@@ -1068,9 +654,9 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         isPaused: isPlaybackPaused,
         isSafety: isPlaybackSafety,
         isComplete: isPlaybackComplete
-    }), [activeMode, scrollState, elementActions.selectedElementIds.length, hasUnsavedChanges, pendingOperations.length, selectedElement, isScriptShared, buttonShowsOpen, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete]);
+    }), [activeMode, scrollState, hasSelection, hasMultipleSelection, hasUnsavedChanges, pendingOperations.length, selectedElement, isScriptShared, buttonShowsOpen, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete]);
 
-    const toolButtons = useMemo(() => getToolbarButtons(toolbarContext), [toolbarContext]);
+    const toolButtons = getToolbarButtons(toolbarContext);
 
     // Clear selection when exiting edit mode
     useEffect(() => {
@@ -1384,8 +970,8 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             try {
                 // Script sharing status is now determined by the script.is_shared flag
                 // which is already loaded in currentScript
-                if (currentScript) {
-                    setIsScriptShared(currentScript.is_shared || false);
+                if (effectiveCurrentScript) {
+                    setIsScriptShared(effectiveCurrentScript.is_shared || false);
                     // Share count is no longer tracked at script level
                     setShareCount(0);
                 }
@@ -1395,7 +981,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         };
 
         loadSharingStatus();
-    }, [scriptId, currentScript, getToken]);
+    }, [scriptId, effectiveCurrentScript, getToken]);
 
     // Sharing handlers
     const handleShareConfirm = async () => {
@@ -1497,15 +1083,9 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         }
     };
 
-    // Handle department filter application
-    // Handle department filter application
-    const handleApplyDepartmentFilter = useCallback((selectedDepartmentIds: string[]) => {
-        setFilteredDepartmentIds(selectedDepartmentIds);
-        setHasUserSetFilter(true);
-    }, []);
 
     // Create filtered elements based on department selection
-    const filteredEditQueueElements = useMemo(() => {
+    const departmentFilteredElements = useMemo(() => {
 
         if (filteredDepartmentIds.length === 0) {
             // If no departments selected, show only NOTEs and GROUPs
@@ -1527,7 +1107,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         return filtered;
     }, [editQueueElements, filteredDepartmentIds, editQueueElements?.map(el => el.sequence).join(',')]);
 
-    const filteredAllEditQueueElements = useMemo(() => {
+    const departmentFilteredAllElements = useMemo(() => {
         if (filteredDepartmentIds.length === 0) {
             // If no departments selected, show only NOTEs and GROUPs
             return allEditQueueElements?.filter(element =>
@@ -1548,11 +1128,11 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
     // Set up timing boundaries when elements or lookahead changes
     useEffect(() => {
-        if (filteredEditQueueElements.length > 0) {
+        if (departmentFilteredElements.length > 0) {
             const lookaheadMs = lookaheadSeconds * 1000;
-            setElementBoundaries(filteredEditQueueElements, lookaheadMs);
+            setElementBoundaries(departmentFilteredElements, lookaheadMs);
         }
-    }, [filteredEditQueueElements, lookaheadSeconds, setElementBoundaries]);
+    }, [departmentFilteredElements, lookaheadSeconds, setElementBoundaries]);
 
     // Timing boundaries are now handled by PlaybackTimingProvider
 
@@ -1578,138 +1158,38 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     });
 
     // Calculate total changes count from actual pending operations
-    const totalChangesCount = useMemo(() => {
-        return pendingOperations.length;
-    }, [pendingOperations.length]);
+    const totalChangesCount = pendingOperations.length;
 
     return (
         <ErrorBoundary context="Script Management Page">
             <Flex width="100%" height="100%" p="2rem" flexDirection="column" boxSizing="border-box">
-                {/* Header Section */}
-                <Flex
-                    width="100%"
-                    justify="space-between"
-                    align="center"
-                    flexShrink={0}
-                    mb="4"
-                    height="24px"
-                >
-                    {/* Left: Script Title */}
-                    <HStack spacing={2} align="center">
-                        <AppIcon name="script" boxSize="20px" color="white" />
-                        <HStack spacing={3} align="center">
-                            {show?.show_name && (
-                                <>
-                                    <Heading as="h2" size="md">{show.show_name}</Heading>
-                                    <AppIcon name="arrow-right" boxSize="16px" color="white" />
-                                </>
-                            )}
-                            <Heading as="h2" size="md">{currentScript?.script_name || 'Script'}</Heading>
-                            {(currentScript?.is_shared || isScriptShared) && (
-                                <Badge variant="solid" colorScheme="green" fontSize="sm" ml={1} px={2}>
-                                    SHARED
-                                </Badge>
-                            )}
-                            {activeMode === 'view' && (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) ? (
-                                <Badge
-                                    variant="solid"
-                                    colorScheme={isHighlightingEnabled ? "blue" : "gray"}
-                                    fontSize="sm"
-                                    ml={1}
-                                    px={2}
-                                    cursor="pointer"
-                                    onClick={handleHighlightingToggle}
-                                    _hover={{
-                                        bg: isHighlightingEnabled ? "blue.600" : "gray.600"
-                                    }}
-                                    transition="background-color 0.2s"
-                                    userSelect="none"
-                                >
-                                    LOOKAHEAD • {isHighlightingEnabled ? activePreferences.lookaheadSeconds : 'OFF'}
-                                </Badge>
-                            ) : activeMode !== 'view' && activePreferences.autoSaveInterval > 0 && (
-                                <Badge
-                                    variant="solid"
-                                    colorScheme={showSaveSuccess ? "blue" : (isAutoSaving ? "blue" : isPaused ? "gray" : "red")}
-                                    bg={showSaveSuccess ? "blue.500" : undefined}
-                                    fontSize="sm"
-                                    ml={1}
-                                    px={2}
-                                    cursor="pointer"
-                                    onClick={togglePause}
-                                    _hover={{
-                                        bg: isPaused ? "gray.600" : "red.600"
-                                    }}
-                                    transition="background-color 0.2s"
-                                    userSelect="none"
-                                >
-                                    {isAutoSaving
-                                        ? "SAVING..."
-                                        : isPaused 
-                                            ? "AUTO SAVE • PAUSED"
-                                            : `AUTO SAVE • ${hasUnsavedChanges && secondsUntilNextSave > 0 ? secondsUntilNextSave : activePreferences.autoSaveInterval}`
-                                    }
-                                </Badge>
-                            )}
-                        </HStack>
-                    </HStack>
-
-
-                    {/* Right: Action Buttons positioned to align with scroll area */}
-                    <Box flex={1} position="relative">
-                        <Box
-                            position="absolute"
-                            right={isMobile ? "16px" : "197px"}
-                            top="50%"
-                            transform="translateY(-50%)"
-                            zIndex={100}
-                        >
-                            <HStack spacing={2}>
-                                {/* Actions Menu */}
-                                <ActionsMenu
-                                    actions={actions}
-                                    isDisabled={false}
-                                />
-
-                                {/* Divider */}
-                                <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
-
-                                {/* Action Buttons */}
-                                <Button
-                                    size="xs"
-                                    variant="outline"
-                                    onClick={() => {
-                                        if (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) {
-                                            modalState.openModal(MODAL_NAMES.EMERGENCY_EXIT);
-                                        } else {
-                                            navigation.handleCancel();
-                                        }
-                                    }}
-                                    _hover={{ bg: 'gray.100' }}
-                                    _dark={{ _hover: { bg: 'gray.700' } }}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    size="xs"
-                                    bg="blue.400"
-                                    color="white"
-                                    onClick={() => {
-                                        // Capture info changes first if in info mode
-                                        if (activeMode === 'info' && hasChanges) {
-                                            captureInfoChanges();
-                                        }
-                                        modalHandlers.handleShowSaveConfirmation();
-                                    }}
-                                    isDisabled={(!hasChanges && !hasUnsavedChanges) || !form.isValid}
-                                    _hover={{ bg: 'orange.400' }}
-                                >
-                                    Save Changes
-                                </Button>
-                            </HStack>
-                        </Box>
-                    </Box>
-                </Flex>
+                <ScriptHeader
+                    currentScript={effectiveCurrentScript}
+                    show={show}
+                    isScriptShared={isScriptShared}
+                    activeMode={activeMode}
+                    hasChanges={hasChanges}
+                    hasUnsavedChanges={hasUnsavedChanges}
+                    isFormValid={form.isValid}
+                    isPlaybackPlaying={isPlaybackPlaying}
+                    isPlaybackPaused={isPlaybackPaused}
+                    isPlaybackSafety={isPlaybackSafety}
+                    activePreferences={activePreferences}
+                    showSaveSuccess={showSaveSuccess}
+                    isAutoSaving={isAutoSaving}
+                    isPaused={isPaused}
+                    secondsUntilNextSave={secondsUntilNextSave}
+                    isHighlightingEnabled={isHighlightingEnabled}
+                    isMobile={isMobile}
+                    actions={actions}
+                    navigation={navigation}
+                    modalState={modalState}
+                    modalNames={MODAL_NAMES}
+                    modalHandlers={modalHandlers}
+                    captureInfoChanges={captureInfoChanges}
+                    handleHighlightingToggle={handleHighlightingToggle}
+                    togglePause={togglePause}
+                />
 
                 {/* Main Content Area */}
                 <Flex flex={1} width="100%" overflow="hidden" minHeight={0}>
@@ -1760,7 +1240,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
                                 {activeMode === 'view' && (
-                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} useMilitaryTime={activePreferences.useMilitaryTime} onScrollStateChange={handleScrollStateChange} elements={filteredEditQueueElements} allElements={filteredAllEditQueueElements} script={currentScript} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} onViewModeActivation={handleViewModeActivation} isHighlightingEnabled={isHighlightingEnabled} lookaheadSeconds={activePreferences.lookaheadSeconds} />
+                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} useMilitaryTime={activePreferences.useMilitaryTime} onScrollStateChange={handleScrollStateChange} elements={departmentFilteredElements} allElements={departmentFilteredAllElements} script={effectiveCurrentScript} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} onViewModeActivation={handleViewModeActivation} isHighlightingEnabled={isHighlightingEnabled} lookaheadSeconds={activePreferences.lookaheadSeconds} />
                                 )}
                                 {activeMode === 'edit' && (
                                     <EditMode
@@ -1774,13 +1254,13 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                                         onScrollStateChange={handleScrollStateChange}
                                         onSelectionChange={handleSelectionChange}
                                         onToggleGroupCollapse={toggleGroupCollapse}
-                                        script={currentScript}
-                                        elements={filteredEditQueueElements}
-                                        allElements={filteredAllEditQueueElements}
+                                        script={effectiveCurrentScript}
+                                        elements={departmentFilteredElements}
+                                        allElements={departmentFilteredAllElements}
                                         onApplyLocalChange={applyLocalChange}
                                     />
                                 )}
-                                {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={filteredAllEditQueueElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} onRevertSuccess={() => setActiveMode('edit')} />}
+                                {activeMode === 'history' && <EditHistoryView operations={pendingOperations} allElements={departmentFilteredAllElements} summary={EditQueueFormatter.formatOperationsSummary(pendingOperations)} onRevertToPoint={revertToPoint} onRevertSuccess={() => setActiveMode('edit')} />}
                             </Box>
                         )}
                     </Box>
@@ -1893,7 +1373,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             <ScriptModals
                 modalState={modalState}
                 modalNames={MODAL_NAMES}
-                script={currentScript}
+                script={effectiveCurrentScript}
                 scriptId={scriptId || ''}
                 selectedElement={elementActions.selectedElement}
                 selectedElementIds={elementActions.selectedElementIds}
@@ -1931,7 +1411,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 onClockTimesChange={handleClockTimesCheckboxChange}
                 onDangerModeChange={async (value: boolean) => { await updatePreference('dangerMode', value); }}
                 onAutoSaveIntervalChange={async (value: number) => { await updatePreference('autoSaveInterval', value); }}
-                onLookaheadSecondsChange={async (value: number) => { await updatePreference('lookaheadSeconds', value); }}
                 onConfirmDeleteCue={elementActions.handleConfirmDeleteCue}
                 onConfirmDuplicate={elementActions.handleConfirmDuplicate}
                 onConfirmGroupElements={elementActions.handleConfirmGroupElements}
@@ -1944,7 +1423,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 onGroupEdit={elementActions.handleGroupEditSave}
                 allElements={allEditQueueElements}
                 saveErrorMessage={saveErrorMessage}
-                scriptName={currentScript?.script_name || 'Script'}
+                scriptName={effectiveCurrentScript?.script_name || 'Script'}
                 crewCount={Array.from(new Map(crewMembers.map(member => [member.user_id, member])).values()).length}
                 shareCount={shareCount}
                 isSharing={isSharing}
@@ -1985,7 +1464,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             {/* Emergency Exit Modal */}
             <BaseModal
                 isOpen={modalState.isOpen(MODAL_NAMES.EMERGENCY_EXIT)}
-                onClose={() => modalState.closeModal()}
+                onClose={() => modalState.closeModal(MODAL_NAMES.EMERGENCY_EXIT)}
                 variant="danger"
                 warningLevel="final"
                 title="EXIT SCRIPT PLAYBACK"
@@ -2063,93 +1542,18 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
             {/* Playback overlay with border and time displays */}
             {(isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety || isPlaybackComplete) && contentAreaBounds && (
-                <ClockTimingProvider>
-                <PlaybackTimingProvider 
-                    script={currentScript}
+                <PlaybackOverlay
+                    contentAreaBounds={contentAreaBounds}
+                    script={effectiveCurrentScript}
+                    playbackState={playbackState}
                     isPlaybackPlaying={isPlaybackPlaying}
                     isPlaybackComplete={isPlaybackComplete}
                     isPlaybackPaused={isPlaybackPaused}
                     isPlaybackSafety={isPlaybackSafety}
                     processBoundariesForTime={processBoundariesForTime}
-                >
-                    {/* Border overlay */}
-                    <Box
-                        position="fixed"
-                        top={`${contentAreaBounds.top - 1}px`}
-                        left={`${contentAreaBounds.left - 1}px`}
-                        width={`${contentAreaBounds.width + 2}px`}
-                        height={`${contentAreaBounds.height + 2}px`}
-                        border="2px solid"
-                        borderColor={isPlaybackSafety ? "#EAB308" : "red.500"}
-                        borderRadius="md"
-                        pointerEvents="none"
-                        zIndex={1000}
-                        animation={isPlaybackPaused ? "flash 1s infinite" : undefined}
-                        sx={isPlaybackPaused ? {
-                            "@keyframes flash": {
-                                "0%, 100%": { opacity: 1 },
-                                "50%": { opacity: 0.3 }
-                            }
-                        } : {}}
-                    />
-                    
-                    {/* Time and Status Display - positioned at top center */}
-                    <Box
-                        position="fixed"
-                        top="16px"
-                        left="50%"
-                        transform="translateX(-50%)"
-                        zIndex={1001}
-                        pointerEvents="none"
-                    >
-                        <Box border="2px solid" borderColor="gray.700" bg="#0F0F0F">
-                                <HStack spacing={0} align="center">
-                                {/* Realtime Clock */}
-                                <RealtimeClock useMilitaryTime={activePreferences.useMilitaryTime} />
-                                
-                                {/* Bullet separator */}
-                                <Box bg="#0F0F0F" px="4px" py="2px">
-                                    <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
-                                </Box>
-                                
-                                {/* Show Timer */}
-                                <ShowTimer 
-                                    script={currentScript}
-                                    playbackState={playbackState}
-                                />
-                                
-                                {/* Bullet separator */}
-                                <Box bg="#0F0F0F" px="4px" py="2px">
-                                    <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
-                                </Box>
-                                
-                                {/* Playback Status */}
-                                <PlaybackStatus playbackState={playbackState} cumulativeDelayMs={cumulativeDelayMs} />
-                                
-                                {/* Bullet separator for paused/safety mode */}
-                                {(playbackState === 'PAUSED' || playbackState === 'SAFETY') && (
-                                    <Box 
-                                        bg="transparent" 
-                                        px="2px" py="2px"
-                                        animation={playbackState === 'PAUSED' ? "flash 1s infinite" : undefined}
-                                        sx={playbackState === 'PAUSED' ? {
-                                            "@keyframes flash": {
-                                                "0%, 100%": { opacity: 1 },
-                                                "50%": { opacity: 0.3 }
-                                            }
-                                        } : {}}
-                                    >
-                                        <Text fontSize="2xl" color={playbackState === 'SAFETY' ? 'orange.500' : 'red.500'} fontFamily="mono">•</Text>
-                                    </Box>
-                                )}
-                                
-                                {/* Delay Timer - in PAUSED and SAFETY modes */}
-                                <DelayTimer playbackState={playbackState} cumulativeDelayMs={cumulativeDelayMs} />
-                                </HStack>
-                        </Box>
-                    </Box>
-                </PlaybackTimingProvider>
-                </ClockTimingProvider>
+                    useMilitaryTime={activePreferences.useMilitaryTime}
+                    cumulativeDelayMs={cumulativeDelayMs}
+                />
             )}
         </ErrorBoundary>
     );
@@ -2165,11 +1569,21 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = React.memo(({ i
         return await authRef.current.getToken();
     }, []); // Stable function reference
     
+    const { scriptId } = useParams<{ scriptId: string }>();
+    
     return (
-        <ManageScriptPageInner 
-            isMenuOpen={isMenuOpen}
-            onMenuClose={onMenuClose}
-            getToken={getToken}
-        />
+        <ModalProvider>
+            <ScriptDataProvider 
+                scriptId={scriptId}
+                elementsToPass={undefined}
+                editQueueOptions={undefined}
+            >
+                <ManageScriptPageInner 
+                    isMenuOpen={isMenuOpen}
+                    onMenuClose={onMenuClose}
+                    getToken={getToken}
+                />
+            </ScriptDataProvider>
+        </ModalProvider>
     );
 });
