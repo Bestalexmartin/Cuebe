@@ -94,13 +94,10 @@ export const useAutoSave = ({
           countdownRef.current = null;
         }
         setSecondsUntilNextSave(0);
-      } else {
-        console.error(`❌ AUTO-SAVE DEBUG: Auto-save failed`);
       }
 
       onAutoSaveComplete?.(success);
     } catch (error) {
-      console.error("❌ AUTO-SAVE DEBUG: Auto-save error:", error);
       onAutoSaveComplete?.(false);
     } finally {
       saveInProgressRef.current = false;

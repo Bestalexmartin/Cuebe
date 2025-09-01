@@ -485,7 +485,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 onClose={() => {}}
                 title=""
                 size="md"
-                variant="info"
+                variant="default"
                 closeOnOverlayClick={false}
                 closeOnEsc={false}
                 showFooter={false}

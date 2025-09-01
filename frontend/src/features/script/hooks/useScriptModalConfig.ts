@@ -5,7 +5,7 @@ interface UseScriptModalConfigProps {
     scriptId: string | undefined;
     sourceScript: any;
     hasUnsavedChanges: boolean;
-    saveChanges: () => Promise<void>;
+    saveChanges: () => Promise<boolean>;
     discardChanges: () => void;
     modalState: any;
     modalNames: any;
