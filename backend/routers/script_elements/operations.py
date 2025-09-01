@@ -203,15 +203,28 @@ def _apply_update_element_in_memory(elements_by_id: dict, operation_data: dict, 
     if not element:
         raise ValueError(f"Element {element_id} not found")
     
-    # Apply all field changes
+    # Apply all field changes safely
     updated_fields = []
     offset_changed = False
     for field, change in changes.items():
-        old_value = getattr(element, field, None)
         new_value = change.get("new_value")
+        # Skip None to avoid nulling non-null columns
+        if new_value is None:
+            continue
+        # Coerce known types
+        if field == 'is_collapsed':
+            if isinstance(new_value, str):
+                lowered = new_value.strip().lower()
+                new_value = lowered in ('true', '1', 'yes', 'y')
+            else:
+                new_value = bool(new_value)
+        elif field in ('offset_ms', 'duration_ms', 'sequence', 'group_level'):
+            try:
+                new_value = int(new_value)
+            except Exception:
+                continue
         setattr(element, field, new_value)
         updated_fields.append(field)
-        
         if field == "offset_ms":
             offset_changed = True
     
@@ -384,6 +397,31 @@ def _apply_update_field_in_memory(elements_by_id: dict, operation_data: dict, us
     if not element:
         raise ValueError(f"Element {element_id} not found")
     
+    # Skip None writes
+    if new_value is None:
+        return {
+            "operation": "update_field",
+            "element_id": element_id,
+            "field": field,
+            "skipped": True
+        }
+    # Coerce known types
+    if field == 'is_collapsed':
+        if isinstance(new_value, str):
+            lowered = new_value.strip().lower()
+            new_value = lowered in ('true', '1', 'yes', 'y')
+        else:
+            new_value = bool(new_value)
+    elif field in ('offset_ms', 'duration_ms', 'sequence', 'group_level'):
+        try:
+            new_value = int(new_value)
+        except Exception:
+            return {
+                "operation": "update_field",
+                "element_id": element_id,
+                "field": field,
+                "invalid": True
+            }
     # Set the field value
     setattr(element, field, new_value)
     element.updated_by = user.user_id
@@ -624,7 +662,25 @@ def _apply_update_group_with_propagation_in_memory(elements_by_id: dict, operati
     # Update the group element
     element = elements_by_id.get(element_id)
     if element:
+        # Defensive: do not overwrite non-nullable fields with None from the client
         for field, value in field_updates.items():
+            # Skip None values to avoid unintentionally nulling columns
+            if value is None:
+                # Special-case: keep existing is_collapsed when client sends null/undefined
+                continue
+            # Coerce types for known fields
+            if field == 'is_collapsed':
+                # Accept truthy strings/ints and coerce to bool
+                if isinstance(value, str):
+                    lowered = value.strip().lower()
+                    value = lowered in ('true', '1', 'yes', 'y')
+                else:
+                    value = bool(value)
+            elif field in ('offset_ms', 'duration_ms', 'sequence'):
+                try:
+                    value = int(value)
+                except Exception:
+                    continue  # Skip invalid numeric values
             setattr(element, field, value)
         element.updated_by = user.user_id
         element.date_updated = datetime.now(timezone.utc)
@@ -830,6 +886,15 @@ def batch_update_from_edit_queue(
                 # Existing element with sequence change - already tracked by SQLAlchemy
                 pass
         
+        # FINAL STEP: Normalize non-nullable fields before any DB write
+        for el in elements_by_id.values():
+            # Normalize is_collapsed to False if missing/None to satisfy NOT NULL constraint
+            if hasattr(el, 'is_collapsed') and getattr(el, 'is_collapsed') is None:
+                setattr(el, 'is_collapsed', False)
+            # Ensure group_level is an int
+            if hasattr(el, 'group_level') and getattr(el, 'group_level') is None:
+                setattr(el, 'group_level', 0)
+
         # FINAL STEP: Check if auto-sort is enabled and resequence by time before commit
         from utils.user_preferences import get_bit, USER_PREFERENCE_BITS
         
