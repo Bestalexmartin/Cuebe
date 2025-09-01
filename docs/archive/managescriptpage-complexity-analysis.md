@@ -264,3 +264,66 @@ The offset adjustment bug fix demonstrates that even simple features become comp
 
 **Key Learning:**
 The systematic phase-by-phase approach with user testing at each checkpoint prevented regressions and allowed for pragmatic adaptations when architectural realities emerged. The component is now significantly more maintainable while preserving all original functionality.
+
+---
+
+## SECOND PASS OPTIMIZATION PLAN
+
+### Fresh Assessment (Post-First Pass)
+
+**Current State**: 1589 lines (down from 2180)  
+**Target**: 1200-1300 lines (additional 20% reduction)  
+**Status**: Ready for focused business logic extraction
+
+### Remaining Optimization Opportunities
+
+**High Impact Extractions:**
+
+1. **`useScriptModeHandlers` Hook** (~150 lines)
+   - Extract massive `handleModeChange` function (100+ lines)
+   - Consolidate mode switching logic, playback controls, navigation
+   - **Why**: Largest single complexity hotspot remaining
+   - **Files**: `/features/script/hooks/useScriptModeHandlers.ts`
+
+2. **`useScriptSharing` Hook** (~80 lines)  
+   - Extract `handleShareConfirm`, `handleFinalHideConfirm`, `handleHideCancel`
+   - Consolidate sharing/hiding API operations with error handling
+   - **Why**: Business logic that doesn't belong in UI component
+   - **Files**: `/features/script/hooks/useScriptSharing.ts`
+
+3. **`usePlaybackAdjustment` Hook** (~65 lines)
+   - Extract `handleOffsetAdjustment` business logic 
+   - Include useEffect that watches pause duration changes
+   - **Why**: Complex timing calculations separate from UI concerns
+   - **Files**: `/features/script/hooks/usePlaybackAdjustment.ts`
+
+**Medium Impact Simplifications:**
+
+4. **`useScriptModalConfig` Hook**
+   - Extract `modalHandlersConfig` with 15+ dependencies
+   - Reduce memoization overhead in main component
+
+5. **Memoization Review**
+   - Evaluate `activePreferences`, `toolbarContext` necessity
+   - Remove any remaining excessive memoization
+
+### Implementation Strategy
+
+**Approach**: Extract one hook at a time with user validation  
+**Priority**: Start with mode handling (highest complexity reduction)  
+**Risk**: Low - each extraction is self-contained business logic  
+**Testing**: UI validation after each extraction
+
+### Expected Outcomes
+
+- **Final size**: ~1200-1300 lines (total 45% reduction from original)
+- **Pure orchestration**: Component becomes coordination-only
+- **Business logic separation**: Easier testing and feature development
+- **Performance**: Reduced memoization and dependency complexity
+
+### Success Criteria
+
+- ✅ No functionality regressions
+- ✅ Improved code organization and readability  
+- ✅ Business logic properly separated from UI orchestration
+- ✅ Clean TypeScript compilation maintained

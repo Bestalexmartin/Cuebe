@@ -51,6 +51,10 @@ import { useScriptModalHandlers } from '../features/script/hooks/useScriptModalH
 import { useScriptNavigation } from '../hooks/useScriptNavigation';
 import { useScriptFormSync } from '../features/script/hooks/useScriptFormSync';
 import { useScriptUIState } from '../features/script/hooks/useScriptUIState';
+import { useScriptModeHandlers } from '../features/script/hooks/useScriptModeHandlers';
+import { useScriptSharing } from '../features/script/hooks/useScriptSharing';
+import { usePlaybackAdjustment } from '../features/script/hooks/usePlaybackAdjustment';
+import { useScriptModalConfig } from '../features/script/hooks/useScriptModalConfig';
 import { createActionMenuConfig } from '../features/script/config/actionMenuConfig';
 import { FloatingValidationErrorPanel } from '../components/base/FloatingValidationErrorPanel';
 import { exportScriptAsCSV } from '../features/script/export/utils/csvExporter';
@@ -314,14 +318,9 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     }, [autoSortCues, pendingOperations]);
 
     // Use preview preferences when options modal is open, otherwise use saved preferences  
-    const activePreferences = useMemo(() => {
-        const result = modalState.isOpen(MODAL_NAMES.OPTIONS) && previewPreferences
-            ? previewPreferences
-            : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval, lookaheadSeconds };
-
-
-        return result;
-    }, [modalState, previewPreferences, darkMode, colorizeDepNames, showClockTimes, currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval, lookaheadSeconds]);
+    const activePreferences = modalState.isOpen(MODAL_NAMES.OPTIONS) && previewPreferences
+        ? previewPreferences
+        : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval, lookaheadSeconds };
 
     const { activeMode, setActiveMode } = useScriptModes('view');
     
@@ -362,87 +361,16 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     // Use form sync result or context fallback
     const effectiveCurrentScript = currentScript || contextCurrentScript;
 
-    // Offset adjustment handler for playback delays - defined after currentScript
-    const handleOffsetAdjustment = useCallback((delayMs: number, currentTimeMs: number) => {
-        if (!scriptId || delayMs <= 0 || !effectiveCurrentScript) {
-            return;
-        }
-        
-        // Round delay up to nearest second for synchronized timing
-        const roundedDelayMs = Math.ceil(delayMs / 1000) * 1000;
-        
-        // Check if we're before the show has actually started
-        const now = new Date();
-        const scriptStartTime = new Date(effectiveCurrentScript.start_time);
-        // Guard against invalid script start time
-        if (isNaN(scriptStartTime.getTime())) {
-            return; // Cannot adjust start time if current value is invalid
-        }
-        const isBeforeShowStart = now < scriptStartTime;
-        
-        if (isBeforeShowStart) {
-            // Pre-show delay: adjust the actual script start_time
-            const newStartMs = scriptStartTime.getTime() + roundedDelayMs;
-            const newStartTime = new Date(newStartMs);
-            if (isNaN(newStartTime.getTime())) {
-                return; // Defensive: avoid writing invalid dates
-            }
-            
-            // Create script info update operation
-            const scriptUpdateOperation = {
-                type: 'UPDATE_SCRIPT_INFO' as const,
-                element_id: scriptId,
-                changes: {
-                    start_time: {
-                        old_value: effectiveCurrentScript.start_time,
-                        new_value: newStartTime.toISOString()
-                    }
-                }
-            };
-            
-            // Pre-show offset adjustment
-            applyLocalChange(scriptUpdateOperation);
-        } else {
-            // Mid-show delay: adjust individual element offsets for ALL elements after the current one
-            const sourceElements = allEditQueueElements || [];
-            const unplayedElements = sourceElements.filter(element => {
-                const offset = element.offset_ms || 0;
-                // Only include elements that start AFTER the current time
-                return offset > currentTimeMs;
-            });
-            
-            if (unplayedElements.length === 0) {
-                return;
-            }
-            
-            const adjustmentOperation = {
-                type: 'BULK_OFFSET_ADJUSTMENT' as const,
-                element_id: 'playback-delay-adjustment',
-                delay_ms: roundedDelayMs,
-                affected_element_ids: unplayedElements.map(el => el.element_id),
-                current_time_ms: currentTimeMs
-            };
-            applyLocalChange(adjustmentOperation);
+    // Playback adjustment hook - handles offset adjustments during pause/resume
+    const { handleOffsetAdjustment } = usePlaybackAdjustment({
+        scriptId,
+        allEditQueueElements,
+        applyLocalChange,
+        effectiveCurrentScript,
+        lastPauseDurationMs,
+        currentTime
+    });
 
-            // Note: timing boundaries will be refreshed by the useEffect that watches departmentFilteredElements
-        }
-    }, [scriptId, allEditQueueElements, applyLocalChange, effectiveCurrentScript, activePreferences.lookaheadSeconds, setElementBoundaries]);
-
-    // Simple: Watch for pause duration changes and apply offset adjustment
-    const lastProcessedPauseRef = useRef<number | undefined>(undefined);
-    useEffect(() => {
-        if (!lastPauseDurationMs || !effectiveCurrentScript || !currentTime) {
-            return;
-        }
-        
-        // Prevent processing the same pause duration multiple times
-        if (lastProcessedPauseRef.current === lastPauseDurationMs) {
-            return;
-        }
-        
-        lastProcessedPauseRef.current = lastPauseDurationMs;
-        handleOffsetAdjustment(lastPauseDurationMs, currentTime);
-    }, [lastPauseDurationMs, currentTime, effectiveCurrentScript]);
 
     // Crew data now comes from context
 
@@ -527,50 +455,26 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         navigation.handleCancel();
     }, [modalState, navigation, playbackState, stopPlayback]);
 
-    // Memoize modal handlers config to prevent re-renders
-    const modalHandlersConfig = useMemo(() => ({
-        scriptId,
-        script: sourceScript,
-        hasUnsavedChanges,
-        saveChanges,
-        discardChanges,
-        modalState,
-        modalNames: MODAL_NAMES,
-        activeMode,
-        hasInfoChanges: hasChanges,
-        captureInfoChanges,
-        onSaveSuccess: () => {
-            // Clear pending changes in info mode to prevent duplicate operations
-            clearPendingChanges();
-            setActiveMode('edit');
-        },
-        sendSyncUpdate: (message: any) => {
-            const result = sendSyncUpdate(message);
-            // Trigger websocket icon rotation for successful user transmission
-            triggerRotation();
-            return result;
-        },
-        connectSync,
-        pendingOperations: pendingOperations,
-        dangerMode: activePreferences.dangerMode
-    }), [
+    // Modal handlers configuration hook
+    const modalHandlersConfig = useScriptModalConfig({
         scriptId,
         sourceScript,
         hasUnsavedChanges,
         saveChanges,
         discardChanges,
         modalState,
+        modalNames: MODAL_NAMES,
         activeMode,
         hasChanges,
         captureInfoChanges,
         clearPendingChanges,
         setActiveMode,
         sendSyncUpdate,
-        connectSync,
         triggerRotation,
+        connectSync,
         pendingOperations,
-        activePreferences.dangerMode
-    ]);
+        dangerMode: activePreferences.dangerMode
+    });
 
     // Modal handlers hook
     const modalHandlers = useScriptModalHandlers(modalHandlersConfig);
@@ -638,6 +542,51 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     
     const handleSelectionChange = elementActions.setSelectedElementIds;
 
+    // Sharing operations hook
+    const { 
+        handleShareConfirm,
+        handleInitialHideConfirm,
+        handleFinalHideConfirm,
+        handleHideCancel
+    } = useScriptSharing({
+        scriptId,
+        getToken,
+        modalState,
+        modalNames: MODAL_NAMES,
+        setActiveMode,
+        setIsSharing,
+        setIsHiding,
+        setIsScriptShared,
+        setShareCount,
+        showSuccess,
+        showError
+    });
+
+    // Mode handlers hook - extracts complex mode switching logic
+    const { handleModeChange } = useScriptModeHandlers({
+        activeMode,
+        setActiveMode,
+        playbackState,
+        isPlaybackPlaying,
+        isPlaybackPaused,
+        isPlaybackSafety,
+        startPlayback,
+        pausePlayback,
+        stopPlayback,
+        modalState,
+        modalNames: MODAL_NAMES,
+        navigation,
+        activePreferences,
+        hasChanges,
+        handleInfoModeExit,
+        handleToggleAllGroups,
+        handleShareConfirm,
+        handleFinalHideConfirm,
+        modalHandlers,
+        elementActions,
+        editModeRef,
+        setCurrentSelectedElementIds
+    });
 
 
     const toolbarContext = useMemo((): ToolbarContext => ({
@@ -703,155 +652,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, modalState]);
 
-    // Main mode change handler
-    const handleModeChange = (modeId: string) => {
-        // Handle TOGGLE ALL GROUPS button
-        if (modeId === 'toggle-all-groups') {
-            handleToggleAllGroups();
-            return;
-        }
-
-        // Handle EXIT button
-        if (modeId === 'exit') {
-            if (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) {
-                modalState.openModal(MODAL_NAMES.EMERGENCY_EXIT);
-            } else {
-                navigation.handleCancel();
-            }
-            return;
-        }
-
-        // Handle SHARE button
-        if (modeId === 'share') {
-            if (activePreferences.dangerMode) {
-                handleShareConfirm();
-            } else {
-                modalState.openModal(MODAL_NAMES.SHARE_CONFIRMATION);
-            }
-            return;
-        }
-
-        // Handle HIDE button
-        if (modeId === 'hide') {
-            if (activePreferences.dangerMode) {
-                handleFinalHideConfirm();
-            } else {
-                modalState.openModal(MODAL_NAMES.HIDE_SCRIPT);
-            }
-            return;
-        }
-
-        // Handle separators (do nothing)
-        if (modeId === 'separator' || modeId === 'nav-separator') {
-            return;
-        }
-
-        // Handle view state buttons
-        if (modeId === 'view' || modeId === 'info' || modeId === 'edit' || modeId === 'history') {
-            // Check if we're leaving Info mode with unsaved changes
-            if (activeMode === 'info' && modeId !== 'info' && hasChanges) {
-                handleInfoModeExit(modeId as ScriptMode);
-                return;
-            }
-
-            setActiveMode(modeId as ScriptMode);
-            return;
-        }
-
-        // Handle navigation buttons
-        if (modeId === 'jump-top') {
-            handleJump('top');
-            return;
-        }
-        if (modeId === 'jump-bottom') {
-            handleJump('bottom');
-            return;
-        }
-
-        // Handle VIEW mode tools
-        if (activeMode === 'view') {
-            switch (modeId) {
-                case 'play':
-                    if (playbackState === 'STOPPED') {
-                        startPlayback();
-                    } else if (playbackState === 'PLAYING') {
-                        pausePlayback();
-                    } else if (playbackState === 'PAUSED') {
-                        startPlayback();
-                    } else if (playbackState === 'SAFETY') {
-                        startPlayback();
-                    } else if (playbackState === 'COMPLETE') {
-                        stopPlayback();
-                    }
-                    return;
-                case 'share':
-                    setActiveMode('share' as ScriptMode);
-                    return;
-            }
-        }
-
-        // Handle HISTORY mode tools
-        if (activeMode === 'history') {
-            switch (modeId) {
-                case 'clear-history':
-                    modalHandlers.handleClearHistory();
-                    return;
-            }
-        }
-
-        // Handle EDIT mode tools
-        if (activeMode === 'edit') {
-            switch (modeId) {
-                case 'add-element':
-                    // Clear any selected elements before opening add modal
-                    editModeRef.current?.clearSelection();
-                    setCurrentSelectedElementIds([]);
-                    modalState.openModal(MODAL_NAMES.ADD_ELEMENT);
-                    return;
-                case 'edit-element':
-                    elementActions.handleElementEdit();
-                    return;
-                case 'duplicate-element':
-                    elementActions.handleElementDuplicate();
-                    return;
-                case 'group-elements':
-                    elementActions.handleElementGroup();
-                    return;
-                case 'ungroup-elements':
-                    elementActions.handleElementUngroup();
-                    return;
-                case 'delete-element':
-                    elementActions.handleElementDelete();
-                    return;
-            }
-        }
-    };
-
-    const handleJump = (direction: 'top' | 'bottom') => {
-        let scrollContainer: HTMLElement | null = null;
-
-        if (activeMode === 'edit' || activeMode === 'view') {
-            const hideScrollbarContainers = document.querySelectorAll('.hide-scrollbar');
-            let maxScrollHeight = 0;
-            for (const container of hideScrollbarContainers) {
-                if (container instanceof HTMLElement && container.scrollHeight > container.clientHeight) {
-                    if (container.scrollHeight > maxScrollHeight) {
-                        maxScrollHeight = container.scrollHeight;
-                        scrollContainer = container;
-                    }
-                }
-            }
-        } else {
-            const mainContainer = document.querySelector('.edit-form-container');
-            if (mainContainer instanceof HTMLElement) {
-                scrollContainer = mainContainer;
-            }
-        }
-
-        if (scrollContainer) {
-            scrollContainer.scrollTop = direction === 'top' ? 0 : scrollContainer.scrollHeight;
-        }
-    };
 
     // Auto-sort functionality
 
@@ -984,84 +784,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     }, [scriptId, effectiveCurrentScript, getToken]);
 
     // Sharing handlers
-    const handleShareConfirm = async () => {
-        if (!scriptId) return;
-
-        setIsSharing(true);
-        try {
-            const token = await getToken();
-            if (!token) throw new Error('Authentication required');
-
-            // Update script to set is_shared = true
-            const response = await fetch(`/api/scripts/${scriptId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ is_shared: true }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update script sharing status');
-            }
-            modalState.closeModal(MODAL_NAMES.SHARE_CONFIRMATION);
-            setIsScriptShared(true);
-            setActiveMode('edit' as ScriptMode); // Return to edit mode
-            showSuccess('Script Shared', 'Script has been shared with all crew members');
-        } catch (error) {
-            showError('Failed to enable script sharing', {
-                description: error instanceof Error ? error.message : 'Unknown error'
-            });
-        } finally {
-            setIsSharing(false);
-        }
-    };
-
-    const handleInitialHideConfirm = useCallback(() => {
-        modalState.closeModal(MODAL_NAMES.HIDE_SCRIPT);
-        modalState.openModal(MODAL_NAMES.FINAL_HIDE_SCRIPT);
-    }, [modalState]);
-
-    const handleFinalHideConfirm = useCallback(async () => {
-        if (!scriptId) return;
-
-        setIsHiding(true);
-        try {
-            const token = await getToken();
-            if (!token) throw new Error('Authentication required');
-
-            // Update script to set is_shared = false
-            const response = await fetch(`/api/scripts/${scriptId}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ is_shared: false }),
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update script sharing status');
-            }
-            modalState.closeModal(MODAL_NAMES.FINAL_HIDE_SCRIPT);
-            setIsScriptShared(false);
-            setShareCount(0);
-            setActiveMode('edit' as ScriptMode); // Return to edit mode
-            showSuccess('Script Hidden', 'Script has been hidden from all crew members');
-        } catch (error) {
-            showError('Failed to disable script sharing', {
-                description: error instanceof Error ? error.message : 'Unknown error'
-            });
-        } finally {
-            setIsHiding(false);
-        }
-    }, [scriptId, getToken, modalState, setActiveMode, showSuccess, showError]);
-
-    const handleHideCancel = useCallback(() => {
-        modalState.closeModal(MODAL_NAMES.HIDE_SCRIPT);
-        modalState.closeModal(MODAL_NAMES.FINAL_HIDE_SCRIPT);
-    }, [modalState]);
 
     // Export handler
     const handleExportScript = async () => {
