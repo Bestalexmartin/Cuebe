@@ -59,6 +59,7 @@ class UserPreferences(BaseModel):
     danger_mode: bool = False
     # JSON preferences
     auto_save_interval: int = 0  # 0 = off, 10-300 seconds (configurable range)
+    lookahead_seconds: int = 30  # 5-60 seconds lookahead for element highlighting
 
 class CrewMemberWithRelationship(BaseModel):
     """User data combined with relationship notes for crew management"""

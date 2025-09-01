@@ -21,6 +21,7 @@ export interface ToolbarContext {
     isPlaying?: boolean;
     isPaused?: boolean;
     isSafety?: boolean;
+    isComplete?: boolean;
 }
 
 /**
@@ -50,8 +51,8 @@ export const getNavigationButtons = (scrollState: ScrollState): ToolButton[] => 
 /**
  * View state buttons configuration
  */
-export const getViewStateButtons = (activeMode: string, pendingOperationsCount: number, isPlaying: boolean = false, isPaused: boolean = false, isSafety: boolean = false): ToolButton[] => {
-    const isPlaybackActive = isPlaying || isPaused || isSafety;
+export const getViewStateButtons = (activeMode: string, pendingOperationsCount: number, isPlaying: boolean = false, isPaused: boolean = false, isSafety: boolean = false, isComplete: boolean = false): ToolButton[] => {
+    const isPlaybackActive = isPlaying || isPaused || isSafety || isComplete;
     return [
         {
             id: 'view',
@@ -91,8 +92,8 @@ export const getViewStateButtons = (activeMode: string, pendingOperationsCount: 
 /**
  * Action buttons for different modes
  */
-export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean, isScriptShared: boolean = false, groupsOpenToggle: boolean = true, isPlaying: boolean = false, isPaused: boolean = false, isSafety: boolean = false): ToolButton[] => {
-    const isPlaybackActive = isPlaying || isPaused || isSafety;
+export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean, isScriptShared: boolean = false, groupsOpenToggle: boolean = true, isPlaying: boolean = false, isPaused: boolean = false, isSafety: boolean = false, isComplete: boolean = false): ToolButton[] => {
+    const isPlaybackActive = isPlaying || isPaused || isSafety || isComplete;
     const buttons: ToolButton[] = [];
 
     // Exit button - available in all modes (replaces dashboard)
@@ -108,6 +109,7 @@ export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean,
     // Mode-specific actions
     if (activeMode === 'view') {
         const getPlayIcon = () => {
+            if (isComplete) return 'stop'; // Use stop icon for complete state
             if (isSafety || (!isPlaying && !isPaused)) return 'play';
             return isPaused ? 'pause-light' : 'pause-fill';
         };
@@ -115,10 +117,11 @@ export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean,
         buttons.push({
             id: 'play',
             icon: getPlayIcon(),
-            label: isSafety ? 'PLAY' : (isPlaybackActive ? 'PAUSE' : 'PLAY'),
-            description: isSafety ? 'Resume Performance' : (isPlaybackActive ? 'Pause Performance' : 'Performance Mode'),
+            label: isComplete ? 'STOP' : (isSafety ? 'PLAY' : (isPlaybackActive ? 'PAUSE' : 'PLAY')),
+            description: isComplete ? 'End Performance and Return to Stopped State' : (isSafety ? 'Resume Performance' : (isPlaybackActive ? 'Pause Performance' : 'Performance Mode')),
             isActive: isPlaybackActive && !isSafety,
-            isDisabled: false
+            isDisabled: false,
+            isFlashing: isComplete // Add flashing state for complete mode
         });
 
         // Add OPEN/CLOSE all groups toggle button
@@ -223,7 +226,7 @@ export const getElementManagementButtons = (hasSelection: boolean, hasMultipleSe
  * Generates all toolbar buttons based on current context
  */
 export const getToolbarButtons = (context: ToolbarContext): ToolButton[] => {
-    const { activeMode, scrollState, hasSelection, hasMultipleSelection, hasUnsavedChanges, pendingOperationsCount, selectedElement, isScriptShared, groupsOpenToggle, isPlaying, isPaused, isSafety } = context;
+    const { activeMode, scrollState, hasSelection, hasMultipleSelection, hasUnsavedChanges, pendingOperationsCount, selectedElement, isScriptShared, groupsOpenToggle, isPlaying, isPaused, isSafety, isComplete } = context;
     
     const buttons: ToolButton[] = [];
     
@@ -231,10 +234,10 @@ export const getToolbarButtons = (context: ToolbarContext): ToolButton[] => {
     buttons.push(...getNavigationButtons(scrollState));
     
     // View state buttons
-    buttons.push(...getViewStateButtons(activeMode, pendingOperationsCount, isPlaying || false, isPaused || false, isSafety || false));
+    buttons.push(...getViewStateButtons(activeMode, pendingOperationsCount, isPlaying || false, isPaused || false, isSafety || false, isComplete || false));
     
     // Action buttons
-    buttons.push(...getActionButtons(activeMode, hasUnsavedChanges, isScriptShared || false, groupsOpenToggle ?? true, isPlaying || false, isPaused || false, isSafety || false));
+    buttons.push(...getActionButtons(activeMode, hasUnsavedChanges, isScriptShared || false, groupsOpenToggle ?? true, isPlaying || false, isPaused || false, isSafety || false, isComplete || false));
     
     // Element management buttons (only in edit mode)
     if (activeMode === 'edit') {

@@ -12,7 +12,8 @@ const FIELD_MAPPING = {
     showClockTimes: 'show_clock_times',
     useMilitaryTime: 'use_military_time',
     dangerMode: 'danger_mode',
-    autoSaveInterval: 'auto_save_interval'
+    autoSaveInterval: 'auto_save_interval',
+    lookaheadSeconds: 'lookahead_seconds'
 } as const;
 
 const REVERSE_FIELD_MAPPING = {
@@ -22,7 +23,8 @@ const REVERSE_FIELD_MAPPING = {
     show_clock_times: 'showClockTimes',
     use_military_time: 'useMilitaryTime',
     danger_mode: 'dangerMode',
-    auto_save_interval: 'autoSaveInterval'
+    auto_save_interval: 'autoSaveInterval',
+    lookahead_seconds: 'lookaheadSeconds'
 } as const;
 
 // Helper functions to convert between frontend and backend field names
@@ -56,6 +58,7 @@ export interface UserPreferences {
     useMilitaryTime: boolean;
     dangerMode: boolean;
     autoSaveInterval: number; // 0 = off, 10-300 seconds (configurable range)
+    lookaheadSeconds: number; // 5-60 seconds lookahead for element highlighting
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -65,7 +68,8 @@ const DEFAULT_PREFERENCES: UserPreferences = {
     showClockTimes: false,
     useMilitaryTime: false,
     dangerMode: false,
-    autoSaveInterval: 0 // Off by default
+    autoSaveInterval: 0, // Off by default
+    lookaheadSeconds: 30 // 30 second lookahead by default
 };
 
 const STORAGE_KEY = 'userPreferences';
@@ -92,7 +96,9 @@ const loadPreferencesFromStorage = (): UserPreferences | null => {
                 typeof parsed.useMilitaryTime === 'boolean' &&
                 typeof parsed.dangerMode === 'boolean' &&
                 typeof parsed.autoSaveInterval === 'number' &&
-                (parsed.autoSaveInterval === 0 || (parsed.autoSaveInterval >= 10 && parsed.autoSaveInterval <= 300))
+                (parsed.autoSaveInterval === 0 || (parsed.autoSaveInterval >= 10 && parsed.autoSaveInterval <= 300)) &&
+                typeof parsed.lookaheadSeconds === 'number' &&
+                (parsed.lookaheadSeconds >= 5 && parsed.lookaheadSeconds <= 60)
             ) {
                 return parsed;
             }
@@ -213,6 +219,7 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
         key: K,
         value: UserPreferences[K]
     ): Promise<boolean> => {
+        console.log('🚀 updatePreference called with key:', key, 'value:', value);
         // Store the current state before making changes for potential rollback
         const previousPreferences = { ...preferences };
         
@@ -222,6 +229,7 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
         savePreferencesToStorage(updatedPreferences);
         
         setIsSaving(true);
+        console.log('🚀 About to make PATCH request to /api/users/preferences');
         
         try {
             const token = await getToken();

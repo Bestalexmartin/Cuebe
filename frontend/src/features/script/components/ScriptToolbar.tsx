@@ -59,6 +59,7 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
         const isPlayButton = tool.id === 'play';
         const isPauseFlashing = isPlayButton && playbackState === 'PAUSED';
         const isSafetyFlashing = isPlayButton && playbackState === 'SAFETY';
+        const isCompleteFlashing = isPlayButton && playbackState === 'COMPLETE';
         
         return (
             <Button
@@ -68,9 +69,9 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
                 minWidth="50px"
                 p={1}
                 bg={tool.isActive && !tool.isDisabled && !isPlayButton ? "blue.400" : tool.isDisabled ? "button.disabled.bg" : "card.background"}
-                color={tool.isActive && !tool.isDisabled ? (isPlayButton ? "red.500" : "white") : (isSafetyFlashing ? "red.500" : (tool.isDisabled ? "button.disabled.text" : "button.text"))}
+                color={tool.isActive && !tool.isDisabled ? (isPlayButton ? "red.500" : "white") : (isSafetyFlashing || isCompleteFlashing ? "red.500" : (tool.isDisabled ? "button.disabled.text" : "button.text"))}
                 border="1px solid"
-                borderColor={tool.isActive && !tool.isDisabled ? (isPlayButton ? "red.500" : "blue.400") : (isSafetyFlashing ? "red.500" : "container.border")}
+                borderColor={tool.isActive && !tool.isDisabled ? (isPlayButton ? "red.500" : "blue.400") : (isSafetyFlashing || isCompleteFlashing ? "red.500" : "container.border")}
                 borderRadius="md"
             _hover={tool.isDisabled ? {} : isPlayButton ? {
                 bg: "red.700",
@@ -93,8 +94,8 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
             opacity={tool.isDisabled ? 0.4 : 1}
             flexDirection="column"
             gap={1}
-            animation={(isPauseFlashing || isSafetyFlashing) ? "flash 1s infinite" : undefined}
-            sx={(isPauseFlashing || isSafetyFlashing) ? {
+            animation={(isPauseFlashing || isSafetyFlashing || isCompleteFlashing) ? "flash 1s infinite" : undefined}
+            sx={(isPauseFlashing || isSafetyFlashing || isCompleteFlashing) ? {
                 "@keyframes flash": {
                     "0%, 100%": { opacity: 1 },
                     "50%": { opacity: 0.3 }
@@ -105,7 +106,7 @@ export const ScriptToolbar: React.FC<ScriptToolbarProps> = ({
                 name={tool.icon}
                 boxSize="16px"
                 transform={tool.id === 'hide' ? 'scaleX(-1)' : undefined}
-                color={(tool.isActive && !tool.isDisabled && isPlayButton) || isSafetyFlashing ? "red.500" : undefined}
+                color={(tool.isActive && !tool.isDisabled && isPlayButton) || isSafetyFlashing || isCompleteFlashing ? "red.500" : undefined}
                 sx={isPlayButton && !tool.isDisabled ? {
                     "button:hover &": {
                         color: tool.isActive ? "button.text !important" : "white !important"

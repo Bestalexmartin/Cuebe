@@ -12,6 +12,7 @@ import {
     Input,
     Box
 } from '@chakra-ui/react';
+import { useEnhancedToast } from '../../../../utils/toastUtils';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { UserPreferences } from '../../../../hooks/useUserPreferences';
 
@@ -27,6 +28,7 @@ interface OptionsModalProps {
     onMilitaryTimeChange?: (value: boolean) => Promise<void>;
     onDangerModeChange?: (value: boolean) => Promise<void>;
     onAutoSaveIntervalChange?: (value: number) => Promise<void>;
+    onLookaheadSecondsChange?: (value: number) => Promise<void>;
     activeMode?: string; // Current script mode
 }
 
@@ -41,17 +43,28 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
     onMilitaryTimeChange,
     onDangerModeChange,
     onAutoSaveIntervalChange,
+    onLookaheadSecondsChange,
     activeMode
 }) => {
     const [localPreferences, setLocalPreferences] = useState<UserPreferences>(initialOptions);
+    const [lookaheadInputValue, setLookaheadInputValue] = useState<string>('');
+    const [autoSaveInputValue, setAutoSaveInputValue] = useState<string>('');
+    const { showError } = useEnhancedToast();
 
     // Update local state when modal opens or when initialOptions change
     useEffect(() => {
         if (isOpen) {
             // Force update with fresh initialOptions every time modal opens or options change
-            setLocalPreferences({...initialOptions});
+            // Ensure lookaheadSeconds has a default value if missing
+            const preferencesWithDefaults = {
+                ...initialOptions,
+                lookaheadSeconds: initialOptions.lookaheadSeconds ?? 30
+            };
+            setLocalPreferences(preferencesWithDefaults);
+            setLookaheadInputValue(String(preferencesWithDefaults.lookaheadSeconds));
+            setAutoSaveInputValue(String(preferencesWithDefaults.autoSaveInterval));
         }
-    }, [isOpen, initialOptions, initialOptions.autoSortCues]); // Depend on isOpen, initialOptions, and specific autoSortCues value
+    }, [isOpen]); // Only depend on isOpen to avoid resetting local state during user input
 
 
     const handleClockTimesChange = async (checked: boolean) => {
@@ -107,6 +120,21 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
         // Trigger immediate update if callback is provided
         if (onAutoSaveIntervalChange) {
             await onAutoSaveIntervalChange(interval);
+        }
+    };
+
+    const handleLookaheadSecondsChange = async (value: string) => {
+        console.log('🔥 handleLookaheadSecondsChange called with:', value);
+        const seconds = parseInt(value);
+        const newPreferences = { ...localPreferences, lookaheadSeconds: seconds };
+        setLocalPreferences(newPreferences);
+        onPreview?.(newPreferences);
+        
+        // Trigger immediate update if callback is provided
+        if (onLookaheadSecondsChange) {
+            console.log('🔥 About to call onLookaheadSecondsChange with:', seconds);
+            await onLookaheadSecondsChange(seconds);
+            console.log('🔥 onLookaheadSecondsChange completed');
         }
     };
 
@@ -199,6 +227,61 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                     <Divider />
                 </Box>
                 
+                <Text fontSize="md" fontWeight="bold" color="blue.500" mt={1} ml="-40px">
+                    Playback Options
+                </Text>
+
+                <FormControl>
+                    <HStack align="start" spacing={5} mb={1}>
+                        <VStack align="start" spacing={0} flex={1}>
+                            <HStack spacing={2} align="center" width="100%">
+                                <FormLabel mb={0} fontSize="md">
+                                    Playback Lookahead
+                                </FormLabel>
+                                <HStack spacing={2}>
+                                    <Input
+                                        type="number"
+                                        value={lookaheadInputValue}
+                                        onChange={(e) => {
+                                            setLookaheadInputValue(e.target.value);
+                                        }}
+                                        onBlur={(e) => {
+                                            const value = e.target.value;
+                                            const numValue = parseInt(value);
+                                            
+                                            // Validate on blur and reset if invalid
+                                            if (isNaN(numValue) || numValue < 5 || numValue > 60) {
+                                                showError('Playback Lookahead must be between 5 and 60 seconds');
+                                                setLookaheadInputValue('30');
+                                                const newPreferences = { ...localPreferences, lookaheadSeconds: 30 };
+                                                setLocalPreferences(newPreferences);
+                                                onPreview?.(newPreferences);
+                                            } else {
+                                                const newPreferences = { ...localPreferences, lookaheadSeconds: numValue };
+                                                setLocalPreferences(newPreferences);
+                                                onPreview?.(newPreferences);
+                                            }
+                                        }}
+                                        min={5}
+                                        max={60}
+                                        size="xs"
+                                        width="60px"
+                                        textAlign="center"
+                                    />
+                                    <Text fontSize="xs" color="gray.600">seconds</Text>
+                                </HStack>
+                            </HStack>
+                            <Text fontSize="xs" color="gray.500" lineHeight="1.3" whiteSpace="normal" maxWidth="300px">
+                                How many seconds ahead to highlight upcoming cues during playback
+                            </Text>
+                        </VStack>
+                    </HStack>
+                </FormControl>
+
+                <Box mx="-40px" mt={3}>
+                    <Divider />
+                </Box>
+                
                 <Text fontSize="md" fontWeight="bold" color="red.500" mt={1} ml="-40px">
                     Advanced Options
                 </Text>
@@ -253,28 +336,34 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                                     <HStack spacing={2}>
                                         <Input
                                             type="number"
-                                            value={localPreferences.autoSaveInterval}
+                                            value={autoSaveInputValue}
                                             onChange={(e) => {
+                                                setAutoSaveInputValue(e.target.value);
+                                            }}
+                                            onBlur={(e) => {
                                                 const value = e.target.value;
-                                                // Allow empty string for editing
+                                                const numValue = parseInt(value);
+                                                
+                                                // Validate on blur and reset if invalid
                                                 if (value === '' || value === '0') {
+                                                    setAutoSaveInputValue('0');
                                                     const newPreferences = { ...localPreferences, autoSaveInterval: 0 };
                                                     setLocalPreferences(newPreferences);
                                                     onPreview?.(newPreferences);
+                                                } else if (isNaN(numValue) || numValue < 30 || numValue > 90) {
+                                                    showError('Auto-Save interval must be between 30 and 90 seconds');
+                                                    setAutoSaveInputValue('60');
+                                                    const newPreferences = { ...localPreferences, autoSaveInterval: 60 };
+                                                    setLocalPreferences(newPreferences);
+                                                    onPreview?.(newPreferences);
                                                 } else {
-                                                    const numValue = parseInt(value);
-                                                    if (!isNaN(numValue) && numValue >= 10 && numValue <= 300) {
-                                                        handleAutoSaveIntervalChange(value);
-                                                    } else if (!isNaN(numValue)) {
-                                                        // Allow the input to show invalid values while typing, but don't save them
-                                                        const newPreferences = { ...localPreferences, autoSaveInterval: numValue };
-                                                        setLocalPreferences(newPreferences);
-                                                        onPreview?.(newPreferences);
-                                                    }
+                                                    const newPreferences = { ...localPreferences, autoSaveInterval: numValue };
+                                                    setLocalPreferences(newPreferences);
+                                                    onPreview?.(newPreferences);
                                                 }
                                             }}
-                                            min={10}
-                                            max={300}
+                                            min={30}
+                                            max={90}
                                             size="xs"
                                             width="60px"
                                             textAlign="center"

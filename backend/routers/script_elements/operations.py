@@ -205,15 +205,41 @@ def _apply_update_element_in_memory(elements_by_id: dict, operation_data: dict, 
     
     # Apply all field changes
     updated_fields = []
+    offset_changed = False
     for field, change in changes.items():
         old_value = getattr(element, field, None)
         new_value = change.get("new_value")
         setattr(element, field, new_value)
         updated_fields.append(field)
+        
+        if field == "offset_ms":
+            offset_changed = True
     
     # Update metadata
     element.updated_by = user.user_id
     element.date_updated = datetime.now(timezone.utc)
+    
+    # If offset_ms was changed and this element has a parent group, recalculate group duration
+    if offset_changed and element.parent_element_id:
+        parent_group = elements_by_id.get(str(element.parent_element_id))
+        if parent_group and parent_group.element_type == models.ElementType.GROUP:
+            # Find all children of this group
+            child_elements = [
+                el for el in elements_by_id.values() 
+                if el.parent_element_id == element.parent_element_id
+            ]
+            
+            if child_elements:
+                # Calculate new group duration from child time offsets
+                child_offsets = [el.offset_ms for el in child_elements]
+                min_offset = min(child_offsets)
+                max_offset = max(child_offsets)
+                group_duration_ms = max_offset - min_offset
+                
+                # Update parent group duration
+                parent_group.duration_ms = group_duration_ms
+                parent_group.updated_by = user.user_id
+                parent_group.date_updated = datetime.now(timezone.utc)
     
     return {
         "operation": "update_element",
@@ -477,6 +503,28 @@ def _apply_update_time_offset_in_memory(elements_by_id: dict, operation_data: di
     element.updated_by = user.user_id
     element.date_updated = datetime.now(timezone.utc)
     
+    # If this element has a parent group, recalculate the group's duration
+    if element.parent_element_id:
+        parent_group = elements_by_id.get(str(element.parent_element_id))
+        if parent_group and parent_group.element_type == models.ElementType.GROUP:
+            # Find all children of this group
+            child_elements = [
+                el for el in elements_by_id.values() 
+                if el.parent_element_id == element.parent_element_id
+            ]
+            
+            if child_elements:
+                # Calculate new group duration from child time offsets
+                child_offsets = [el.offset_ms for el in child_elements]
+                min_offset = min(child_offsets)
+                max_offset = max(child_offsets)
+                group_duration_ms = max_offset - min_offset
+                
+                # Update parent group duration
+                parent_group.duration_ms = group_duration_ms
+                parent_group.updated_by = user.user_id
+                parent_group.date_updated = datetime.now(timezone.utc)
+    
     return {
         "operation": "update_time_offset",
         "element_id": element_id,
@@ -601,9 +649,7 @@ def _apply_update_script_info_in_memory(script: models.Script, operation_data: d
     """Apply UPDATE_SCRIPT_INFO operation to in-memory script object."""
     from datetime import datetime, timezone
     
-    logger.info(f"🔄 UPDATE_SCRIPT_INFO: Starting in-memory operation for script {script.script_id}")
     changes = operation_data.get("changes", {})
-    logger.info(f"🔄 UPDATE_SCRIPT_INFO: Changes to apply: {changes}")
     
     # Apply changes with proper type conversion
     for field, change_data in changes.items():
@@ -611,12 +657,10 @@ def _apply_update_script_info_in_memory(script: models.Script, operation_data: d
         
         old_value = getattr(script, field, None)
         setattr(script, field, new_value)
-        logger.info(f"🔄 UPDATE_SCRIPT_INFO: Field '{field}' changed from {old_value} to {new_value}")
     
     script.updated_by = user.user_id
     script.date_updated = datetime.now(timezone.utc)
     
-    logger.info(f"🔄 UPDATE_SCRIPT_INFO: Changes applied to in-memory script object")
     
     return {
         "operation": "update_script_info",
@@ -633,7 +677,6 @@ def batch_update_from_edit_queue(
 ):
     """Process a batch of edit queue operations in-memory, then commit all changes atomically."""
     
-    logger.info(f"Processing batch update for script {script_id} with {len(batch_request.operations)} operations")
     
     # Process all operations together in unified in-memory system
     operations = batch_request.operations
@@ -666,7 +709,6 @@ def batch_update_from_edit_queue(
     try:
         # Process all operations in-memory, sequentially
         for operation_data in operations:
-            logger.info(f"Processing operation: {operation_data.get('type')} with data: {operation_data}")
             try:
                 # Apply temporary ID mapping before processing  
                 element_id = operation_data.get("element_id")
@@ -674,7 +716,6 @@ def batch_update_from_edit_queue(
                     # Direct mapping first
                     if element_id in temp_id_mapping:
                         operation_data["element_id"] = temp_id_mapping[element_id]
-                        logger.info(f"🔄 Mapped temp ID {element_id} → {temp_id_mapping[element_id]}")
                     # Timestamp-based fallback for inconsistent temp IDs
                     elif element_id.startswith("group-"):
                         import re
@@ -684,7 +725,6 @@ def batch_update_from_edit_queue(
                             timestamp_key = f"group-{timestamp}"
                             if timestamp_key in temp_id_mapping:
                                 operation_data["element_id"] = temp_id_mapping[timestamp_key]
-                                logger.info(f"🔄 Mapped via timestamp {element_id} → {temp_id_mapping[timestamp_key]}")
                             else:
                                 logger.warning(f"❌ No mapping found for temp ID {element_id} or timestamp {timestamp_key}")
                                 logger.warning(f"❌ Available mappings: {list(temp_id_mapping.keys())}")
@@ -758,15 +798,12 @@ def batch_update_from_edit_queue(
                 element.date_updated = datetime.now(timezone.utc)
         
         # Handle element deletions (e.g., from UNGROUP operations)
-        logger.info(f"Processing deletions: {len(deleted_element_ids)} elements to delete: {deleted_element_ids}")
         for element_id_to_delete in deleted_element_ids:
-            logger.info(f"Attempting to delete element: {element_id_to_delete} (type: {type(element_id_to_delete)})")
             # Find and delete the element from the database
             element_to_delete = db.query(models.ScriptElement).filter(
                 models.ScriptElement.element_id == element_id_to_delete
             ).first()
             if element_to_delete:
-                logger.info(f"Found element to delete: {element_to_delete.element_id}, deleting...")
                 db.delete(element_to_delete)
             else:
                 logger.warning(f"Element to delete not found in database: {element_id_to_delete}")
@@ -800,7 +837,6 @@ def batch_update_from_edit_queue(
         auto_sort_enabled = get_bit(user_preferences_bitmap, USER_PREFERENCE_BITS['auto_sort_cues'])
         
         if auto_sort_enabled:
-            logger.info("Auto-sort enabled - resequencing all elements by time before commit")
             
             # Get all elements sorted by time, then by original sequence for ties
             elements_list = list(elements_by_id.values())
@@ -810,7 +846,6 @@ def batch_update_from_edit_queue(
             for index, element in enumerate(elements_sorted_by_time):
                 new_sequence = index + 1
                 if element.sequence != new_sequence:
-                    logger.info(f"Auto-sort resequencing: {element.element_name} from seq {element.sequence} to {new_sequence}")
                     element.sequence = new_sequence
                     element.updated_by = user.user_id
                     element.date_updated = datetime.now(timezone.utc)
@@ -830,11 +865,8 @@ def batch_update_from_edit_queue(
             )
         
         # All operations succeeded - commit atomically
-        logger.info(f"All operations succeeded - committing transaction with {len(deleted_element_ids)} deletions")
         db.commit()
-        logger.info("✅ Transaction committed successfully")
         
-        logger.info(f"✅ Processed all {total_operations} operations for script {script_id}")
         
         return {
             "success": True,
