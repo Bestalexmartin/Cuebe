@@ -48,7 +48,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     lookaheadSeconds = 30
 }, ref) => {
     // Get play context for element highlighting
-    const { isPlaybackPlaying, playbackState, isPlaybackComplete, getElementHighlightState, getElementBorderState } = usePlayContext();
+    const { isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, playbackState, isPlaybackComplete, getElementHighlightState, getElementBorderState } = usePlayContext();
     
 
     // Check if auto-sort needs to be activated when component mounts
@@ -184,9 +184,10 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                             // Only show clock times if we have the required script start time
                             const shouldShowClockTimes = showClockTimes && !!script?.start_time;
                             
-                            // Get element highlight state from boundary system (only during playback and when enabled)
-                            const highlightState = (isPlaybackPlaying && isHighlightingEnabled) ? getElementHighlightState(element.element_id) : undefined;
-                            // Red border is always active during playback and complete state, regardless of highlighting setting
+                            // Get element highlight state from boundary system during PLAYING, PAUSED, or SAFETY when enabled
+                            const isActivePlayback = (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) && !isPlaybackComplete;
+                            const highlightState = (isActivePlayback && isHighlightingEnabled) ? getElementHighlightState(element.element_id) : undefined;
+                            // Red border is active during PLAYING and COMPLETE states
                             const borderState = (isPlaybackPlaying || isPlaybackComplete) ? getElementBorderState(element.element_id) : undefined;
                             
 
