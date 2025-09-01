@@ -58,6 +58,7 @@ interface ScriptModalsProps {
     useMilitaryTime: boolean;
     dangerMode: boolean;
     autoSaveInterval: number;
+    lookaheadSeconds: number;
     activeMode: string;
 
     // Event handlers
@@ -193,6 +194,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     useMilitaryTime,
     dangerMode,
     autoSaveInterval,
+    lookaheadSeconds,
     activeMode,
     scriptName,
     crewCount,
@@ -336,7 +338,8 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                     showClockTimes,
                     useMilitaryTime,
                     dangerMode,
-                    autoSaveInterval
+                    autoSaveInterval,
+                    lookaheadSeconds
                 }}
                 onPreview={onOptionsPreview}
                 onSave={onOptionsSave}

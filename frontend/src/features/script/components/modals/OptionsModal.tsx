@@ -124,7 +124,6 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
     };
 
     const handleLookaheadSecondsChange = async (value: string) => {
-        console.log('🔥 handleLookaheadSecondsChange called with:', value);
         const seconds = parseInt(value);
         const newPreferences = { ...localPreferences, lookaheadSeconds: seconds };
         setLocalPreferences(newPreferences);
@@ -132,9 +131,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
         
         // Trigger immediate update if callback is provided
         if (onLookaheadSecondsChange) {
-            console.log('🔥 About to call onLookaheadSecondsChange with:', seconds);
             await onLookaheadSecondsChange(seconds);
-            console.log('🔥 onLookaheadSecondsChange completed');
         }
     };
 
@@ -243,9 +240,17 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                                         type="number"
                                         value={lookaheadInputValue}
                                         onChange={(e) => {
-                                            setLookaheadInputValue(e.target.value);
+                                            const value = e.target.value;
+                                            setLookaheadInputValue(value);
+                                            // Keep localPreferences in sync so clicking "Update Options" without blurring still saves the latest value
+                                            const numValue = parseInt(value);
+                                            if (!isNaN(numValue)) {
+                                                const newPreferences = { ...localPreferences, lookaheadSeconds: numValue };
+                                                setLocalPreferences(newPreferences);
+                                                onPreview?.(newPreferences);
+                                            }
                                         }}
-                                        onBlur={(e) => {
+                                        onBlur={async (e) => {
                                             const value = e.target.value;
                                             const numValue = parseInt(value);
                                             
@@ -256,10 +261,17 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                                                 const newPreferences = { ...localPreferences, lookaheadSeconds: 30 };
                                                 setLocalPreferences(newPreferences);
                                                 onPreview?.(newPreferences);
+                                                if (onLookaheadSecondsChange) {
+                                                    await onLookaheadSecondsChange(30);
+                                                }
                                             } else {
                                                 const newPreferences = { ...localPreferences, lookaheadSeconds: numValue };
                                                 setLocalPreferences(newPreferences);
                                                 onPreview?.(newPreferences);
+                                                // Persist immediately
+                                                if (onLookaheadSecondsChange) {
+                                                    await onLookaheadSecondsChange(numValue);
+                                                }
                                             }
                                         }}
                                         min={5}

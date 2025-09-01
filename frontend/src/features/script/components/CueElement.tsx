@@ -247,25 +247,37 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
     }, [element.offset_ms, showClockTimes, scriptStartTime, effectiveUseMilitaryTime]);
 
     const durationDisplay = useMemo(() => {
-        // For SHOW START elements, always calculate from script times if available
-        if (element.element_name?.toUpperCase() === 'SHOW START' &&
-            scriptStartTime && scriptEndTime) {
-            const startTime = new Date(scriptStartTime);
-            const endTime = new Date(scriptEndTime);
-            const durationMs = endTime.getTime() - startTime.getTime();
-
-            if (durationMs > 0) {
-                return formatTimeOffset(durationMs, false); // Duration should not use military time
+        // For SHOW START note, compute actual show duration as:
+        // (offset + duration) of the final script element relative to show start
+        if (element.element_name?.toUpperCase() === 'SHOW START') {
+            if (allElements && allElements.length > 0) {
+                let maxEndMs = 0;
+                for (const el of allElements) {
+                    const start = el.offset_ms || 0;
+                    const end = start + (el.duration_ms || 0);
+                    if (end > maxEndMs) maxEndMs = end;
+                }
+                if (maxEndMs > 0) {
+                    return formatTimeOffset(maxEndMs, false);
+                }
+            }
+            // Fallback: use scripted end time if provided
+            if (scriptStartTime && scriptEndTime) {
+                const startTime = new Date(scriptStartTime);
+                const endTime = new Date(scriptEndTime);
+                const durationMs = endTime.getTime() - startTime.getTime();
+                if (durationMs > 0) {
+                    return formatTimeOffset(durationMs, false);
+                }
             }
         }
 
         if (element.duration_ms) {
-            return formatTimeOffset(element.duration_ms, false); // Duration should not use military time
+            return formatTimeOffset(element.duration_ms, false);
         }
 
-
         return '-';
-    }, [element.duration_ms, element.element_name, scriptStartTime, scriptEndTime, effectiveUseMilitaryTime]);
+    }, [element.duration_ms, element.element_name, allElements, scriptStartTime, scriptEndTime]);
 
     const dragStyle = {
         transform: CSS.Transform.toString(transform),
@@ -277,6 +289,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
 
     return (
         <Box
+            data-element-id={element.element_id}
             ref={isDragEnabled ? setNodeRef : undefined}
             style={isDragEnabled ? dragStyle : undefined}
             bg={backgroundColor}

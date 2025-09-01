@@ -42,7 +42,7 @@ class ScriptConnectionManager:
             **connection_info
         }
         
-        logger.info(f"WebSocket connected to script {script_id}. Total connections: {len(self.connections[script_id])}")
+        logger.debug(f"WebSocket connected to script {script_id}. Total connections: {len(self.connections[script_id])}")
     
     def disconnect(self, websocket: WebSocket):
         """Remove WebSocket connection from all rooms"""
@@ -58,7 +58,7 @@ class ScriptConnectionManager:
             # Remove metadata
             del self.connection_info[websocket]
             
-            logger.info(f"WebSocket disconnected from script {script_id}")
+            logger.debug(f"WebSocket disconnected from script {script_id}")
     
     async def broadcast_to_script(self, script_id: str, message_json: str, exclude_websocket: Optional[WebSocket] = None):
         """Broadcast message to all connections in a script room"""

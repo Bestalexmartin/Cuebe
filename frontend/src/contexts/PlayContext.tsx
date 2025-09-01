@@ -39,6 +39,7 @@ interface PlayContextValue {
     pauseStartTime: number | null;
     elementStates: Map<string, ElementHighlightState>;
     elementBorderStates: Map<string, ElementBorderState>;
+    timingBoundaries: TimingBoundary[];
     
     // Actions
     startPlayback: () => void;
@@ -82,23 +83,31 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
         timingBoundaries: []
     });
     
-    const [onOffsetAdjustment, setOnOffsetAdjustment] = useState<((delayMs: number, currentTimeMs: number) => void) | undefined>();
+    const [onOffsetAdjustment, _setOnOffsetAdjustment] = useState<((delayMs: number, currentTimeMs: number) => void) | undefined>();
+    const pendingAdjustmentRef = React.useRef<{ delayMs: number; currentTimeMs: number } | null>(null);
+
+    const setOnOffsetAdjustment = useCallback((cb: ((delayMs: number, currentTimeMs: number) => void) | undefined) => {
+        _setOnOffsetAdjustment(cb);
+        if (cb && pendingAdjustmentRef.current) {
+            const { delayMs, currentTimeMs } = pendingAdjustmentRef.current;
+            try { cb(delayMs, currentTimeMs); } finally { pendingAdjustmentRef.current = null; }
+        }
+    }, []);
 
     const startPlayback = useCallback(() => {
         const now = Date.now();
         setPlayState(prev => {
-            console.log('🔍 startPlayback - prev.playbackState:', prev.playbackState, 'pauseStartTime:', prev.pauseStartTime, 'onOffsetAdjustment defined:', !!onOffsetAdjustment);
-            // If resuming from pause/safety, calculate offset adjustments for THIS pause session
-            if ((prev.playbackState === 'PAUSED' || prev.playbackState === 'SAFETY') && prev.pauseStartTime && onOffsetAdjustment) {
+            // If resuming from a paused state (or if a pause session is active), always accumulate pause time
+            if (prev.pauseStartTime) {
                 const thisPauseDurationMs = now - prev.pauseStartTime;
                 const newCumulativeDelay = prev.cumulativeDelayMs + thisPauseDurationMs;
                 const currentPlaybackTime = prev.currentTime || 0;
-                
-                console.log('🕐 Pause duration:', thisPauseDurationMs, 'New cumulative:', newCumulativeDelay);
-                
-                // Trigger offset adjustment for THIS pause duration only
-                onOffsetAdjustment(thisPauseDurationMs, currentPlaybackTime);
-                
+                // Fire offset adjustment if available; otherwise queue it
+                if (onOffsetAdjustment) {
+                    onOffsetAdjustment(thisPauseDurationMs, currentPlaybackTime);
+                } else {
+                    pendingAdjustmentRef.current = { delayMs: thisPauseDurationMs, currentTimeMs: currentPlaybackTime };
+                }
                 return {
                     ...prev,
                     playbackState: 'PLAYING',
@@ -106,7 +115,7 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
                     cumulativeDelayMs: newCumulativeDelay
                 };
             }
-            
+
             // Starting fresh
             return {
                 ...prev,
@@ -174,7 +183,7 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
         const initialBorderStates = new Map<string, ElementBorderState>();
         
         const lookbehindMs = 5000; // Keep current highlight for 5s after element start
-        const redBorderMs = 5000; // Red border active for full lookback window
+        const redBorderMs = 5000; // Red border active for 5s after start
         
         // Find the latest element end time for script completion detection
         let scriptEndTime = 0;
@@ -212,7 +221,7 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
                 action: 'red_border'
             });
             
-            // Boundary: Red border disappears (1 second after start)
+            // Boundary: Red border disappears (5 seconds after start)
             boundaries.push({
                 time: start + redBorderMs,
                 elementId: element.element_id,
@@ -249,10 +258,8 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
 
     const processBoundariesForTime = useCallback((currentTimeMs: number) => {
         setPlayState(prev => {
-            console.log('🎯 processBoundariesForTime called - playbackState:', prev.playbackState, 'currentTimeMs:', currentTimeMs);
             // Skip processing if stopped - but allow processing during PAUSED, SAFETY, and COMPLETE
             if (prev.playbackState === 'STOPPED') {
-                console.log('🎯 Skipping - playback stopped');
                 return prev;
             }
             
@@ -409,6 +416,8 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
         cumulativeDelayMs: playState.cumulativeDelayMs,
         pauseStartTime: playState.pauseStartTime,
         elementStates: playState.elementStates,
+        elementBorderStates: playState.elementBorderStates,
+        timingBoundaries: playState.timingBoundaries,
         
         // Actions
         startPlayback,

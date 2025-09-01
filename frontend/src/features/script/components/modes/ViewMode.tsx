@@ -23,7 +23,7 @@ interface ViewModeProps {
     }) => void;
     onToggleGroupCollapse?: (elementId: string) => void;
     groupOverrides?: Record<string, boolean>; // UI-only group collapse overrides
-    onAutoSortActivation?: () => void; // Callback when auto-sort needs to be activated
+    onViewModeActivation?: () => void; // Callback to enforce View mode prerequisites
     isHighlightingEnabled?: boolean; // Whether element highlighting is enabled
     lookaheadSeconds?: number; // Lookahead window in seconds
 }
@@ -43,7 +43,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     script,
     onScrollStateChange,
     onToggleGroupCollapse,
-    onAutoSortActivation,
+    onViewModeActivation,
     isHighlightingEnabled = true,
     lookaheadSeconds = 30
 }, ref) => {
@@ -51,12 +51,13 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     const { isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, playbackState, isPlaybackComplete, getElementHighlightState, getElementBorderState } = usePlayContext();
     
 
-    // Check if auto-sort needs to be activated when component mounts
+    // Ensure View mode prerequisites (auto-sort, clock time display) are enforced on mount
     useEffect(() => {
-        if (!autoSortCues && onAutoSortActivation) {
-            onAutoSortActivation();
+        if (onViewModeActivation) {
+            onViewModeActivation();
         }
-    }, []); // Only run on mount
+        // Only run on mount; parent callback handles conditional logic
+    }, []);
     
     // Pure presentation component - no data fetching
     // All data provided by ManageScriptPage via coordinated fetch
@@ -119,6 +120,55 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
             container.removeEventListener('scroll', checkScrollState);
         };
     }, [elements]);
+
+    // Auto-scroll to keep current element in view
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container) return;
+
+        const isActivePlayback = (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) && !isPlaybackComplete;
+        if (!isActivePlayback) return;
+
+        // Find current element
+        let currentElementId: string | null = null;
+        for (const el of elements) {
+            const state = getElementHighlightState(el.element_id);
+            if (state === 'current') {
+                currentElementId = el.element_id;
+                break;
+            }
+        }
+        if (!currentElementId) return;
+
+        const node = container.querySelector(`[data-element-id="${currentElementId}"]`) as HTMLElement | null;
+        if (!node) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const nodeRect = node.getBoundingClientRect();
+
+        const containerHeight = container.clientHeight;
+        const nodeTopInContainer = nodeRect.top - containerRect.top + container.scrollTop;
+
+        // If current element's visible top is below 50% of container, scroll it
+        const currentVisibleTop = nodeRect.top - containerRect.top; // relative to viewport of container
+        if (currentVisibleTop > containerHeight * 0.5) {
+            const avgRowHeight = Math.max(1, nodeRect.height);
+            const desiredTop = Math.max(0, nodeTopInContainer - avgRowHeight * 3);
+
+            // Clamp so that the last element sits at the bottom if near end
+            const last = elements[elements.length - 1];
+            const lastNode = container.querySelector(`[data-element-id="${last.element_id}"]`) as HTMLElement | null;
+            let maxScrollTop = container.scrollHeight - container.clientHeight;
+            if (lastNode) {
+                const lastRect = lastNode.getBoundingClientRect();
+                const lastTopInContainer = lastRect.top - containerRect.top + container.scrollTop;
+                maxScrollTop = Math.max(0, lastTopInContainer + lastNode.offsetHeight - container.clientHeight);
+            }
+
+            const target = Math.min(desiredTop, maxScrollTop);
+            container.scrollTo({ top: target, behavior: 'smooth' });
+        }
+    }, [elements, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, getElementHighlightState]);
 
     return (
         <VStack height="100%" spacing={0} align="stretch">

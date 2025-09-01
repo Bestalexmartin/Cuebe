@@ -124,45 +124,105 @@ const PlaybackTimingProvider: React.FC<{
     processBoundariesForTime: (timeMs: number) => void;
 }> = React.memo(({ children, script, isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, processBoundariesForTime }) => {
     const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number | null>(null);
-    const timestamp = useClockTiming();
-    const lastBucketRef = useRef<number>(-1);
     const finalShowTimeRef = useRef<number | null>(null);
+    const timerRef = useRef<number | null>(null);
+    const nextIndexRef = useRef<number>(0);
+    const { timingBoundaries, setCurrentTime } = usePlayContext();
+
+    const computeShowTime = useCallback(() => {
+        if (!script?.start_time) return null;
+        return Date.now() - new Date(script.start_time).getTime();
+    }, [script?.start_time]);
+
+    const clearTimer = useCallback(() => {
+        if (timerRef.current !== null) {
+            window.clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+    }, []);
+
+    const findNextIndex = useCallback((t: number) => {
+        const arr = timingBoundaries || [];
+        let lo = 0, hi = arr.length;
+        while (lo < hi) {
+            const mid = (lo + hi) >>> 1;
+            if (arr[mid].time <= t) lo = mid + 1; else hi = mid;
+        }
+        return lo;
+    }, [timingBoundaries]);
+
+    const scheduleNext = useCallback(() => {
+        clearTimer();
+        const now = computeShowTime();
+        if (now === null) return;
+
+        setCurrentPlaybackTime(now);
+        setCurrentTime(now);
+        processBoundariesForTime(now);
+
+        const arr = timingBoundaries || [];
+        nextIndexRef.current = findNextIndex(now);
+        if (nextIndexRef.current >= arr.length) {
+            return;
+        }
+        const nextTime = arr[nextIndexRef.current].time;
+        const delay = Math.max(0, nextTime - now);
+        timerRef.current = window.setTimeout(() => {
+            const current = computeShowTime();
+            if (current === null) return;
+            setCurrentPlaybackTime(current);
+            setCurrentTime(current);
+            processBoundariesForTime(current);
+            nextIndexRef.current = findNextIndex(current);
+            if (isPlaybackPlaying && script?.start_time) {
+                scheduleNext();
+            }
+        }, delay);
+    }, [clearTimer, computeShowTime, findNextIndex, isPlaybackPlaying, processBoundariesForTime, timingBoundaries, script?.start_time]);
 
     useEffect(() => {
-        // Update during active playback, paused, safety, or complete state with script start time
-        if ((!isPlaybackPlaying && !isPlaybackComplete && !isPlaybackPaused && !isPlaybackSafety) || !script?.start_time) {
+        if (!script?.start_time) {
+            clearTimer();
             setCurrentPlaybackTime(null);
             return;
         }
 
         if (isPlaybackComplete) {
-            // In COMPLETE mode: use frozen final show time, don't update
+            clearTimer();
             if (finalShowTimeRef.current !== null) {
                 setCurrentPlaybackTime(finalShowTimeRef.current);
             }
-        } else if (isPlaybackPaused || isPlaybackSafety) {
-            // During pause/safety: maintain current time, continue processing boundaries
-            if (finalShowTimeRef.current !== null) {
-                setCurrentPlaybackTime(finalShowTimeRef.current);
-                processBoundariesForTime(finalShowTimeRef.current);
-            }
-        } else {
-            // During active playback: calculate and update show time
-            const scriptStart = new Date(script.start_time);
-            const showTimeMs = timestamp - scriptStart.getTime(); // Positive = T-plus, Negative = T-minus
-
-            // Store this as the final time for when we transition to COMPLETE
-            finalShowTimeRef.current = showTimeMs;
-
-            // Throttle boundary processing to ~5Hz buckets to reduce churn
-            const bucket = Math.floor(showTimeMs / 200);
-            if (bucket !== lastBucketRef.current) {
-                lastBucketRef.current = bucket;
-                setCurrentPlaybackTime(showTimeMs);
-                processBoundariesForTime(showTimeMs);
-            }
+            return;
         }
-    }, [timestamp, isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, script?.start_time, processBoundariesForTime]);
+
+        if (isPlaybackPaused || isPlaybackSafety) {
+            clearTimer();
+            const now = computeShowTime();
+            if (now !== null) {
+                finalShowTimeRef.current = now;
+                setCurrentPlaybackTime(now);
+                setCurrentTime(now);
+                processBoundariesForTime(now);
+            }
+            return;
+        }
+
+        if (isPlaybackPlaying) {
+            finalShowTimeRef.current = null;
+            scheduleNext();
+            return () => clearTimer();
+        }
+
+        clearTimer();
+        setCurrentPlaybackTime(null);
+    }, [isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, script?.start_time, scheduleNext, clearTimer, computeShowTime, processBoundariesForTime]);
+
+    useEffect(() => {
+        if (isPlaybackPlaying && script?.start_time) {
+            scheduleNext();
+            return () => clearTimer();
+        }
+    }, [timingBoundaries, isPlaybackPlaying, script?.start_time, scheduleNext, clearTimer]);
 
     return (
         <PlaybackTimingContext.Provider value={{ currentPlaybackTime, processBoundariesForTime }}>
@@ -272,15 +332,7 @@ const PlaybackStatus: React.FC<{ playbackState: string; cumulativeDelayMs?: numb
         return `+${minutes}:${seconds.toString().padStart(2, '0')}`;
     };
 
-    const getDisplayText = () => {
-        if (playbackState === 'COMPLETE') {
-            return cumulativeDelayMs > 0 
-                ? `COMPLETE • ${formatDelay(cumulativeDelayMs)}`
-                : 'COMPLETE';
-        }
-        return playbackState;
-    };
-
+    const isComplete = playbackState === 'COMPLETE';
     return (
         <Box 
             bg="transparent" 
@@ -301,49 +353,33 @@ const PlaybackStatus: React.FC<{ playbackState: string; cumulativeDelayMs?: numb
             } : {}}
             pr={playbackState === 'PLAYING' ? "14px" : "8px"}
         >
-            {getDisplayText()}
+            {isComplete ? 'COMPLETE' : playbackState}
         </Box>
     );
 };
 
 const DelayTimer: React.FC<{ 
     playbackState: string; 
-    onOffsetAdjustment: (delayMs: number, currentTimeMs: number) => void;
     cumulativeDelayMs?: number;
-}> = React.memo(({ playbackState, onOffsetAdjustment, cumulativeDelayMs = 0 }) => {
+}> = React.memo(({ playbackState, cumulativeDelayMs = 0 }) => {
     const liveTimestamp = useClockTiming();
-    const [currentSessionStart, setCurrentSessionStart] = useState<number | null>(null);
-    
+    const { pauseStartTime } = usePlayContext();
     // Don't update timestamp during COMPLETE state to prevent re-renders
     const timestamp = playbackState === 'COMPLETE' ? 0 : liveTimestamp;
-    const { currentTime: playContextTime } = usePlayContext();
-
-    useEffect(() => {
-        if (playbackState === 'PAUSED' || playbackState === 'SAFETY') {
-            if (!currentSessionStart) {
-                setCurrentSessionStart(Date.now());
-            }
-        } else if (playbackState === 'PLAYING' && currentSessionStart) {
-            // When transitioning from paused to playing, apply offset adjustments
-            const sessionDurationMs = Date.now() - currentSessionStart;
-            onOffsetAdjustment(sessionDurationMs, playContextTime || 0);
-            setCurrentSessionStart(null);
-        } else if (playbackState === 'STOPPED') {
-            setCurrentSessionStart(null);
-        }
-    }, [playbackState, currentSessionStart, playContextTime, onOffsetAdjustment]);
 
     if (playbackState !== 'PAUSED' && playbackState !== 'SAFETY' && playbackState !== 'COMPLETE') return null;
 
-    // Calculate delay seconds based on unified timestamp or show cumulative delay in COMPLETE mode
-    let displayTime;
+    // Calculate delay seconds for display
+    let displayTime: string;
     if (playbackState === 'COMPLETE') {
-        const totalCumulativeSeconds = Math.floor(cumulativeDelayMs / 1000);
+        if (!cumulativeDelayMs || cumulativeDelayMs <= 0) return null; // Hide entirely if zero
+        const totalCumulativeSeconds = Math.floor((cumulativeDelayMs || 0) / 1000);
         const minutes = Math.floor(totalCumulativeSeconds / 60);
         const seconds = totalCumulativeSeconds % 60;
         displayTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     } else {
-        const totalDelaySeconds = currentSessionStart ? Math.ceil((timestamp - currentSessionStart) / 1000) : 0;
+        const sessionMs = pauseStartTime ? (timestamp - pauseStartTime) : 0;
+        const totalDelaySeconds = Math.max(0, Math.ceil(sessionMs / 1000));
         const minutes = Math.floor(totalDelaySeconds / 60);
         const seconds = totalDelaySeconds % 60;
         displayTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
@@ -371,9 +407,11 @@ const DelayTimer: React.FC<{
             {playbackState === 'COMPLETE' ? (
                 <>
                     <Text as="span" fontSize="2xl" color="gray.500" fontFamily="mono" fontWeight="normal">•</Text>
-                    <Text as="span" color="red.500"> {displayTime}</Text>
+                    <Text as="span" color="red.500"> +{displayTime}</Text>
                 </>
-            ) : displayTime}
+            ) : (
+                displayTime
+            )}
         </Box>
     );
 }, (prevProps, nextProps) => {
@@ -661,12 +699,11 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     );
     
     // Play state from context
-    const { playbackState, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, startPlayback, pausePlayback, stopPlayback, safetyStop, completePlayback, setElementBoundaries, processBoundariesForTime, currentTime, clearAllElementStates, cumulativeDelayMs } = usePlayContext();
+    const { playbackState, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, startPlayback, pausePlayback, stopPlayback, safetyStop, completePlayback, setElementBoundaries, processBoundariesForTime, currentTime, clearAllElementStates, cumulativeDelayMs, setOnOffsetAdjustment } = usePlayContext();
 
     // Wipe edit history when entering COMPLETE state
     useEffect(() => {
         if (playbackState === 'COMPLETE') {
-            console.log('🧹 Clearing edit history on COMPLETE state');
             discardChanges();
         }
     }, [playbackState, discardChanges]);
@@ -982,6 +1019,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         }
     }, [isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete]);
 
+
     // Handle browser events during playback
     useEffect(() => {
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -1227,17 +1265,14 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     
     // Handle auto-sort and clock times activation when entering view mode
     const handleViewModeActivation = useCallback(async () => {
-        console.log('🕐 handleViewModeActivation called - showClockTimes:', activePreferences.showClockTimes);
         const needsAutoSort = !activePreferences.autoSortCues;
         const needsClockTimes = !activePreferences.showClockTimes;
         
-        console.log('🕐 needsClockTimes:', needsClockTimes);
         
         if (needsAutoSort) {
             await handleAutoSortToggle(true);
         }
         if (needsClockTimes) {
-            console.log('🕐 About to set showClockTimes to true');
             await updatePreference('showClockTimes', true);
         }
         
@@ -1250,9 +1285,13 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     }, [activePreferences.autoSortCues, activePreferences.showClockTimes, handleAutoSortToggle, updatePreference, modalState]);
 
     const handleOptionsModalSave = async (newPreferences: UserPreferences) => {
-        await updatePreferences(newPreferences);
+        const ok = await updatePreferences(newPreferences);
         setPreviewPreferences(null);
-        showSuccess('Preferences Updated', 'Your settings have been saved successfully.');
+        if (ok) {
+            showSuccess('Preferences Updated', 'Your settings have been saved successfully.');
+        } else {
+            showError('Failed to save preferences', { description: 'Your changes could not be saved. Please try again.' });
+        }
     };
 
     // Load initial sharing status
@@ -1369,7 +1408,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             await exportScriptAsCSV(scriptId, token);
             showSuccess('Export Complete', `Script "${sourceScript.script_name}" exported successfully`);
         } catch (error) {
-            console.error('Export failed:', error);
+            // Export failed
             showError('Export Failed', {
                 description: error instanceof Error ? error.message : 'Failed to export script'
             });
@@ -1437,7 +1476,9 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
     // Offset adjustment handler for playback delays - defined after filtered elements
     const handleOffsetAdjustment = useCallback((delayMs: number, currentTimeMs: number) => {
-        if (!scriptId || delayMs <= 0 || !currentScript) return;
+        if (!scriptId || delayMs <= 0 || !currentScript) {
+            return;
+        }
         
         // Round delay up to nearest second for synchronized timing
         const roundedDelayMs = Math.ceil(delayMs / 1000) * 1000;
@@ -1446,12 +1487,20 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         // Check if we're before the show has actually started
         const now = new Date();
         const scriptStartTime = new Date(currentScript.start_time);
+        // Guard against invalid script start time
+        if (isNaN(scriptStartTime.getTime())) {
+            return; // Cannot adjust start time if current value is invalid
+        }
         const isBeforeShowStart = now < scriptStartTime;
         
         
         if (isBeforeShowStart) {
             // Pre-show delay: adjust the actual script start_time
-            const newStartTime = new Date(scriptStartTime.getTime() + roundedDelayMs);
+            const newStartMs = scriptStartTime.getTime() + roundedDelayMs;
+            const newStartTime = new Date(newStartMs);
+            if (isNaN(newStartTime.getTime())) {
+                return; // Defensive: avoid writing invalid dates
+            }
             
             // Create script info update operation
             const scriptUpdateOperation = {
@@ -1465,12 +1514,16 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 }
             };
             
+            // Pre-show offset adjustment
             applyLocalChange(scriptUpdateOperation);
         } else {
-            // Mid-show delay: adjust individual element offsets
-            const unplayedElements = filteredEditQueueElements.filter(element => 
-                element.offset_ms >= currentTimeMs
-            );
+            // Mid-show delay: adjust individual element offsets for ALL elements after the current one
+            const sourceElements = allEditQueueElements || [];
+            const unplayedElements = sourceElements.filter(element => {
+                const offset = element.offset_ms || 0;
+                // Include elements that start exactly at the current boundary
+                return offset >= currentTimeMs;
+            });
             
             
             if (unplayedElements.length === 0) return;
@@ -1482,10 +1535,30 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 affected_element_ids: unplayedElements.map(el => el.element_id),
                 current_time_ms: currentTimeMs
             };
-            
+            // Mid-show offset adjustment
             applyLocalChange(adjustmentOperation);
+
+            // Proactively refresh timing boundaries shortly after elements update
+            setTimeout(() => {
+                const lookaheadMs = activePreferences.lookaheadSeconds * 1000;
+                setElementBoundaries(filteredEditQueueElements, lookaheadMs);
+            }, 0);
         }
-    }, [scriptId, filteredEditQueueElements, applyLocalChange, currentScript]);
+    }, [scriptId, allEditQueueElements, applyLocalChange, currentScript, activePreferences.lookaheadSeconds, setElementBoundaries, filteredEditQueueElements]);
+
+    // Register centralized offset adjustment handler with PlayContext
+    useEffect(() => {
+        if (!scriptId || !currentScript) {
+            return;
+        }
+        const safeHandler = (delayMs?: number, currentTimeMs?: number) => {
+            if (typeof delayMs === 'number' && typeof currentTimeMs === 'number') {
+                handleOffsetAdjustment(delayMs, currentTimeMs);
+            }
+        };
+        setOnOffsetAdjustment(safeHandler);
+        return () => setOnOffsetAdjustment(undefined);
+    }, [setOnOffsetAdjustment, handleOffsetAdjustment, scriptId, currentScript]);
 
     // Initialize department filter with all departments when elements first load (only if user hasn't set a filter)
     useEffect(() => {
@@ -1691,7 +1764,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
                                 {activeMode === 'view' && (
-                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} useMilitaryTime={activePreferences.useMilitaryTime} onScrollStateChange={handleScrollStateChange} elements={filteredEditQueueElements} allElements={filteredAllEditQueueElements} script={currentScript} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} onAutoSortActivation={handleViewModeActivation} isHighlightingEnabled={isHighlightingEnabled} lookaheadSeconds={activePreferences.lookaheadSeconds} />
+                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} useMilitaryTime={activePreferences.useMilitaryTime} onScrollStateChange={handleScrollStateChange} elements={filteredEditQueueElements} allElements={filteredAllEditQueueElements} script={currentScript} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} onViewModeActivation={handleViewModeActivation} isHighlightingEnabled={isHighlightingEnabled} lookaheadSeconds={activePreferences.lookaheadSeconds} />
                                 )}
                                 {activeMode === 'edit' && (
                                     <EditMode
@@ -1842,6 +1915,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 useMilitaryTime={activePreferences.useMilitaryTime}
                 dangerMode={activePreferences.dangerMode}
                 autoSaveInterval={activePreferences.autoSaveInterval}
+                lookaheadSeconds={activePreferences.lookaheadSeconds}
                 activeMode={activeMode}
                 onDeleteCancel={modalHandlers.handleDeleteCancel}
                 onInitialDeleteConfirm={modalHandlers.handleInitialDeleteConfirm}
@@ -2074,7 +2148,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                                 )}
                                 
                                 {/* Delay Timer - in PAUSED and SAFETY modes */}
-                                <DelayTimer playbackState={playbackState} onOffsetAdjustment={handleOffsetAdjustment} cumulativeDelayMs={cumulativeDelayMs} />
+                                <DelayTimer playbackState={playbackState} cumulativeDelayMs={cumulativeDelayMs} />
                                 </HStack>
                         </Box>
                     </Box>
