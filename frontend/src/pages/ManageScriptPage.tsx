@@ -37,7 +37,7 @@ import { ScriptToolbar } from '../features/script/components/ScriptToolbar';
 import { useAutoSave } from '../hooks/useAutoSave';
 import { ViewMode, ViewModeRef } from '../features/script/components/modes/ViewMode';
 import { EditMode, EditModeRef } from '../features/script/components/modes/EditMode';
-import { useScriptModes, ScriptMode } from '../features/script/hooks/useScriptModes';
+import { useScriptModes } from '../features/script/hooks/useScriptModes';
 import { useElementActions } from '../features/script/hooks/useElementActions';
 import { ScriptModals } from '../features/script/components/ScriptModals';
 import { FilterDepartmentsModal } from '../features/script/components/modals/FilterDepartmentsModal';
@@ -252,15 +252,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         (sourceScript as any)?.elements || [], 
         [sourceScript]
     );
-    
-    // Debug logging moved to top of component
-    
-    // Track if arrays are changing references
-    const elementsRef = useRef<any[]>([]);
-    if (elementsRef.current !== elementsToPass) {
-        elementsRef.current = elementsToPass;
-    }
-    
 
     // Always call hooks (React requirement), but conditionally process data
     const dataReady = sourceScript && !isLoadingScript;
@@ -362,7 +353,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     const effectiveCurrentScript = currentScript || contextCurrentScript;
 
     // Playback adjustment hook - handles offset adjustments during pause/resume
-    const { handleOffsetAdjustment } = usePlaybackAdjustment({
+    usePlaybackAdjustment({
         scriptId,
         allEditQueueElements,
         applyLocalChange,

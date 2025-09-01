@@ -123,17 +123,6 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
         }
     };
 
-    const handleLookaheadSecondsChange = async (value: string) => {
-        const seconds = parseInt(value);
-        const newPreferences = { ...localPreferences, lookaheadSeconds: seconds };
-        setLocalPreferences(newPreferences);
-        onPreview?.(newPreferences);
-        
-        // Trigger immediate update if callback is provided
-        if (onLookaheadSecondsChange) {
-            await onLookaheadSecondsChange(seconds);
-        }
-    };
 
     const handleClose = async () => {
         // Save preferences before closing

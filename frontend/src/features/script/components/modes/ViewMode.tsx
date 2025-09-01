@@ -45,10 +45,10 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     onToggleGroupCollapse,
     onViewModeActivation,
     isHighlightingEnabled = true,
-    lookaheadSeconds = 30
+    lookaheadSeconds: _lookaheadSeconds = 30
 }, ref) => {
     // Get play context for element highlighting
-    const { isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, playbackState, isPlaybackComplete, getElementHighlightState, getElementBorderState } = usePlayContext();
+    const { isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, getElementHighlightState, getElementBorderState } = usePlayContext();
     
 
     // Ensure View mode prerequisites (auto-sort, clock time display) are enforced on mount
