@@ -5,6 +5,7 @@ import { VStack, Text, Box, Flex } from '@chakra-ui/react';
 import { CueElement } from '../CueElement';
 import { ScriptElementsHeader } from '../ScriptElementsHeader';
 import { ScriptElement } from '../../types/scriptElements';
+import { usePlayContext } from '../../../../contexts/PlayContext';
 
 interface ViewModeProps {
     scriptId: string; // Required by parent but not used in pure presentation component
@@ -23,6 +24,8 @@ interface ViewModeProps {
     onToggleGroupCollapse?: (elementId: string) => void;
     groupOverrides?: Record<string, boolean>; // UI-only group collapse overrides
     onAutoSortActivation?: () => void; // Callback when auto-sort needs to be activated
+    isHighlightingEnabled?: boolean; // Whether element highlighting is enabled
+    lookaheadSeconds?: number; // Lookahead window in seconds
 }
 
 export interface ViewModeRef {
@@ -40,8 +43,13 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     script,
     onScrollStateChange,
     onToggleGroupCollapse,
-    onAutoSortActivation
+    onAutoSortActivation,
+    isHighlightingEnabled = true,
+    lookaheadSeconds = 30
 }, ref) => {
+    // Get play context for element highlighting
+    const { isPlaybackPlaying, playbackState, isPlaybackComplete, getElementHighlightState, getElementBorderState } = usePlayContext();
+    
 
     // Check if auto-sort needs to be activated when component mounts
     useEffect(() => {
@@ -175,6 +183,12 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                         {displayElements.map((element, index) => {
                             // Only show clock times if we have the required script start time
                             const shouldShowClockTimes = showClockTimes && !!script?.start_time;
+                            
+                            // Get element highlight state from boundary system (only during playback and when enabled)
+                            const highlightState = (isPlaybackPlaying && isHighlightingEnabled) ? getElementHighlightState(element.element_id) : undefined;
+                            // Red border is always active during playback and complete state, regardless of highlighting setting
+                            const borderState = (isPlaybackPlaying || isPlaybackComplete) ? getElementBorderState(element.element_id) : undefined;
+                            
 
                             return (
                                 <CueElement
@@ -188,6 +202,8 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                                     scriptStartTime={script?.start_time}
                                     scriptEndTime={script?.end_time}
                                     onToggleGroupCollapse={onToggleGroupCollapse}
+                                    highlightState={highlightState}
+                                    borderState={borderState}
                                 />
                             );
                         })}
@@ -207,6 +223,7 @@ const areEqual = (prevProps: ViewModeProps, nextProps: ViewModeProps) => {
         prevProps.showClockTimes === nextProps.showClockTimes &&
         prevProps.autoSortCues === nextProps.autoSortCues &&
         prevProps.useMilitaryTime === nextProps.useMilitaryTime &&
+        prevProps.isHighlightingEnabled === nextProps.isHighlightingEnabled &&
         prevProps.elements === nextProps.elements &&
         prevProps.allElements === nextProps.allElements &&
         prevProps.script === nextProps.script

@@ -187,6 +187,8 @@ def get_user_preferences(
     json_preferences = user.user_prefs_json or {}
     if 'auto_save_interval' not in json_preferences:
         json_preferences['auto_save_interval'] = 0  # Default: off
+    if 'lookahead_seconds' not in json_preferences:
+        json_preferences['lookahead_seconds'] = 30  # Default: 30 seconds
     
     # Combine both preference types and return as schema
     combined_preferences = {**bitmap_preferences, **json_preferences}
@@ -214,6 +216,14 @@ def update_user_preferences(
                 raise HTTPException(
                     status_code=400,
                     detail=f"Invalid auto_save_interval: {value}. Must be 0 (off) or between 10-300 seconds."
+                )
+            json_updates[key] = value
+        elif key == 'lookahead_seconds':
+            # Validate lookahead_seconds
+            if not isinstance(value, int) or (value < 5 or value > 60):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid lookahead_seconds: {value}. Must be between 5-60 seconds."
                 )
             json_updates[key] = value
         else:

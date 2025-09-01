@@ -125,8 +125,6 @@ export const useScriptSync = (
   }, []); // Remove callback dependencies to prevent reconnections
 
   const handleClose = useCallback((_event: CloseEvent) => {
-    console.log('🔌 WebSocket: Disconnected from script');
-    console.log('🔗 WebSocket: isConnected state set to false');
     setIsConnected(false);
     setIsConnecting(false);
     setConnectionCount(0);
@@ -276,7 +274,6 @@ export const useScriptSync = (
     prevShareTokenRef.current = shareToken;
     
     if (scriptId && options.autoConnect !== false) {
-      console.log('🔄 Auto-connecting to script:', scriptId);
       connectToWebSocket();
     } else if (!scriptId) {
       disconnect();

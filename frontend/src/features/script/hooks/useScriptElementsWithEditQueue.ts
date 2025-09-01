@@ -1123,16 +1123,10 @@ function applyOperationToElements(
       const affectedIds = bulkOffsetOp.affected_element_ids || [];
       const delayMs = bulkOffsetOp.delay_ms || 0;
 
-      console.log(`[BULK_OFFSET_ADJUSTMENT] Processing operation:`, {
-        delayMs,
-        affectedIds,
-        currentTimeMs: bulkOffsetOp.current_time_ms
-      });
 
       const adjustedElements = elements.map((el) => {
         if (affectedIds.includes(el.element_id)) {
           const newOffsetMs = el.offset_ms + delayMs;
-          console.log(`[BULK_OFFSET_ADJUSTMENT] Updating ${el.element_name}: ${el.offset_ms}ms -> ${newOffsetMs}ms`);
           return {
             ...el,
             offset_ms: newOffsetMs
@@ -1141,7 +1135,6 @@ function applyOperationToElements(
         return el;
       });
 
-      console.log('[BULK_OFFSET_ADJUSTMENT] Operation completed');
       return adjustedElements;
 
     default:

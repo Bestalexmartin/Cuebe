@@ -1,6 +1,6 @@
 // frontend/src/features/script/components/CueElement.tsx
 
-import React, { useRef, useCallback, useMemo } from 'react';
+import React, { useRef, useCallback, useMemo, useState } from 'react';
 import { Box, HStack, Text, IconButton } from '@chakra-ui/react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -9,6 +9,7 @@ import { ScriptElement } from '../types/scriptElements';
 import { getTextColorForBackground } from '../../../utils/colorUtils';
 import { AppIcon } from '../../../components/AppIcon';
 import { formatTimeOffset, formatAbsoluteTime } from '../../../utils/timeUtils';
+import { ElementHighlightState, ElementBorderState } from '../../../contexts/PlayContext';
 
 interface CueElementProps {
     element: ScriptElement;
@@ -24,6 +25,8 @@ interface CueElementProps {
     onSelect?: (shiftKey?: boolean) => void;
     onEdit?: (element: ScriptElement) => void;
     onToggleGroupCollapse?: (elementId: string) => void;
+    highlightState?: ElementHighlightState | null;
+    borderState?: ElementBorderState | null;
 }
 
 export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) => {
@@ -40,13 +43,27 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
         isDragEnabled = false,
         onSelect,
         onEdit,
-        onToggleGroupCollapse
+        onToggleGroupCollapse,
+        highlightState = null,
+        borderState = null
     } = props;
 
 
     // Use useMilitaryTime directly like colorizeDepNames and showClockTimes
     // All preferences are now passed as props from parent components
     const effectiveUseMilitaryTime = useMilitaryTime;
+
+    // Get overlay style for playback highlighting
+    const getOverlayStyle = useCallback((state: ElementHighlightState) => {
+        switch (state) {
+            case 'current':
+                return { backgroundColor: 'rgba(0, 0, 0, 0.0)' }; // No overlay - fully visible
+            case 'upcoming':
+                return { backgroundColor: 'rgba(0, 0, 0, 0.35)' }; // 35% dimming
+            case 'inactive':
+                return { backgroundColor: 'rgba(0, 0, 0, 0.8)' }; // 80% dimming
+        }
+    }, []);
 
 
     // Drag functionality
@@ -148,6 +165,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
     const isGroup = element.element_type === 'GROUP';
     const isGroupParent = isGroup;
     const isGroupChild = element.group_level && element.group_level > 0;
+    const [isHovered, setIsHovered] = useState(false);
 
 
     // Get the group parent's background color for group children
@@ -263,12 +281,12 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
             style={isDragEnabled ? dragStyle : undefined}
             bg={backgroundColor}
             border="3px solid"
-            borderColor={isSelected ? "blue.400" : "transparent"}
+            borderColor={backgroundColor}
+            zIndex={1}
             mb="1px"
             position="relative"
-            _hover={isDragEnabled || onSelect || onEdit ? {
-                borderColor: isSelected ? "blue.400" : "orange.400"
-            } : undefined}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
             transition="all 0s"
             borderRadius="none"
             overflow="visible"
@@ -287,6 +305,20 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
             onDoubleClick={onEdit ? handleDoubleClick : undefined}
             {...(isDragEnabled ? { ...attributes, ...listeners } : {})}
         >
+            {/* Playback highlight overlay - only show during playback */}
+            {highlightState && (
+                <Box
+                    position="absolute"
+                    top="-3px"
+                    left="-3px"
+                    right="-3px"
+                    bottom="-3px"
+                    pointerEvents="none"
+                    zIndex={15}
+                    style={getOverlayStyle(highlightState)}
+                />
+            )}
+            
             {/* Extended color overlay for group children - positioned relative to entire row */}
             {isGroupChild && groupParentColor ? (
                 <Box
@@ -300,6 +332,27 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                 />
             ) : null}
 
+            {/* Border overlay - appears above group color bar */}
+            {(borderState === 'red_border' || isSelected || (isHovered && (isDragEnabled || onSelect || onEdit))) && (
+                <Box
+                    position="absolute"
+                    w="calc(100% + 6px)"
+                    h="calc(100% + 6px)"
+                    left="-3px"
+                    top="-3px"
+                    border="3px solid"
+                    borderColor={
+                        borderState === 'red_border' ? "red.500" :
+                        isSelected ? "blue.400" :
+                        "orange.400"
+                    }
+                    borderRadius="none"
+                    pointerEvents="none"
+                    zIndex={20}
+                    boxShadow={borderState === 'red_border' ? "inset 0 0 3px rgba(239, 68, 68, 0.8), inset 0 0 6px rgba(239, 68, 68, 0.5)" : "none"}
+                />
+            )}
+
             <HStack spacing={0} align="center" h="28px">
                 <Box
                     w="10px"
@@ -312,6 +365,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
+                    zIndex={0}
                 >
 
                     {/* Collapse/Expand button for group parents (only in interactive mode) */}
