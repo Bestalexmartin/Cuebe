@@ -39,6 +39,8 @@ def _apply_operation_in_memory(elements_by_id: dict, script: models.Script, oper
         return _apply_update_time_offset_in_memory(elements_by_id, operation_data, user)
     elif operation_type == "BULK_REORDER":
         return _apply_bulk_reorder_in_memory(elements_by_id, operation_data)
+    elif operation_type == "BULK_OFFSET_ADJUSTMENT":
+        return _apply_bulk_offset_adjustment_in_memory(elements_by_id, operation_data, user)
     elif operation_type == "ENABLE_AUTO_SORT":
         return _apply_enable_auto_sort_in_memory(elements_by_id, operation_data, user)
     elif operation_type == "DISABLE_AUTO_SORT":
@@ -586,6 +588,37 @@ def _apply_bulk_reorder_in_memory(elements_by_id: dict, operation_data: dict):
     return {
         "operation": "bulk_reorder",
         "updated_count": len(element_changes)
+    }
+
+
+def _apply_bulk_offset_adjustment_in_memory(elements_by_id: dict, operation_data: dict, user):
+    """Apply BULK_OFFSET_ADJUSTMENT to a specific set of element IDs only."""
+    from datetime import datetime, timezone
+    
+    affected_ids = set(operation_data.get("affected_element_ids", []) or [])
+    delay_ms = int(operation_data.get("delay_ms", 0) or 0)
+    if not affected_ids or delay_ms == 0:
+        return {
+            "operation": "bulk_offset_adjustment",
+            "updated_count": 0
+        }
+    
+    updated_count = 0
+    for el_id, element in elements_by_id.items():
+        if el_id in affected_ids:
+            try:
+                element.offset_ms = int(element.offset_ms) + delay_ms
+                element.updated_by = user.user_id
+                element.date_updated = datetime.now(timezone.utc)
+                updated_count += 1
+            except Exception:
+                # Skip elements with invalid offset_ms
+                continue
+    
+    return {
+        "operation": "bulk_offset_adjustment",
+        "updated_count": updated_count,
+        "delay_ms": delay_ms
     }
 
 

@@ -1126,7 +1126,8 @@ function applyOperationToElements(
 
       const adjustedElements = elements.map((el) => {
         if (affectedIds.includes(el.element_id)) {
-          const newOffsetMs = el.offset_ms + delayMs;
+          const baseOffset = typeof el.offset_ms === 'number' ? el.offset_ms : 0;
+          const newOffsetMs = baseOffset + delayMs;
           return {
             ...el,
             offset_ms: newOffsetMs

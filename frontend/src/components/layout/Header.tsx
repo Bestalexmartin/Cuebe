@@ -77,7 +77,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
     >
       <Flex align="center">
         <Image boxSize="50px" src="/cuebe.svg" alt="Cuebe Logo" />
-        <Heading as="h1" size="lg">
+        <Heading as="h1" size="lg" id="app-title">
           <Text as="span" color="orange.400">
             Cue
           </Text>

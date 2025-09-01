@@ -186,8 +186,11 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                 if (response.ok) {
                     const backendPreferences = await response.json();
                     const userPreferences = fromBackendFields(backendPreferences);
-                    setPreferences(userPreferences);
-                    savePreferencesToStorage(userPreferences);
+                    // Prefer existing stored prefs (user's last known choices), then overlay server keys
+                    const stored = loadPreferencesFromStorage() || DEFAULT_PREFERENCES;
+                    const merged = { ...stored, ...userPreferences } as UserPreferences;
+                    setPreferences(merged);
+                    savePreferencesToStorage(merged);
                 } else {
                     const storedPreferences = loadPreferencesFromStorage();
                     if (storedPreferences) {
@@ -219,7 +222,6 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
         key: K,
         value: UserPreferences[K]
     ): Promise<boolean> => {
-        console.log('🚀 updatePreference called with key:', key, 'value:', value);
         // Store the current state before making changes for potential rollback
         const previousPreferences = { ...preferences };
         
@@ -229,7 +231,6 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
         savePreferencesToStorage(updatedPreferences);
         
         setIsSaving(true);
-        console.log('🚀 About to make PATCH request to /api/users/preferences');
         
         try {
             const token = await getToken();
@@ -247,14 +248,17 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(toBackendFields({ [key]: value }))
+                // Always save ALL preference keys for simplicity and correctness
+                body: JSON.stringify(toBackendFields(updatedPreferences))
             });
 
             if (response.ok) {
                 const backendPreferences = await response.json();
                 const serverPreferences = fromBackendFields(backendPreferences);
-                setPreferences(serverPreferences);
-                savePreferencesToStorage(serverPreferences);
+                // Merge server keys onto the optimistic local update to avoid losing unsent/omitted fields
+                const merged = { ...updatedPreferences, ...serverPreferences } as UserPreferences;
+                setPreferences(merged);
+                savePreferencesToStorage(merged);
                 return true;
             } else {
                 const errorData = await response.json().catch(() => ({}));
@@ -303,15 +307,17 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(toBackendFields(newPreferences))
+                // Always save ALL preference keys for simplicity and correctness
+                body: JSON.stringify(toBackendFields(updatedPreferences))
             });
 
             if (response.ok) {
                 const backendPreferences = await response.json();
                 const serverPreferences = fromBackendFields(backendPreferences);
-                // Update with server response to ensure consistency
-                setPreferences(serverPreferences);
-                savePreferencesToStorage(serverPreferences);
+                // Merge server keys onto the optimistic local update to avoid losing unsent/omitted fields
+                const merged = { ...updatedPreferences, ...serverPreferences } as UserPreferences;
+                setPreferences(merged);
+                savePreferencesToStorage(merged);
                 return true;
             } else {
                 const errorData = await response.json().catch(() => ({}));
@@ -355,4 +361,3 @@ export const useUserPreferences = () => {
     }
     return context;
 };
-
