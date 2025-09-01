@@ -699,7 +699,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     );
     
     // Play state from context
-    const { playbackState, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, startPlayback, pausePlayback, stopPlayback, safetyStop, completePlayback, setElementBoundaries, processBoundariesForTime, currentTime, clearAllElementStates, cumulativeDelayMs, setOnOffsetAdjustment } = usePlayContext();
+    const { playbackState, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, startPlayback, pausePlayback, stopPlayback, safetyStop, completePlayback, setElementBoundaries, processBoundariesForTime, currentTime, clearAllElementStates, cumulativeDelayMs, lastPauseDurationMs } = usePlayContext();
 
     // Wipe edit history when entering COMPLETE state
     useEffect(() => {
@@ -724,6 +724,88 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         applyLocalChange,
         setActiveMode
     });
+
+    // Offset adjustment handler for playback delays - defined after currentScript
+    const handleOffsetAdjustment = useCallback((delayMs: number, currentTimeMs: number) => {
+        if (!scriptId || delayMs <= 0 || !currentScript) {
+            return;
+        }
+        
+        // Round delay up to nearest second for synchronized timing
+        const roundedDelayMs = Math.ceil(delayMs / 1000) * 1000;
+        
+        // Check if we're before the show has actually started
+        const now = new Date();
+        const scriptStartTime = new Date(currentScript.start_time);
+        // Guard against invalid script start time
+        if (isNaN(scriptStartTime.getTime())) {
+            return; // Cannot adjust start time if current value is invalid
+        }
+        const isBeforeShowStart = now < scriptStartTime;
+        
+        if (isBeforeShowStart) {
+            // Pre-show delay: adjust the actual script start_time
+            const newStartMs = scriptStartTime.getTime() + roundedDelayMs;
+            const newStartTime = new Date(newStartMs);
+            if (isNaN(newStartTime.getTime())) {
+                return; // Defensive: avoid writing invalid dates
+            }
+            
+            // Create script info update operation
+            const scriptUpdateOperation = {
+                type: 'UPDATE_SCRIPT_INFO' as const,
+                element_id: scriptId,
+                changes: {
+                    start_time: {
+                        old_value: currentScript.start_time,
+                        new_value: newStartTime.toISOString()
+                    }
+                }
+            };
+            
+            // Pre-show offset adjustment
+            applyLocalChange(scriptUpdateOperation);
+        } else {
+            // Mid-show delay: adjust individual element offsets for ALL elements after the current one
+            const sourceElements = allEditQueueElements || [];
+            const unplayedElements = sourceElements.filter(element => {
+                const offset = element.offset_ms || 0;
+                // Only include elements that start AFTER the current time
+                return offset > currentTimeMs;
+            });
+            
+            if (unplayedElements.length === 0) {
+                return;
+            }
+            
+            const adjustmentOperation = {
+                type: 'BULK_OFFSET_ADJUSTMENT' as const,
+                element_id: 'playback-delay-adjustment',
+                delay_ms: roundedDelayMs,
+                affected_element_ids: unplayedElements.map(el => el.element_id),
+                current_time_ms: currentTimeMs
+            };
+            applyLocalChange(adjustmentOperation);
+
+            // Note: timing boundaries will be refreshed by the useEffect that watches filteredEditQueueElements
+        }
+    }, [scriptId, allEditQueueElements, applyLocalChange, currentScript, activePreferences.lookaheadSeconds, setElementBoundaries]);
+
+    // Simple: Watch for pause duration changes and apply offset adjustment
+    const lastProcessedPauseRef = useRef<number | undefined>();
+    useEffect(() => {
+        if (!lastPauseDurationMs || !currentScript || !currentTime) {
+            return;
+        }
+        
+        // Prevent processing the same pause duration multiple times
+        if (lastProcessedPauseRef.current === lastPauseDurationMs) {
+            return;
+        }
+        
+        lastProcessedPauseRef.current = lastPauseDurationMs;
+        handleOffsetAdjustment(lastPauseDurationMs, currentTime);
+    }, [lastPauseDurationMs, currentTime, currentScript, handleOffsetAdjustment]);
 
     // Crew data for sharing
     const { crewMembers } = useShowCrew(currentScript?.show_id || '');
@@ -1473,92 +1555,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     }, [filteredEditQueueElements, lookaheadSeconds, setElementBoundaries]);
 
     // Timing boundaries are now handled by PlaybackTimingProvider
-
-    // Offset adjustment handler for playback delays - defined after filtered elements
-    const handleOffsetAdjustment = useCallback((delayMs: number, currentTimeMs: number) => {
-        if (!scriptId || delayMs <= 0 || !currentScript) {
-            return;
-        }
-        
-        // Round delay up to nearest second for synchronized timing
-        const roundedDelayMs = Math.ceil(delayMs / 1000) * 1000;
-        
-        
-        // Check if we're before the show has actually started
-        const now = new Date();
-        const scriptStartTime = new Date(currentScript.start_time);
-        // Guard against invalid script start time
-        if (isNaN(scriptStartTime.getTime())) {
-            return; // Cannot adjust start time if current value is invalid
-        }
-        const isBeforeShowStart = now < scriptStartTime;
-        
-        
-        if (isBeforeShowStart) {
-            // Pre-show delay: adjust the actual script start_time
-            const newStartMs = scriptStartTime.getTime() + roundedDelayMs;
-            const newStartTime = new Date(newStartMs);
-            if (isNaN(newStartTime.getTime())) {
-                return; // Defensive: avoid writing invalid dates
-            }
-            
-            // Create script info update operation
-            const scriptUpdateOperation = {
-                type: 'UPDATE_SCRIPT_INFO' as const,
-                element_id: scriptId,
-                changes: {
-                    start_time: {
-                        old_value: currentScript.start_time,
-                        new_value: newStartTime.toISOString()
-                    }
-                }
-            };
-            
-            // Pre-show offset adjustment
-            applyLocalChange(scriptUpdateOperation);
-        } else {
-            // Mid-show delay: adjust individual element offsets for ALL elements after the current one
-            const sourceElements = allEditQueueElements || [];
-            const unplayedElements = sourceElements.filter(element => {
-                const offset = element.offset_ms || 0;
-                // Include elements that start exactly at the current boundary
-                return offset >= currentTimeMs;
-            });
-            
-            
-            if (unplayedElements.length === 0) return;
-            
-            const adjustmentOperation = {
-                type: 'BULK_OFFSET_ADJUSTMENT' as const,
-                element_id: 'playback-delay-adjustment',
-                delay_ms: roundedDelayMs,
-                affected_element_ids: unplayedElements.map(el => el.element_id),
-                current_time_ms: currentTimeMs
-            };
-            // Mid-show offset adjustment
-            applyLocalChange(adjustmentOperation);
-
-            // Proactively refresh timing boundaries shortly after elements update
-            setTimeout(() => {
-                const lookaheadMs = activePreferences.lookaheadSeconds * 1000;
-                setElementBoundaries(filteredEditQueueElements, lookaheadMs);
-            }, 0);
-        }
-    }, [scriptId, allEditQueueElements, applyLocalChange, currentScript, activePreferences.lookaheadSeconds, setElementBoundaries, filteredEditQueueElements]);
-
-    // Register centralized offset adjustment handler with PlayContext
-    useEffect(() => {
-        if (!scriptId || !currentScript) {
-            return;
-        }
-        const safeHandler = (delayMs?: number, currentTimeMs?: number) => {
-            if (typeof delayMs === 'number' && typeof currentTimeMs === 'number') {
-                handleOffsetAdjustment(delayMs, currentTimeMs);
-            }
-        };
-        setOnOffsetAdjustment(safeHandler);
-        return () => setOnOffsetAdjustment(undefined);
-    }, [setOnOffsetAdjustment, handleOffsetAdjustment, scriptId, currentScript]);
 
     // Initialize department filter with all departments when elements first load (only if user hasn't set a filter)
     useEffect(() => {

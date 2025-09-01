@@ -19,6 +19,7 @@ interface PlayState {
     playbackRate: number; // Playback speed multiplier (1.0 = normal)
     pauseStartTime: number | null; // When current pause/safety started
     cumulativeDelayMs: number; // Total accumulated delay from all pauses
+    lastPauseDurationMs?: number; // Duration of most recent pause (for offset adjustment)
     elementStates: Map<string, ElementHighlightState>; // Element highlighting states
     elementBorderStates: Map<string, ElementBorderState>; // Element border states
     timingBoundaries: TimingBoundary[]; // Pre-calculated timing boundaries
@@ -37,6 +38,7 @@ interface PlayContextValue {
     playbackRate: number;
     cumulativeDelayMs: number;
     pauseStartTime: number | null;
+    lastPauseDurationMs?: number;
     elementStates: Map<string, ElementHighlightState>;
     elementBorderStates: Map<string, ElementBorderState>;
     timingBoundaries: TimingBoundary[];
@@ -53,9 +55,6 @@ interface PlayContextValue {
     processBoundariesForTime: (currentTimeMs: number) => void;
     clearAllElementStates: () => void;
     
-    // Offset adjustment callback
-    onOffsetAdjustment?: (delayMs: number, currentTimeMs: number) => void;
-    setOnOffsetAdjustment: (callback: ((delayMs: number, currentTimeMs: number) => void) | undefined) => void;
     
     // Computed values
     getElapsedTime: () => number; // Time elapsed since start in ms
@@ -78,21 +77,12 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
         playbackRate: 1.0,
         pauseStartTime: null,
         cumulativeDelayMs: 0,
+        lastPauseDurationMs: undefined,
         elementStates: new Map(),
         elementBorderStates: new Map(),
         timingBoundaries: []
     });
     
-    const [onOffsetAdjustment, _setOnOffsetAdjustment] = useState<((delayMs: number, currentTimeMs: number) => void) | undefined>();
-    const pendingAdjustmentRef = React.useRef<{ delayMs: number; currentTimeMs: number } | null>(null);
-
-    const setOnOffsetAdjustment = useCallback((cb: ((delayMs: number, currentTimeMs: number) => void) | undefined) => {
-        _setOnOffsetAdjustment(cb);
-        if (cb && pendingAdjustmentRef.current) {
-            const { delayMs, currentTimeMs } = pendingAdjustmentRef.current;
-            try { cb(delayMs, currentTimeMs); } finally { pendingAdjustmentRef.current = null; }
-        }
-    }, []);
 
     const startPlayback = useCallback(() => {
         const now = Date.now();
@@ -102,17 +92,12 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
                 const thisPauseDurationMs = now - prev.pauseStartTime;
                 const newCumulativeDelay = prev.cumulativeDelayMs + thisPauseDurationMs;
                 const currentPlaybackTime = prev.currentTime || 0;
-                // Fire offset adjustment if available; otherwise queue it
-                if (onOffsetAdjustment) {
-                    onOffsetAdjustment(thisPauseDurationMs, currentPlaybackTime);
-                } else {
-                    pendingAdjustmentRef.current = { delayMs: thisPauseDurationMs, currentTimeMs: currentPlaybackTime };
-                }
                 return {
                     ...prev,
                     playbackState: 'PLAYING',
                     pauseStartTime: null,
-                    cumulativeDelayMs: newCumulativeDelay
+                    cumulativeDelayMs: newCumulativeDelay,
+                    lastPauseDurationMs: thisPauseDurationMs // Store for external access
                 };
             }
 
@@ -123,10 +108,11 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
                 startTime: now,
                 currentTime: 0,
                 pauseStartTime: null,
-                cumulativeDelayMs: 0
+                cumulativeDelayMs: 0,
+                lastPauseDurationMs: undefined
             };
         });
-    }, [onOffsetAdjustment]);
+    }, []);
 
     const pausePlayback = useCallback(() => {
         const now = Date.now();
@@ -145,6 +131,7 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
             playbackRate: 1.0,
             pauseStartTime: null,
             cumulativeDelayMs: 0,
+            lastPauseDurationMs: undefined,
             elementStates: new Map(),
             elementBorderStates: new Map(),
             timingBoundaries: []
@@ -415,6 +402,7 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
         playbackRate: playState.playbackRate,
         cumulativeDelayMs: playState.cumulativeDelayMs,
         pauseStartTime: playState.pauseStartTime,
+        lastPauseDurationMs: playState.lastPauseDurationMs,
         elementStates: playState.elementStates,
         elementBorderStates: playState.elementBorderStates,
         timingBoundaries: playState.timingBoundaries,
@@ -430,10 +418,6 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
         setElementBoundaries,
         processBoundariesForTime,
         clearAllElementStates,
-        
-        // Offset adjustment callback
-        onOffsetAdjustment,
-        setOnOffsetAdjustment,
         
         // Computed values
         getElapsedTime,
