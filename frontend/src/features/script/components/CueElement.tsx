@@ -10,7 +10,6 @@ import { getTextColorForBackground } from '../../../utils/colorUtils';
 import { AppIcon } from '../../../components/AppIcon';
 import { formatTimeOffset, formatAbsoluteTime } from '../../../utils/timeUtils';
 import { ElementHighlightState, ElementBorderState } from '../../../contexts/PlayContext';
-import { SyncElementHighlightState, SyncElementBorderState } from '../../../contexts/SynchronizedPlayContext';
 
 interface CueElementProps {
     element: ScriptElement;
@@ -26,8 +25,8 @@ interface CueElementProps {
     onSelect?: (shiftKey?: boolean) => void;
     onEdit?: (element: ScriptElement) => void;
     onToggleGroupCollapse?: (elementId: string) => void;
-    highlightState?: ElementHighlightState | SyncElementHighlightState | null;
-    borderState?: ElementBorderState | SyncElementBorderState | null;
+    highlightState?: ElementHighlightState | null;
+    borderState?: ElementBorderState | null;
     mode?: 'edit' | 'view';
     isReadOnly?: boolean;
 }

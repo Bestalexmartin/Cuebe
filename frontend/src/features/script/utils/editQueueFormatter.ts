@@ -439,6 +439,14 @@ export class EditQueueFormatter {
       case "priority":
         return value || "(none)";
 
+      case "department_id":
+        // For department_id, we want to show the name if available
+        // This is a placeholder - the calling code should pass department names instead of IDs
+        if (typeof value === "string" && value.length === 36) {
+          return `Department ${value.slice(-6)}`; // Show last 6 chars of UUID as fallback
+        }
+        return value || "(none)";
+
       default:
         const stringValue = String(value);
         if (

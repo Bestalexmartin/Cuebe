@@ -111,7 +111,8 @@ export const getActionButtons = (activeMode: string, hasUnsavedChanges: boolean,
         const getPlayIcon = () => {
             if (isComplete) return 'stop'; // Use stop icon for complete state
             if (isSafety || (!isPlaying && !isPaused)) return 'play';
-            return 'stop'; // Use stop icon for pause states
+            if (isPlaying) return 'pause-fill'; // Solid pause icon when playing
+            return 'pause-light'; // Hollow pause icon when paused or safety
         };
         
         buttons.push({

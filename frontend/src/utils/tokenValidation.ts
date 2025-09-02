@@ -15,10 +15,7 @@ export const encodeShareToken = (token: string): string => {
 /**
  * Builds API URLs with share token parameter
  */
-export const buildSharedApiUrl = (baseUrl: string, shareToken: string): string => {
-  const separator = baseUrl.includes('?') ? '&' : '?';
-  return `${baseUrl}${separator}share_token=${encodeShareToken(shareToken)}`;
-};
+// Removed buildSharedApiUrl: shared flows now use dedicated /api/shared/* endpoints
 
 /**
  * Standard error message for invalid share tokens

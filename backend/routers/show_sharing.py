@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_
 from uuid import UUID
 import secrets
 import string
@@ -108,11 +109,9 @@ async def access_shared_show(
         raise HTTPException(status_code=500, detail="Database error")
     
     try:
-        # Get the show with proper joins, filtering scripts and elements at DB level
+        # Get the show with scripts metadata only (no elements)
         show = db.query(models.Show).options(
-            joinedload(models.Show.scripts.and_(models.Script.is_shared == True)).joinedload(
-                models.Script.elements.and_(models.ScriptElement.department_id == crew_assignment.department_id)
-            ),
+            joinedload(models.Show.scripts.and_(models.Script.is_shared == True)),
             joinedload(models.Show.venue)
         ).filter(models.Show.show_id == crew_assignment.show_id).first()
         
@@ -150,6 +149,67 @@ async def access_shared_show(
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
 
 
+@router.get("/shared/{share_token}/scripts/{script_id}", response_model=schemas.SharedScriptElementsResponse)
+async def get_shared_script_elements(
+    share_token: str,
+    script_id: UUID,
+    db: Session = Depends(get_db)
+):
+    """Get department-scoped elements for a script via share token, including NOTE elements."""
+    try:
+        # Validate share token and get assignment with user and department
+        crew_assignment = db.query(models.CrewAssignment).options(
+            joinedload(models.CrewAssignment.user),
+            joinedload(models.CrewAssignment.department)
+        ).filter(
+            models.CrewAssignment.share_token == share_token,
+            models.CrewAssignment.is_active == True
+        ).first()
+
+        if not crew_assignment:
+            raise HTTPException(status_code=404, detail="Share not found or expired")
+
+        # Verify script belongs to this shared show and is marked shared
+        script = db.query(models.Script).filter(
+            models.Script.script_id == script_id,
+            models.Script.show_id == crew_assignment.show_id,
+            models.Script.is_shared == True
+        ).first()
+        if not script:
+            raise HTTPException(status_code=404, detail="Script not found or not shared")
+
+        # Fetch elements filtered by department OR note type OR group type
+        elements = db.query(models.ScriptElement).options(
+            joinedload(models.ScriptElement.department)
+        ).filter(
+            models.ScriptElement.script_id == script_id,
+            or_(
+                models.ScriptElement.department_id == crew_assignment.department_id,
+                models.ScriptElement.element_type == models.ElementType.NOTE,
+                models.ScriptElement.element_type == models.ElementType.GROUP
+            )
+        ).order_by(models.ScriptElement.sequence.asc()).all()
+
+        # Build crew context
+        crew_context = schemas.CrewContext(
+            department_name=crew_assignment.department.department_name if crew_assignment.department else None,
+            department_initials=crew_assignment.department.department_initials if crew_assignment.department else None,
+            department_color=crew_assignment.department.department_color if crew_assignment.department else None,
+            show_role=crew_assignment.show_role,
+            user_name=(f"{crew_assignment.user.fullname_first} {crew_assignment.user.fullname_last}".strip() if crew_assignment.user else None)
+        )
+
+        return schemas.SharedScriptElementsResponse(
+            elements=elements,
+            crew_context=crew_context
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving shared script elements: {e}")
+        raise HTTPException(status_code=500, detail="Processing error")
+
+
 @router.get("/shared/{share_token}/preferences", response_model=dict)
 async def get_guest_user_preferences(
     share_token: str,
@@ -174,9 +234,13 @@ async def get_guest_user_preferences(
             logger.error(f"User not found for crew assignment: {crew_assignment.user_id}")
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Convert bitmap to preferences and return
+        # Convert bitmap to preferences and combine with JSON preferences
         bitmap = user.user_prefs_bitmap if user.user_prefs_bitmap is not None else 0
         preferences = bitmap_to_preferences(bitmap)
+        
+        # Add JSON preferences
+        if user.user_prefs_json:
+            preferences.update(user.user_prefs_json)
         
         logger.info(f"Retrieved guest preferences for share token: {share_token[:8]}...")
         return preferences
@@ -196,6 +260,8 @@ async def update_guest_user_preferences(
 ):
     """Update guest user preferences via share token (public endpoint, no auth required)"""
     
+    logger.info(f"🔧 Updating guest preferences for token {share_token[:8]}... with data: {preference_updates}")
+    
     try:
         # Find the crew assignment by share token
         crew_assignment = db.query(models.CrewAssignment).filter(
@@ -213,26 +279,50 @@ async def update_guest_user_preferences(
             logger.error(f"User not found for crew assignment: {crew_assignment.user_id}")
             raise HTTPException(status_code=404, detail="User not found")
         
-        # Validate the preference updates
-        validation_errors = validate_preferences(preference_updates)
-        if validation_errors:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid preferences: {validation_errors}"
-            )
+        # Separate bitmap preferences from JSON options (exactly like auth side)
+        bitmap_updates = {}
+        json_updates = {}
         
-        # Get current bitmap
-        current_bitmap = user.user_prefs_bitmap if user.user_prefs_bitmap is not None else 0
+        for key, value in preference_updates.items():
+            if key == 'lookahead_seconds':
+                # Validate lookahead_seconds
+                if not isinstance(value, int) or value < 5 or value > 60:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid lookahead_seconds: {value}. Must be between 5-60 seconds."
+                    )
+                json_updates[key] = value
+            elif key in ['dark_mode', 'colorize_dep_names', 'auto_sort_cues', 'show_clock_times', 'use_military_time', 'danger_mode']:
+                if not isinstance(value, bool):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Preference '{key}' must be a boolean value"
+                    )
+                bitmap_updates[key] = value
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unknown preference: {key}"
+                )
         
-        # Apply updates to bitmap
-        updated_bitmap = preferences_to_bitmap_updates(current_bitmap, preference_updates)
+        # Update bitmap preferences
+        if bitmap_updates:
+            current_bitmap = user.user_prefs_bitmap if user.user_prefs_bitmap is not None else 0
+            updated_bitmap = preferences_to_bitmap_updates(current_bitmap, bitmap_updates)
+            user.user_prefs_bitmap = updated_bitmap
         
-        # Save to database
-        user.user_prefs_bitmap = updated_bitmap
+        # Update JSON preferences
+        if json_updates:
+            current_json = user.user_prefs_json or {}
+            current_json.update(json_updates)
+            user.user_prefs_json = current_json
+        
         db.commit()
         
-        # Return updated preferences
-        updated_preferences = bitmap_to_preferences(updated_bitmap)
+        # Return combined preferences (bitmap + JSON)
+        updated_preferences = bitmap_to_preferences(user.user_prefs_bitmap or 0)
+        if user.user_prefs_json:
+            updated_preferences.update(user.user_prefs_json)
         
         logger.info(f"Updated guest preferences for share token: {share_token[:8]}...")
         return updated_preferences

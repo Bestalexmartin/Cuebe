@@ -25,7 +25,7 @@ import { formatTimeOffset } from '../../../../utils/timeUtils';
 import { matchDepartment } from '../utils/departmentMatcher';
 import { loadSavedDepartmentMappings, saveDepartmentMappings } from '../utils/departmentMappingStorage';
 import { DepartmentMappingStep } from './DepartmentMappingStep';
-import { warn, error, debug } from '../../../../utils/logger';
+import { warn, error } from '../../../../utils/logger';
 
 interface ScriptImportModalProps {
   isOpen: boolean;
@@ -357,12 +357,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
         show_id: showId
       };
 
-      // Dev-only: log outgoing request shape
-      debug('Import request payload', {
-        script_name: importRequest.script_metadata?.script_name,
-        elements: importRequest.script_elements?.length,
-        show_id: importRequest.show_id
-      });
+      // Dev-only logs removed
 
       const response = await fetch('/api/scripts/import', {
         method: 'POST',
@@ -373,8 +368,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
         body: JSON.stringify(importRequest)
       });
 
-      // Dev-only: log response status line
-      debug('Import response status', { status: response.status, ok: response.ok, statusText: response.statusText });
+      // Dev-only logs removed
 
       if (!response.ok) {
         // Try to extract meaningful error details
@@ -399,8 +393,6 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
       }
 
       const result = await response.json();
-      // Dev-only: log the success payload for verification
-      debug('Import API success', result);
       
       showSuccess('Script Imported', `Successfully imported ${result.elements_created} elements`);
       

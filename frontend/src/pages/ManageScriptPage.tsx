@@ -242,7 +242,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     // handleToggleAllGroups will be defined after editQueueHook
 
     const {
-        preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues, useMilitaryTime, dangerMode, autoSaveInterval, lookaheadSeconds },
+        preferences: { darkMode, colorizeDepNames, showClockTimes, autoSortCues, useMilitaryTime, dangerMode, autoSaveInterval, lookaheadSeconds, playHeartbeatIntervalSec },
         updatePreference,
         updatePreferences
     } = useUserPreferences();
@@ -312,7 +312,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     // Use preview preferences when options modal is open, otherwise use saved preferences  
     const activePreferences = modalState.isOpen(MODAL_NAMES.OPTIONS) && previewPreferences
         ? previewPreferences
-        : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval, lookaheadSeconds };
+        : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval, lookaheadSeconds, playHeartbeatIntervalSec };
 
     const { activeMode, setActiveMode } = useScriptModes('view');
     
@@ -353,10 +353,11 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             sendSyncPlaybackCommand(
                 command,
                 currentTime || undefined,
-                command === 'PLAY' ? effectiveCurrentScript?.start_time : undefined
+                command === 'PLAY' ? effectiveCurrentScript?.start_time : undefined,
+                command === 'PLAY' ? (cumulativeDelayMs || 0) : undefined
             );
         }
-    }, [sendSyncPlaybackCommand, currentTime, effectiveCurrentScript?.start_time]);
+    }, [sendSyncPlaybackCommand, currentTime, effectiveCurrentScript?.start_time, cumulativeDelayMs]);
 
     // Auto-broadcast state changes (for script completion)
     const lastBroadcastedStateRef = useRef<string | null>(null);
@@ -368,6 +369,22 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             lastBroadcastedStateRef.current = playbackState;
         }
     }, [playbackState, sendPlaybackCommand]);
+
+    // Heartbeat while PLAYING so late joiners auto-enter PLAY state with synced time
+    useEffect(() => {
+        if (isPlaybackPlaying) {
+            // Always send an immediate sync when entering PLAY
+            sendPlaybackCommand('PLAY');
+            const intervalSec = activePreferences.playHeartbeatIntervalSec ?? 5;
+            if (intervalSec > 0) {
+                const ms = Math.min(30000, Math.max(2000, intervalSec * 1000));
+                const id = window.setInterval(() => {
+                    sendPlaybackCommand('PLAY');
+                }, ms);
+                return () => window.clearInterval(id);
+            }
+        }
+    }, [isPlaybackPlaying, sendPlaybackCommand, activePreferences.playHeartbeatIntervalSec]);
 
     // Safety stop handler
     const handleSafetyStop = useCallback(() => {
@@ -457,17 +474,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         }
     });
 
-    // Emergency exit handler - defined after navigation
-    const handleEmergencyExit = useCallback(() => {
-        modalState.closeModal(MODAL_NAMES.EMERGENCY_EXIT);
-        
-        // Stop playback first, then exit
-        if (playbackState !== 'STOPPED') {
-            stopPlayback();
-        }
-        
-        navigation.handleCancel();
-    }, [modalState, navigation, playbackState, stopPlayback]);
 
     // Modal handlers configuration hook
     const modalHandlersConfig = useScriptModalConfig({
@@ -500,6 +506,40 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
     // Navigation
     const navigate = useNavigate();
+
+    // Emergency exit handler - defined after navigate
+    const handleEmergencyExit = useCallback(() => {
+        modalState.closeModal(MODAL_NAMES.EMERGENCY_EXIT);
+        
+        // Send STOP to guests before exiting, then stop locally
+        if (playbackState !== 'STOPPED') {
+            try {
+                sendPlaybackCommand('STOP');
+            } catch {}
+            stopPlayback();
+        }
+        
+        // Navigate directly without going through handleCancel to avoid double modal
+        navigate('/dashboard', {
+            state: {
+                view: 'shows',
+                selectedShowId: sourceScript?.show_id,
+                selectedScriptId: scriptId,
+                returnFromManage: true
+            }
+        });
+    }, [modalState, navigate, playbackState, stopPlayback, sourceScript, scriptId]);
+
+    // On unmount, ensure STOP is sent if playback was active
+    useEffect(() => {
+        return () => {
+            if (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) {
+                try {
+                    sendPlaybackCommand('STOP');
+                } catch {}
+            }
+        };
+    }, [isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, sendPlaybackCommand]);
 
     // Auto-save functionality - OPTIMIZED to prevent render loops, paused during VIEW mode
     const { isAutoSaving, secondsUntilNextSave, showSaveSuccess, isPaused, togglePause } = useAutoSave({
@@ -666,6 +706,23 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         window.addEventListener('beforeunload', handleBeforeUnload);
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, modalState]);
+
+    // Best-effort STOP broadcast on actual page hide/unload (hard refresh/close)
+    useEffect(() => {
+        const handlePageHide = () => {
+            if (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) {
+                try {
+                    sendPlaybackCommand('STOP');
+                } catch {}
+            }
+        };
+        window.addEventListener('pagehide', handlePageHide);
+        window.addEventListener('unload', handlePageHide);
+        return () => {
+            window.removeEventListener('pagehide', handlePageHide);
+            window.removeEventListener('unload', handlePageHide);
+        };
+    }, [isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, sendPlaybackCommand]);
 
 
     // Auto-sort functionality
@@ -1148,6 +1205,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 onClockTimesChange={handleClockTimesCheckboxChange}
                 onDangerModeChange={async (value: boolean) => { await updatePreference('dangerMode', value); }}
                 onAutoSaveIntervalChange={async (value: number) => { await updatePreference('autoSaveInterval', value); }}
+                onPlayHeartbeatIntervalChange={async (value: number) => { await updatePreference('playHeartbeatIntervalSec', value as number); }}
                 onConfirmDeleteCue={elementActions.handleConfirmDeleteCue}
                 onConfirmDuplicate={elementActions.handleConfirmDuplicate}
                 onConfirmGroupElements={elementActions.handleConfirmGroupElements}

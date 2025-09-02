@@ -10,7 +10,7 @@ import logging
 import models
 import schemas
 from database import get_db
-from .auth import get_current_user, get_current_user_optional
+from .auth import get_current_user
 
 # Optional rate limiting import
 try:
@@ -583,62 +583,31 @@ def duplicate_script(
 @router.get("/scripts/{script_id}", response_model=schemas.Script)
 def get_script(
     script_id: UUID,
-    share_token: Optional[str] = None,
-    user: Optional[models.User] = Depends(get_current_user_optional),
+    user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get a single script by ID with complete element data."""
+    """Get a single script by ID with complete element data (owner/auth only)."""
     logger.info(f"✅ UNIFIED ENDPOINT: Loading script {script_id} with complete element data")
-    
-    # If no user authentication and no share_token, require one or the other
-    if not user and not share_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication or share token required"
-        )
-    
-    # Query the script from database with show relationship for authorization
-    # Include proper department joins for complete element display data
+
+    # Query the script with elements and department for display
     script = db.query(models.Script).options(
         joinedload(models.Script.show),
         joinedload(models.Script.elements).joinedload(models.ScriptElement.department)
     ).filter(models.Script.script_id == script_id).first()
-    
+
     if not script:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Script not found"
         )
-    
-    # Check access - either via authenticated user or share token
-    access_granted = False
-    
-    if share_token:
-        # Validate share token access via crew assignment
-        crew_assignment = db.query(models.CrewAssignment).filter(
-            models.CrewAssignment.share_token == share_token,
-            models.CrewAssignment.show_id == script.show_id
-        ).first()
-        
-        if crew_assignment:
-            access_granted = True
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Invalid share token for this script"
-            )
-    
-    if user and not access_granted:
-        # Check authenticated user access (direct ownership or show ownership)
-        if script.owner_id == user.user_id or script.show.owner_id == user.user_id:
-            access_granted = True
-    
-    if not access_granted:
+
+    # Auth check: script owner or show owner
+    if script.owner_id != user.user_id and script.show.owner_id != user.user_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this script"
         )
-    
+
     return script
 
 

@@ -424,6 +424,11 @@ def _apply_update_field_in_memory(elements_by_id: dict, operation_data: dict, us
                 "field": field,
                 "invalid": True
             }
+    # Debug logging for department changes
+    if field == "department_id":
+        old_value = getattr(element, field, None)
+        logger.info(f"🏢 UPDATE_FIELD: Changing department_id for element {element_id} from {old_value} to {new_value}")
+    
     # Set the field value
     setattr(element, field, new_value)
     element.updated_by = user.user_id

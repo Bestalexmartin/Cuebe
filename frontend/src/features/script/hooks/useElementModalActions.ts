@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import { ScriptElement } from '../types/scriptElements';
 import { useEnhancedToast } from '../../../utils/toastUtils';
 import { generateGroupSummary, generateTempGroupId } from '../utils/groupUtils';
+import { useDepartments } from '../../departments/hooks/useDepartments';
 
 interface UseElementModalActionsParams {
     scriptId: string | undefined;
@@ -40,6 +41,7 @@ export const useElementModalActions = ({
     setSelectedElementIds
 }: UseElementModalActionsParams) => {
     const { showSuccess, showError } = useEnhancedToast();
+    const { departments } = useDepartments();
     
     // State for element operations (selectedElementIds now comes from parent)
     const [selectedElement, setSelectedElement] = useState<any>(null);
@@ -168,13 +170,39 @@ export const useElementModalActions = ({
         }
 
         try {
-            // Changes are already in the correct format (old_value/new_value)
-            const transformedChanges = changes;
+            // Enhance changes with department-related fields when department_id changes
+            const enhancedChanges = { ...changes };
+            
+            // If department_id is changing, add the derived department fields
+            if (changes.department_id) {
+                const newDepartmentId = changes.department_id.new_value;
+                const newDepartment = departments.find(d => d.department_id === newDepartmentId);
+                
+                if (newDepartment) {
+                    // Add department name
+                    enhancedChanges.department_name = {
+                        old_value: selectedElement.department_name || '',
+                        new_value: newDepartment.department_name
+                    };
+                    
+                    // Add department color
+                    enhancedChanges.department_color = {
+                        old_value: selectedElement.department_color || '',
+                        new_value: newDepartment.department_color
+                    };
+                    
+                    // Add department initials
+                    enhancedChanges.department_initials = {
+                        old_value: selectedElement.department_initials || '',
+                        new_value: newDepartment.department_initials || newDepartment.department_name.substring(0, 2).toUpperCase()
+                    };
+                }
+            }
 
             applyLocalChange({
                 type: 'UPDATE_ELEMENT',
                 element_id: selectedElement.element_id,
-                changes: transformedChanges,
+                changes: enhancedChanges,
                 description: `Updated element "${selectedElement.element_name}"`
             });
 
@@ -186,7 +214,7 @@ export const useElementModalActions = ({
             console.error('Error updating element:', error);
             showError('Failed to update script element. Please try again.');
         }
-    }, [selectedElement, applyLocalChange, modalState, modalNames.EDIT_CUE, showSuccess, showError]);
+    }, [selectedElement, applyLocalChange, modalState, modalNames.EDIT_CUE, showSuccess, showError, departments]);
 
     const handleGroupEditSave = useCallback(async (changes: Record<string, { old_value: any; new_value: any }>, offsetDelta: number, affectedChildren: string[]) => {
         if (!selectedElement) {

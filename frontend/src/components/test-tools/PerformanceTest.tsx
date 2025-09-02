@@ -228,7 +228,7 @@ export const PerformanceTest: React.FC = () => {
       if (allSuccessful) {
         showSuccess('Database Test Complete', data.summary);
       } else {
-        showError('Database Test Issues', data.summary);
+        showError('Database Test Issues', { description: data.summary });
       }
 
     } catch (error) {
@@ -282,7 +282,7 @@ export const PerformanceTest: React.FC = () => {
       if (successCount > 0) {
         showSuccess('API Test Complete', data.summary);
       } else {
-        showError('API Test Issues', data.summary);
+        showError('API Test Issues', { description: data.summary });
       }
 
     } catch (error) {

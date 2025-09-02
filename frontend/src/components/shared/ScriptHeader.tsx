@@ -1,7 +1,9 @@
 import React from 'react';
-import { Flex, HStack, Heading, Text, Badge, Button } from '@chakra-ui/react';
+import { Flex, HStack, Heading, Text, Badge, Button, Divider } from '@chakra-ui/react';
 import { AppIcon } from '../AppIcon';
+import { ActionsMenu } from '../ActionsMenu';
 import { formatRoleBadge } from '../../constants/userRoles';
+// No playback state needed in this header; overlay handles timing/status
 
 interface Script {
   script_id: string;
@@ -20,13 +22,20 @@ interface ScriptHeaderProps {
   currentScript: Script | null;
   crewContext: CrewContext | null;
   onBackToShows: () => void;
+  // kept for API compatibility, unused locally
+  useMilitaryTime?: boolean;
+  actions?: any[];
 }
 
 export const ScriptHeader: React.FC<ScriptHeaderProps> = React.memo(({
   currentScript,
   crewContext,
   onBackToShows,
+  useMilitaryTime: _useMilitaryTime = false,
+  actions = []
 }) => {
+  // Playback state not displayed here; keep header lean
+
   return (
     <Flex justify="space-between" align="center" flexShrink={0} mb={4}>
       <HStack spacing="3" align="center">
@@ -55,7 +64,18 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = React.memo(({
           </Badge>
         )}
       </HStack>
+
+
       <HStack spacing="2">
+        {actions.length > 0 && (
+          <>
+            <ActionsMenu
+              actions={actions}
+              isDisabled={false}
+            />
+            <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
+          </>
+        )}
         <Button
           size="xs"
           bg="blue.400"

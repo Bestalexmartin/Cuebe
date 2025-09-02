@@ -59,6 +59,7 @@ interface ScriptModalsProps {
     dangerMode: boolean;
     autoSaveInterval: number;
     lookaheadSeconds: number;
+    playHeartbeatIntervalSec?: number;
     activeMode: string;
 
     // Event handlers
@@ -78,6 +79,7 @@ interface ScriptModalsProps {
     onClockTimesChange: (enabled: boolean) => Promise<void>;
     onDangerModeChange: (enabled: boolean) => Promise<void>;
     onAutoSaveIntervalChange: (interval: number) => Promise<void>;
+    onPlayHeartbeatIntervalChange?: (interval: number) => Promise<void>;
     onConfirmDeleteCue: () => void;
     onConfirmDuplicate: (element_name: string, offset_ms: number) => void;
     onConfirmGroupElements: (groupName: string, backgroundColor: string) => void;
@@ -195,6 +197,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     dangerMode,
     autoSaveInterval,
     lookaheadSeconds,
+    playHeartbeatIntervalSec,
     activeMode,
     scriptName,
     crewCount,
@@ -221,6 +224,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
     onClockTimesChange,
     onDangerModeChange,
     onAutoSaveIntervalChange,
+    onPlayHeartbeatIntervalChange,
     onConfirmDeleteCue,
     onConfirmDuplicate,
     onConfirmGroupElements,
@@ -339,7 +343,8 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                     useMilitaryTime,
                     dangerMode,
                     autoSaveInterval,
-                    lookaheadSeconds
+                    lookaheadSeconds,
+                    playHeartbeatIntervalSec
                 }}
                 onPreview={onOptionsPreview}
                 onSave={onOptionsSave}
@@ -348,6 +353,7 @@ export const ScriptModals: React.FC<ScriptModalsProps> = ({
                 onClockTimesChange={onClockTimesChange}
                 onDangerModeChange={onDangerModeChange}
                 onAutoSaveIntervalChange={onAutoSaveIntervalChange}
+                onPlayHeartbeatIntervalChange={onPlayHeartbeatIntervalChange}
                 activeMode={activeMode}
             />
 
