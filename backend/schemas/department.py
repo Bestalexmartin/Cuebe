@@ -49,5 +49,6 @@ class DepartmentCrewAssignment(BaseModel):
 class DepartmentWithStats(Department):
     """Department with calculated statistics and crew assignments"""
     shows_assigned_count: int = 0
+    script_elements_count: int = 0
     unique_crew_count: int = 0
     crew_assignments: List[DepartmentCrewAssignment] = []

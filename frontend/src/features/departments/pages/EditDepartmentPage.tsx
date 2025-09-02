@@ -187,7 +187,9 @@ export const EditDepartmentPage: React.FC = () => {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to delete department');
+                const errorData = await response.json();
+                console.error('Delete department error response:', errorData);
+                throw new Error(errorData.detail || 'Failed to delete department');
             }
 
             showSuccess('Department Deleted', `"${department.department_name}" has been deleted successfully`);
@@ -202,7 +204,8 @@ export const EditDepartmentPage: React.FC = () => {
 
         } catch (error) {
             console.error('Error deleting department:', error);
-            showError('Failed to delete department. Please try again.');
+            const errorMessage = error instanceof Error ? error.message : 'Failed to delete department. Please try again.';
+            showError('Delete Failed', errorMessage);
         } finally {
             setIsDeleting(false);
             setIsDeleteModalOpen(false);

@@ -24,6 +24,7 @@ interface UseScriptModeHandlersProps {
     elementActions: any;
     editModeRef: React.RefObject<any>;
     setCurrentSelectedElementIds: (ids: string[]) => void;
+    sendPlaybackCommand?: (command: string) => void; // Function to send playback commands via WebSocket
 }
 
 export const useScriptModeHandlers = ({
@@ -48,7 +49,8 @@ export const useScriptModeHandlers = ({
     modalHandlers,
     elementActions,
     editModeRef,
-    setCurrentSelectedElementIds
+    setCurrentSelectedElementIds,
+    sendPlaybackCommand
 }: UseScriptModeHandlersProps) => {
     
     const handleJump = useCallback((direction: 'top' | 'bottom') => {
@@ -147,14 +149,19 @@ export const useScriptModeHandlers = ({
                 case 'play':
                     if (playbackState === 'STOPPED') {
                         startPlayback();
+                        sendPlaybackCommand?.('PLAY');
                     } else if (playbackState === 'PLAYING') {
                         pausePlayback();
+                        sendPlaybackCommand?.('PAUSE');
                     } else if (playbackState === 'PAUSED') {
                         startPlayback();
+                        sendPlaybackCommand?.('PLAY');
                     } else if (playbackState === 'SAFETY') {
                         startPlayback();
+                        sendPlaybackCommand?.('PLAY');
                     } else if (playbackState === 'COMPLETE') {
                         stopPlayback();
+                        sendPlaybackCommand?.('STOP');
                     }
                     return;
                 case 'share':

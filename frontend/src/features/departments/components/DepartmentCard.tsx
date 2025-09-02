@@ -32,6 +32,7 @@ interface Department {
     date_created: string;
     date_updated: string;
     shows_assigned_count?: number;
+    script_elements_count?: number;
     unique_crew_count?: number;
     crew_assignments?: DepartmentCrewAssignment[];
 }
@@ -107,7 +108,11 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
     const quickInfo = (
         <VStack align="stretch" spacing="1" fontSize="sm" color="cardText">
             <HStack justify="space-between">
-                <Text>{department.shows_assigned_count || 0} show{(department.shows_assigned_count || 0) !== 1 ? 's' : ''}</Text>
+                <Text>{department.shows_assigned_count || 0} Crew Assignment{(department.shows_assigned_count || 0) !== 1 ? 's' : ''}</Text>
+                <Text></Text>
+            </HStack>
+            <HStack justify="space-between">
+                <Text>{department.script_elements_count || 0} Script Element{(department.script_elements_count || 0) !== 1 ? 's' : ''}</Text>
                 <Text fontSize="xs">
                     Created: {formatDateTimeLocal(department.date_created || department.date_updated)}
                 </Text>

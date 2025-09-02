@@ -110,14 +110,19 @@ async def validate_script_access(script_id: UUID, share_token: Optional[str], us
     if user_token:
         try:
             user = await get_current_user_from_token(user_token, db)
-            # Check if user owns the script or has crew access
-            script = db.query(models.Script).filter(models.Script.script_id == script_id).first()
-            if not script:
+            # Load script and its show in a single query
+            script_show = (
+                db.query(models.Script, models.Show)
+                .join(models.Show, models.Show.show_id == models.Script.show_id)
+                .filter(models.Script.script_id == script_id)
+                .first()
+            )
+            if not script_show:
                 raise HTTPException(status_code=404, detail="Script not found")
+            script, show = script_show
             
             # Check if user owns the show that contains this script
-            show = db.query(models.Show).filter(models.Show.show_id == script.show_id).first()
-            if show and show.owner_id == user.user_id:
+            if show.owner_id == user.user_id:
                 return {
                     "access_type": "owner",
                     "user_id": str(user.user_id),
@@ -294,6 +299,37 @@ async def handle_script_update(websocket: WebSocket, script_id: str, message: di
             total_connected=len(connections_info)
         )
         await websocket.send_text(connection_info_response.model_dump_json())
+    
+    elif message_type == "playback_command":
+        # Handle playback synchronization commands (only from owners/crew)
+        if access_info["access_type"] not in ["owner", "crew_member"]:
+            error_response = websocket_schemas.WebSocketErrorResponse(
+                message="Permission denied: Only script owners can control playback"
+            )
+            await websocket.send_text(error_response.model_dump_json())
+            return
+        
+        command = message.get("command")
+        if command not in ["PLAY", "PAUSE", "SAFETY", "COMPLETE", "STOP"]:
+            error_response = websocket_schemas.WebSocketErrorResponse(
+                message=f"Invalid playback command: {command}"
+            )
+            await websocket.send_text(error_response.model_dump_json())
+            return
+        
+        # Create playback command response for broadcasting
+        playback_response = websocket_schemas.PlaybackCommandResponse(
+            script_id=script_id,
+            command=command,
+            timestamp_ms=int(datetime.now().timestamp() * 1000),
+            show_time_ms=message.get("show_time_ms"),
+            start_time=message.get("start_time")
+        )
+        
+        # Broadcast to all connections in the script room (including sender for confirmation)
+        await connection_manager.broadcast_to_script(script_id, playback_response.model_dump_json())
+        
+        logger.info(f"Playback command broadcast: {command} for script {script_id} by {access_info['user_name']}")
     
     else:
         error_response = websocket_schemas.WebSocketErrorResponse(

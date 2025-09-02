@@ -95,8 +95,7 @@ def create_show(
         owner_id=user.user_id
     )
     db.add(new_show)
-    db.commit()
-    db.refresh(new_show)
+    db.flush()  # Obtain show_id without committing
 
     # Create first draft script with start/end times from show
     first_draft = models.Script(
@@ -107,12 +106,13 @@ def create_show(
         owner_id=user.user_id
     )
     db.add(first_draft)
-    db.commit()
-    db.refresh(first_draft)
+    db.flush()  # Obtain script_id without committing
 
     # Create default SHOW START and SHOW END elements
     _create_default_script_elements(first_draft, new_show, user, db)
+    # Single atomic commit for show, script, and default elements
     db.commit()
+    db.refresh(new_show)
     
     return new_show
 
@@ -212,17 +212,16 @@ def delete_show(
     
     script_count = len(scripts_to_delete)
     
-    # Delete script elements first (due to foreign key constraints)
-    for script in scripts_to_delete:
-        script_elements = db.query(models.ScriptElement).filter(
-            models.ScriptElement.script_id == script.script_id
-        ).all()
-        for element in script_elements:
-            db.delete(element)
+    # Delete script elements first (due to foreign key constraints) - bulk delete
+    script_ids = [script.script_id for script in scripts_to_delete]
+    db.query(models.ScriptElement).filter(
+        models.ScriptElement.script_id.in_(script_ids)
+    ).delete(synchronize_session=False)
     
-    # Delete scripts
-    for script in scripts_to_delete:
-        db.delete(script)
+    # Delete scripts - bulk delete
+    db.query(models.Script).filter(
+        models.Script.script_id.in_(script_ids)
+    ).delete(synchronize_session=False)
     
     # Log the cleanup for debugging
     if script_count > 0:
@@ -441,28 +440,8 @@ def get_show_crew(
         models.CrewAssignment.is_active == True
     ).all()
     
-    # Format the response to match the expected structure
-    crew_members = []
-    for assignment in crew_assignments:
-        crew_members.append({
-            "assignment_id": assignment.assignment_id,
-            "user_id": assignment.user_id,
-            "department_id": assignment.department_id,
-            "show_role": assignment.show_role,
-            "is_active": assignment.is_active,
-            "date_assigned": assignment.date_assigned,
-            # User info
-            "fullname_first": assignment.user.fullname_first,
-            "fullname_last": assignment.user.fullname_last,
-            "email_address": assignment.user.email_address,
-            "user_status": assignment.user.user_status,
-            # Department info
-            "department_name": assignment.department.department_name,
-            "department_color": assignment.department.department_color,
-            "department_initials": assignment.department.department_initials
-        })
-    
-    return crew_members
+    # Return crew assignments directly using Pydantic serialization
+    return [schemas.CrewMemberWithDetails.model_validate(assignment) for assignment in crew_assignments]
 
 
 # =============================================================================

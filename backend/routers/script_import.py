@@ -427,6 +427,8 @@ async def import_script(
         for i, element_data in enumerate(element_dicts):
             element_data['sequence'] = i + 1
         
+        # Prepare bulk save for performance
+        new_elements = []
         for i, element_data in enumerate(element_dicts):
             # Handle department association (skip for NOTEs and GROUPs - they don't have departments)
             department_id = None
@@ -448,7 +450,7 @@ async def import_script(
                 elif element_data['department_id']:
                     department_id = element_data['department_id']
             
-            # Create script element
+            # Create script element object (defer adding to session)
             new_element = ScriptElement(
                 element_id=element_data['element_id'],
                 script_id=new_script.script_id,
@@ -468,9 +470,12 @@ async def import_script(
                 created_by=current_user.user_id,
                 updated_by=current_user.user_id
             )
-            
-            db.add(new_element)
+            new_elements.append(new_element)
             elements_created += 1
+
+        # Bulk save all elements in one go
+        if new_elements:
+            db.bulk_save_objects(new_elements)
         
         # Commit all changes
         db.commit()

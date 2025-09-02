@@ -55,6 +55,16 @@ class ConnectionInfoResponse(WebSocketBaseResponse):
     total_connected: int
 
 
+class PlaybackCommandResponse(WebSocketBaseResponse):
+    """Response for playback synchronization commands"""
+    type: str = "playback_command"
+    script_id: str
+    command: str  # PLAY, PAUSE, SAFETY, COMPLETE, STOP
+    timestamp_ms: int  # Server timestamp for latency correction
+    show_time_ms: Optional[int] = None  # Current show time offset for synchronization
+    start_time: Optional[str] = None  # ISO format start time for new plays
+
+
 class WebSocketErrorResponse(WebSocketBaseResponse):
     """Response for WebSocket errors"""
     type: str = "error"

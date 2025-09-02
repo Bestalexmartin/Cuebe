@@ -10,6 +10,7 @@ import { getTextColorForBackground } from '../../../utils/colorUtils';
 import { AppIcon } from '../../../components/AppIcon';
 import { formatTimeOffset, formatAbsoluteTime } from '../../../utils/timeUtils';
 import { ElementHighlightState, ElementBorderState } from '../../../contexts/PlayContext';
+import { SyncElementHighlightState, SyncElementBorderState } from '../../../contexts/SynchronizedPlayContext';
 
 interface CueElementProps {
     element: ScriptElement;
@@ -25,8 +26,10 @@ interface CueElementProps {
     onSelect?: (shiftKey?: boolean) => void;
     onEdit?: (element: ScriptElement) => void;
     onToggleGroupCollapse?: (elementId: string) => void;
-    highlightState?: ElementHighlightState | null;
-    borderState?: ElementBorderState | null;
+    highlightState?: ElementHighlightState | SyncElementHighlightState | null;
+    borderState?: ElementBorderState | SyncElementBorderState | null;
+    mode?: 'edit' | 'view';
+    isReadOnly?: boolean;
 }
 
 export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) => {
@@ -45,7 +48,9 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
         onEdit,
         onToggleGroupCollapse,
         highlightState = null,
-        borderState = null
+        borderState = null,
+        mode: _mode = 'view',
+        isReadOnly = false
     } = props;
 
 
@@ -86,6 +91,11 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
 
     // Handle mouse down - start timer for drag detection
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        // Prevent interaction in read-only mode
+        if (isReadOnly) {
+            return;
+        }
+        
         // Check if the click is on the collapse button - if so, ignore it
         const target = e.target as HTMLElement;
         const isCollapseButton = target.closest('.group-collapse-button');
@@ -178,6 +188,10 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
 
     // Handle group collapse/expand toggle
     const handleToggleCollapse = useCallback((e: React.MouseEvent) => {
+        // Prevent group collapse in read-only mode
+        if (isReadOnly) {
+            return;
+        }
 
         e.preventDefault();
         e.stopPropagation();
@@ -185,7 +199,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
         if (onToggleGroupCollapse && isGroupParent) {
             onToggleGroupCollapse(element.element_id);
         }
-    }, [onToggleGroupCollapse, isGroupParent, element.element_id, element.element_name, element.element_type]);
+    }, [onToggleGroupCollapse, isGroupParent, element.element_id, isReadOnly]);
 
     const backgroundColor = element.custom_color || "#E2E8F0";
     const hasCustomBackground = !!element.custom_color && element.custom_color !== "#E2E8F0";

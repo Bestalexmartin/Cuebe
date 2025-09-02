@@ -42,8 +42,16 @@ def read_crew_members(
     db: Session = Depends(get_db)
 ):
     """Get crews for the current user (themselves + users they manage) with relationship data."""
-    # Get all crew members (current user + users they manage)
-    crew_members = db.query(models.User).filter(
+    # Get crew members with relationship data in one query using LEFT JOIN
+    crew_with_relationships = db.query(
+        models.User,
+        models.CrewRelationship.notes.label('relationship_notes')
+    ).outerjoin(
+        models.CrewRelationship,
+        (models.CrewRelationship.manager_user_id == user.user_id) &
+        (models.CrewRelationship.crew_user_id == models.User.user_id) &
+        (models.CrewRelationship.is_active == True)
+    ).filter(
         or_(
             models.User.user_id == user.user_id,  # Show yourself
             models.User.user_id.in_(  # Show users you manage
@@ -54,40 +62,12 @@ def read_crew_members(
         )
     ).all()
     
-    # Build response with relationship data
+    # Build response using Pydantic serialization
     crew_response = []
-    for crew_member in crew_members:
-        # Get relationship data if this is not the current user
-        relationship = None
-        if str(crew_member.user_id) != str(user.user_id):
-            relationship = db.query(models.CrewRelationship).filter(
-                models.CrewRelationship.manager_user_id == user.user_id,
-                models.CrewRelationship.crew_user_id == crew_member.user_id,
-                models.CrewRelationship.is_active.is_(True)
-            ).first()
-        
-        # Create response data combining user data with relationship notes
-        crew_data = {
-            # User fields
-            "user_id": crew_member.user_id,
-            "clerk_user_id": crew_member.clerk_user_id,
-            "email_address": crew_member.email_address,
-            "fullname_first": crew_member.fullname_first,
-            "fullname_last": crew_member.fullname_last,
-            "user_name": crew_member.user_name,
-            "profile_img_url": crew_member.profile_img_url,
-            "phone_number": crew_member.phone_number,
-            "user_status": crew_member.user_status.value if crew_member.user_status is not None else "guest",
-            "user_role": crew_member.user_role,
-            "created_by": crew_member.created_by,
-            "notes": crew_member.notes,  # Notes from User table
-            "is_active": crew_member.is_active,
-            "date_created": crew_member.date_created,
-            "date_updated": crew_member.date_updated,
-            # Include both user notes and relationship notes
-            "relationship_notes": relationship.notes if relationship else None
-        }
-        
+    for crew_member, relationship_notes in crew_with_relationships:
+        crew_data = crew_member.__dict__.copy()
+        crew_data['relationship_notes'] = relationship_notes
+        crew_data['user_status'] = crew_member.user_status.value if crew_member.user_status is not None else "guest"
         crew_response.append(schemas.CrewMemberWithRelationship(**crew_data))
     
     return crew_response
@@ -188,54 +168,27 @@ def get_crew_member_with_assignments(
         joinedload(models.CrewAssignment.department)
     ).all()
     
-    # Format assignments for response
+    # Format assignments for response using Pydantic serialization
     assignment_list = []
     for assignment in assignments:
-        # Construct share URL from share token
-        share_url = None
-        if assignment.share_token:
-            share_url = f"/share/{assignment.share_token}"
-        
-        assignment_data = {
-            "assignment_id": assignment.assignment_id,
-            "show_id": assignment.show_id,
-            "show_name": assignment.show.show_name if assignment.show else "Unknown Show",
-            "department_id": assignment.department_id,
-            "department_name": assignment.department.department_name if assignment.department else "Unknown Department",
-            "department_color": assignment.department.department_color if assignment.department else None,
-            "department_initials": assignment.department.department_initials if assignment.department else None,
-            "venue_name": assignment.show.venue.venue_name if assignment.show and assignment.show.venue else None,
-            "venue_city": assignment.show.venue.city if assignment.show and assignment.show.venue else None,
-            "venue_state": assignment.show.venue.state if assignment.show and assignment.show.venue else None,
-            "show_date": assignment.show.show_date if assignment.show else None,
-            "role": assignment.show_role,
-            "share_url": share_url
-        }
+        assignment_data = assignment.__dict__.copy()
+        assignment_data['show_name'] = assignment.show.show_name if assignment.show else "Unknown Show"
+        assignment_data['department_name'] = assignment.department.department_name if assignment.department else "Unknown Department"
+        assignment_data['department_color'] = assignment.department.department_color if assignment.department else None
+        assignment_data['department_initials'] = assignment.department.department_initials if assignment.department else None
+        assignment_data['venue_name'] = assignment.show.venue.venue_name if assignment.show and assignment.show.venue else None
+        assignment_data['venue_city'] = assignment.show.venue.city if assignment.show and assignment.show.venue else None
+        assignment_data['venue_state'] = assignment.show.venue.state if assignment.show and assignment.show.venue else None
+        assignment_data['show_date'] = assignment.show.show_date if assignment.show else None
+        assignment_data['role'] = assignment.show_role
+        assignment_data['share_url'] = f"/share/{assignment.share_token}" if assignment.share_token else None
         assignment_list.append(schemas.UserDepartmentAssignment(**assignment_data))
     
-    # Create base crew member response
-    crew_data = {
-        # User fields
-        "user_id": crew_member.user_id,
-        "clerk_user_id": crew_member.clerk_user_id,
-        "email_address": crew_member.email_address,
-        "fullname_first": crew_member.fullname_first,
-        "fullname_last": crew_member.fullname_last,
-        "user_name": crew_member.user_name,
-        "profile_img_url": crew_member.profile_img_url,
-        "phone_number": crew_member.phone_number,
-        "user_status": crew_member.user_status.value if crew_member.user_status is not None else "guest",
-        "user_role": crew_member.user_role,
-        "created_by": crew_member.created_by,
-        "notes": crew_member.notes,  # Notes from User table
-        "is_active": crew_member.is_active,
-        "date_created": crew_member.date_created,
-        "date_updated": crew_member.date_updated,
-        # Include relationship notes separately
-        "relationship_notes": relationship.notes if relationship else None,
-        # Add assignments
-        "department_assignments": assignment_list
-    }
+    # Create base crew member response using Pydantic serialization
+    crew_data = crew_member.__dict__.copy()
+    crew_data['user_status'] = crew_member.user_status.value if crew_member.user_status is not None else "guest"
+    crew_data['relationship_notes'] = relationship.notes if relationship else None
+    crew_data['department_assignments'] = assignment_list
     
     return schemas.CrewMemberWithAssignments(**crew_data)
 
