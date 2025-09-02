@@ -23,32 +23,26 @@ interface UpdateCallbacks {
 }
 
 import { useCallback } from 'react';
-import { debug } from '../../utils/logger';
+// debug logging removed for production sweep
 import { applyOperationToElements } from '../utils/elementOperations';
 
 export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
   const handleUpdate = useCallback((update: ScriptUpdate) => {
-    debug('🔄 SHARED: Received websocket update:', update);
     
     const {
       updateScriptInfo,
     } = callbacks;
 
     // Guard against updates without type
-    if (!update.update_type) {
-      debug('❌ SHARED: Update missing type, ignoring');
-      return;
-    }
+    if (!update.update_type) return;
 
     // Apply updates based on update type - now expecting operation objects
     if (update.update_type === "script_info") {
-      debug('📋 SHARED: Processing script_info update:', update.changes);
       // Script info changes - apply directly (no API calls)
       if (updateScriptInfo && update.changes) {
         updateScriptInfo(update.changes);
       }
     } else if (update.update_type === "elements_updated") {
-      debug('📝 SHARED: Processing elements_updated:', update.changes);
       // Use shared operation logic to apply all changes at once
       if (Array.isArray(update.changes) && callbacks.getCurrentElements && callbacks.updateScriptElementsDirectly) {
         const currentElements = callbacks.getCurrentElements();
@@ -59,13 +53,11 @@ export const useScriptUpdateHandlers = (callbacks: UpdateCallbacks) => {
           updatedElements = applyOperationToElements(updatedElements, operation);
         }
         
-        debug('✅ SHARED: Applied', update.changes.length, 'operations locally');
         callbacks.updateScriptElementsDirectly(updatedElements);
       } else {
-        debug('⚠️ SHARED: Missing required callbacks for elements_updated');
+        // Missing callbacks; ignore update
       }
     } else if (update.changes) {
-      debug('🔧 SHARED: Processing individual operation update:', update.changes);
       // Use shared operation logic for individual updates too
       if (callbacks.getCurrentElements && callbacks.updateScriptElementsDirectly) {
         const currentElements = callbacks.getCurrentElements();

@@ -107,8 +107,8 @@ const PlaybackTimingProvider: React.FC<{
 
     useEffect(() => {
         if (!script?.start_time) {
+            // If start_time is temporarily unavailable, avoid clearing the display; just stop scheduling
             clearTimer();
-            setCurrentPlaybackTime(null);
             return;
         }
 
@@ -139,7 +139,6 @@ const PlaybackTimingProvider: React.FC<{
         }
 
         clearTimer();
-        setCurrentPlaybackTime(null);
     }, [isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, script?.start_time, scheduleNext, clearTimer, computeShowTime, processBoundariesForTime]);
 
     useEffect(() => {
@@ -248,7 +247,9 @@ const PlaybackStatus: React.FC<{ playbackState: string; cumulativeDelayMs?: numb
         <Box 
             bg="transparent" 
             color={getStatusColor()} 
-            px="8px" py="2px" 
+            pl="8px" 
+            pr="16px"
+            py="2px" 
             borderRadius="none" 
             fontSize="2xl" 
             fontFamily="mono"
@@ -262,7 +263,6 @@ const PlaybackStatus: React.FC<{ playbackState: string; cumulativeDelayMs?: numb
                     "50%": { opacity: 0.3 }
                 }
             } : {}}
-            pr={playbackState === 'PLAYING' ? "14px" : "8px"}
         >
             {isComplete ? 'COMPLETE' : playbackState}
         </Box>
@@ -316,7 +316,7 @@ const DelayTimer: React.FC<{
             {playbackState === 'COMPLETE' ? (
                 <>
                     <Text as="span" fontSize="2xl" color="gray.500" fontFamily="mono" fontWeight="normal">•</Text>
-                    <Text as="span" color="red.500"> +{displayTime}</Text>
+                    <Text as="span" color="red.500">{displayTime}</Text>
                 </>
             ) : (
                 displayTime
@@ -332,7 +332,7 @@ const DelayTimer: React.FC<{
 });
 
 interface PlaybackOverlayProps {
-    contentAreaBounds: DOMRect;
+    contentAreaBounds: DOMRect | null;
     script: any;
     playbackState: string;
     isPlaybackPlaying: boolean;
@@ -367,25 +367,27 @@ export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
                 processBoundariesForTime={processBoundariesForTime}
             >
                 {/* Border overlay */}
-                <Box
-                    position="fixed"
-                    top={`${contentAreaBounds.top - 1}px`}
-                    left={`${contentAreaBounds.left - 1}px`}
-                    width={`${contentAreaBounds.width + 2}px`}
-                    height={`${contentAreaBounds.height + 2}px`}
-                    border="2px solid"
-                    borderColor={isPlaybackSafety ? "#EAB308" : "red.500"}
-                    borderRadius="md"
-                    pointerEvents="none"
-                    zIndex={1000}
-                    animation={isPlaybackPaused ? "flash 1s infinite" : undefined}
-                    sx={isPlaybackPaused ? {
-                        "@keyframes flash": {
-                            "0%, 100%": { opacity: 1 },
-                            "50%": { opacity: 0.3 }
-                        }
-                    } : {}}
-                />
+                {contentAreaBounds && (
+                    <Box
+                        position="fixed"
+                        top={`${contentAreaBounds.top - 1}px`}
+                        left={`${contentAreaBounds.left - 1}px`}
+                        width={`${contentAreaBounds.width + 2}px`}
+                        height={`${contentAreaBounds.height + 2}px`}
+                        border="2px solid"
+                        borderColor={isPlaybackSafety ? "#EAB308" : "red.500"}
+                        borderRadius="md"
+                        pointerEvents="none"
+                        zIndex={1000}
+                        animation={isPlaybackPaused ? "flash 1s infinite" : undefined}
+                        sx={isPlaybackPaused ? {
+                            "@keyframes flash": {
+                                "0%, 100%": { opacity: 1 },
+                                "50%": { opacity: 0.3 }
+                            }
+                        } : {}}
+                    />
+                )}
                 
                 {/* Time and Status Display - positioned at top center */}
                 <Box
@@ -396,7 +398,7 @@ export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
                     zIndex={1001}
                     pointerEvents="none"
                 >
-                    <Box border="2px solid" borderColor="gray.700" bg="#0F0F0F">
+                    <Box border="2px solid" borderColor="gray.700" bg="#0F0F0F" borderRadius="md">
                         <HStack spacing={0} align="center">
                             {/* Realtime Clock */}
                             <RealtimeClock useMilitaryTime={useMilitaryTime} />
@@ -422,18 +424,8 @@ export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
                             
                             {/* Bullet separator for paused/safety mode */}
                             {(playbackState === 'PAUSED' || playbackState === 'SAFETY') && (
-                                <Box 
-                                    bg="transparent" 
-                                    px="2px" py="2px"
-                                    animation={playbackState === 'PAUSED' ? "flash 1s infinite" : undefined}
-                                    sx={playbackState === 'PAUSED' ? {
-                                        "@keyframes flash": {
-                                            "0%, 100%": { opacity: 1 },
-                                            "50%": { opacity: 0.3 }
-                                        }
-                                    } : {}}
-                                >
-                                    <Text fontSize="2xl" color={playbackState === 'SAFETY' ? 'orange.500' : 'red.500'} fontFamily="mono">•</Text>
+                                <Box bg="transparent" px="4px" py="2px">
+                                    <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
                                 </Box>
                             )}
                             

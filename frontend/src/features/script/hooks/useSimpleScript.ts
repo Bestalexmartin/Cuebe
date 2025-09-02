@@ -30,7 +30,7 @@ interface UseScriptOptions {
   onSuccess?: (script: Script) => void;
 }
 
-export const useScript = (scriptId: string | undefined, shareToken?: string, options?: UseScriptOptions): UseScriptReturn => {
+export const useScript = (scriptId: string | undefined, options?: UseScriptOptions): UseScriptReturn => {
     const { getToken } = useAuth();
     const [script, setScript] = useState<Script | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -43,22 +43,15 @@ export const useScript = (scriptId: string | undefined, shareToken?: string, opt
         setError(null);
         
         try {
-            let response: Response;
-            
-            if (shareToken) {
-                // Use share token authentication
-                response = await fetch(`/api/scripts/${scriptId}?share_token=${encodeURIComponent(shareToken)}`);
-            } else {
-                // Use bearer token authentication
-                const token = await getToken();
-                if (!token) {
-                    setIsLoading(false);
-                    return;
-                }
-                response = await fetch(`/api/scripts/${scriptId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+            // Use bearer token authentication
+            const token = await getToken();
+            if (!token) {
+                setIsLoading(false);
+                return;
             }
+            const response = await fetch(`/api/scripts/${scriptId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             
             if (!response.ok) {
                 throw new Error('Failed to fetch script data.');
@@ -74,7 +67,7 @@ export const useScript = (scriptId: string | undefined, shareToken?: string, opt
         } finally {
             setIsLoading(false);
         }
-    }, [scriptId, getToken, shareToken]);
+    }, [scriptId, getToken]);
 
     useEffect(() => {
         fetchScript();

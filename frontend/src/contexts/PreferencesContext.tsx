@@ -59,6 +59,7 @@ export interface UserPreferences {
     dangerMode: boolean;
     autoSaveInterval: number; // 0 = off, 10-300 seconds (configurable range)
     lookaheadSeconds: number; // 5-60 seconds lookahead for element highlighting
+    playHeartbeatIntervalSec?: number; // 0 = off, else seconds between PLAY heartbeats
 }
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -69,7 +70,8 @@ const DEFAULT_PREFERENCES: UserPreferences = {
     useMilitaryTime: false,
     dangerMode: false,
     autoSaveInterval: 0, // Off by default
-    lookaheadSeconds: 30 // 30 second lookahead by default
+    lookaheadSeconds: 30, // 30 second lookahead by default
+    playHeartbeatIntervalSec: 5 // resend PLAY every 5s by default
 };
 
 const STORAGE_KEY = 'userPreferences';
@@ -100,7 +102,8 @@ const loadPreferencesFromStorage = (): UserPreferences | null => {
                 typeof parsed.lookaheadSeconds === 'number' &&
                 (parsed.lookaheadSeconds >= 5 && parsed.lookaheadSeconds <= 60)
             ) {
-                return parsed;
+                // Merge with defaults to ensure new keys exist
+                return { ...DEFAULT_PREFERENCES, ...parsed } as UserPreferences;
             }
             
             // Migration: Convert old intervals to new ones, ensure valid range
@@ -123,7 +126,7 @@ const loadPreferencesFromStorage = (): UserPreferences | null => {
                 
                 const migratedPrefs = { ...parsed, autoSaveInterval: migratedInterval };
                 savePreferencesToStorage(migratedPrefs);
-                return migratedPrefs;
+                return { ...DEFAULT_PREFERENCES, ...migratedPrefs } as UserPreferences;
             }
         }
     } catch (error) {

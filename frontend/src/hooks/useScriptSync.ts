@@ -1,7 +1,7 @@
 // frontend/src/hooks/useScriptSync.ts
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { debug } from '../utils/logger';
+// debug logging removed for production sweep
 import { useAuth } from '@clerk/clerk-react';
 
 interface ScriptUpdate {
@@ -20,6 +20,7 @@ interface ScriptUpdate {
   timestamp_ms?: number;
   show_time_ms?: number;
   start_time?: string;
+  cumulative_delay_ms?: number;
 }
 
 interface OutgoingMessage {
@@ -30,6 +31,7 @@ interface OutgoingMessage {
   command?: string;
   show_time_ms?: number;
   start_time?: string;
+  cumulative_delay_ms?: number;
 }
 
 interface UseScriptSyncOptions {
@@ -50,7 +52,7 @@ interface UseScriptSyncReturn {
   lastUpdate: ScriptUpdate | null;
   connectionError: string | null;
   sendUpdate: (message: Partial<OutgoingMessage>) => boolean;
-  sendPlaybackCommand: (command: string, showTimeMs?: number, startTime?: string) => boolean;
+  sendPlaybackCommand: (command: string, showTimeMs?: number, startTime?: string, cumulativeDelayMs?: number) => boolean;
   sendPing: () => void;
   getConnectionInfo: () => void;
   connect: () => void;
@@ -90,20 +92,23 @@ export const useScriptSync = (
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
       const message: ScriptUpdate = JSON.parse(event.data);
+      // Update connection count if server provides it on any message type
+      if (typeof message.connected_users === 'number') {
+        setConnectionCount(message.connected_users);
+      }
       
       switch (message.type) {
         case 'connection_established':
-          debug('🟢 WebSocket: Connection established, users:', message.connected_users || 0);
-          debug('🔗 WebSocket: isConnected state set to true');
+          // debug removed
           setIsConnected(true);
-          setConnectionCount(message.connected_users || 0);
+          setConnectionCount(typeof message.connected_users === 'number' ? message.connected_users : 0);
           setConnectionError(null);
           reconnectAttemptsRef.current = 0; // Reset reconnect attempts
           optionsRef.current.onConnect?.();
           break;
           
         case 'script_update':
-          debug('📡 WebSocket: Received script update:', message.update_type);
+          // debug removed
           setLastUpdate(message);
           optionsRef.current.onDataReceived?.(); // Trigger rotation for script updates
           try {
@@ -122,13 +127,13 @@ export const useScriptSync = (
           break;
           
         case 'pong':
-          debug('🏓 WebSocket: Pong received');
+          // debug removed
           // Heartbeat response - connection is alive
           optionsRef.current.onDataReceived?.(); // Trigger rotation to show connection is alive
           break;
           
         case 'playback_command':
-          debug('🎬 WebSocket: Received playback command:', message.command);
+          // debug removed
           optionsRef.current.onPlaybackCommand?.(message);
           optionsRef.current.onDataReceived?.(); // Trigger rotation for playback commands
           break;
@@ -172,7 +177,7 @@ export const useScriptSync = (
       wsRef.current.close();
     }
 
-    debug('🔌 WebSocket: Connecting to script', scriptId);
+      // debug removed
     setIsConnecting(true);
     setConnectionError(null);
     
@@ -204,7 +209,7 @@ export const useScriptSync = (
       const ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {
-        debug('🔌 WebSocket: Connected to script', scriptId);
+        // debug removed
         setIsConnecting(false);
         setConnectionError(null);
       };
@@ -250,7 +255,6 @@ export const useScriptSync = (
   }, [sendMessage]);
 
   const sendPing = useCallback(() => {
-    debug('🏓 WebSocket: Sending ping');
     sendMessage({ type: 'ping' });
     optionsRef.current.onDataReceived?.(); // Trigger rotation for outgoing ping
   }, [sendMessage]);
@@ -259,12 +263,13 @@ export const useScriptSync = (
     sendMessage({ type: 'get_connection_info' });
   }, [sendMessage]);
 
-  const sendPlaybackCommand = useCallback((command: string, showTimeMs?: number, startTime?: string): boolean => {
+  const sendPlaybackCommand = useCallback((command: string, showTimeMs?: number, startTime?: string, cumulativeDelayMs?: number): boolean => {
     const message: OutgoingMessage = {
       type: 'playback_command',
       command,
       show_time_ms: showTimeMs,
-      start_time: startTime
+      start_time: startTime,
+      cumulative_delay_ms: cumulativeDelayMs
     };
     const ok = sendMessage(message);
     if (ok) {
@@ -324,6 +329,8 @@ export const useScriptSync = (
     
     return () => clearInterval(pingInterval);
   }, [isConnected, sendPing]);
+
+  // No background polling for connection count.
 
   return {
     isConnected,

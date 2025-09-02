@@ -29,6 +29,7 @@ interface OptionsModalProps {
     onDangerModeChange?: (value: boolean) => Promise<void>;
     onAutoSaveIntervalChange?: (value: number) => Promise<void>;
     onLookaheadSecondsChange?: (value: number) => Promise<void>;
+    onPlayHeartbeatIntervalChange?: (value: number) => Promise<void>;
     activeMode?: string; // Current script mode
 }
 
@@ -44,11 +45,13 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
     onDangerModeChange,
     onAutoSaveIntervalChange,
     onLookaheadSecondsChange,
+    onPlayHeartbeatIntervalChange,
     activeMode
 }) => {
     const [localPreferences, setLocalPreferences] = useState<UserPreferences>(initialOptions);
     const [lookaheadInputValue, setLookaheadInputValue] = useState<string>('');
     const [autoSaveInputValue, setAutoSaveInputValue] = useState<string>('');
+    const [heartbeatInputValue, setHeartbeatInputValue] = useState<string>('');
     const { showError } = useEnhancedToast();
 
     // Update local state when modal opens or when initialOptions change
@@ -63,6 +66,7 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
             setLocalPreferences(preferencesWithDefaults);
             setLookaheadInputValue(String(preferencesWithDefaults.lookaheadSeconds));
             setAutoSaveInputValue(String(preferencesWithDefaults.autoSaveInterval));
+            setHeartbeatInputValue(String(preferencesWithDefaults.playHeartbeatIntervalSec ?? 5));
         }
     }, [isOpen]); // Only depend on isOpen to avoid resetting local state during user input
 
@@ -274,6 +278,67 @@ export const OptionsModal: React.FC<OptionsModalProps> = ({
                             </HStack>
                             <Text fontSize="xs" color="gray.500" lineHeight="1.3" whiteSpace="normal" maxWidth="300px">
                                 How many seconds ahead to highlight upcoming cues during playback
+                            </Text>
+                        </VStack>
+                    </HStack>
+                </FormControl>
+
+                {/* Re-send Play Trigger Interval */}
+                <FormControl>
+                    <HStack align="start" spacing={5} mb={1}>
+                        <VStack align="start" spacing={0} flex={1}>
+                            <HStack spacing={2} align="center" width="100%">
+                                <FormLabel mb={0} fontSize="md">
+                                    Re-send Play Trigger
+                                </FormLabel>
+                                <HStack spacing={2}>
+                                    <Input
+                                        type="number"
+                                        value={heartbeatInputValue}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            setHeartbeatInputValue(value);
+                                            const numValue = parseInt(value);
+                                            if (!isNaN(numValue)) {
+                                                const newPreferences = { ...localPreferences, playHeartbeatIntervalSec: numValue };
+                                                setLocalPreferences(newPreferences);
+                                                onPreview?.(newPreferences);
+                                            }
+                                        }}
+                                        onBlur={async (e) => {
+                                            const value = e.target.value;
+                                            const numValue = parseInt(value);
+                                            // Allow 0 (off) or 2-30 seconds
+                                            if (isNaN(numValue) || numValue < 0 || (numValue > 0 && (numValue < 2 || numValue > 30))) {
+                                                showError('Re-send Play Trigger must be 0 (off) or between 2 and 30 seconds');
+                                                const fallback = 5;
+                                                setHeartbeatInputValue(String(fallback));
+                                                const newPreferences = { ...localPreferences, playHeartbeatIntervalSec: fallback };
+                                                setLocalPreferences(newPreferences);
+                                                onPreview?.(newPreferences);
+                                                if (onPlayHeartbeatIntervalChange) {
+                                                    await onPlayHeartbeatIntervalChange(fallback);
+                                                }
+                                            } else {
+                                                const newPreferences = { ...localPreferences, playHeartbeatIntervalSec: numValue };
+                                                setLocalPreferences(newPreferences);
+                                                onPreview?.(newPreferences);
+                                                if (onPlayHeartbeatIntervalChange) {
+                                                    await onPlayHeartbeatIntervalChange(numValue);
+                                                }
+                                            }
+                                        }}
+                                        min={0}
+                                        max={30}
+                                        size="xs"
+                                        width="60px"
+                                        textAlign="center"
+                                    />
+                                    <Text fontSize="xs" color="gray.600">seconds</Text>
+                                </HStack>
+                            </HStack>
+                            <Text fontSize="xs" color="gray.500" lineHeight="1.3" whiteSpace="normal" maxWidth="360px">
+                                Sends a PLAY heartbeat while running so late joiners sync immediately. Set to 0 to disable.
                             </Text>
                         </VStack>
                     </HStack>

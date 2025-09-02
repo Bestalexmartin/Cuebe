@@ -83,7 +83,7 @@ export function useSaveScript({
         if (!ok) {
           modalState.closeModal(failureModalName); // ensure closed if open
           modalState.closeModal(processingModalName);
-          showError('Save Failed', 'Unable to broadcast script info changes.');
+          showError('Save Failed', { description: 'Unable to broadcast script info changes.' });
           modalState.openModal(failureModalName);
           return false;
         }
@@ -97,7 +97,7 @@ export function useSaveScript({
         });
         if (!ok) {
           modalState.closeModal(processingModalName);
-          showError('Save Failed', 'Unable to broadcast element changes.');
+          showError('Save Failed', { description: 'Unable to broadcast element changes.' });
           modalState.openModal(failureModalName);
           return false;
         }

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { ScriptElement } from '../features/script/types/scriptElements';
-import { validateShareToken, INVALID_SHARE_TOKEN_ERROR } from '../utils/tokenValidation';
+import { validateShareToken, encodeShareToken, INVALID_SHARE_TOKEN_ERROR } from '../utils/tokenValidation';
 
 /**
  * Recalculate durations for all group elements based on their children
@@ -57,7 +57,7 @@ export const useScript = (shareToken: string | undefined) => {
 
     try {
       const elementsResponse = await fetch(
-        `/api/scripts/${scriptId}?share_token=${encodeURIComponent(shareToken!)}`
+        `/api/shared/${encodeShareToken(shareToken!)}/scripts/${scriptId}`
       );
 
       if (!elementsResponse.ok) {
@@ -94,38 +94,12 @@ export const useScript = (shareToken: string | undefined) => {
   }, []);
 
   const refreshScriptData = useCallback(() => {
-    // STRIPPED FOR REBUILD: This was part of the broken coordinated refresh architecture
-    // TODO REBUILD: May not be needed if unified save handles refresh via single response
-    // if (viewingScriptId) {
-    //   handleScriptClick(viewingScriptId);
-    // }
+    // No-op placeholder; unified save flow handles refresh in responses
   }, [viewingScriptId, handleScriptClick]);
 
   const refreshScriptElementsOnly = useCallback(async () => {
-    // STRIPPED FOR REBUILD: This was part of the broken coordinated refresh architecture
-    // TODO REBUILD: May not be needed if unified save handles refresh via single response
-    // if (!viewingScriptId || !validateShareToken(shareToken)) {
-    //   return;
-    // }
-    // try {
-    //   const elementsResponse = await fetch(
-    //     buildSharedApiUrl(`/api/scripts/${viewingScriptId}/elements`, shareToken!)
-    //   );
-    //   if (!elementsResponse.ok) {
-    //     return;
-    //   }
-    //   const elementsData = await elementsResponse.json();
-    //   let elements: ScriptElement[];
-    //   if (Array.isArray(elementsData)) {
-    //     elements = elementsData;
-    //   } else {
-    //     elements = elementsData.elements || [];
-    //   }
-    //   const elementsWithGroupDurations = recalculateGroupDurations(elements);
-    //   setScriptElements(elementsWithGroupDurations);
-    // } catch (err) {
-    // }
-  }, [viewingScriptId, shareToken]);
+    // No-op placeholder; unified save flow handles refresh in responses
+  }, [viewingScriptId]);
 
   const updateScriptElementsDirectly = useCallback((newElements: ScriptElement[]) => {
     setScriptElements(newElements);

@@ -205,7 +205,7 @@ export const EditDepartmentPage: React.FC = () => {
         } catch (error) {
             console.error('Error deleting department:', error);
             const errorMessage = error instanceof Error ? error.message : 'Failed to delete department. Please try again.';
-            showError('Delete Failed', errorMessage);
+            showError('Delete Failed', { description: errorMessage });
         } finally {
             setIsDeleting(false);
             setIsDeleteModalOpen(false);

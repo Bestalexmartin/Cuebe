@@ -350,9 +350,12 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
     }, []);
 
     const getElementHighlightState = useCallback((elementId: string): ElementHighlightState | undefined => {
+        // Don't apply overlays when playback is complete
+        if (playState.playbackState === 'COMPLETE') return undefined;
+        
         const state = playState.elementStates.get(elementId);
         return state; // Return undefined if no state is set
-    }, [playState.elementStates]);
+    }, [playState.elementStates, playState.playbackState]);
 
     const getElementBorderState = useCallback((elementId: string): ElementBorderState | undefined => {
         const state = playState.elementBorderStates.get(elementId);
