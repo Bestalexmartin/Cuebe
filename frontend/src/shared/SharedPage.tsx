@@ -16,7 +16,6 @@ import {
 import { useParams } from 'react-router-dom';
 import { AppIcon } from '../components/AppIcon';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { ViewMode } from '../features/script/components/modes/ViewMode';
 import { useSharedData } from '../hooks/useSharedData';
 import { useScript } from '../hooks/useScript';
 import { useSorting } from '../hooks/useSorting';
@@ -33,6 +32,9 @@ import { GuestDarkModeSwitch } from './components/GuestDarkModeSwitch';
 import { useTutorialSearch } from './hooks/useTutorialSearch';
 import { useScriptUpdateHandlers } from './hooks/useScriptUpdateHandlers';
 import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
+import { SynchronizedPlayProvider, useSynchronizedPlayContext } from '../contexts/SynchronizedPlayContext';
+import { SubscriberViewMode } from '../features/script/components/modes/SubscriberViewMode';
+import { SubscriberPlaybackOverlay } from '../features/script/components/SubscriberPlaybackOverlay';
 
 const SHOWS_SORT_OPTIONS: SortOption[] = [
   { value: 'show_name', label: 'Name' },
@@ -41,12 +43,18 @@ const SHOWS_SORT_OPTIONS: SortOption[] = [
   { value: 'date_updated', label: 'Updated' },
 ];
 
-export const SharedPage = React.memo(() => {
+// Inner component to access synchronized play context
+const SharedPageContent = React.memo(() => {
   const { shareToken } = useParams<{ shareToken: string }>();
   const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [showTutorials, setShowTutorials] = useState<boolean>(false);
+  const [contentAreaBounds, setContentAreaBounds] = useState<DOMRect | null>(null);
   const triggerRotationRef = useRef<(() => void) | null>(null);
+  const contentAreaRef = useRef<HTMLDivElement>(null);
+  
+  // Access synchronized play context
+  const { handlePlaybackCommand } = useSynchronizedPlayContext();
 
   // Tutorial search - extracted to custom hook
   const {
@@ -141,6 +149,17 @@ export const SharedPage = React.memo(() => {
   // WebSocket update handlers - with stable callbacks object
   const { handleUpdate } = useScriptUpdateHandlers(updateHandlerCallbacks);
 
+  // Playback command handler for synchronized playback
+  const onPlaybackCommand = useCallback((message: any) => {
+    if (message.command && message.timestamp_ms) {
+      handlePlaybackCommand(
+        message.command,
+        message.timestamp_ms,
+        message.show_time_ms,
+        message.start_time
+      );
+    }
+  }, [handlePlaybackCommand]);
 
   // Trigger rotation on data received (ping/pong and incoming updates)
   const onDataReceived = useCallback(() => {
@@ -160,6 +179,7 @@ export const SharedPage = React.memo(() => {
     onDisconnect,
     onError,
     onDataReceived,
+    onPlaybackCommand,
   });
 
   // Update sync context for header display
@@ -192,6 +212,21 @@ export const SharedPage = React.memo(() => {
       setSyncData(null);
     }
   }, [viewingScriptId, setSyncData]);
+
+  // Track content area bounds for overlay positioning
+  useEffect(() => {
+    if (contentAreaRef.current) {
+      const updateBounds = () => {
+        if (contentAreaRef.current) {
+          setContentAreaBounds(contentAreaRef.current.getBoundingClientRect());
+        }
+      };
+      
+      updateBounds();
+      window.addEventListener('resize', updateBounds);
+      return () => window.removeEventListener('resize', updateBounds);
+    }
+  }, [viewingScriptId]);
 
 
   const { sortBy, sortDirection, sortedShows, handleSortClick } = useSorting(sharedData);
@@ -343,6 +378,7 @@ export const SharedPage = React.memo(() => {
 
                 {/* Script Content */}
                 <Box
+                  ref={contentAreaRef}
                   border="1px solid"
                   borderColor="container.border"
                   borderRadius="md"
@@ -360,12 +396,11 @@ export const SharedPage = React.memo(() => {
                     <Box
                       flex={1}
                       p="4"
-                      overflowY="auto"
-                      className="hide-scrollbar"
+                      overflow="hidden"
                       minHeight={0}
                       maxHeight="100%"
                     >
-                      <ViewMode
+                      <SubscriberViewMode
                         scriptId={viewingScriptId}
                         colorizeDepNames={true}
                         showClockTimes={true}
@@ -373,10 +408,20 @@ export const SharedPage = React.memo(() => {
                         elements={scriptElements}
                         allElements={scriptElements}
                         script={currentScript}
+                        lookaheadSeconds={30}
                       />
                     </Box>
                   )}
                 </Box>
+                
+                {/* Synchronized Playback Overlay */}
+                {!isLoadingScript && !scriptError && contentAreaBounds && (
+                  <SubscriberPlaybackOverlay
+                    contentAreaBounds={contentAreaBounds}
+                    script={currentScript}
+                    useMilitaryTime={false}
+                  />
+                )}
               </>
             ) : (
               <>
@@ -407,5 +452,13 @@ export const SharedPage = React.memo(() => {
         </Box>
       </Box>
     </ErrorBoundary>
+  );
+});
+
+export const SharedPage = React.memo(() => {
+  return (
+    <SynchronizedPlayProvider>
+      <SharedPageContent />
+    </SynchronizedPlayProvider>
   );
 });

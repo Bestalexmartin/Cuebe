@@ -5,7 +5,7 @@ import { debug } from '../utils/logger';
 import { useAuth } from '@clerk/clerk-react';
 
 interface ScriptUpdate {
-  type: 'script_update' | 'connection_established' | 'update_confirmed' | 'error' | 'pong';
+  type: 'script_update' | 'connection_established' | 'update_confirmed' | 'error' | 'pong' | 'playback_command';
   script_id?: string;
   update_type?: 'element_change' | 'script_info' | 'element_order' | 'element_delete' | 'elements_updated';
   changes?: any;
@@ -16,13 +16,20 @@ interface ScriptUpdate {
   message?: string;
   access_type?: string;
   connected_users?: number;
+  command?: 'PLAY' | 'PAUSE' | 'SAFETY' | 'COMPLETE' | 'STOP';
+  timestamp_ms?: number;
+  show_time_ms?: number;
+  start_time?: string;
 }
 
 interface OutgoingMessage {
-  type: 'script_update' | 'ping' | 'get_connection_info';
+  type: 'script_update' | 'ping' | 'get_connection_info' | 'playback_command';
   update_type?: string;
   changes?: any;
   operation_id?: string;
+  command?: string;
+  show_time_ms?: number;
+  start_time?: string;
 }
 
 interface UseScriptSyncOptions {
@@ -32,6 +39,7 @@ interface UseScriptSyncOptions {
   onError?: (error: string) => void;
   onDataReceived?: () => void; // Called when any data received
   onConnectionEstablished?: () => void; // Called when connection first established
+  onPlaybackCommand?: (command: ScriptUpdate) => void; // Called when playback command received
   autoReconnect?: boolean;
 }
 
@@ -42,6 +50,7 @@ interface UseScriptSyncReturn {
   lastUpdate: ScriptUpdate | null;
   connectionError: string | null;
   sendUpdate: (message: Partial<OutgoingMessage>) => boolean;
+  sendPlaybackCommand: (command: string, showTimeMs?: number, startTime?: string) => boolean;
   sendPing: () => void;
   getConnectionInfo: () => void;
   connect: () => void;
@@ -116,6 +125,12 @@ export const useScriptSync = (
           debug('🏓 WebSocket: Pong received');
           // Heartbeat response - connection is alive
           optionsRef.current.onDataReceived?.(); // Trigger rotation to show connection is alive
+          break;
+          
+        case 'playback_command':
+          debug('🎬 WebSocket: Received playback command:', message.command);
+          optionsRef.current.onPlaybackCommand?.(message);
+          optionsRef.current.onDataReceived?.(); // Trigger rotation for playback commands
           break;
           
         default:
@@ -244,6 +259,20 @@ export const useScriptSync = (
     sendMessage({ type: 'get_connection_info' });
   }, [sendMessage]);
 
+  const sendPlaybackCommand = useCallback((command: string, showTimeMs?: number, startTime?: string): boolean => {
+    const message: OutgoingMessage = {
+      type: 'playback_command',
+      command,
+      show_time_ms: showTimeMs,
+      start_time: startTime
+    };
+    const ok = sendMessage(message);
+    if (ok) {
+      optionsRef.current.onDataReceived?.(); // Trigger rotation for outgoing playback command
+    }
+    return ok;
+  }, [sendMessage]);
+
   const connect = useCallback(() => {
     connectToWebSocket();
   }, [connectToWebSocket]);
@@ -303,6 +332,7 @@ export const useScriptSync = (
     lastUpdate,
     connectionError,
     sendUpdate,
+    sendPlaybackCommand,
     sendPing,
     getConnectionInfo,
     connect,

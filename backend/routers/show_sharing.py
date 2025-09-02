@@ -87,9 +87,13 @@ async def access_shared_show(
 ):
     """Access a shared show via token (public endpoint, no auth required)"""
     
+    logger.info(f"🔍 Accessing shared show with token: {share_token[:8]}...")
+    
     try:
-        # Find the crew assignment by share token
-        crew_assignment = db.query(models.CrewAssignment).filter(
+        # Find the crew assignment by share token, eager load user
+        crew_assignment = db.query(models.CrewAssignment).options(
+            joinedload(models.CrewAssignment.user)
+        ).filter(
             models.CrewAssignment.share_token == share_token,
             models.CrewAssignment.is_active == True
         ).first()
@@ -104,21 +108,20 @@ async def access_shared_show(
         raise HTTPException(status_code=500, detail="Database error")
     
     try:
-        # Get the show with proper joins - EXACTLY like the working /api/me/shows endpoint
+        # Get the show with proper joins, filtering scripts and elements at DB level
         show = db.query(models.Show).options(
-            joinedload(models.Show.scripts),  # Load scripts 
-            joinedload(models.Show.venue)     # Load venue for venue name display
+            joinedload(models.Show.scripts.and_(models.Script.is_shared == True)).joinedload(
+                models.Script.elements.and_(models.ScriptElement.department_id == crew_assignment.department_id)
+            ),
+            joinedload(models.Show.venue)
         ).filter(models.Show.show_id == crew_assignment.show_id).first()
         
         if not show:
             logger.error(f"Show not found for crew assignment: {crew_assignment.show_id}")
             raise HTTPException(status_code=404, detail="Show not found")
         
-        # Filter scripts to only shared ones (create a new list, don't modify the SQLAlchemy relationship)
-        shared_scripts = [script for script in show.scripts if script.is_shared]
-        
-        # Get the user info for metadata
-        user = db.query(models.User).filter(models.User.user_id == crew_assignment.user_id).first()
+        # Get the user info for metadata (from eager load)
+        user = crew_assignment.user
         if not user:
             logger.error(f"User not found for crew assignment: {crew_assignment.user_id}")
             raise HTTPException(status_code=404, detail="User not found")
@@ -130,25 +133,11 @@ async def access_shared_show(
         
         logger.info(f"Successfully processed share token access: {share_token[:8]}...")
         
-        # Create a copy of the show with only shared scripts for response
-        show_copy = models.Show(
-            show_id=show.show_id,
-            show_name=show.show_name,
-            show_date=show.show_date,
-            show_end=show.show_end,
-            show_notes=show.show_notes,
-            deadline=show.deadline,
-            venue_id=show.venue_id,
-            owner_id=show.owner_id,
-            date_created=show.date_created,
-            date_updated=show.date_updated,
-            venue=show.venue,
-            scripts=shared_scripts  # Use filtered scripts list
-        )
+        logger.info(f"🏢 Department filtering applied at DB level for: {crew_assignment.department_id}")
         
-        # Return using filtered show copy - prevents SQLAlchemy from syncing changes
+        # Return the show with department-filtered elements
         return schemas.SharedShowResponse(
-            shows=[show_copy],
+            shows=[show],
             user_name=f"{user.fullname_first} {user.fullname_last}".strip(),
             user_profile_image=user.profile_img_url,
             share_expires=None  # TODO: Add expiration logic if needed

@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from uuid import UUID
 from datetime import datetime
 import logging
@@ -116,19 +117,18 @@ def delete_venue(
     if not venue_to_delete:
         raise HTTPException(status_code=404, detail="Venue not found")
 
-    # First, nullify the venue_id in any shows that reference this venue
-    shows_using_venue = db.query(models.Show).filter(
+    # First, nullify the venue_id in any shows that reference this venue (single statement)
+    affected = db.query(models.Show).filter(
         models.Show.venue_id == venue_id,
         models.Show.owner_id == user.user_id  # Only update user's own shows
-    ).all()
-    
-    for show in shows_using_venue:
-        show.venue_id = None
-        show.date_updated = datetime.utcnow()
-    
+    ).update({
+        models.Show.venue_id: None,
+        models.Show.date_updated: func.now()
+    }, synchronize_session=False)
+
     # Log the cleanup for debugging
-    if shows_using_venue:
-        logger.info(f"Nullified venue reference for {len(shows_using_venue)} shows when deleting venue {venue_id}")
+    if affected:
+        logger.info(f"Nullified venue reference for {affected} shows when deleting venue {venue_id}")
     
     # Now delete the venue
     db.delete(venue_to_delete)

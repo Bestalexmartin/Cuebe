@@ -47,9 +47,32 @@ def check_user_by_email(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Check if a user exists by email address."""
-    existing_user = db.query(models.User).filter(models.User.email_address == email).first()
-    return existing_user
+    """Check if a user exists by email address and return minimal info.
+
+    Returns either null (not found) or a minimal object with the fields the
+    frontend needs to immediately create a crew relationship without an extra fetch.
+    """
+    row = (
+        db.query(
+            models.User.user_id,
+            models.User.fullname_first,
+            models.User.fullname_last
+        )
+        .filter(models.User.email_address == email)
+        .first()
+    )
+
+    if not row:
+        return None
+
+    user_id, first, last = row
+    # Include both user_id and ID (alias) to match existing frontend expectations
+    return {
+        "user_id": str(user_id),
+        "ID": str(user_id),
+        "fullname_first": first,
+        "fullname_last": last,
+    }
 
 
 @router.post("/create-guest-with-relationship", response_model=schemas.User, status_code=status.HTTP_201_CREATED)

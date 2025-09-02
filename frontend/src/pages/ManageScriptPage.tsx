@@ -166,6 +166,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         connectionCount: syncConnectionCount, 
         connectionError: syncConnectionError, 
         sendUpdate: sendSyncUpdate,
+        sendPlaybackCommand: sendSyncPlaybackCommand,
         connect: connectSync
     } = useScriptSync(
         scriptId || '',
@@ -333,12 +334,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         }
     }, [playbackState, discardChanges]);
 
-
-    // Safety stop handler
-    const handleSafetyStop = useCallback(() => {
-        safetyStop();
-    }, [safetyStop]);
-
     // Script form synchronization hook - FIXED  
     const { currentScript, hasChanges, handleInfoModeExit, clearPendingChanges } = useScriptFormSync({
         sourceScript,
@@ -351,6 +346,34 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     
     // Use form sync result or context fallback
     const effectiveCurrentScript = currentScript || contextCurrentScript;
+
+    // Playback synchronization for scoped sides - using scriptSync's sendPlaybackCommand
+    const sendPlaybackCommand = useCallback((command: string) => {
+        if (sendSyncPlaybackCommand) {
+            sendSyncPlaybackCommand(
+                command,
+                currentTime || undefined,
+                command === 'PLAY' ? effectiveCurrentScript?.start_time : undefined
+            );
+        }
+    }, [sendSyncPlaybackCommand, currentTime, effectiveCurrentScript?.start_time]);
+
+    // Auto-broadcast state changes (for script completion)
+    const lastBroadcastedStateRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (lastBroadcastedStateRef.current !== playbackState) {
+            if (playbackState === 'COMPLETE' && lastBroadcastedStateRef.current !== 'COMPLETE') {
+                sendPlaybackCommand('COMPLETE');
+            }
+            lastBroadcastedStateRef.current = playbackState;
+        }
+    }, [playbackState, sendPlaybackCommand]);
+
+    // Safety stop handler
+    const handleSafetyStop = useCallback(() => {
+        safetyStop();
+        sendPlaybackCommand('SAFETY');
+    }, [safetyStop, sendPlaybackCommand]);
 
     // Playback adjustment hook - handles offset adjustments during pause/resume
     usePlaybackAdjustment({
@@ -576,7 +599,8 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         modalHandlers,
         elementActions,
         editModeRef,
-        setCurrentSelectedElementIds
+        setCurrentSelectedElementIds,
+        sendPlaybackCommand
     });
 
 

@@ -40,67 +40,70 @@ def read_departments(
     db: Session = Depends(get_db)
 ):
     """Get departments owned by the current user with statistics."""
-    departments = db.query(models.Department).filter(models.Department.owner_id == user.user_id).all()
     
-    departments_with_stats = []
-    for dept in departments:
-        # Calculate shows assigned count (distinct shows this department is assigned to)
-        shows_assigned_count = db.query(func.count(distinct(models.CrewAssignment.show_id))).filter(
-            models.CrewAssignment.department_id == dept.department_id
-        ).scalar() or 0
-        
-        # Get crew assignments with user and show details
-        crew_assignments = db.query(models.CrewAssignment).filter(
-            models.CrewAssignment.department_id == dept.department_id
+    # Single efficient query with all stats calculated at database level
+    departments_with_stats = db.query(
+        models.Department,
+        func.count(distinct(models.CrewAssignment.show_id)).label('shows_assigned_count'),
+        func.count(distinct(models.ScriptElement.element_id)).label('script_elements_count'),
+        func.count(distinct(models.CrewAssignment.user_id)).label('unique_crew_count')
+    ).outerjoin(
+        models.CrewAssignment, models.Department.department_id == models.CrewAssignment.department_id
+    ).outerjoin(
+        models.ScriptElement, models.Department.department_id == models.ScriptElement.department_id
+    ).filter(
+        models.Department.owner_id == user.user_id
+    ).group_by(models.Department.department_id).all()
+    
+    # Get crew assignments for all departments in one query
+    dept_ids = [dept.department_id for dept, *_ in departments_with_stats]
+    if dept_ids:
+        all_crew_assignments = db.query(models.CrewAssignment).filter(
+            models.CrewAssignment.department_id.in_(dept_ids)
         ).options(
             joinedload(models.CrewAssignment.user),
             joinedload(models.CrewAssignment.show)
         ).all()
-        
-        # Format crew assignments for response
-        assignment_list = []
-        for assignment in crew_assignments:
-            # Construct share URL from share token
-            share_url = None
-            if assignment.share_token:
-                share_url = f"/share/{assignment.share_token}"
-            
-            assignment_data = {
-                "assignment_id": assignment.assignment_id,
-                "show_id": assignment.show_id,
-                "show_name": assignment.show.show_name if assignment.show else "Unknown Show",
-                "user_id": assignment.user_id,
-                "fullname_first": assignment.user.fullname_first if assignment.user else None,
-                "fullname_last": assignment.user.fullname_last if assignment.user else None,
-                "email_address": assignment.user.email_address if assignment.user else None,
-                "phone_number": assignment.user.phone_number if assignment.user else None,
-                "profile_img_url": assignment.user.profile_img_url if assignment.user else None,
-                "role": assignment.show_role,
-                "user_role": assignment.user.user_role if assignment.user else None,
-                "user_status": assignment.user.user_status if assignment.user else None,
-                "is_active": assignment.user.is_active if assignment.user else None,
-                "date_created": assignment.user.date_created if assignment.user else None,
-                "date_updated": assignment.user.date_updated if assignment.user else None,
-                "share_url": share_url
-            }
-            assignment_list.append(schemas.DepartmentCrewAssignment(**assignment_data))
-        
-        # Create department with stats
-        dept_dict = {
-            "department_id": dept.department_id,
-            "department_name": dept.department_name,
-            "department_description": dept.department_description,
-            "department_color": dept.department_color,
-            "department_initials": dept.department_initials,
-            "date_created": dept.date_created,
-            "date_updated": dept.date_updated,
-            "shows_assigned_count": shows_assigned_count,
-            "unique_crew_count": 0,  # Not needed but keeping for schema compatibility
-            "crew_assignments": assignment_list
-        }
-        departments_with_stats.append(schemas.DepartmentWithStats(**dept_dict))
+    else:
+        all_crew_assignments = []
     
-    return departments_with_stats
+    # Group assignments by department
+    assignments_by_dept = {}
+    for assignment in all_crew_assignments:
+        dept_id = assignment.department_id
+        if dept_id not in assignments_by_dept:
+            assignments_by_dept[dept_id] = []
+        
+        # Use Pydantic serialization with computed share_url
+        assignment_dict = assignment.__dict__.copy()
+        assignment_dict['show_name'] = assignment.show.show_name if assignment.show else "Unknown Show"
+        assignment_dict['fullname_first'] = assignment.user.fullname_first if assignment.user else None
+        assignment_dict['fullname_last'] = assignment.user.fullname_last if assignment.user else None
+        assignment_dict['email_address'] = assignment.user.email_address if assignment.user else None
+        assignment_dict['phone_number'] = assignment.user.phone_number if assignment.user else None
+        assignment_dict['profile_img_url'] = assignment.user.profile_img_url if assignment.user else None
+        assignment_dict['role'] = assignment.show_role
+        assignment_dict['user_role'] = assignment.user.user_role if assignment.user else None
+        assignment_dict['user_status'] = assignment.user.user_status if assignment.user else None
+        assignment_dict['is_active'] = assignment.user.is_active if assignment.user else None
+        assignment_dict['date_created'] = assignment.user.date_created if assignment.user else None
+        assignment_dict['date_updated'] = assignment.user.date_updated if assignment.user else None
+        assignment_dict['share_url'] = f"/share/{assignment.share_token}" if assignment.share_token else None
+        
+        assignments_by_dept[dept_id].append(schemas.DepartmentCrewAssignment(**assignment_dict))
+    
+    # Build final response
+    result = []
+    for dept, shows_count, elements_count, unique_count in departments_with_stats:
+        dept_dict = dept.__dict__.copy()
+        dept_dict['shows_assigned_count'] = shows_count or 0
+        dept_dict['script_elements_count'] = elements_count or 0
+        dept_dict['unique_crew_count'] = unique_count or 0
+        dept_dict['crew_assignments'] = assignments_by_dept.get(dept.department_id, [])
+        
+        result.append(schemas.DepartmentWithStats(**dept_dict))
+    
+    return result
 
 
 @router.post("/me/departments", response_model=schemas.Department, status_code=status.HTTP_201_CREATED)
@@ -175,37 +178,84 @@ def delete_department(
     db: Session = Depends(get_db)
 ):
     """Delete a department after checking for dependencies."""
+    logger.info(f"🗑️ DELETE request for department {department_id} by user {user.user_id}")
+    
     department_to_delete = db.query(models.Department).filter(
         models.Department.department_id == department_id,
         models.Department.owner_id == user.user_id
     ).first()
     if not department_to_delete:
+        logger.warning(f"❌ Department {department_id} not found for user {user.user_id}")
         raise HTTPException(status_code=404, detail="Department not found")
 
-    # Check for dependent records that would prevent deletion
-    crew_assignments = db.query(models.CrewAssignment).filter(
+    logger.info(f"📋 Found department: {department_to_delete.department_name}")
+
+    # Check for dependent records that would prevent deletion (efficient counts + samples)
+    crew_count = db.query(func.count()).select_from(models.CrewAssignment).filter(
         models.CrewAssignment.department_id == department_id
-    ).count()
-    
-    script_elements = db.query(models.ScriptElement).filter(
+    ).scalar() or 0
+
+    script_element_count = db.query(func.count()).select_from(models.ScriptElement).filter(
         models.ScriptElement.department_id == department_id
-    ).count()
+    ).scalar() or 0
+
+    logger.info(f"🔍 Dependency check results:")
+    logger.info(f"   - Crew assignments: {crew_count}")
+    logger.info(f"   - Script elements: {script_element_count}")
+
+    # Sample some names for better error reporting (limit to 3)
+    show_name_rows = []
+    if crew_count:
+        show_name_rows = (
+            db.query(models.Show.show_name)
+            .join(models.CrewAssignment, models.CrewAssignment.show_id == models.Show.show_id)
+            .filter(models.CrewAssignment.department_id == department_id)
+            .distinct()
+            .limit(3)
+            .all()
+        )
+
+    script_name_rows = []
+    if script_element_count:
+        script_name_rows = (
+            db.query(models.Script.script_name)
+            .join(models.ScriptElement, models.ScriptElement.script_id == models.Script.script_id)
+            .filter(models.ScriptElement.department_id == department_id)
+            .distinct()
+            .limit(3)
+            .all()
+        )
     
     # If there are dependencies, prevent deletion and inform user
     dependencies = []
-    if crew_assignments > 0:
-        dependencies.append(f"{crew_assignments} crew assignment(s)")
-    if script_elements > 0:
-        dependencies.append(f"{script_elements} script element(s)")
+    dependency_details = []
+    
+    if crew_count:
+        dependencies.append(f"{crew_count} crew assignment(s)")
+        show_names = [f"'{row.show_name}'" for row in show_name_rows]
+        if show_names:
+            dependency_details.append(f"crew assignments in shows: {', '.join(show_names)}")
+
+    if script_element_count:
+        dependencies.append(f"{script_element_count} script element(s)")
+        script_names = [f"'{row.script_name}'" for row in script_name_rows]
+        if script_names:
+            dependency_details.append(f"script elements in scripts: {', '.join(script_names)}")
     
     if dependencies:
-        dependency_list = ", ".join(dependencies)
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Cannot delete department. It is still referenced by: {dependency_list}. Please remove these references first."
-        )
+        dependency_summary = ", ".join(dependencies)
+        detail_summary = "; ".join(dependency_details) if dependency_details else ""
+        error_message = f"Cannot delete department '{department_to_delete.department_name}'. It is still referenced by: {dependency_summary}"
+        if detail_summary:
+            error_message += f" ({detail_summary})"
+        error_message += ". Please remove these references first."
+        
+        logger.warning(f"🚫 Delete blocked: {error_message}")
+        raise HTTPException(status_code=400, detail=error_message)
 
     # Safe to delete - no dependencies
+    logger.info(f"✅ Deleting department '{department_to_delete.department_name}' - no dependencies found")
     db.delete(department_to_delete)
     db.commit()
+    logger.info(f"🗑️ Department {department_id} successfully deleted")
     return Response(status_code=status.HTTP_204_NO_CONTENT)
