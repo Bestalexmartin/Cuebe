@@ -416,8 +416,9 @@ export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
                             {/* Playback Status */}
                             <PlaybackStatus playbackState={playbackState} cumulativeDelayMs={cumulativeDelayMs} />
                             
-                            {/* Bullet separator for paused/safety/complete mode */}
-                            {(playbackState === 'PAUSED' || playbackState === 'SAFETY' || playbackState === 'COMPLETE') && (
+                            {/* Bullet separator for paused/safety/complete mode - only show if there will be a delay timer */}
+                            {((playbackState === 'PAUSED' || playbackState === 'SAFETY') || 
+                              (playbackState === 'COMPLETE' && cumulativeDelayMs > 0)) && (
                                 <Box bg="#0F0F0F" px="4px" py="2px">
                                     <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
                                 </Box>

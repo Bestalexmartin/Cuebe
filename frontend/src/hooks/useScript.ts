@@ -45,9 +45,15 @@ export const useScript = (shareToken: string | undefined, updateSharedData?: (up
   const [scriptError, setScriptError] = useState<string | null>(null);
   const [crewContext, setCrewContext] = useState<CrewContext | null>(null);
   
-  const { handlePlaybackCommand } = useSynchronizedPlayContext();
+  const { handlePlaybackCommand, resetAllPlaybackState } = useSynchronizedPlayContext();
 
   const handleScriptClick = useCallback(async (scriptId: string) => {
+    // Reset all playback state and element states before loading new script
+    resetAllPlaybackState();
+    
+    // Clear previous script element data (preserve crew context for websocket auth)
+    setScriptElements([]);
+    
     if (!validateShareToken(shareToken)) {
       setScriptError(INVALID_SHARE_TOKEN_ERROR);
       return;

@@ -45,13 +45,13 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
         processBoundariesForTime
     } = useSynchronizedPlayContext();
 
-    // Set up timing boundaries when elements or lookahead changes
+    // Set up timing boundaries when elements or lookahead changes (but not during playback to prevent flickering)
     useEffect(() => {
-        if (elements.length > 0) {
+        if (elements.length > 0 && playbackState === 'STOPPED') {
             const lookaheadMs = lookaheadSeconds * 1000;
             setElementBoundaries(elements, lookaheadMs);
         }
-    }, [elements, lookaheadSeconds, setElementBoundaries]);
+    }, [elements, lookaheadSeconds, setElementBoundaries, playbackState]);
 
     // Process boundaries for current time
     useEffect(() => {

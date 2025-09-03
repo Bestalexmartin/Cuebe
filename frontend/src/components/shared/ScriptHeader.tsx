@@ -42,17 +42,14 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = React.memo(({
         <AppIcon name="script" boxSize="20px" />
         <Heading as="h2" size="md">{currentScript?.script_name || 'Script'}</Heading>
         {crewContext?.department_name && (
-          <>
-            <AppIcon name="arrow-right" boxSize="16px" color="gray.400" />
-            <Badge 
-              colorScheme="blue"
-              variant="solid"
-              fontSize="sm"
-              style={{ backgroundColor: crewContext.department_color || '#3182CE' }}
-            >
-              {crewContext.department_name}
-            </Badge>
-          </>
+          <Badge 
+            colorScheme="blue"
+            variant="solid"
+            fontSize="sm"
+            style={{ backgroundColor: crewContext.department_color || '#3182CE' }}
+          >
+            {crewContext.department_name}
+          </Badge>
         )}
         {crewContext?.show_role && (
           <Badge 
