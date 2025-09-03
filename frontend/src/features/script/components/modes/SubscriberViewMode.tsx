@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useRef, useCallback } from 'react';
 import { Box, VStack } from '@chakra-ui/react';
 import { CueElement } from '../CueElement';
+import { ScriptElementsHeader } from '../ScriptElementsHeader';
 import { useSynchronizedPlayContext } from '../../../../contexts/SynchronizedPlayContext';
 
 interface SubscriberViewModeProps {
@@ -11,6 +12,10 @@ interface SubscriberViewModeProps {
     elements: any[];
     allElements: any[];
     script: any;
+    useMilitaryTime: boolean;
+    onToggleGroupCollapse?: (elementId: string) => void;
+    groupOverrides?: Record<string, boolean>;
+    isHighlightingEnabled?: boolean;
     lookaheadSeconds: number;
 }
 
@@ -19,7 +24,11 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
     colorizeDepNames,
     showClockTimes,
     elements,
-    script: _script,
+    script,
+    useMilitaryTime,
+    onToggleGroupCollapse,
+    groupOverrides,
+    isHighlightingEnabled: _isHighlightingEnabled,
     lookaheadSeconds
 }) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -119,6 +128,7 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
             }}
         >
             <VStack spacing={0} align="stretch">
+                <ScriptElementsHeader colorizeDepNames={colorizeDepNames} />
                 {visibleElements.map((element) => {
                     const highlightState = getElementHighlightState(element.element_id);
                     const borderState = getElementBorderState(element.element_id);
@@ -145,6 +155,9 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
                                 isSelected={false}
                                 colorizeDepNames={colorizeDepNames}
                                 showClockTimes={showClockTimes}
+                                useMilitaryTime={useMilitaryTime}
+                                scriptStartTime={script?.start_time}
+                                scriptEndTime={script?.end_time}
                                 mode="view"
                                 highlightState={highlightState}
                                 borderState={borderState}

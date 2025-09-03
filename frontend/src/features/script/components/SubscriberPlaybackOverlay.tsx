@@ -30,8 +30,8 @@ const useSubscriberClock = () => {
     return context.timestamp;
 };
 
-// Mobile-optimized clock component
-const MobileRealtimeClock: React.FC<{ useMilitaryTime: boolean }> = ({ useMilitaryTime }) => {
+// Exact clock component from auth side
+const RealtimeClock: React.FC<{ useMilitaryTime: boolean }> = ({ useMilitaryTime }) => {
     const timestamp = useSubscriberClock();
     const formatTime = (timestamp: number) => {
         const date = new Date(timestamp);
@@ -45,11 +45,11 @@ const MobileRealtimeClock: React.FC<{ useMilitaryTime: boolean }> = ({ useMilita
         <Box 
             bg="transparent" 
             color="gray.300" 
-            px="6px" py="1px" 
+            pl="16px" pr="8px" py="2px" 
             borderRadius="none" 
-            fontSize={{ base: "lg", md: "xl" }}
+            fontSize="2xl" 
             fontFamily="mono"
-            minWidth={{ base: "70px", md: "90px" }}
+            minWidth="100px"
             textAlign="center"
         >
             {formatTime(timestamp)}
@@ -57,49 +57,44 @@ const MobileRealtimeClock: React.FC<{ useMilitaryTime: boolean }> = ({ useMilita
     );
 };
 
-// Mobile-optimized show timer
-const MobileShowTimer: React.FC<{ script: any; playbackState: string }> = ({ script, playbackState }) => {
-    const liveTimestamp = useSubscriberClock();
-    const [frozenTimestamp, setFrozenTimestamp] = useState<number | null>(null);
+// Exact show timer from auth side
+const ShowTimer: React.FC<{ script: any; playbackState: string }> = ({ script, playbackState }) => {
+    const { currentTime } = useSynchronizedPlayContext();
+    const [frozenTime, setFrozenTime] = useState<number | null>(null);
     
     useEffect(() => {
-        if ((playbackState === 'COMPLETE' || playbackState === 'PAUSED' || playbackState === 'SAFETY') && frozenTimestamp === null) {
-            setFrozenTimestamp(liveTimestamp);
+        if ((playbackState === 'COMPLETE' || playbackState === 'PAUSED' || playbackState === 'SAFETY') && frozenTime === null) {
+            setFrozenTime(currentTime);
         } else if (playbackState === 'PLAYING') {
-            setFrozenTimestamp(null);
+            setFrozenTime(null);
         }
-    }, [playbackState, liveTimestamp, frozenTimestamp]);
+    }, [playbackState, currentTime, frozenTime]);
     
-    const timestamp = (playbackState === 'COMPLETE' || playbackState === 'PAUSED' || playbackState === 'SAFETY') && frozenTimestamp ? frozenTimestamp : liveTimestamp;
+    const displayTime = (playbackState === 'COMPLETE' || playbackState === 'PAUSED' || playbackState === 'SAFETY') && frozenTime !== null ? frozenTime : currentTime;
     
-    const calculateTMinusTime = useCallback((timestamp: number) => {
-        if (!script?.start_time) {
-            return "00:00:00";
-        }
-
-        const scriptStart = new Date(script.start_time);
-        const diffMs = scriptStart.getTime() - timestamp;
-        const diffSeconds = Math.round(diffMs / 1000);
+    const formatShowTime = useCallback((timeMs: number | null) => {
+        if (timeMs === null) return "00:00:00";
         
-        const hours = Math.floor(Math.abs(diffSeconds) / 3600);
-        const minutes = Math.floor((Math.abs(diffSeconds) % 3600) / 60);
-        const seconds = Math.abs(diffSeconds) % 60;
+        const totalSeconds = Math.abs(Math.floor(timeMs / 1000));
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
         
         const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        return diffSeconds < 0 ? timeStr : `–${timeStr}`;
-    }, [script?.start_time]);
+        return timeMs < 0 ? `–${timeStr}` : timeStr;
+    }, []);
 
-    const tMinusTime = calculateTMinusTime(frozenTimestamp || timestamp);
+    const tMinusTime = formatShowTime(displayTime);
 
     return (
         <Box 
             bg="transparent" 
             color="red.500" 
-            px="6px" py="1px" 
+            px="8px" py="2px" 
             borderRadius="none" 
-            fontSize={{ base: "lg", md: "xl" }}
+            fontSize="2xl" 
             fontFamily="mono"
-            minWidth={{ base: "80px", md: "100px" }}
+            minWidth="110px"
             textAlign="center"
         >
             {tMinusTime}
@@ -107,8 +102,8 @@ const MobileShowTimer: React.FC<{ script: any; playbackState: string }> = ({ scr
     );
 };
 
-// Mobile-optimized playback status
-const MobilePlaybackStatus: React.FC<{ playbackState: string }> = ({ playbackState }) => {
+// Exact playback status from auth side
+const PlaybackStatus: React.FC<{ playbackState: string }> = ({ playbackState }) => {
     if (playbackState === 'STOPPED') return null;
 
     const getStatusColor = () => {
@@ -117,26 +112,19 @@ const MobilePlaybackStatus: React.FC<{ playbackState: string }> = ({ playbackSta
         return 'red.500';
     };
 
-    const getStatusText = () => {
-        switch (playbackState) {
-            case 'PLAYING': return 'PLAY';
-            case 'PAUSED': return 'PAUSE';
-            case 'SAFETY': return 'SAFETY';
-            case 'COMPLETE': return 'DONE';
-            default: return playbackState;
-        }
-    };
-
+    const isComplete = playbackState === 'COMPLETE';
     return (
         <Box 
             bg="transparent" 
             color={getStatusColor()} 
-            px="6px" py="1px" 
+            pl="8px" 
+            pr="16px"
+            py="2px" 
             borderRadius="none" 
-            fontSize={{ base: "lg", md: "xl" }}
+            fontSize="2xl" 
             fontFamily="mono"
             fontWeight="bold"
-            minWidth={{ base: "60px", md: "80px" }}
+            minWidth="100px"
             textAlign="center"
             animation={playbackState === 'PAUSED' ? "flash 1s infinite" : undefined}
             sx={playbackState === 'PAUSED' ? {
@@ -146,10 +134,55 @@ const MobilePlaybackStatus: React.FC<{ playbackState: string }> = ({ playbackSta
                 }
             } : {}}
         >
-            {getStatusText()}
+            {isComplete ? 'COMPLETE' : playbackState}
         </Box>
     );
 };
+
+const DelayTimer: React.FC<{ 
+    playbackState: string; 
+}> = React.memo(({ playbackState }) => {
+    const liveTimestamp = useSubscriberClock();
+    const { pauseStartTime } = useSynchronizedPlayContext();
+    const timestamp = playbackState === 'COMPLETE' ? 0 : liveTimestamp;
+
+    if (playbackState !== 'PAUSED' && playbackState !== 'SAFETY' && playbackState !== 'COMPLETE') return null;
+
+    const sessionMs = pauseStartTime ? (timestamp - pauseStartTime) : 0;
+    const totalDelaySeconds = Math.max(0, Math.ceil(sessionMs / 1000));
+    
+    // Hide timer in COMPLETE mode when delay is 0:00
+    if (playbackState === 'COMPLETE' && totalDelaySeconds <= 0) return null;
+    
+    const minutes = Math.floor(totalDelaySeconds / 60);
+    const seconds = totalDelaySeconds % 60;
+    const displayTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+    return (
+        <Box 
+            bg="transparent" 
+            color={playbackState === 'SAFETY' ? 'orange.500' : 'red.500'} 
+            pl="8px" pr="16px" py="2px" 
+            borderRadius="none" 
+            fontSize="2xl" 
+            fontFamily="mono"
+            fontWeight="normal"
+            minWidth="80px"
+            textAlign="center"
+            animation={playbackState === 'PAUSED' ? "flash 1s infinite" : undefined}
+            sx={playbackState === 'PAUSED' ? {
+                "@keyframes flash": {
+                    "0%, 100%": { opacity: 1 },
+                    "50%": { opacity: 0.3 }
+                }
+            } : {}}
+        >
+            {displayTime}
+        </Box>
+    );
+}, (prevProps, nextProps) => {
+    return prevProps.playbackState === nextProps.playbackState;
+});
 
 interface SubscriberPlaybackOverlayProps {
     contentAreaBounds: DOMRect;
@@ -189,38 +222,48 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
                 } : {}}
             />
             
-            {/* Mobile-optimized time and status display */}
+            {/* Time and Status Display - positioned at top center exactly like auth side */}
             <Box
                 position="fixed"
-                top="8px"
+                top="16px"
                 left="50%"
                 transform="translateX(-50%)"
                 zIndex={1001}
                 pointerEvents="none"
             >
-                <Box border="2px solid" borderColor="gray.700" bg="#0F0F0F">
+                <Box border="2px solid" borderColor="gray.700" bg="#0F0F0F" borderRadius="md">
                     <HStack spacing={0} align="center">
                         {/* Realtime Clock */}
-                        <MobileRealtimeClock useMilitaryTime={useMilitaryTime} />
+                        <RealtimeClock useMilitaryTime={useMilitaryTime} />
                         
                         {/* Bullet separator */}
-                        <Box bg="#0F0F0F" px="2px" py="1px">
-                            <Text fontSize={{ base: "lg", md: "xl" }} color="gray.500" fontFamily="mono">•</Text>
+                        <Box bg="#0F0F0F" px="4px" py="2px">
+                            <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
                         </Box>
                         
                         {/* Show Timer */}
-                        <MobileShowTimer 
+                        <ShowTimer 
                             script={script}
                             playbackState={playbackState}
                         />
                         
                         {/* Bullet separator */}
-                        <Box bg="#0F0F0F" px="2px" py="1px">
-                            <Text fontSize={{ base: "lg", md: "xl" }} color="gray.500" fontFamily="mono">•</Text>
+                        <Box bg="#0F0F0F" px="4px" py="2px">
+                            <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
                         </Box>
                         
                         {/* Playback Status */}
-                        <MobilePlaybackStatus playbackState={playbackState} />
+                        <PlaybackStatus playbackState={playbackState} />
+                        
+                        {/* Bullet separator for paused/safety mode */}
+                        {(playbackState === 'PAUSED' || playbackState === 'SAFETY') && (
+                            <Box bg="transparent" px="4px" py="2px">
+                                <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
+                            </Box>
+                        )}
+                        
+                        {/* Delay Timer - in PAUSED and SAFETY modes */}
+                        <DelayTimer playbackState={playbackState} />
                     </HStack>
                 </Box>
             </Box>

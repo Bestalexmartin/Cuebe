@@ -37,13 +37,13 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = React.memo(({
   // Playback state not displayed here; keep header lean
 
   return (
-    <Flex justify="space-between" align="center" flexShrink={0} mb={4}>
+    <Flex justify="space-between" align="center" flexShrink={0} mb={4} mt="-2px">
       <HStack spacing="3" align="center">
         <AppIcon name="script" boxSize="20px" />
         <Heading as="h2" size="md">{currentScript?.script_name || 'Script'}</Heading>
         {crewContext?.department_name && (
           <>
-            <Text color="gray.400" fontSize="lg">—</Text>
+            <AppIcon name="arrow-right" boxSize="16px" color="gray.400" />
             <Badge 
               colorScheme="blue"
               variant="solid"

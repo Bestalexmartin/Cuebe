@@ -7,6 +7,7 @@ from uuid import UUID
 import secrets
 import string
 import logging
+from sqlalchemy.orm.attributes import flag_modified
 
 import models
 import schemas
@@ -316,6 +317,7 @@ async def update_guest_user_preferences(
             current_json = user.user_prefs_json or {}
             current_json.update(json_updates)
             user.user_prefs_json = current_json
+            flag_modified(user, 'user_prefs_json')
         
         db.commit()
         
