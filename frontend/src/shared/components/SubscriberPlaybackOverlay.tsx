@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { Box, HStack, Text } from "@chakra-ui/react";
-import { useSynchronizedPlayContext } from '../../../contexts/SynchronizedPlayContext';
+import { useSynchronizedPlayContext } from '../../contexts/SynchronizedPlayContext';
 
 // Clock timing context for subscriber side
 const SubscriberClockContext = createContext<{ timestamp: number }>({ timestamp: Date.now() });
@@ -150,11 +150,12 @@ const DelayTimer: React.FC<{
     playbackState: string;
     cumulativeDelayMs?: number;
 }> = React.memo(({ playbackState, cumulativeDelayMs = 0 }) => {
+    // Early return to prevent unnecessary clock subscriptions
+    if (playbackState !== 'PAUSED' && playbackState !== 'SAFETY' && playbackState !== 'COMPLETE') return null;
+    
     const liveTimestamp = useSubscriberClock();
     const { pauseStartTime } = useSynchronizedPlayContext();
     const timestamp = playbackState === 'COMPLETE' ? 0 : liveTimestamp;
-
-    if (playbackState !== 'PAUSED' && playbackState !== 'SAFETY' && playbackState !== 'COMPLETE') return null;
 
     let displayTime: string;
     if (playbackState === 'COMPLETE') {
@@ -207,12 +208,14 @@ interface SubscriberPlaybackOverlayProps {
     useMilitaryTime: boolean;
 }
 
-export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps> = ({
+export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps> = React.memo(({
     contentAreaBounds,
     script,
     useMilitaryTime
 }) => {
     const { playbackState, isPlaybackSafety, cumulativeDelayMs } = useSynchronizedPlayContext();
+    
+    // Debug logging
     
     if (playbackState === 'STOPPED') return null;
 
@@ -287,4 +290,4 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
             </Box>
         </SubscriberClockProvider>
     );
-};
+});

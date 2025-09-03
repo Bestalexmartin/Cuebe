@@ -91,6 +91,7 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
             if (prev.pauseStartTime) {
                 const thisPauseDurationMs = now - prev.pauseStartTime;
                 const newCumulativeDelay = prev.cumulativeDelayMs + thisPauseDurationMs;
+                console.log('🔄 PlayContext PLAY accumulation:', {thisPauseDurationMs, prevCumulative: prev.cumulativeDelayMs, newCumulative: newCumulativeDelay});
                 return {
                     ...prev,
                     playbackState: 'PLAYING',

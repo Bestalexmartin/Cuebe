@@ -10,8 +10,8 @@ import {
     Box,
     Divider
 } from '@chakra-ui/react';
-import { useEnhancedToast } from '../../../../utils/toastUtils';
-import { BaseModal } from '../../../../components/base/BaseModal';
+import { useEnhancedToast } from '../../../utils/toastUtils';
+import { BaseModal } from '../../../components/base/BaseModal';
 
 interface GuestOptionsModalProps {
     isOpen: boolean;
