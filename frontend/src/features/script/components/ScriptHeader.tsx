@@ -2,6 +2,7 @@ import React from 'react';
 import { Flex, HStack, Heading, Badge, Box, Button, Divider } from '@chakra-ui/react';
 import { AppIcon } from '../../../components/AppIcon';
 import { ActionsMenu } from '../../../components/ActionsMenu';
+import { useScriptSyncContextOptional } from '../../../contexts/ScriptSyncContext';
 
 interface ScriptHeaderProps {
     // Script data
@@ -75,6 +76,11 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = ({
     handleHighlightingToggle,
     togglePause
 }) => {
+    const syncContext = useScriptSyncContextOptional();
+    const connectionCount = syncContext?.syncData?.connectionCount || 0;
+    
+    // For shared scripts, show count excluding host (subtract 1 if host is connected)
+    const listenerCount = Math.max(0, connectionCount - 1);
     return (
         <Flex
             width="100%"
@@ -97,7 +103,7 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = ({
                     <Heading as="h2" size="md">{currentScript?.script_name || 'Script'}</Heading>
                     {(currentScript?.is_shared || isScriptShared) && (
                         <Badge variant="solid" colorScheme="green" fontSize="sm" ml={1} px={2}>
-                            SHARED
+                            {listenerCount > 0 ? `SHARED • ${listenerCount}` : 'SHARED'}
                         </Badge>
                     )}
                     {activeMode === 'view' && (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) ? (

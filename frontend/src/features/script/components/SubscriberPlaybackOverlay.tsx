@@ -255,14 +255,14 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
                         {/* Playback Status */}
                         <PlaybackStatus playbackState={playbackState} />
                         
-                        {/* Bullet separator for paused/safety mode */}
-                        {(playbackState === 'PAUSED' || playbackState === 'SAFETY') && (
-                            <Box bg="transparent" px="4px" py="2px">
+                        {/* Bullet separator for paused/safety/complete mode */}
+                        {(playbackState === 'PAUSED' || playbackState === 'SAFETY' || playbackState === 'COMPLETE') && (
+                            <Box bg="#0F0F0F" px="4px" py="2px">
                                 <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
                             </Box>
                         )}
                         
-                        {/* Delay Timer - in PAUSED and SAFETY modes */}
+                        {/* Delay Timer - in PAUSED, SAFETY, and COMPLETE modes */}
                         <DelayTimer playbackState={playbackState} />
                     </HStack>
                 </Box>
