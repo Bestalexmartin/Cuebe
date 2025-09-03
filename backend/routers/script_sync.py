@@ -25,6 +25,8 @@ class ScriptConnectionManager:
         self.connections: Dict[str, Set[WebSocket]] = {}
         # Track connection metadata (user info, permissions, etc.)
         self.connection_info: Dict[WebSocket, dict] = {}
+        # Track current playback state per script for late joiner sync
+        self.script_playback_state: Dict[str, dict] = {}
     
     async def connect(self, websocket: WebSocket, script_id: str, connection_info: dict):
         """Accept WebSocket connection and add to script room"""
@@ -52,6 +54,19 @@ class ScriptConnectionManager:
                 connected_users=len(self.connections[script_id])
             )
             await self.broadcast_to_script(script_id, connection_update.model_dump_json(), exclude_websocket=websocket)
+        
+        # Send current playback state to new joiner if one exists
+        if script_id in self.script_playback_state:
+            current_state = self.script_playback_state[script_id]
+            playback_message = {
+                "type": "playback_command",
+                "command": current_state["command"],
+                "timestamp_ms": current_state["timestamp_ms"],
+                "show_time_ms": current_state.get("show_time_ms"),
+                "start_time": current_state.get("start_time"),
+                "cumulative_delay_ms": current_state.get("cumulative_delay_ms")
+            }
+            await websocket.send_text(json.dumps(playback_message))
     
     async def disconnect(self, websocket: WebSocket):
         """Remove WebSocket connection from all rooms"""
@@ -342,8 +357,22 @@ async def handle_script_update(websocket: WebSocket, script_id: str, message: di
             command=command,
             timestamp_ms=int(datetime.now().timestamp() * 1000),
             show_time_ms=message.get("show_time_ms"),
-            start_time=message.get("start_time")
+            start_time=message.get("start_time"),
+            cumulative_delay_ms=message.get("cumulative_delay_ms")
         )
+        
+        # Update server-side playback state for late joiner sync
+        connection_manager.script_playback_state[script_id] = {
+            "command": command,
+            "timestamp_ms": playback_response.timestamp_ms,
+            "show_time_ms": message.get("show_time_ms"),
+            "start_time": message.get("start_time"),
+            "cumulative_delay_ms": message.get("cumulative_delay_ms")
+        }
+        
+        # Clear state for STOP command
+        if command == "STOP":
+            connection_manager.script_playback_state.pop(script_id, None)
         
         # Broadcast to all connections in the script room (including sender for confirmation)
         await connection_manager.broadcast_to_script(script_id, playback_response.model_dump_json())
