@@ -37,7 +37,7 @@ interface CrewContext {
   user_name?: string;
 }
 
-export const useScript = (shareToken: string | undefined) => {
+export const useScript = (shareToken: string | undefined, updateSharedData?: (updater: (prev: any) => any) => void, refreshSharedData?: () => void) => {
   const [viewingScriptId, setViewingScriptId] = useState<string | null>(null);
   const [scriptElements, setScriptElements] = useState<ScriptElement[]>([]);
   const [isLoadingScript, setIsLoadingScript] = useState(false);
@@ -61,23 +61,35 @@ export const useScript = (shareToken: string | undefined) => {
       );
 
       if (!elementsResponse.ok) {
-        throw new Error('Failed to load script elements');
+        throw new Error('Failed to load script data');
       }
 
-      const elementsData = await elementsResponse.json();
+      const scriptData = await elementsResponse.json();
 
-      if (Array.isArray(elementsData)) {
-        // Recalculate group durations before setting elements
-        const elementsWithGroupDurations = recalculateGroupDurations(elementsData);
-        setScriptElements(elementsWithGroupDurations);
-        setCrewContext(null);
-      } else {
-        // Recalculate group durations before setting elements
-        const elements = elementsData.elements || [];
-        const elementsWithGroupDurations = recalculateGroupDurations(elements);
-        setScriptElements(elementsWithGroupDurations);
-        setCrewContext(elementsData.crew_context || null);
+      // Update cached shared data with fresh script metadata
+      if (updateSharedData && scriptData?.script_id) {
+        updateSharedData(prevData => {
+          if (!prevData?.shows) return prevData;
+          
+          const updatedShows = prevData.shows.map(show => ({
+            ...show,
+            scripts: show.scripts.map(script => {
+              if (script.script_id === scriptId) {
+                return scriptData;
+              }
+              return script;
+            })
+          }));
+          
+          return { ...prevData, shows: updatedShows };
+        });
       }
+
+      // Script response now contains elements directly
+      const elements = scriptData.elements || [];
+      const elementsWithGroupDurations = recalculateGroupDurations(elements);
+      setScriptElements(elementsWithGroupDurations);
+      setCrewContext(scriptData.crew_context || null);
     } catch (err) {
       setScriptError(err instanceof Error ? err.message : 'Failed to load script');
       setViewingScriptId(null);
@@ -91,7 +103,12 @@ export const useScript = (shareToken: string | undefined) => {
     setScriptElements([]);
     setScriptError(null);
     setCrewContext(null);
-  }, []);
+    
+    // Refresh show card data for guest users
+    if (refreshSharedData) {
+      refreshSharedData();
+    }
+  }, [refreshSharedData]);
 
   const refreshScriptData = useCallback(() => {
     // No-op placeholder; unified save flow handles refresh in responses

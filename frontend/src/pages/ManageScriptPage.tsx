@@ -357,17 +357,15 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 command === 'PLAY' ? (cumulativeDelayMs || 0) : undefined
             );
         }
-    }, [sendSyncPlaybackCommand, currentTime, effectiveCurrentScript?.start_time, cumulativeDelayMs]);
+    }, [sendSyncPlaybackCommand, effectiveCurrentScript?.start_time]);
 
-    // Auto-broadcast state changes (for script completion)
+    // Auto-broadcast COMPLETE state when script finishes
     const lastBroadcastedStateRef = useRef<string | null>(null);
     useEffect(() => {
-        if (lastBroadcastedStateRef.current !== playbackState) {
-            if (playbackState === 'COMPLETE' && lastBroadcastedStateRef.current !== 'COMPLETE') {
-                sendPlaybackCommand('COMPLETE');
-            }
-            lastBroadcastedStateRef.current = playbackState;
+        if (playbackState === 'COMPLETE' && lastBroadcastedStateRef.current !== 'COMPLETE') {
+            sendPlaybackCommand('COMPLETE');
         }
+        lastBroadcastedStateRef.current = playbackState;
     }, [playbackState, sendPlaybackCommand]);
 
     // Heartbeat while PLAYING so late joiners auto-enter PLAY state with synced time

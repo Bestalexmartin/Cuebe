@@ -3,7 +3,10 @@
 from pydantic import BaseModel, model_validator
 from datetime import datetime
 from uuid import UUID
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .script import Script
 
 # =============================================================================
 # SCRIPT ELEMENT SCHEMAS
@@ -121,6 +124,10 @@ class CrewContext(BaseModel):
     user_name: Optional[str] = None
 
 class SharedScriptElementsResponse(BaseModel):
-    """Response schema for shared script elements with crew context"""
+    """Response schema for shared script elements with crew context and script metadata"""
     elements: List[ScriptElement]
     crew_context: Optional[CrewContext] = None
+    script: Optional['Script'] = None
+    
+    class Config:
+        from_attributes = True

@@ -76,7 +76,21 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
     const handlePlaybackCommand = useCallback((command: string, serverTimestampMs: number, showTimeMs?: number, startTime?: string) => {
         const localNow = Date.now();
         
+        console.log('🎮 SYNC: Playback command received:', {
+            command,
+            serverTimestampMs,
+            showTimeMs,
+            startTime,
+            localNow
+        });
+        
         setSyncPlayState(prev => {
+            console.log('🎮 SYNC: State transition:', {
+                from: prev.playbackState,
+                to: command,
+                elementStatesCount: prev.elementStates.size
+            });
+            
             switch (command) {
                 case 'PLAY':
                     return {

@@ -33,6 +33,9 @@ class Script(BaseModel):
     
     # Forward reference to ScriptElement for complete element data
     elements: Optional[List['ScriptElement']] = []
+    
+    # Crew context for shared access (only populated on shared endpoints)
+    crew_context: Optional[dict] = None
 
     class Config:
         from_attributes = True

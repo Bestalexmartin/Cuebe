@@ -150,7 +150,7 @@ async def access_shared_show(
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
 
 
-@router.get("/shared/{share_token}/scripts/{script_id}", response_model=schemas.SharedScriptElementsResponse)
+@router.get("/shared/{share_token}/scripts/{script_id}", response_model=schemas.Script)
 async def get_shared_script_elements(
     share_token: str,
     script_id: UUID,
@@ -200,10 +200,12 @@ async def get_shared_script_elements(
             user_name=(f"{crew_assignment.user.fullname_first} {crew_assignment.user.fullname_last}".strip() if crew_assignment.user else None)
         )
 
-        return schemas.SharedScriptElementsResponse(
-            elements=elements,
-            crew_context=crew_context
-        )
+        # Convert to dict for proper serialization, then add crew context
+        script_dict = schemas.Script.model_validate(script).model_dump()
+        script_dict['elements'] = [schemas.ScriptElement.model_validate(el).model_dump() for el in elements]
+        script_dict['crew_context'] = crew_context.model_dump()
+        
+        return script_dict
     except HTTPException:
         raise
     except Exception as e:
