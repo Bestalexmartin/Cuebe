@@ -49,6 +49,7 @@ interface SynchronizedPlayContextValue {
     updateElementBoundaries: (elements: any[], lookaheadMs: number) => void;
     processBoundariesForTime: (currentTimeMs: number) => void;
     clearAllElementStates: () => void;
+    resetAllPlaybackState: () => void;
     shouldHideElement: (elementId: string) => boolean;
     setScript: (script: any) => void;
     registerRetimingCallback: (callback: (operation: any) => void) => void;
@@ -453,6 +454,23 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         });
     }, []);
 
+    const resetAllPlaybackState = useCallback(() => {
+        setSyncPlayState({
+            playbackState: 'STOPPED',
+            startTime: null,
+            currentTime: null,
+            serverTimestamp: null,
+            localTimestamp: null,
+            pauseStartTime: null,
+            cumulativeDelayMs: 0,
+            lastPauseDurationMs: undefined,
+            timingBoundaries: [],
+            elementStates: new Map(),
+            elementBorderStates: new Map(),
+            passedElements: new Set()
+        });
+    }, []);
+
     const shouldHideElement = useCallback((elementId: string) => {
         // Never hide elements when script is complete or stopped
         if (syncPlayState.playbackState === 'COMPLETE' || syncPlayState.playbackState === 'STOPPED') {
@@ -568,6 +586,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         updateElementBoundaries,
         processBoundariesForTime,
         clearAllElementStates,
+        resetAllPlaybackState,
         shouldHideElement,
         setScript: setScriptCallback,
         

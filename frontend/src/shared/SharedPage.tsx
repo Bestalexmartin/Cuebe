@@ -73,7 +73,7 @@ const SharedPageContent = React.memo(() => {
     lastPauseDurationMs,
     currentTime,
     setElementBoundaries,
-    updateElementBoundaries
+    resetAllPlaybackState
   } = useSynchronizedPlayContext();
 
   // Tutorial search - extracted to custom hook
@@ -162,35 +162,6 @@ const SharedPageContent = React.memo(() => {
     }
   }, [currentScript, setScript]);
 
-  // Scoped-side equivalent of applyLocalChange for pause adjustments
-  const applyTimingAdjustment = useCallback((operation: any) => {
-    if (operation.type === 'UPDATE_SCRIPT_INFO') {
-      return;
-    }
-    
-    if (operation.type === 'BULK_OFFSET_ADJUSTMENT' && scriptElements.length > 0) {
-      // Recreate timing boundaries with adjusted offset times for future elements
-      const currentTimeMs = operation.current_time_ms;
-      const delayMs = operation.delay_ms;
-      const lookaheadMs = guestLookaheadSeconds * 1000;
-      
-      
-      const adjustedElements = scriptElements.map(element => {
-        const originalOffset = element.offset_ms || 0;
-        // Only adjust elements that haven't played yet
-        if (originalOffset > currentTimeMs) {
-          return {
-            ...element,
-            offset_ms: originalOffset + delayMs
-          };
-        }
-        return element;
-      });
-      
-      // Don't update timing boundaries during pause adjustments - this causes flickering
-      // The boundaries will be updated on the next natural timing cycle
-    }
-  }, [scriptElements, guestLookaheadSeconds, updateElementBoundaries]);
 
   // Debug the pause adjustment inputs
   useEffect(() => {

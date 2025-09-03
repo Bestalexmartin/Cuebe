@@ -149,30 +149,27 @@ const PlaybackStatus: React.FC<{ playbackState: string }> = ({ playbackState }) 
 const DelayTimer: React.FC<{ 
     playbackState: string;
     cumulativeDelayMs?: number;
-}> = React.memo(({ playbackState, cumulativeDelayMs: propCumulativeDelayMs = 0 }) => {
+}> = React.memo(({ playbackState, cumulativeDelayMs = 0 }) => {
     const liveTimestamp = useSubscriberClock();
-    const { pauseStartTime, cumulativeDelayMs } = useSynchronizedPlayContext();
+    const { pauseStartTime } = useSynchronizedPlayContext();
     const timestamp = playbackState === 'COMPLETE' ? 0 : liveTimestamp;
 
     if (playbackState !== 'PAUSED' && playbackState !== 'SAFETY' && playbackState !== 'COMPLETE') return null;
 
-    let totalDelaySeconds;
-    
+    let displayTime: string;
     if (playbackState === 'COMPLETE') {
-        // Show total cumulative delay in COMPLETE mode
-        totalDelaySeconds = Math.max(0, Math.ceil((propCumulativeDelayMs || cumulativeDelayMs || 0) / 1000));
+        if (!cumulativeDelayMs || cumulativeDelayMs <= 0) return null;
+        const totalCumulativeSeconds = Math.floor((cumulativeDelayMs || 0) / 1000);
+        const minutes = Math.floor(totalCumulativeSeconds / 60);
+        const seconds = totalCumulativeSeconds % 60;
+        displayTime = `+${minutes}:${seconds.toString().padStart(2, '0')}`;
     } else {
-        // Show current pause session duration in PAUSED/SAFETY modes
         const sessionMs = pauseStartTime ? (timestamp - pauseStartTime) : 0;
-        totalDelaySeconds = Math.max(0, Math.ceil(sessionMs / 1000));
+        const totalDelaySeconds = Math.max(0, Math.ceil(sessionMs / 1000));
+        const minutes = Math.floor(totalDelaySeconds / 60);
+        const seconds = totalDelaySeconds % 60;
+        displayTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
-    
-    // Hide timer in COMPLETE mode when delay is 0:00
-    if (playbackState === 'COMPLETE' && totalDelaySeconds <= 0) return null;
-    
-    const minutes = Math.floor(totalDelaySeconds / 60);
-    const seconds = totalDelaySeconds % 60;
-    const displayTime = `+${minutes}:${seconds.toString().padStart(2, '0')}`;
 
     return (
         <Box 
@@ -197,7 +194,11 @@ const DelayTimer: React.FC<{
         </Box>
     );
 }, (prevProps, nextProps) => {
-    return prevProps.playbackState === nextProps.playbackState;
+    if (prevProps.playbackState === 'COMPLETE' && nextProps.playbackState === 'COMPLETE') {
+        return prevProps.cumulativeDelayMs === nextProps.cumulativeDelayMs;
+    }
+    return prevProps.playbackState === nextProps.playbackState && 
+           prevProps.cumulativeDelayMs === nextProps.cumulativeDelayMs;
 });
 
 interface SubscriberPlaybackOverlayProps {
@@ -212,7 +213,6 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
     useMilitaryTime
 }) => {
     const { playbackState, isPlaybackSafety, cumulativeDelayMs } = useSynchronizedPlayContext();
-    
     
     if (playbackState === 'STOPPED') return null;
 
@@ -272,8 +272,9 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
                         {/* Playback Status */}
                         <PlaybackStatus playbackState={playbackState} />
                         
-                        {/* Bullet separator for paused/safety/complete mode */}
-                        {(playbackState === 'PAUSED' || playbackState === 'SAFETY' || playbackState === 'COMPLETE') && (
+                        {/* Bullet separator for paused/safety/complete mode - only show if there will be a delay timer */}
+                        {((playbackState === 'PAUSED' || playbackState === 'SAFETY') || 
+                          (playbackState === 'COMPLETE' && cumulativeDelayMs > 0)) && (
                             <Box bg="#0F0F0F" px="4px" py="2px">
                                 <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
                             </Box>
