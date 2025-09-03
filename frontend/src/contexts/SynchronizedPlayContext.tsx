@@ -16,6 +16,7 @@ interface SyncPlayState {
     currentTime: number | null; // Current performance time offset in ms
     serverTimestamp: number | null; // Last received server timestamp for latency correction
     localTimestamp: number | null; // Local timestamp when server timestamp was received
+    pauseStartTime: number | null; // When current pause/safety started
     elementStates: Map<string, SyncElementHighlightState>; // Element highlighting states
     elementBorderStates: Map<string, SyncElementBorderState>; // Element border states
     timingBoundaries: SyncTimingBoundary[]; // Pre-calculated timing boundaries
@@ -43,6 +44,7 @@ interface SynchronizedPlayContextValue {
     processBoundariesForTime: (currentTimeMs: number) => void;
     clearAllElementStates: () => void;
     shouldHideElement: (elementId: string) => boolean;
+    setScript: (script: any) => void;
     
     // Computed values
     getElapsedTime: () => number;
@@ -80,26 +82,19 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                     return {
                         ...prev,
                         playbackState: 'PLAYING',
-                        startTime: startTime ? new Date(startTime).getTime() : (prev.startTime || localNow),
-                        currentTime: showTimeMs ?? 0,
-                        serverTimestamp: serverTimestampMs,
-                        localTimestamp: localNow
+                        currentTime: showTimeMs ?? 0
                     };
                     
                 case 'PAUSE':
                     return {
                         ...prev,
-                        playbackState: 'PAUSED',
-                        serverTimestamp: serverTimestampMs,
-                        localTimestamp: localNow
+                        playbackState: 'PAUSED'
                     };
                     
                 case 'SAFETY':
                     return {
                         ...prev,
-                        playbackState: 'SAFETY',
-                        serverTimestamp: serverTimestampMs,
-                        localTimestamp: localNow
+                        playbackState: 'SAFETY'
                     };
                     
                 case 'COMPLETE':
@@ -110,9 +105,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                     return {
                         ...prev,
                         playbackState: 'COMPLETE',
-                        elementStates: clearedStates,
-                        serverTimestamp: serverTimestampMs,
-                        localTimestamp: localNow
+                        elementStates: clearedStates
                     };
                     
                 case 'STOP':
@@ -315,36 +308,75 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         return syncPlayState.passedElements.has(elementId);
     }, [syncPlayState.passedElements]);
 
-    // Update current time based on synchronized playback
-    useEffect(() => {
-        if (syncPlayState.playbackState !== 'PLAYING' || !syncPlayState.startTime || !syncPlayState.serverTimestamp || !syncPlayState.localTimestamp) {
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-                timerRef.current = null;
+    const setScriptCallback = useCallback((newScript: any) => {
+        setScript(newScript);
+    }, []);
+
+    // Subscriber timing engine - copied from working host PlaybackTimingProvider pattern
+    const [script, setScript] = useState<any>(null);
+    
+    const computeShowTime = useCallback(() => {
+        if (!script?.start_time) return null;
+        return Date.now() - new Date(script.start_time).getTime();
+    }, [script?.start_time]);
+
+    const clearTimer = useCallback(() => {
+        if (timerRef.current !== null) {
+            clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+    }, []);
+
+    const scheduleNext = useCallback(() => {
+        clearTimer();
+        const now = computeShowTime();
+        if (now === null) return;
+
+        setSyncPlayState(prev => ({
+            ...prev,
+            currentTime: now
+        }));
+        
+        processBoundariesForTime(now);
+
+        const arr = syncPlayState.timingBoundaries || [];
+        let nextIndex = 0;
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i].time <= now) nextIndex = i + 1;
+            else break;
+        }
+        
+        if (nextIndex >= arr.length) return;
+        
+        const nextTime = arr[nextIndex].time;
+        const delay = Math.max(0, nextTime - now);
+        timerRef.current = setTimeout(() => {
+            const current = computeShowTime();
+            if (current === null) return;
+            setSyncPlayState(prev => ({
+                ...prev,
+                currentTime: current
+            }));
+            processBoundariesForTime(current);
+            if (syncPlayState.playbackState === 'PLAYING' && script?.start_time) {
+                scheduleNext();
             }
+        }, delay);
+    }, [clearTimer, computeShowTime, syncPlayState.playbackState, syncPlayState.timingBoundaries, script?.start_time]);
+
+    useEffect(() => {
+        if (!script?.start_time) {
+            clearTimer();
             return;
         }
 
-        // Start synchronized timing
-        timerRef.current = window.setInterval(() => {
-            const localNow = Date.now();
-            const localElapsed = localNow - syncPlayState.localTimestamp!;
-            const correctedServerTime = syncPlayState.serverTimestamp! + localElapsed;
-            const showTime = correctedServerTime - syncPlayState.startTime!;
-            
-            setSyncPlayState(prev => ({
-                ...prev,
-                currentTime: Math.max(0, showTime)
-            }));
-        }, 100); // Update every 100ms for smooth playback
+        if (syncPlayState.playbackState === 'PLAYING') {
+            scheduleNext();
+            return () => clearTimer();
+        }
 
-        return () => {
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-                timerRef.current = null;
-            }
-        };
-    }, [syncPlayState.playbackState, syncPlayState.startTime, syncPlayState.serverTimestamp, syncPlayState.localTimestamp]);
+        clearTimer();
+    }, [syncPlayState.playbackState, script?.start_time, scheduleNext, clearTimer]);
 
     const getElementHighlightState = useCallback((elementId: string): SyncElementHighlightState | undefined => {
         return syncPlayState.elementStates.get(elementId);
@@ -380,6 +412,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         processBoundariesForTime,
         clearAllElementStates,
         shouldHideElement,
+        setScript: setScriptCallback,
         
         // Computed values
         getElapsedTime,

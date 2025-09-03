@@ -16,9 +16,11 @@ interface ScriptHeaderProps {
     isFormValid: boolean;
     
     // Playback state
+    playbackState: string;
     isPlaybackPlaying: boolean;
     isPlaybackPaused: boolean;
     isPlaybackSafety: boolean;
+    isPlaybackComplete: boolean;
     
     // Auto-save state
     activePreferences: any;
@@ -52,9 +54,11 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = ({
     hasChanges,
     hasUnsavedChanges,
     isFormValid,
+    playbackState,
     isPlaybackPlaying,
     isPlaybackPaused,
     isPlaybackSafety,
+    isPlaybackComplete,
     activePreferences,
     showSaveSuccess,
     isAutoSaving,
@@ -164,7 +168,7 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = ({
                             size="xs"
                             variant="outline"
                             onClick={() => {
-                                if (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) {
+                                if (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety || isPlaybackComplete) {
                                     modalState.openModal(modalNames.EMERGENCY_EXIT);
                                 } else {
                                     navigation.handleCancel();

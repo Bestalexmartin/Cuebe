@@ -88,7 +88,7 @@ export const useScriptModeHandlers = ({
 
         // Handle EXIT button
         if (modeId === 'exit') {
-            if (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) {
+            if (playbackState !== 'STOPPED') {
                 modalState.openModal(modalNames.EMERGENCY_EXIT);
             } else {
                 navigation.handleCancel();

@@ -35,6 +35,9 @@ import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
 import { SynchronizedPlayProvider, useSynchronizedPlayContext } from '../contexts/SynchronizedPlayContext';
 import { SubscriberViewMode } from '../features/script/components/modes/SubscriberViewMode';
 import { SubscriberPlaybackOverlay } from '../features/script/components/SubscriberPlaybackOverlay';
+import { ActionsMenu } from '../components/ActionsMenu';
+import { GuestOptionsModal } from '../features/script/components/modals/GuestOptionsModal';
+import { createGuestActionMenuConfig } from '../features/script/config/guestActionMenuConfig';
 
 const SHOWS_SORT_OPTIONS: SortOption[] = [
   { value: 'show_name', label: 'Name' },
@@ -50,11 +53,23 @@ const SharedPageContent = React.memo(() => {
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [showTutorials, setShowTutorials] = useState<boolean>(false);
   const [contentAreaBounds, setContentAreaBounds] = useState<DOMRect | null>(null);
+  const [showGuestOptions, setShowGuestOptions] = useState(false);
+  const [groupOverrides, setGroupOverrides] = useState<Record<string, boolean>>({});
+  const [guestLookaheadSeconds, setGuestLookaheadSeconds] = useState(30);
+  const [guestUseMilitaryTime, setGuestUseMilitaryTime] = useState(false);
   const triggerRotationRef = useRef<(() => void) | null>(null);
   const contentAreaRef = useRef<HTMLDivElement>(null);
   
   // Access synchronized play context
-  const { handlePlaybackCommand } = useSynchronizedPlayContext();
+  const { 
+    handlePlaybackCommand,
+    setScript,
+    playbackState,
+    isPlaybackPlaying,
+    isPlaybackPaused,
+    isPlaybackSafety,
+    isPlaybackComplete 
+  } = useSynchronizedPlayContext();
 
   // Tutorial search - extracted to custom hook
   const {
@@ -135,6 +150,34 @@ const SharedPageContent = React.memo(() => {
     return foundScript;
   }, [viewingScriptId, sharedData?.shows]);
 
+  // Pass script to synchronized context for timing calculations
+  useEffect(() => {
+    if (currentScript) {
+      setScript(currentScript);
+    }
+  }, [currentScript, setScript]);
+
+  // Load guest preferences
+  useEffect(() => {
+    const loadGuestPreferences = async () => {
+      if (!shareToken) return;
+
+      try {
+        const response = await fetch(`/api/shared/${encodeURIComponent(shareToken)}/preferences`);
+        if (response.ok) {
+          const preferences = await response.json();
+          console.log('Loaded preferences response:', preferences);
+          setGuestLookaheadSeconds(preferences.lookahead_seconds || 30);
+          setGuestUseMilitaryTime(preferences.use_military_time || false);
+        }
+      } catch (error) {
+        console.error('Failed to load guest preferences:', error);
+      }
+    };
+
+    loadGuestPreferences();
+  }, [shareToken]);
+
   // Memoize the callbacks object with more stable dependencies
   const updateHandlerCallbacks = useMemo(() => ({
     updateSingleElement,
@@ -160,6 +203,47 @@ const SharedPageContent = React.memo(() => {
       );
     }
   }, [handlePlaybackCommand]);
+
+  // Group collapse functionality
+  const toggleGroupCollapse = useCallback((elementId: string) => {
+    setGroupOverrides(prev => ({
+      ...prev,
+      [elementId]: !prev[elementId]
+    }));
+  }, []);
+
+  // Guest options functionality
+  const handleOptionsClick = useCallback(() => {
+    setShowGuestOptions(true);
+  }, []);
+
+  const handleGuestOptionsSave = useCallback(async (lookaheadSeconds: number, useMilitaryTime: boolean) => {
+    if (!shareToken) return;
+
+    try {
+      const response = await fetch(`/api/shared/${encodeURIComponent(shareToken)}/preferences`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          lookahead_seconds: lookaheadSeconds,
+          use_military_time: useMilitaryTime 
+        })
+      });
+
+      if (response.ok) {
+        const updatedPreferences = await response.json();
+        console.log('Updated preferences response:', updatedPreferences);
+        setGuestLookaheadSeconds(updatedPreferences.lookahead_seconds || 30);
+        setGuestUseMilitaryTime(updatedPreferences.use_military_time || false);
+      } else {
+        throw new Error('Failed to save preferences');
+      }
+    } catch (error) {
+      throw error;
+    }
+  }, [shareToken]);
 
   // Trigger rotation on data received (ping/pong and incoming updates)
   const onDataReceived = useCallback(() => {
@@ -374,18 +458,22 @@ const SharedPageContent = React.memo(() => {
                   currentScript={currentScript}
                   crewContext={crewContext}
                   onBackToShows={handleBackToShows}
+                  actions={createGuestActionMenuConfig({
+                    onOptionsClick: handleOptionsClick
+                  })}
                 />
 
                 {/* Script Content */}
                 <Box
                   ref={contentAreaRef}
-                  border="1px solid"
+                  border={playbackState === 'STOPPED' ? "1px solid" : "none"}
                   borderColor="container.border"
                   borderRadius="md"
                   flexGrow={1}
                   overflow="hidden"
                   display="flex"
                   flexDirection="column"
+                  mt="-1px"
                 >
                   <ScriptLoadingState
                     isLoading={isLoadingScript}
@@ -408,7 +496,10 @@ const SharedPageContent = React.memo(() => {
                         elements={scriptElements}
                         allElements={scriptElements}
                         script={currentScript}
-                        lookaheadSeconds={30}
+                        useMilitaryTime={guestUseMilitaryTime}
+                        onToggleGroupCollapse={toggleGroupCollapse}
+                        groupOverrides={groupOverrides}
+                        lookaheadSeconds={guestLookaheadSeconds}
                       />
                     </Box>
                   )}
@@ -419,7 +510,7 @@ const SharedPageContent = React.memo(() => {
                   <SubscriberPlaybackOverlay
                     contentAreaBounds={contentAreaBounds}
                     script={currentScript}
-                    useMilitaryTime={false}
+                    useMilitaryTime={guestUseMilitaryTime}
                   />
                 )}
               </>
@@ -451,6 +542,15 @@ const SharedPageContent = React.memo(() => {
           </Flex>
         </Box>
       </Box>
+
+      {/* Guest Options Modal */}
+      <GuestOptionsModal
+        isOpen={showGuestOptions}
+        onClose={() => setShowGuestOptions(false)}
+        initialLookaheadSeconds={guestLookaheadSeconds}
+        initialUseMilitaryTime={guestUseMilitaryTime}
+        onSave={handleGuestOptionsSave}
+      />
     </ErrorBoundary>
   );
 });
