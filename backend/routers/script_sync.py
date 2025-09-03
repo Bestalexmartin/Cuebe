@@ -43,8 +43,17 @@ class ScriptConnectionManager:
         }
         
         logger.debug(f"WebSocket connected to script {script_id}. Total connections: {len(self.connections[script_id])}")
+        
+        # Broadcast updated connection count to other existing clients
+        if len(self.connections[script_id]) > 1:
+            connection_update = websocket_schemas.ConnectionEstablishedResponse(
+                script_id=script_id,
+                access_type="connection_update", 
+                connected_users=len(self.connections[script_id])
+            )
+            await self.broadcast_to_script(script_id, connection_update.model_dump_json(), exclude_websocket=websocket)
     
-    def disconnect(self, websocket: WebSocket):
+    async def disconnect(self, websocket: WebSocket):
         """Remove WebSocket connection from all rooms"""
         if websocket in self.connection_info:
             script_id = self.connection_info[websocket]["script_id"]
@@ -59,6 +68,16 @@ class ScriptConnectionManager:
             del self.connection_info[websocket]
             
             logger.debug(f"WebSocket disconnected from script {script_id}")
+            
+            # Broadcast updated connection count to remaining clients
+            if script_id in self.connections and self.connections[script_id]:
+                remaining_count = len(self.connections[script_id])
+                connection_update = websocket_schemas.ConnectionEstablishedResponse(
+                    script_id=script_id,
+                    access_type="connection_update",
+                    connected_users=remaining_count
+                )
+                await self.broadcast_to_script(script_id, connection_update.model_dump_json())
     
     async def broadcast_to_script(self, script_id: str, message_json: str, exclude_websocket: Optional[WebSocket] = None):
         """Broadcast message to all connections in a script room"""
@@ -79,7 +98,7 @@ class ScriptConnectionManager:
         
         # Clean up disconnected websockets
         for websocket in disconnected_websockets:
-            self.disconnect(websocket)
+            await self.disconnect(websocket)
     
     def get_connection_count(self, script_id: str) -> int:
         """Get number of active connections for a script"""
@@ -233,11 +252,11 @@ async def script_websocket(
         await websocket.close(code=4003, reason=e.detail)
         
     except WebSocketDisconnect:
-        connection_manager.disconnect(websocket)
+        await connection_manager.disconnect(websocket)
         
     except Exception as e:
         logger.error(f"Unexpected error in script WebSocket: {e}")
-        connection_manager.disconnect(websocket)
+        await connection_manager.disconnect(websocket)
         await websocket.close(code=4000, reason="Internal server error")
 
 async def handle_script_update(websocket: WebSocket, script_id: str, message: dict, access_info: dict, db: Session):

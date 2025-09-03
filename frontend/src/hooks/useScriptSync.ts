@@ -99,7 +99,6 @@ export const useScriptSync = (
       
       switch (message.type) {
         case 'connection_established':
-          // debug removed
           setIsConnected(true);
           setConnectionCount(typeof message.connected_users === 'number' ? message.connected_users : 0);
           setConnectionError(null);
@@ -144,7 +143,7 @@ export const useScriptSync = (
     }
   }, []); // Remove callback dependencies to prevent reconnections
 
-  const handleClose = useCallback((_event: CloseEvent) => {
+  const handleClose = useCallback((event: CloseEvent) => {
     setIsConnected(false);
     setIsConnecting(false);
     setConnectionCount(0);

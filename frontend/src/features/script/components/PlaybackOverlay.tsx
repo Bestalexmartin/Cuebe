@@ -285,7 +285,7 @@ const DelayTimer: React.FC<{
         const totalCumulativeSeconds = Math.floor((cumulativeDelayMs || 0) / 1000);
         const minutes = Math.floor(totalCumulativeSeconds / 60);
         const seconds = totalCumulativeSeconds % 60;
-        displayTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        displayTime = `+${minutes}:${seconds.toString().padStart(2, '0')}`;
     } else {
         const sessionMs = pauseStartTime ? (timestamp - pauseStartTime) : 0;
         const totalDelaySeconds = Math.max(0, Math.ceil(sessionMs / 1000));
@@ -313,14 +313,7 @@ const DelayTimer: React.FC<{
                 }
             } : {}}
         >
-            {playbackState === 'COMPLETE' ? (
-                <>
-                    <Text as="span" fontSize="2xl" color="gray.500" fontFamily="mono" fontWeight="normal">•</Text>
-                    <Text as="span" color="red.500">{displayTime}</Text>
-                </>
-            ) : (
-                displayTime
-            )}
+            {displayTime}
         </Box>
     );
 }, (prevProps, nextProps) => {
@@ -422,14 +415,14 @@ export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
                             {/* Playback Status */}
                             <PlaybackStatus playbackState={playbackState} cumulativeDelayMs={cumulativeDelayMs} />
                             
-                            {/* Bullet separator for paused/safety mode */}
-                            {(playbackState === 'PAUSED' || playbackState === 'SAFETY') && (
-                                <Box bg="transparent" px="4px" py="2px">
+                            {/* Bullet separator for paused/safety/complete mode */}
+                            {(playbackState === 'PAUSED' || playbackState === 'SAFETY' || playbackState === 'COMPLETE') && (
+                                <Box bg="#0F0F0F" px="4px" py="2px">
                                     <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
                                 </Box>
                             )}
                             
-                            {/* Delay Timer - in PAUSED and SAFETY modes */}
+                            {/* Delay Timer - in PAUSED, SAFETY, and COMPLETE modes */}
                             <DelayTimer playbackState={playbackState} cumulativeDelayMs={cumulativeDelayMs} />
                         </HStack>
                     </Box>

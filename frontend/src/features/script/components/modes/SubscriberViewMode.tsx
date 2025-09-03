@@ -134,36 +134,22 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
                     const borderState = getElementBorderState(element.element_id);
                     
                     return (
-                        <Box
+                        <CueElement
                             key={element.element_id}
-                            ref={(ref) => setElementRef(element.element_id, ref)}
-                            opacity={highlightState === 'inactive' ? 0.3 : 1}
-                            bg={
-                                highlightState === 'current' ? 'red.100' :
-                                highlightState === 'upcoming' ? 'yellow.100' :
-                                'transparent'
-                            }
-                            border={borderState === 'red_border' ? '2px solid' : 'none'}
-                            borderColor={borderState === 'red_border' ? 'red.500' : 'transparent'}
-                            borderRadius={borderState === 'red_border' ? 'md' : 'none'}
-                            transition="all 0.3s ease-in-out"
-                        >
-                            <CueElement
-                                element={element}
-                                index={elements.indexOf(element)}
-                                allElements={elements}
-                                isSelected={false}
-                                colorizeDepNames={colorizeDepNames}
-                                showClockTimes={showClockTimes}
-                                useMilitaryTime={useMilitaryTime}
-                                scriptStartTime={script?.start_time}
-                                scriptEndTime={script?.end_time}
-                                mode="view"
-                                highlightState={highlightState}
-                                borderState={borderState}
-                                isReadOnly={true}
-                            />
-                        </Box>
+                            element={element}
+                            index={elements.indexOf(element)}
+                            allElements={elements}
+                            isSelected={false}
+                            colorizeDepNames={colorizeDepNames}
+                            showClockTimes={showClockTimes}
+                            useMilitaryTime={useMilitaryTime}
+                            scriptStartTime={script?.start_time}
+                            scriptEndTime={script?.end_time}
+                            mode="view"
+                            highlightState={highlightState}
+                            borderState={borderState}
+                            isReadOnly={true}
+                        />
                     );
                 })}
             </VStack>
