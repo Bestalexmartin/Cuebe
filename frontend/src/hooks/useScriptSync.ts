@@ -243,6 +243,12 @@ export const useScriptSync = (
   }, []);
 
   const sendUpdate = useCallback((message: Partial<OutgoingMessage>): boolean => {
+    console.log('📡 WEBSOCKET SEND: Script update:', {
+      message,
+      type: message.update_type,
+      stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
+    });
+    
     const ok = sendMessage({
       type: 'script_update',
       ...message
@@ -270,6 +276,16 @@ export const useScriptSync = (
       start_time: startTime,
       cumulative_delay_ms: cumulativeDelayMs
     };
+    
+    console.log('📡 WEBSOCKET SEND: Playback command:', {
+      command,
+      showTimeMs,
+      startTime,
+      cumulativeDelayMs,
+      message,
+      stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
+    });
+    
     const ok = sendMessage(message);
     if (ok) {
       optionsRef.current.onDataReceived?.(); // Trigger rotation for outgoing playback command
@@ -318,16 +334,6 @@ export const useScriptSync = (
     };
   }, [scriptId, shareToken]); // Note: Don't include connectToWebSocket in deps to avoid infinite reconnects
 
-  // Ping interval to keep connection alive
-  useEffect(() => {
-    if (!isConnected) return;
-    
-    const pingInterval = setInterval(() => {
-      sendPing();
-    }, 30000); // Ping every 30 seconds
-    
-    return () => clearInterval(pingInterval);
-  }, [isConnected, sendPing]);
 
   // No background polling for connection count.
 

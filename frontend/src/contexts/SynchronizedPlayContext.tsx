@@ -17,6 +17,8 @@ interface SyncPlayState {
     serverTimestamp: number | null; // Last received server timestamp for latency correction
     localTimestamp: number | null; // Local timestamp when server timestamp was received
     pauseStartTime: number | null; // When current pause/safety started
+    cumulativeDelayMs: number; // Total accumulated delay from all pauses
+    lastPauseDurationMs?: number; // Duration of most recent pause (for offset adjustment)
     elementStates: Map<string, SyncElementHighlightState>; // Element highlighting states
     elementBorderStates: Map<string, SyncElementBorderState>; // Element border states
     timingBoundaries: SyncTimingBoundary[]; // Pre-calculated timing boundaries
@@ -33,6 +35,9 @@ interface SynchronizedPlayContextValue {
     isPlaybackComplete: boolean;
     startTime: number | null;
     currentTime: number | null;
+    pauseStartTime: number | null;
+    cumulativeDelayMs: number;
+    lastPauseDurationMs?: number;
     elementStates: Map<string, SyncElementHighlightState>;
     elementBorderStates: Map<string, SyncElementBorderState>;
     timingBoundaries: SyncTimingBoundary[];
@@ -45,6 +50,7 @@ interface SynchronizedPlayContextValue {
     clearAllElementStates: () => void;
     shouldHideElement: (elementId: string) => boolean;
     setScript: (script: any) => void;
+    registerRetimingCallback: (callback: (operation: any) => void) => void;
     
     // Computed values
     getElapsedTime: () => number;
@@ -65,6 +71,9 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         currentTime: null,
         serverTimestamp: null,
         localTimestamp: null,
+        pauseStartTime: null,
+        cumulativeDelayMs: 0,
+        lastPauseDurationMs: undefined,
         elementStates: new Map(),
         elementBorderStates: new Map(),
         timingBoundaries: [],
@@ -72,6 +81,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
     });
     
     const timerRef = useRef<number | null>(null);
+    const retimingCallbackRef = useRef<((operation: any) => void) | null>(null);
 
     const handlePlaybackCommand = useCallback((command: string, serverTimestampMs: number, showTimeMs?: number, startTime?: string) => {
         const localNow = Date.now();
@@ -93,16 +103,48 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
             
             switch (command) {
                 case 'PLAY':
+                    // Copy exact logic from auth side PlayContext
+                    if (prev.pauseStartTime) {
+                        const thisPauseDurationMs = localNow - prev.pauseStartTime;
+                        const newCumulativeDelay = prev.cumulativeDelayMs + thisPauseDurationMs;
+                        const newState = {
+                            ...prev,
+                            playbackState: 'PLAYING',
+                            pauseStartTime: null,
+                            cumulativeDelayMs: newCumulativeDelay,
+                            lastPauseDurationMs: thisPauseDurationMs,
+                            currentTime: showTimeMs ?? 0
+                        };
+                        
+                        // Trigger retiming callback if registered
+                        if (retimingCallbackRef.current && thisPauseDurationMs > 0) {
+                            setTimeout(() => {
+                                retimingCallbackRef.current?.({
+                                    type: 'BULK_OFFSET_ADJUSTMENT',
+                                    delay_ms: thisPauseDurationMs,
+                                    current_time_ms: showTimeMs ?? 0
+                                });
+                            }, 0);
+                        }
+                        
+                        return newState;
+                    }
+                    // Starting fresh
                     return {
                         ...prev,
                         playbackState: 'PLAYING',
-                        currentTime: showTimeMs ?? 0
+                        startTime: localNow,
+                        currentTime: showTimeMs ?? 0,
+                        pauseStartTime: null,
+                        cumulativeDelayMs: 0,
+                        lastPauseDurationMs: undefined
                     };
                     
                 case 'PAUSE':
                     return {
                         ...prev,
-                        playbackState: 'PAUSED'
+                        playbackState: 'PAUSED',
+                        pauseStartTime: localNow
                     };
                     
                 case 'SAFETY':
@@ -129,9 +171,12 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                         currentTime: null,
                         serverTimestamp: null,
                         localTimestamp: null,
+                        pauseStartTime: null,
+                        cumulativeDelayMs: 0,
+                        lastPauseDurationMs: undefined,
                         elementStates: new Map(),
                         elementBorderStates: new Map(),
-                        timingBoundaries: prev.timingBoundaries,
+                        timingBoundaries: [],
                         passedElements: new Set()
                     };
                     
@@ -415,6 +460,9 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         isPlaybackComplete: syncPlayState.playbackState === 'COMPLETE',
         startTime: syncPlayState.startTime,
         currentTime: syncPlayState.currentTime,
+        pauseStartTime: syncPlayState.pauseStartTime,
+        cumulativeDelayMs: syncPlayState.cumulativeDelayMs,
+        lastPauseDurationMs: syncPlayState.lastPauseDurationMs,
         elementStates: syncPlayState.elementStates,
         elementBorderStates: syncPlayState.elementBorderStates,
         timingBoundaries: syncPlayState.timingBoundaries,

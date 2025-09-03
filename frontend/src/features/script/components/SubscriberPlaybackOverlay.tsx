@@ -119,12 +119,13 @@ const PlaybackStatus: React.FC<{ playbackState: string }> = ({ playbackState }) 
     };
 
     const isComplete = playbackState === 'COMPLETE';
+    const hasDelayTimer = playbackState === 'PAUSED' || playbackState === 'SAFETY' || playbackState === 'COMPLETE';
     return (
         <Box 
             bg="transparent" 
             color={getStatusColor()} 
             pl="8px" 
-            pr="16px"
+            pr={hasDelayTimer ? "8px" : "16px"}
             py="2px" 
             borderRadius="none" 
             fontSize="2xl" 
@@ -202,6 +203,12 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
     useMilitaryTime
 }) => {
     const { playbackState, isPlaybackSafety } = useSynchronizedPlayContext();
+    
+    console.log('🔍 SUBSCRIBER OVERLAY: Render check:', {
+        playbackState,
+        isPlaybackSafety,
+        shouldRender: playbackState !== 'STOPPED'
+    });
     
     if (playbackState === 'STOPPED') return null;
 

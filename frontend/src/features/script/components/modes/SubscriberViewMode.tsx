@@ -60,14 +60,35 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
         }
     }, [currentTime, playbackState, processBoundariesForTime]);
 
+    // Get pause adjustments from context
+    const { cumulativeDelayMs } = useSynchronizedPlayContext();
+    
+    // Apply pause adjustments to element offset times for display
+    const adjustedElements = useMemo(() => {
+        if (cumulativeDelayMs <= 0) return elements;
+        
+        const currentTimeMs = currentTime || 0;
+        return elements.map(element => {
+            const originalOffset = element.offset_ms || 0;
+            // Only adjust elements that haven't played yet
+            if (originalOffset > currentTimeMs) {
+                return {
+                    ...element,
+                    offset_ms: originalOffset + cumulativeDelayMs
+                };
+            }
+            return element;
+        });
+    }, [elements, cumulativeDelayMs, currentTime]);
+
     // Filter elements based on Tetris-style hiding (hide passed elements)
     const visibleElements = useMemo(() => {
         if (playbackState === 'STOPPED' || playbackState === 'COMPLETE') {
-            return elements; // Show all elements when stopped or complete
+            return adjustedElements; // Show all elements when stopped or complete
         }
         
-        return elements.filter(element => !shouldHideElement(element.element_id));
-    }, [elements, shouldHideElement, playbackState]);
+        return adjustedElements.filter(element => !shouldHideElement(element.element_id));
+    }, [adjustedElements, shouldHideElement, playbackState]);
 
     // Scroll to keep active/upcoming elements visible
     useEffect(() => {

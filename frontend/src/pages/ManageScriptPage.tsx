@@ -349,6 +349,14 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
     // Playback synchronization for scoped sides - using scriptSync's sendPlaybackCommand
     const sendPlaybackCommand = useCallback((command: string) => {
+        console.log('🚀 AUTH SIDE: Sending playback command:', {
+            command,
+            currentTime,
+            startTime: command === 'PLAY' ? effectiveCurrentScript?.start_time : undefined,
+            delayMs: command === 'PLAY' ? (cumulativeDelayMs || 0) : undefined,
+            stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
+        });
+        
         if (sendSyncPlaybackCommand) {
             sendSyncPlaybackCommand(
                 command,
@@ -357,7 +365,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 command === 'PLAY' ? (cumulativeDelayMs || 0) : undefined
             );
         }
-    }, [sendSyncPlaybackCommand, effectiveCurrentScript?.start_time]);
+    }, [sendSyncPlaybackCommand, effectiveCurrentScript?.start_time, currentTime, cumulativeDelayMs]);
 
     // Auto-broadcast COMPLETE state when script finishes
     const lastBroadcastedStateRef = useRef<string | null>(null);
@@ -366,7 +374,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             sendPlaybackCommand('COMPLETE');
         }
         lastBroadcastedStateRef.current = playbackState;
-    }, [playbackState, sendPlaybackCommand]);
+    }, [playbackState]);
 
     // Heartbeat while PLAYING so late joiners auto-enter PLAY state with synced time
     useEffect(() => {
@@ -382,7 +390,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                 return () => window.clearInterval(id);
             }
         }
-    }, [isPlaybackPlaying, sendPlaybackCommand, activePreferences.playHeartbeatIntervalSec]);
+    }, [isPlaybackPlaying, activePreferences.playHeartbeatIntervalSec]);
 
     // Safety stop handler
     const handleSafetyStop = useCallback(() => {
@@ -528,16 +536,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         });
     }, [modalState, navigate, playbackState, stopPlayback, sourceScript, scriptId]);
 
-    // On unmount, ensure STOP is sent if playback was active
-    useEffect(() => {
-        return () => {
-            if (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) {
-                try {
-                    sendPlaybackCommand('STOP');
-                } catch {}
-            }
-        };
-    }, [isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, sendPlaybackCommand]);
 
     // Auto-save functionality - OPTIMIZED to prevent render loops, paused during VIEW mode
     const { isAutoSaving, secondsUntilNextSave, showSaveSuccess, isPaused, togglePause } = useAutoSave({
@@ -705,22 +703,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         return () => window.removeEventListener('beforeunload', handleBeforeUnload);
     }, [isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, modalState]);
 
-    // Best-effort STOP broadcast on actual page hide/unload (hard refresh/close)
-    useEffect(() => {
-        const handlePageHide = () => {
-            if (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) {
-                try {
-                    sendPlaybackCommand('STOP');
-                } catch {}
-            }
-        };
-        window.addEventListener('pagehide', handlePageHide);
-        window.addEventListener('unload', handlePageHide);
-        return () => {
-            window.removeEventListener('pagehide', handlePageHide);
-            window.removeEventListener('unload', handlePageHide);
-        };
-    }, [isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, sendPlaybackCommand]);
 
 
     // Auto-sort functionality
