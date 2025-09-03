@@ -72,7 +72,8 @@ const SharedPageContent = React.memo(() => {
     isPlaybackComplete,
     lastPauseDurationMs,
     currentTime,
-    setElementBoundaries
+    setElementBoundaries,
+    updateElementBoundaries
   } = useSynchronizedPlayContext();
 
   // Tutorial search - extracted to custom hook
@@ -163,10 +164,7 @@ const SharedPageContent = React.memo(() => {
 
   // Scoped-side equivalent of applyLocalChange for pause adjustments
   const applyTimingAdjustment = useCallback((operation: any) => {
-    console.log('🔧 SCOPED RETIME: applyTimingAdjustment called with:', operation);
-    
     if (operation.type === 'UPDATE_SCRIPT_INFO') {
-      console.log('🔧 SCOPED RETIME: UPDATE_SCRIPT_INFO not implemented on scoped side (read-only)');
       return;
     }
     
@@ -176,17 +174,11 @@ const SharedPageContent = React.memo(() => {
       const delayMs = operation.delay_ms;
       const lookaheadMs = guestLookaheadSeconds * 1000;
       
-      console.log('🔧 SCOPED RETIME: Processing adjustment:', {
-        currentTimeMs,
-        delayMs,
-        elementsCount: scriptElements.length
-      });
       
       const adjustedElements = scriptElements.map(element => {
         const originalOffset = element.offset_ms || 0;
         // Only adjust elements that haven't played yet
         if (originalOffset > currentTimeMs) {
-          console.log(`🔧 SCOPED RETIME: Adjusting element ${element.element_id} from ${originalOffset}ms to ${originalOffset + delayMs}ms`);
           return {
             ...element,
             offset_ms: originalOffset + delayMs
@@ -195,20 +187,13 @@ const SharedPageContent = React.memo(() => {
         return element;
       });
       
-      // Rebuild timing boundaries with adjusted elements
-      setElementBoundaries(adjustedElements, lookaheadMs);
+      // Don't update timing boundaries during pause adjustments - this causes flickering
+      // The boundaries will be updated on the next natural timing cycle
     }
-  }, [scriptElements, guestLookaheadSeconds, setElementBoundaries]);
+  }, [scriptElements, guestLookaheadSeconds, updateElementBoundaries]);
 
   // Debug the pause adjustment inputs
   useEffect(() => {
-    console.log('🔧 SCOPED RETIME: usePlaybackAdjustment inputs:', {
-      scriptId: viewingScriptId,
-      elementsCount: scriptElements.length,
-      currentScript: !!currentScript,
-      lastPauseDurationMs,
-      currentTime
-    });
   }, [viewingScriptId, scriptElements.length, currentScript, lastPauseDurationMs, currentTime]);
 
   // Scoped-side pause adjustment - force BULK_OFFSET_ADJUSTMENT approach only
@@ -223,22 +208,24 @@ const SharedPageContent = React.memo(() => {
       return;
     }
     
-    console.log('🔧 SCOPED RETIME: Processing pause duration:', {
-      lastPauseDurationMs,
-      currentTime,
-      scriptElements: scriptElements.length
-    });
     
     lastProcessedPauseRef.current = lastPauseDurationMs;
     
-    // Always use BULK_OFFSET_ADJUSTMENT approach (scoped side is read-only)
-    applyTimingAdjustment({
-      type: 'BULK_OFFSET_ADJUSTMENT',
-      element_id: 'playback-delay-adjustment', 
-      delay_ms: Math.ceil(lastPauseDurationMs / 1000) * 1000, // Round up to nearest second
-      current_time_ms: currentTime
+    // Directly update scriptElements with adjusted offset times - no more "original" values
+    const delayMs = Math.ceil(lastPauseDurationMs / 1000) * 1000;
+    const adjustedElements = scriptElements.map(element => {
+      const currentOffset = element.offset_ms || 0;
+      if (currentOffset > currentTime) {
+        return {
+          ...element,
+          offset_ms: currentOffset + delayMs
+        };
+      }
+      return element;
     });
-  }, [lastPauseDurationMs, currentTime, currentScript, applyTimingAdjustment]);
+    
+    updateScriptElementsDirectly(adjustedElements);
+  }, [lastPauseDurationMs, currentTime, currentScript, scriptElements, updateScriptElementsDirectly]);
 
   // Load guest preferences
   useEffect(() => {
@@ -249,7 +236,6 @@ const SharedPageContent = React.memo(() => {
         const response = await fetch(`/api/shared/${encodeURIComponent(shareToken)}/preferences`);
         if (response.ok) {
           const preferences = await response.json();
-          console.log('Loaded preferences response:', preferences);
           setGuestLookaheadSeconds(preferences.lookahead_seconds || 30);
           setGuestUseMilitaryTime(preferences.use_military_time || false);
         }
@@ -317,7 +303,6 @@ const SharedPageContent = React.memo(() => {
 
       if (response.ok) {
         const updatedPreferences = await response.json();
-        console.log('Updated preferences response:', updatedPreferences);
         setGuestLookaheadSeconds(updatedPreferences.lookahead_seconds || 30);
         setGuestUseMilitaryTime(updatedPreferences.use_military_time || false);
       } else {
@@ -591,15 +576,6 @@ const SharedPageContent = React.memo(() => {
                 {/* Synchronized Playback Overlay */}
                 {(() => {
                   const shouldShow = (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety || isPlaybackComplete) && contentAreaBounds;
-                  console.log('🔍 OVERLAY: Render condition check:', {
-                    playbackState,
-                    isPlaybackPlaying,
-                    isPlaybackPaused,
-                    isPlaybackSafety,
-                    isPlaybackComplete,
-                    hasContentAreaBounds: !!contentAreaBounds,
-                    shouldShow
-                  });
                   return shouldShow ? (
                     <SubscriberPlaybackOverlay
                       contentAreaBounds={contentAreaBounds}

@@ -147,23 +147,32 @@ const PlaybackStatus: React.FC<{ playbackState: string }> = ({ playbackState }) 
 };
 
 const DelayTimer: React.FC<{ 
-    playbackState: string; 
-}> = React.memo(({ playbackState }) => {
+    playbackState: string;
+    cumulativeDelayMs?: number;
+}> = React.memo(({ playbackState, cumulativeDelayMs: propCumulativeDelayMs = 0 }) => {
     const liveTimestamp = useSubscriberClock();
-    const { pauseStartTime } = useSynchronizedPlayContext();
+    const { pauseStartTime, cumulativeDelayMs } = useSynchronizedPlayContext();
     const timestamp = playbackState === 'COMPLETE' ? 0 : liveTimestamp;
 
     if (playbackState !== 'PAUSED' && playbackState !== 'SAFETY' && playbackState !== 'COMPLETE') return null;
 
-    const sessionMs = pauseStartTime ? (timestamp - pauseStartTime) : 0;
-    const totalDelaySeconds = Math.max(0, Math.ceil(sessionMs / 1000));
+    let totalDelaySeconds;
+    
+    if (playbackState === 'COMPLETE') {
+        // Show total cumulative delay in COMPLETE mode
+        totalDelaySeconds = Math.max(0, Math.ceil((propCumulativeDelayMs || cumulativeDelayMs || 0) / 1000));
+    } else {
+        // Show current pause session duration in PAUSED/SAFETY modes
+        const sessionMs = pauseStartTime ? (timestamp - pauseStartTime) : 0;
+        totalDelaySeconds = Math.max(0, Math.ceil(sessionMs / 1000));
+    }
     
     // Hide timer in COMPLETE mode when delay is 0:00
     if (playbackState === 'COMPLETE' && totalDelaySeconds <= 0) return null;
     
     const minutes = Math.floor(totalDelaySeconds / 60);
     const seconds = totalDelaySeconds % 60;
-    const displayTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    const displayTime = `+${minutes}:${seconds.toString().padStart(2, '0')}`;
 
     return (
         <Box 
@@ -202,13 +211,8 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
     script,
     useMilitaryTime
 }) => {
-    const { playbackState, isPlaybackSafety } = useSynchronizedPlayContext();
+    const { playbackState, isPlaybackSafety, cumulativeDelayMs } = useSynchronizedPlayContext();
     
-    console.log('🔍 SUBSCRIBER OVERLAY: Render check:', {
-        playbackState,
-        isPlaybackSafety,
-        shouldRender: playbackState !== 'STOPPED'
-    });
     
     if (playbackState === 'STOPPED') return null;
 
@@ -276,7 +280,7 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
                         )}
                         
                         {/* Delay Timer - in PAUSED, SAFETY, and COMPLETE modes */}
-                        <DelayTimer playbackState={playbackState} />
+                        <DelayTimer playbackState={playbackState} cumulativeDelayMs={cumulativeDelayMs} />
                     </HStack>
                 </Box>
             </Box>

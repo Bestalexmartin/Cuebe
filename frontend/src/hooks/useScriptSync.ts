@@ -243,12 +243,6 @@ export const useScriptSync = (
   }, []);
 
   const sendUpdate = useCallback((message: Partial<OutgoingMessage>): boolean => {
-    console.log('📡 WEBSOCKET SEND: Script update:', {
-      message,
-      type: message.update_type,
-      stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
-    });
-    
     const ok = sendMessage({
       type: 'script_update',
       ...message
@@ -276,15 +270,6 @@ export const useScriptSync = (
       start_time: startTime,
       cumulative_delay_ms: cumulativeDelayMs
     };
-    
-    console.log('📡 WEBSOCKET SEND: Playback command:', {
-      command,
-      showTimeMs,
-      startTime,
-      cumulativeDelayMs,
-      message,
-      stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
-    });
     
     const ok = sendMessage(message);
     if (ok) {

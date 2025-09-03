@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { ScriptElement } from '../features/script/types/scriptElements';
 import { validateShareToken, encodeShareToken, INVALID_SHARE_TOKEN_ERROR } from '../utils/tokenValidation';
+import { useSynchronizedPlayContext } from '../contexts/SynchronizedPlayContext';
 
 /**
  * Recalculate durations for all group elements based on their children
@@ -43,7 +44,8 @@ export const useScript = (shareToken: string | undefined, updateSharedData?: (up
   const [isLoadingScript, setIsLoadingScript] = useState(false);
   const [scriptError, setScriptError] = useState<string | null>(null);
   const [crewContext, setCrewContext] = useState<CrewContext | null>(null);
-  // Remove unused state
+  
+  const { handlePlaybackCommand } = useSynchronizedPlayContext();
 
   const handleScriptClick = useCallback(async (scriptId: string) => {
     if (!validateShareToken(shareToken)) {
@@ -99,6 +101,9 @@ export const useScript = (shareToken: string | undefined, updateSharedData?: (up
   }, [shareToken]);
 
   const handleBackToShows = useCallback(() => {
+    // Reset playback state to STOPPED when leaving script view
+    handlePlaybackCommand('STOP', Date.now());
+    
     setViewingScriptId(null);
     setScriptElements([]);
     setScriptError(null);
@@ -108,7 +113,7 @@ export const useScript = (shareToken: string | undefined, updateSharedData?: (up
     if (refreshSharedData) {
       refreshSharedData();
     }
-  }, [refreshSharedData]);
+  }, [refreshSharedData, handlePlaybackCommand]);
 
   const refreshScriptData = useCallback(() => {
     // No-op placeholder; unified save flow handles refresh in responses

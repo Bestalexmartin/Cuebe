@@ -60,35 +60,14 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
         }
     }, [currentTime, playbackState, processBoundariesForTime]);
 
-    // Get pause adjustments from context
-    const { cumulativeDelayMs } = useSynchronizedPlayContext();
-    
-    // Apply pause adjustments to element offset times for display
-    const adjustedElements = useMemo(() => {
-        if (cumulativeDelayMs <= 0) return elements;
-        
-        const currentTimeMs = currentTime || 0;
-        return elements.map(element => {
-            const originalOffset = element.offset_ms || 0;
-            // Only adjust elements that haven't played yet
-            if (originalOffset > currentTimeMs) {
-                return {
-                    ...element,
-                    offset_ms: originalOffset + cumulativeDelayMs
-                };
-            }
-            return element;
-        });
-    }, [elements, cumulativeDelayMs, currentTime]);
-
     // Filter elements based on Tetris-style hiding (hide passed elements)
     const visibleElements = useMemo(() => {
         if (playbackState === 'STOPPED' || playbackState === 'COMPLETE') {
-            return adjustedElements; // Show all elements when stopped or complete
+            return elements; // Show all elements when stopped or complete
         }
         
-        return adjustedElements.filter(element => !shouldHideElement(element.element_id));
-    }, [adjustedElements, shouldHideElement, playbackState]);
+        return elements.filter(element => !shouldHideElement(element.element_id));
+    }, [elements, shouldHideElement, playbackState]);
 
     // Scroll to keep active/upcoming elements visible
     useEffect(() => {
@@ -154,6 +133,10 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
                     const highlightState = getElementHighlightState(element.element_id);
                     const borderState = getElementBorderState(element.element_id);
                     
+                    // Remove all highlighting overlays in COMPLETE mode
+                    const finalHighlightState = playbackState === 'COMPLETE' ? null : highlightState;
+                    const finalBorderState = playbackState === 'COMPLETE' ? null : borderState;
+                    
                     return (
                         <CueElement
                             key={element.element_id}
@@ -167,8 +150,8 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
                             scriptStartTime={script?.start_time}
                             scriptEndTime={script?.end_time}
                             mode="view"
-                            highlightState={highlightState}
-                            borderState={borderState}
+                            highlightState={finalHighlightState}
+                            borderState={finalBorderState}
                             isReadOnly={true}
                         />
                     );
