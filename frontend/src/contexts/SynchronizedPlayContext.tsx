@@ -46,6 +46,7 @@ interface SynchronizedPlayContextValue {
     // Actions
     handlePlaybackCommand: (command: string, serverTimestampMs: number, showTimeMs?: number, startTime?: string) => void;
     setElementBoundaries: (elements: any[], lookaheadMs: number) => void;
+    updateElementBoundaries: (elements: any[], lookaheadMs: number) => void;
     processBoundariesForTime: (currentTimeMs: number) => void;
     clearAllElementStates: () => void;
     shouldHideElement: (elementId: string) => boolean;
@@ -86,20 +87,8 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
     const handlePlaybackCommand = useCallback((command: string, serverTimestampMs: number, showTimeMs?: number, startTime?: string) => {
         const localNow = Date.now();
         
-        console.log('🎮 SYNC: Playback command received:', {
-            command,
-            serverTimestampMs,
-            showTimeMs,
-            startTime,
-            localNow
-        });
         
         setSyncPlayState(prev => {
-            console.log('🎮 SYNC: State transition:', {
-                from: prev.playbackState,
-                to: command,
-                elementStatesCount: prev.elementStates.size
-            });
             
             switch (command) {
                 case 'PLAY':
@@ -113,7 +102,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                             pauseStartTime: null,
                             cumulativeDelayMs: newCumulativeDelay,
                             lastPauseDurationMs: thisPauseDurationMs,
-                            currentTime: showTimeMs ?? 0
+                            currentTime: showTimeMs
                         };
                         
                         // Trigger retiming callback if registered
@@ -122,7 +111,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                                 retimingCallbackRef.current?.({
                                     type: 'BULK_OFFSET_ADJUSTMENT',
                                     delay_ms: thisPauseDurationMs,
-                                    current_time_ms: showTimeMs ?? 0
+                                    current_time_ms: showTimeMs
                                 });
                             }, 0);
                         }
@@ -134,7 +123,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                         ...prev,
                         playbackState: 'PLAYING',
                         startTime: localNow,
-                        currentTime: showTimeMs ?? 0,
+                        currentTime: showTimeMs,
                         pauseStartTime: null,
                         cumulativeDelayMs: 0,
                         lastPauseDurationMs: undefined
@@ -194,6 +183,15 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         const lookbehindMs = 5000; // Keep current highlight for 5s after element start
         const redBorderMs = 5000; // Red border active for 5s after start
         
+        console.log('🎯 SETTING ELEMENT BOUNDARIES:', {
+            elementsCount: elements.length,
+            lookaheadMs,
+            lookbehindMs,
+            redBorderMs,
+            firstThreeOffsets: elements.slice(0, 3).map(e => ({ id: e.element_id.substring(0, 8), offset_ms: e.offset_ms })),
+            stackTrace: new Error().stack?.split('\n').slice(1, 3).join('\n')
+        });
+        
         let scriptEndTime = 0;
         elements.forEach(element => {
             const start = element.offset_ms || 0;
@@ -252,8 +250,78 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         setSyncPlayState(prev => ({
             ...prev,
             timingBoundaries: boundaries,
-            elementStates: initialStates,
-            elementBorderStates: initialBorderStates
+            // Preserve existing element states instead of resetting to initial states
+            elementStates: prev.elementStates.size > 0 ? prev.elementStates : initialStates,
+            elementBorderStates: prev.elementBorderStates.size > 0 ? prev.elementBorderStates : initialBorderStates
+        }));
+    }, []);
+
+    const updateElementBoundaries = useCallback((elements: any[], lookaheadMs: number) => {
+        // Update timing boundaries without resetting element states to prevent flickering
+        const boundaries: SyncTimingBoundary[] = [];
+        const lookbehindMs = 5000;
+        const redBorderMs = 5000;
+        
+        let scriptEndTime = 0;
+        elements.forEach(element => {
+            const start = element.offset_ms || 0;
+            const endTime = start + lookbehindMs;
+            if (endTime > scriptEndTime) {
+                scriptEndTime = endTime;
+            }
+        });
+        
+        elements.forEach(element => {
+            const start = element.offset_ms || 0;
+            
+            if (lookaheadMs > 0) {
+                boundaries.push({
+                    time: start - lookaheadMs,
+                    elementId: element.element_id,
+                    action: 'upcoming'
+                });
+            }
+            
+            boundaries.push({
+                time: start,
+                elementId: element.element_id,
+                action: 'current'
+            });
+            
+            boundaries.push({
+                time: start,
+                elementId: element.element_id,
+                action: 'red_border'
+            });
+            
+            boundaries.push({
+                time: start + redBorderMs,
+                elementId: element.element_id,
+                action: 'none'
+            });
+            
+            boundaries.push({
+                time: start + lookbehindMs,
+                elementId: element.element_id,
+                action: 'inactive'
+            });
+        });
+        
+        if (scriptEndTime > 0) {
+            boundaries.push({
+                time: scriptEndTime,
+                elementId: 'SCRIPT_COMPLETE',
+                action: 'inactive'
+            });
+        }
+        
+        boundaries.sort((a, b) => a.time - b.time);
+        
+        // Only update boundaries, preserve existing element states
+        setSyncPlayState(prev => ({
+            ...prev,
+            timingBoundaries: boundaries
+            // Keep existing elementStates and elementBorderStates unchanged
         }));
     }, []);
 
@@ -292,15 +360,17 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                 let currentState: SyncElementHighlightState = 'inactive';
                 let currentBorderState: SyncElementBorderState = 'none';
                 
-                prev.timingBoundaries
+                const triggeredBoundaries = prev.timingBoundaries
                     .filter(b => b.elementId === elementId && b.time <= currentTimeMs)
-                    .forEach(boundary => {
-                        if (boundary.action === 'upcoming' || boundary.action === 'current' || boundary.action === 'inactive') {
-                            currentState = boundary.action as SyncElementHighlightState;
-                        } else if (boundary.action === 'red_border' || boundary.action === 'none') {
-                            currentBorderState = boundary.action as SyncElementBorderState;
-                        }
-                    });
+                    .sort((a, b) => a.time - b.time); // Process in chronological order
+                
+                triggeredBoundaries.forEach(boundary => {
+                    if (boundary.action === 'upcoming' || boundary.action === 'current' || boundary.action === 'inactive') {
+                        currentState = boundary.action as SyncElementHighlightState;
+                    } else if (boundary.action === 'red_border' || boundary.action === 'none') {
+                        currentBorderState = boundary.action as SyncElementBorderState;
+                    }
+                });
                 
                 // Mark elements as passed when they become inactive (for Tetris scrolling)
                 if (currentState === 'inactive' && !prev.passedElements.has(elementId)) {
@@ -315,7 +385,27 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                 }
                 
                 const previousState = prev.elementStates.get(elementId);
+                
+                // Log state flickering issues for upcoming elements
+                if (previousState === 'upcoming' && currentState !== 'upcoming' && currentState !== 'current') {
+                    console.log('🔄 UPCOMING ELEMENT FLICKER:', {
+                        elementId: elementId.substring(0, 8),
+                        currentTimeMs,
+                        from: previousState,
+                        to: currentState,
+                        triggeredBoundaries: triggeredBoundaries.map(b => ({ time: b.time, action: b.action }))
+                    });
+                }
                 if (previousState !== currentState) {
+                    console.log('🎯 ELEMENT STATE CHANGE:', {
+                        elementId: elementId.substring(0, 8),
+                        from: previousState,
+                        to: currentState,
+                        currentTimeMs,
+                        relevantBoundaries: prev.timingBoundaries
+                            .filter(b => b.elementId === elementId)
+                            .map(b => ({ time: b.time, action: b.action, triggered: b.time <= currentTimeMs }))
+                    });
                     newStates.set(elementId, currentState);
                     hasChanges = true;
                 } else if (previousState !== undefined) {
@@ -364,8 +454,12 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
     }, []);
 
     const shouldHideElement = useCallback((elementId: string) => {
+        // Never hide elements when script is complete or stopped
+        if (syncPlayState.playbackState === 'COMPLETE' || syncPlayState.playbackState === 'STOPPED') {
+            return false;
+        }
         return syncPlayState.passedElements.has(elementId);
-    }, [syncPlayState.passedElements]);
+    }, [syncPlayState.passedElements, syncPlayState.playbackState]);
 
     const setScriptCallback = useCallback((newScript: any) => {
         setScript(newScript);
@@ -471,6 +565,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         // Actions
         handlePlaybackCommand,
         setElementBoundaries,
+        updateElementBoundaries,
         processBoundariesForTime,
         clearAllElementStates,
         shouldHideElement,
