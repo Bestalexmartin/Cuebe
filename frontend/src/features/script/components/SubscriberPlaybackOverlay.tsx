@@ -57,34 +57,40 @@ const RealtimeClock: React.FC<{ useMilitaryTime: boolean }> = ({ useMilitaryTime
     );
 };
 
-// Exact show timer from auth side
+// Show timer using wall clock like auth side
 const ShowTimer: React.FC<{ script: any; playbackState: string }> = ({ script, playbackState }) => {
-    const { currentTime } = useSynchronizedPlayContext();
-    const [frozenTime, setFrozenTime] = useState<number | null>(null);
+    const liveTimestamp = useSubscriberClock();
+    const [frozenTimestamp, setFrozenTimestamp] = useState<number | null>(null);
     
     useEffect(() => {
-        if ((playbackState === 'COMPLETE' || playbackState === 'PAUSED' || playbackState === 'SAFETY') && frozenTime === null) {
-            setFrozenTime(currentTime);
+        if ((playbackState === 'COMPLETE' || playbackState === 'PAUSED' || playbackState === 'SAFETY') && frozenTimestamp === null) {
+            setFrozenTimestamp(liveTimestamp);
         } else if (playbackState === 'PLAYING') {
-            setFrozenTime(null);
+            setFrozenTimestamp(null);
         }
-    }, [playbackState, currentTime, frozenTime]);
+    }, [playbackState, liveTimestamp, frozenTimestamp]);
     
-    const displayTime = (playbackState === 'COMPLETE' || playbackState === 'PAUSED' || playbackState === 'SAFETY') && frozenTime !== null ? frozenTime : currentTime;
+    const timestamp = (playbackState === 'COMPLETE' || playbackState === 'PAUSED' || playbackState === 'SAFETY') && frozenTimestamp ? frozenTimestamp : liveTimestamp;
     
-    const formatShowTime = useCallback((timeMs: number | null) => {
-        if (timeMs === null) return "00:00:00";
+    const calculateTMinusTime = useCallback((timestamp: number) => {
+        if (!script?.start_time) {
+            return "00:00:00";
+        }
+
+        const scriptStart = new Date(script.start_time);
         
-        const totalSeconds = Math.abs(Math.floor(timeMs / 1000));
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
+        const diffMs = scriptStart.getTime() - timestamp;
+        const diffSeconds = Math.round(diffMs / 1000);
+        
+        const hours = Math.floor(Math.abs(diffSeconds) / 3600);
+        const minutes = Math.floor((Math.abs(diffSeconds) % 3600) / 60);
+        const seconds = Math.abs(diffSeconds) % 60;
         
         const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        return timeMs < 0 ? `–${timeStr}` : timeStr;
-    }, []);
+        return diffSeconds < 0 ? timeStr : `–${timeStr}`;
+    }, [script?.start_time]);
 
-    const tMinusTime = formatShowTime(displayTime);
+    const tMinusTime = calculateTMinusTime(frozenTimestamp || timestamp);
 
     return (
         <Box 

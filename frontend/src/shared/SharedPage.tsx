@@ -102,7 +102,7 @@ const SharedPageContent = React.memo(() => {
     updateScriptElementsDirectly,
     updateSingleElement,
     deleteElement,
-  } = useScript(shareToken);
+  } = useScript(shareToken, updateSharedData, refreshData);
 
   // Function to update script info directly without API call
   const updateScriptInfo = useCallback((changes: any) => {
