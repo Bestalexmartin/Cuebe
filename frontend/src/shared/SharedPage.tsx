@@ -33,12 +33,10 @@ import { useTutorialSearch } from './hooks/useTutorialSearch';
 import { useScriptUpdateHandlers } from './hooks/useScriptUpdateHandlers';
 import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
 import { SynchronizedPlayProvider, useSynchronizedPlayContext } from '../contexts/SynchronizedPlayContext';
-import { usePlaybackAdjustment } from '../features/script/hooks/usePlaybackAdjustment';
-import { SubscriberViewMode } from '../features/script/components/modes/SubscriberViewMode';
-import { SubscriberPlaybackOverlay } from '../features/script/components/SubscriberPlaybackOverlay';
-import { ActionsMenu } from '../components/ActionsMenu';
-import { GuestOptionsModal } from '../features/script/components/modals/GuestOptionsModal';
-import { createGuestActionMenuConfig } from '../features/script/config/guestActionMenuConfig';
+import { SubscriberViewMode } from './components/modes/SubscriberViewMode';
+import { SubscriberPlaybackOverlay } from './components/SubscriberPlaybackOverlay';
+import { GuestOptionsModal } from './components/modals/GuestOptionsModal';
+import { createGuestActionMenuConfig } from './config/guestActionMenuConfig';
 
 const SHOWS_SORT_OPTIONS: SortOption[] = [
   { value: 'show_name', label: 'Name' },
@@ -72,8 +70,7 @@ const SharedPageContent = React.memo(() => {
     isPlaybackComplete,
     lastPauseDurationMs,
     currentTime,
-    setElementBoundaries,
-    resetAllPlaybackState
+    cumulativeDelayMs
   } = useSynchronizedPlayContext();
 
   // Tutorial search - extracted to custom hook
@@ -163,9 +160,40 @@ const SharedPageContent = React.memo(() => {
   }, [currentScript, setScript]);
 
 
-  // Debug the pause adjustment inputs
+  // Late joiner retiming - apply cumulative delay when first joining mid-script
+  const hasAppliedCumulativeDelayRef = useRef(false);
   useEffect(() => {
-  }, [viewingScriptId, scriptElements.length, currentScript, lastPauseDurationMs, currentTime]);
+    if (!hasAppliedCumulativeDelayRef.current && 
+        cumulativeDelayMs > 0 && 
+        currentScript && 
+        currentTime && 
+        scriptElements.length > 0 &&
+        (playbackState === 'PLAYING' || playbackState === 'PAUSED')) {
+      
+      console.log('🔄 Late joiner retiming with cumulative delay:', cumulativeDelayMs);
+      hasAppliedCumulativeDelayRef.current = true;
+      
+      const adjustedElements = scriptElements.map(element => {
+        const currentOffset = element.offset_ms || 0;
+        if (currentOffset > currentTime) {
+          return {
+            ...element,
+            offset_ms: currentOffset + cumulativeDelayMs
+          };
+        }
+        return element;
+      });
+      
+      updateScriptElementsDirectly(adjustedElements);
+    }
+  }, [cumulativeDelayMs, currentScript, currentTime, scriptElements, playbackState, updateScriptElementsDirectly]);
+
+  // Reset late joiner flag when leaving script
+  useEffect(() => {
+    if (!viewingScriptId) {
+      hasAppliedCumulativeDelayRef.current = false;
+    }
+  }, [viewingScriptId]);
 
   // Scoped-side pause adjustment - force BULK_OFFSET_ADJUSTMENT approach only
   const lastProcessedPauseRef = useRef<number | undefined>(undefined);
@@ -233,14 +261,30 @@ const SharedPageContent = React.memo(() => {
   const { handleUpdate } = useScriptUpdateHandlers(updateHandlerCallbacks);
 
   // Playback command handler for synchronized playback
+  const lastCommandRef = useRef<{command: string, timestamp: number} | null>(null);
   const onPlaybackCommand = useCallback((message: any) => {
+    const startTime = performance.now();
+    
+    // Guard against duplicate WebSocket messages within 100ms
+    if (lastCommandRef.current && 
+        lastCommandRef.current.command === message.command &&
+        Math.abs(message.timestamp_ms - lastCommandRef.current.timestamp) < 100) {
+      return;
+    }
+    
     if (message.command && message.timestamp_ms) {
+      lastCommandRef.current = {command: message.command, timestamp: message.timestamp_ms};
+      const beforeHandleCommand = performance.now();
+      
       handlePlaybackCommand(
         message.command,
         message.timestamp_ms,
         message.show_time_ms,
-        message.start_time
+        message.start_time,
+        message.cumulative_delay_ms
       );
+      
+      const afterHandleCommand = performance.now();
     }
   }, [handlePlaybackCommand]);
 

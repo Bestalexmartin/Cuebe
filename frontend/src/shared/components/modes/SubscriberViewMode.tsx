@@ -1,8 +1,8 @@
 import React, { useMemo, useEffect, useRef, useCallback } from 'react';
 import { Box, VStack } from '@chakra-ui/react';
-import { CueElement } from '../CueElement';
-import { ScriptElementsHeader } from '../ScriptElementsHeader';
-import { useSynchronizedPlayContext } from '../../../../contexts/SynchronizedPlayContext';
+import { CueElement } from '../../../features/script/components/CueElement';
+import { ScriptElementsHeader } from '../../../features/script/components/ScriptElementsHeader';
+import { useSynchronizedPlayContext } from '../../../contexts/SynchronizedPlayContext';
 
 interface SubscriberViewModeProps {
     scriptId: string;
@@ -45,13 +45,13 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
         processBoundariesForTime
     } = useSynchronizedPlayContext();
 
-    // Set up timing boundaries when elements or lookahead changes (but not during playback to prevent flickering)
+    // Set up timing boundaries when elements or lookahead changes
     useEffect(() => {
-        if (elements.length > 0 && playbackState === 'STOPPED') {
+        if (elements.length > 0) {
             const lookaheadMs = lookaheadSeconds * 1000;
             setElementBoundaries(elements, lookaheadMs);
         }
-    }, [elements, lookaheadSeconds, setElementBoundaries, playbackState]);
+    }, [elements, lookaheadSeconds, setElementBoundaries]);
 
     // Process boundaries for current time
     useEffect(() => {

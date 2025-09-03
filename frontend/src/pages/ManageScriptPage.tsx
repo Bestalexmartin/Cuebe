@@ -326,6 +326,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     
     // Play state from context
     const { playbackState, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, startPlayback, pausePlayback, stopPlayback, safetyStop, setElementBoundaries, processBoundariesForTime, currentTime, cumulativeDelayMs, lastPauseDurationMs } = usePlayContext();
+    
 
     // Wipe edit history when entering COMPLETE state
     useEffect(() => {
@@ -348,49 +349,23 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     const effectiveCurrentScript = currentScript || contextCurrentScript;
 
     // Playback synchronization for scoped sides - using scriptSync's sendPlaybackCommand
+    // Use ref to always get latest cumulativeDelayMs value
+    const cumulativeDelayMsRef = useRef(cumulativeDelayMs);
+    cumulativeDelayMsRef.current = cumulativeDelayMs;
+    
     const sendPlaybackCommand = useCallback((command: string) => {
-        console.log('🚀 AUTH SIDE: Sending playback command:', {
-            command,
-            currentTime,
-            startTime: command === 'PLAY' ? effectiveCurrentScript?.start_time : undefined,
-            delayMs: command === 'PLAY' ? (cumulativeDelayMs || 0) : undefined,
-            stackTrace: new Error().stack?.split('\n').slice(1, 4).join('\n')
-        });
-        
         if (sendSyncPlaybackCommand) {
+            const latestCumulativeDelay = cumulativeDelayMsRef.current;
             sendSyncPlaybackCommand(
                 command,
                 currentTime || undefined,
                 command === 'PLAY' ? effectiveCurrentScript?.start_time : undefined,
-                command === 'PLAY' ? (cumulativeDelayMs || 0) : undefined
+                command === 'PLAY' ? (latestCumulativeDelay || 0) : undefined
             );
         }
-    }, [sendSyncPlaybackCommand, effectiveCurrentScript?.start_time, currentTime, cumulativeDelayMs]);
+    }, [sendSyncPlaybackCommand, effectiveCurrentScript?.start_time, currentTime]);
 
-    // Auto-broadcast COMPLETE state when script finishes
-    const lastBroadcastedStateRef = useRef<string | null>(null);
-    useEffect(() => {
-        if (playbackState === 'COMPLETE' && lastBroadcastedStateRef.current !== 'COMPLETE') {
-            sendPlaybackCommand('COMPLETE');
-        }
-        lastBroadcastedStateRef.current = playbackState;
-    }, [playbackState]);
 
-    // Heartbeat while PLAYING so late joiners auto-enter PLAY state with synced time
-    useEffect(() => {
-        if (isPlaybackPlaying) {
-            // Always send an immediate sync when entering PLAY
-            sendPlaybackCommand('PLAY');
-            const intervalSec = activePreferences.playHeartbeatIntervalSec ?? 5;
-            if (intervalSec > 0) {
-                const ms = Math.min(30000, Math.max(2000, intervalSec * 1000));
-                const id = window.setInterval(() => {
-                    sendPlaybackCommand('PLAY');
-                }, ms);
-                return () => window.clearInterval(id);
-            }
-        }
-    }, [isPlaybackPlaying, activePreferences.playHeartbeatIntervalSec]);
 
     // Safety stop handler
     const handleSafetyStop = useCallback(() => {

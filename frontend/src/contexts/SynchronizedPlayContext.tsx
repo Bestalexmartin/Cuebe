@@ -44,7 +44,7 @@ interface SynchronizedPlayContextValue {
     passedElements: Set<string>;
     
     // Actions
-    handlePlaybackCommand: (command: string, serverTimestampMs: number, showTimeMs?: number, startTime?: string) => void;
+    handlePlaybackCommand: (command: string, serverTimestampMs: number, showTimeMs?: number, startTime?: string, cumulativeDelayMs?: number) => void;
     setElementBoundaries: (elements: any[], lookaheadMs: number) => void;
     updateElementBoundaries: (elements: any[], lookaheadMs: number) => void;
     processBoundariesForTime: (currentTimeMs: number) => void;
@@ -85,11 +85,17 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
     const timerRef = useRef<number | null>(null);
     const retimingCallbackRef = useRef<((operation: any) => void) | null>(null);
 
-    const handlePlaybackCommand = useCallback((command: string, serverTimestampMs: number, showTimeMs?: number, startTime?: string) => {
+    const handlePlaybackCommand = useCallback((command: string, serverTimestampMs: number, showTimeMs?: number, startTime?: string, cumulativeDelayMs?: number) => {
+        const perfStart = performance.now();
         const localNow = Date.now();
         
-        
         setSyncPlayState(prev => {
+            const setStateStart = performance.now();
+            
+            // Guard against duplicate PLAY commands
+            if (command === 'PLAY' && prev.playbackState === 'PLAYING') {
+                return prev;
+            }
             
             switch (command) {
                 case 'PLAY':
@@ -97,7 +103,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                     if (prev.pauseStartTime) {
                         const thisPauseDurationMs = localNow - prev.pauseStartTime;
                         const newCumulativeDelay = prev.cumulativeDelayMs + thisPauseDurationMs;
-                        const newState = {
+                        return {
                             ...prev,
                             playbackState: 'PLAYING',
                             pauseStartTime: null,
@@ -105,30 +111,18 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                             lastPauseDurationMs: thisPauseDurationMs,
                             currentTime: showTimeMs
                         };
-                        
-                        // Trigger retiming callback if registered
-                        if (retimingCallbackRef.current && thisPauseDurationMs > 0) {
-                            setTimeout(() => {
-                                retimingCallbackRef.current?.({
-                                    type: 'BULK_OFFSET_ADJUSTMENT',
-                                    delay_ms: thisPauseDurationMs,
-                                    current_time_ms: showTimeMs
-                                });
-                            }, 0);
-                        }
-                        
-                        return newState;
                     }
-                    // Starting fresh
-                    return {
+                    // Starting fresh - use provided cumulative delay for late joiner sync
+                    const result = {
                         ...prev,
                         playbackState: 'PLAYING',
                         startTime: localNow,
                         currentTime: showTimeMs,
                         pauseStartTime: null,
-                        cumulativeDelayMs: 0,
+                        cumulativeDelayMs: cumulativeDelayMs || 0,
                         lastPauseDurationMs: undefined
                     };
+                    return result;
                     
                 case 'PAUSE':
                     return {
@@ -174,6 +168,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                     return prev;
             }
         });
+        
     }, []);
 
     const setElementBoundaries = useCallback((elements: any[], lookaheadMs: number) => {
@@ -184,14 +179,6 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         const lookbehindMs = 5000; // Keep current highlight for 5s after element start
         const redBorderMs = 5000; // Red border active for 5s after start
         
-        console.log('🎯 SETTING ELEMENT BOUNDARIES:', {
-            elementsCount: elements.length,
-            lookaheadMs,
-            lookbehindMs,
-            redBorderMs,
-            firstThreeOffsets: elements.slice(0, 3).map(e => ({ id: e.element_id.substring(0, 8), offset_ms: e.offset_ms })),
-            stackTrace: new Error().stack?.split('\n').slice(1, 3).join('\n')
-        });
         
         let scriptEndTime = 0;
         elements.forEach(element => {
@@ -332,46 +319,77 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                 return prev;
             }
             
-            const newStates = new Map(prev.elementStates);
-            const newBorderStates = new Map(prev.elementBorderStates);
-            const newPassedElements = new Set(prev.passedElements);
-            let hasChanges = false;
-            
-            const elementIds = new Set<string>();
-            prev.timingBoundaries.forEach(boundary => {
-                elementIds.add(boundary.elementId);
-            });
+            // Check for script completion - only complete if ALL elements have been processed
+            const hasActiveElements = prev.timingBoundaries.some(boundary => 
+                boundary.elementId !== 'SCRIPT_COMPLETE' && 
+                boundary.action === 'current' && 
+                boundary.time > currentTimeMs
+            );
             
             const scriptCompleteBoundary = prev.timingBoundaries.find(
                 b => b.elementId === 'SCRIPT_COMPLETE' && b.time <= currentTimeMs
             );
             
-            if (scriptCompleteBoundary) {
+            if (scriptCompleteBoundary && !hasActiveElements) {
+                const clearedStates = new Map<string, SyncElementHighlightState>();
+                prev.elementStates.forEach((_, id) => clearedStates.set(id, 'inactive'));
                 return {
                     ...prev,
                     playbackState: 'COMPLETE',
-                    elementStates: new Map(Array.from(prev.elementStates.entries()).map(([id, _]) => [id, 'inactive' as SyncElementHighlightState])),
+                    elementStates: clearedStates,
                     elementBorderStates: new Map(prev.elementBorderStates)
                 };
             }
             
-            elementIds.forEach(elementId => {
-                if (elementId === 'SCRIPT_COMPLETE') return;
-                
+            // Optimize: only copy Maps if we actually need to make changes
+            let newStates: Map<string, SyncElementHighlightState> | null = null;
+            let newBorderStates: Map<string, SyncElementBorderState> | null = null;
+            let newPassedElements: Set<string> | null = null;
+            let hasChanges = false;
+            
+            // Get unique element IDs more efficiently
+            const elementIds = new Set<string>();
+            for (const boundary of prev.timingBoundaries) {
+                if (boundary.elementId !== 'SCRIPT_COMPLETE') {
+                    elementIds.add(boundary.elementId);
+                }
+            }
+            
+            // Process elements more efficiently
+            for (const elementId of elementIds) {
                 let currentState: SyncElementHighlightState = 'inactive';
                 let currentBorderState: SyncElementBorderState = 'none';
                 
-                const triggeredBoundaries = prev.timingBoundaries
-                    .filter(b => b.elementId === elementId && b.time <= currentTimeMs)
-                    .sort((a, b) => a.time - b.time); // Process in chronological order
+                // Find most recent boundaries for this element (optimize: avoid sorting)
+                let latestHighlightTime = -1;
+                let latestBorderTime = -1;
                 
-                triggeredBoundaries.forEach(boundary => {
-                    if (boundary.action === 'upcoming' || boundary.action === 'current' || boundary.action === 'inactive') {
-                        currentState = boundary.action as SyncElementHighlightState;
-                    } else if (boundary.action === 'red_border' || boundary.action === 'none') {
-                        currentBorderState = boundary.action as SyncElementBorderState;
+                for (const boundary of prev.timingBoundaries) {
+                    if (boundary.elementId === elementId && boundary.time <= currentTimeMs) {
+                        if ((boundary.action === 'upcoming' || boundary.action === 'current' || boundary.action === 'inactive') && boundary.time > latestHighlightTime) {
+                            latestHighlightTime = boundary.time;
+                            currentState = boundary.action as SyncElementHighlightState;
+                        } else if ((boundary.action === 'red_border' || boundary.action === 'none') && boundary.time > latestBorderTime) {
+                            latestBorderTime = boundary.time;
+                            currentBorderState = boundary.action as SyncElementBorderState;
+                        }
                     }
-                });
+                }
+                
+                // Check state changes (lazy Map creation)
+                const previousState = prev.elementStates.get(elementId);
+                if (previousState !== currentState) {
+                    if (!newStates) newStates = new Map(prev.elementStates);
+                    newStates.set(elementId, currentState);
+                    hasChanges = true;
+                }
+                
+                const previousBorderState = prev.elementBorderStates.get(elementId);
+                if (previousBorderState !== currentBorderState) {
+                    if (!newBorderStates) newBorderStates = new Map(prev.elementBorderStates);
+                    newBorderStates.set(elementId, currentBorderState);
+                    hasChanges = true;
+                }
                 
                 // Mark elements as passed when they become inactive (for Tetris scrolling)
                 if (currentState === 'inactive' && !prev.passedElements.has(elementId)) {
@@ -380,54 +398,19 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                         b => b.elementId === elementId && b.action === 'current'
                     );
                     if (elementStartBoundary && currentTimeMs > elementStartBoundary.time + 5000) {
+                        if (!newPassedElements) newPassedElements = new Set(prev.passedElements);
                         newPassedElements.add(elementId);
                         hasChanges = true;
                     }
                 }
-                
-                const previousState = prev.elementStates.get(elementId);
-                
-                // Log state flickering issues for upcoming elements
-                if (previousState === 'upcoming' && currentState !== 'upcoming' && currentState !== 'current') {
-                    console.log('🔄 UPCOMING ELEMENT FLICKER:', {
-                        elementId: elementId.substring(0, 8),
-                        currentTimeMs,
-                        from: previousState,
-                        to: currentState,
-                        triggeredBoundaries: triggeredBoundaries.map(b => ({ time: b.time, action: b.action }))
-                    });
-                }
-                if (previousState !== currentState) {
-                    console.log('🎯 ELEMENT STATE CHANGE:', {
-                        elementId: elementId.substring(0, 8),
-                        from: previousState,
-                        to: currentState,
-                        currentTimeMs,
-                        relevantBoundaries: prev.timingBoundaries
-                            .filter(b => b.elementId === elementId)
-                            .map(b => ({ time: b.time, action: b.action, triggered: b.time <= currentTimeMs }))
-                    });
-                    newStates.set(elementId, currentState);
-                    hasChanges = true;
-                } else if (previousState !== undefined) {
-                    newStates.set(elementId, previousState);
-                }
-                
-                const previousBorderState = prev.elementBorderStates.get(elementId);
-                if (previousBorderState !== currentBorderState) {
-                    newBorderStates.set(elementId, currentBorderState);
-                    hasChanges = true;
-                } else if (previousBorderState !== undefined) {
-                    newBorderStates.set(elementId, previousBorderState);
-                }
-            });
+            }
             
             if (hasChanges) {
                 return {
                     ...prev,
-                    elementStates: newStates,
-                    elementBorderStates: newBorderStates,
-                    passedElements: newPassedElements
+                    elementStates: newStates || prev.elementStates,
+                    elementBorderStates: newBorderStates || prev.elementBorderStates,
+                    passedElements: newPassedElements || prev.passedElements
                 };
             }
             return prev;
@@ -534,6 +517,20 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
             }
         }, delay);
     }, [clearTimer, computeShowTime, syncPlayState.playbackState, syncPlayState.timingBoundaries, script?.start_time]);
+
+    // Trigger retiming callback when lastPauseDurationMs changes (performance optimization)
+    useEffect(() => {
+        if (retimingCallbackRef.current && syncPlayState.lastPauseDurationMs && syncPlayState.lastPauseDurationMs > 0) {
+            // Use requestAnimationFrame for better performance than setTimeout
+            requestAnimationFrame(() => {
+                retimingCallbackRef.current?.({
+                    type: 'BULK_OFFSET_ADJUSTMENT',
+                    delay_ms: syncPlayState.lastPauseDurationMs!,
+                    current_time_ms: syncPlayState.currentTime
+                });
+            });
+        }
+    }, [syncPlayState.lastPauseDurationMs, syncPlayState.currentTime]);
 
     useEffect(() => {
         if (!script?.start_time) {

@@ -1,4 +1,4 @@
-import { ActionItem } from '../../../components/ActionsMenu';
+import { ActionItem } from '../../components/ActionsMenu';
 
 interface GuestActionMenuConfigParams {
     onOptionsClick: () => void;
