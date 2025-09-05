@@ -80,7 +80,6 @@ export const SharedPageHeader: React.FC<SharedPageHeaderProps> = ({
             isConnecting={syncData?.isConnecting || false}
             connectionCount={syncData?.connectionCount || 0}
             connectionError={syncData?.connectionError}
-            userType={syncData?.userType || 'crew_member'}
           />
         </BorderedContainer>
 

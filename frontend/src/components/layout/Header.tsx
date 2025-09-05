@@ -102,7 +102,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
                 isConnecting={syncData?.isConnecting || false}
                 connectionCount={syncData?.connectionCount || 0}
                 connectionError={syncData?.connectionError}
-                userType={syncData?.userType || 'stage_manager'}
               />
             </BorderedContainer>
             <BorderedContainer>

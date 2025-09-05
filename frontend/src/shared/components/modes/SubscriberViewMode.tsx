@@ -8,14 +8,9 @@ interface SubscriberViewModeProps {
     scriptId: string;
     colorizeDepNames: boolean;
     showClockTimes: boolean;
-    autoSortCues: boolean;
     elements: any[];
-    allElements: any[];
     script: any;
     useMilitaryTime: boolean;
-    onToggleGroupCollapse?: (elementId: string) => void;
-    groupOverrides?: Record<string, boolean>;
-    isHighlightingEnabled?: boolean;
     lookaheadSeconds: number;
 }
 
@@ -26,9 +21,6 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
     elements,
     script,
     useMilitaryTime,
-    onToggleGroupCollapse: _onToggleGroupCollapse,
-    groupOverrides: _groupOverrides,
-    isHighlightingEnabled: _isHighlightingEnabled,
     lookaheadSeconds
 }) => {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -157,7 +149,6 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
         prevProps.scriptId === nextProps.scriptId &&
         prevProps.colorizeDepNames === nextProps.colorizeDepNames &&
         prevProps.showClockTimes === nextProps.showClockTimes &&
-        prevProps.lookaheadSeconds === nextProps.lookaheadSeconds &&
         prevProps.elements === nextProps.elements &&
         prevProps.script === nextProps.script
     );
