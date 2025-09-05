@@ -55,7 +55,6 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = ({
     hasChanges,
     hasUnsavedChanges,
     isFormValid,
-    playbackState,
     isPlaybackPlaying,
     isPlaybackPaused,
     isPlaybackSafety,

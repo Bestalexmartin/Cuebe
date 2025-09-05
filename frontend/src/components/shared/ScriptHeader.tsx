@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flex, HStack, Heading, Text, Badge, Button, Divider } from '@chakra-ui/react';
+import { Flex, HStack, Heading, Badge, Button, Divider } from '@chakra-ui/react';
 import { AppIcon } from '../AppIcon';
 import { ActionsMenu } from '../ActionsMenu';
 import { formatRoleBadge } from '../../constants/userRoles';

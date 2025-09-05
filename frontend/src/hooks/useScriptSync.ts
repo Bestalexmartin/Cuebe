@@ -143,7 +143,7 @@ export const useScriptSync = (
     }
   }, []); // Remove callback dependencies to prevent reconnections
 
-  const handleClose = useCallback((event: CloseEvent) => {
+  const handleClose = useCallback((_event: CloseEvent) => {
     setIsConnected(false);
     setIsConnecting(false);
     setConnectionCount(0);

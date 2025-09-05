@@ -82,15 +82,13 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         passedElements: new Set()
     });
     
-    const timerRef = useRef<number | null>(null);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const retimingCallbackRef = useRef<((operation: any) => void) | null>(null);
 
-    const handlePlaybackCommand = useCallback((command: string, serverTimestampMs: number, showTimeMs?: number, startTime?: string, cumulativeDelayMs?: number) => {
-        const perfStart = performance.now();
+    const handlePlaybackCommand = useCallback((command: string, _serverTimestampMs: number, showTimeMs?: number, _startTime?: string, cumulativeDelayMs?: number) => {
         const localNow = Date.now();
         
         setSyncPlayState(prev => {
-            const setStateStart = performance.now();
             
             // Guard against duplicate PLAY commands
             if (command === 'PLAY' && prev.playbackState === 'PLAYING') {
@@ -105,19 +103,19 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                         const newCumulativeDelay = prev.cumulativeDelayMs + thisPauseDurationMs;
                         return {
                             ...prev,
-                            playbackState: 'PLAYING',
+                            playbackState: 'PLAYING' as SyncPlaybackState,
                             pauseStartTime: null,
                             cumulativeDelayMs: newCumulativeDelay,
                             lastPauseDurationMs: thisPauseDurationMs,
-                            currentTime: showTimeMs
+                            currentTime: showTimeMs || null
                         };
                     }
                     // Starting fresh - use provided cumulative delay for late joiner sync
                     const result = {
                         ...prev,
-                        playbackState: 'PLAYING',
+                        playbackState: 'PLAYING' as SyncPlaybackState,
                         startTime: localNow,
-                        currentTime: showTimeMs,
+                        currentTime: showTimeMs || null,
                         pauseStartTime: null,
                         cumulativeDelayMs: cumulativeDelayMs || 0,
                         lastPauseDurationMs: undefined
@@ -127,14 +125,14 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                 case 'PAUSE':
                     return {
                         ...prev,
-                        playbackState: 'PAUSED',
+                        playbackState: 'PAUSED' as SyncPlaybackState,
                         pauseStartTime: localNow
                     };
                     
                 case 'SAFETY':
                     return {
                         ...prev,
-                        playbackState: 'SAFETY'
+                        playbackState: 'SAFETY' as SyncPlaybackState
                     };
                     
                 case 'COMPLETE':
@@ -144,13 +142,13 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                     });
                     return {
                         ...prev,
-                        playbackState: 'COMPLETE',
+                        playbackState: 'COMPLETE' as SyncPlaybackState,
                         elementStates: clearedStates
                     };
                     
                 case 'STOP':
                     return {
-                        playbackState: 'STOPPED',
+                        playbackState: 'STOPPED' as SyncPlaybackState,
                         startTime: null,
                         currentTime: null,
                         serverTimestamp: null,
@@ -466,6 +464,10 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         setScript(newScript);
     }, []);
 
+    const registerRetimingCallback = useCallback((callback: (operation: any) => void) => {
+        retimingCallbackRef.current = callback;
+    }, []);
+
     // Subscriber timing engine - copied from working host PlaybackTimingProvider pattern
     const [script, setScript] = useState<any>(null);
     
@@ -586,6 +588,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         resetAllPlaybackState,
         shouldHideElement,
         setScript: setScriptCallback,
+        registerRetimingCallback,
         
         // Computed values
         getElapsedTime,
