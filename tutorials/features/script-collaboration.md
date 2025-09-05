@@ -11,13 +11,16 @@
 - Multiple versions exist with different information
 - Nobody's sure which version is "correct"
 - Important updates get lost in email chains
+- During tech, everyone's trying to follow along with different timing
 
 ### The Cuebe Way 🎉
 - One script, always up-to-date, accessible to everyone
 - Real-time collaboration - see changes as they happen
+- **Live synchronized playback** - your entire team follows the same timing
 - Clear permissions - everyone can contribute what they need to
 - Complete change history - never lose an important note
 - Works on any device - phone, tablet, or computer
+- **Instant cue coordination** - everyone sees exactly what's happening when
 
 ---
 
@@ -51,18 +54,31 @@ Every edit is saved with who made it and when. If you need to undo a change or s
 4. Stage manager sees both the request and the solution
 5. Everyone's on the same page without any extra communication
 
-### Scenario 2: Technical Rehearsal Adjustments ⚡
-**What Happens:** During tech, you discover a lighting cue needs to happen 3 beats earlier.
+### Scenario 2: Technical Rehearsal Coordination ⚡
+**What Happens:** During tech, you need to walk through a complex sequence with lighting, sound, and set changes.
 
-**Old Way:** Lighting designer makes a note, stage manager updates their script, sound designer might not know about the timing change.
+**Old Way:** Stage manager calls cues over headset while everyone tries to follow along in their own scripts, often getting lost or missing cues.
 
 **Cuebe Way:**
-1. Lighting designer adjusts the cue timing in real-time
-2. Stage manager sees the change immediately  
-3. Sound designer can adjust their related cues accordingly
-4. The change is documented and everyone stays coordinated
+1. **Stage manager starts synchronized playback** from their device
+2. **Everyone's script follows along automatically** - lighting, sound, fly gallery all see the same active cues
+3. **Visual highlighting** shows exactly which elements are current, upcoming, or completed
+4. **Pause and resume** keeps everyone together during discussions
+5. **Real-time timing adjustments** are instantly visible to all departments
 
-### Scenario 3: Last-Minute Script Changes 📝
+### Scenario 3: Performance Night Magic ✨
+**What Happens:** During the actual performance, the stage manager needs to coordinate a tight cue sequence.
+
+**Old Way:** Relying on individual timing, headset calls, and hoping everyone's in the right place in their script.
+
+**Cuebe Way:**
+1. **Synchronized playback** means every department head sees exactly what's active
+2. **Automatic highlighting** shows upcoming cues before they happen  
+3. **Safety stop feature** instantly alerts everyone if something goes wrong
+4. **Real-time clock and show timer** keeps everyone oriented to the performance timeline
+5. **Guest access** allows understudies or visiting directors to follow along seamlessly
+
+### Scenario 4: Last-Minute Script Changes 📝
 **What Happens:** A line needs to change for legal or creative reasons.
 
 **Old Way:** New script pages get distributed, people update their scripts manually, someone always misses the memo.
@@ -71,7 +87,8 @@ Every edit is saved with who made it and when. If you need to undo a change or s
 1. Director or stage manager makes the change once
 2. Everyone with access sees the update immediately
 3. All related cues and notes automatically stay connected to the right place
-4. No chance of someone working from outdated information
+4. **Synchronized playback automatically adapts** to the new timing
+5. No chance of someone working from outdated information
 
 ---
 
@@ -141,6 +158,44 @@ Every edit is saved with who made it and when. If you need to undo a change or s
 **Use Department Views:** Focus on information relevant to your role without getting distracted by other departments' details.
 
 **Regular Cleanup:** Periodically review and organize notes - remove outdated information and consolidate related items.
+
+---
+
+## Live Synchronized Playback 🎬
+
+**The Game-Changer for Tech and Performances**
+
+### What is Synchronized Playback?
+Imagine if every person in your production team could see exactly the same moment in the script at exactly the same time, with automatic highlighting and timing that follows your actual show pace.
+
+**That's synchronized playback!**
+
+### How It Works:
+1. **The Director or Stage Manager starts playback** from the main script
+2. **Everyone else's devices automatically follow along** - no matter where they are
+3. **Visual cues highlight** what's currently happening and what's coming next
+4. **Pause, resume, or adjust timing** and everyone stays perfectly synchronized
+5. **Works on any device** - phone, tablet, or computer
+
+### Perfect For:
+- **Tech Rehearsals**: Walk through complex sequences with all departments coordinated
+- **Cue-to-Cue**: Everyone follows the exact same pacing and timing
+- **Performances**: Real-time coordination without relying on headset calls alone
+- **Training**: Show understudies or new crew exactly how the show flows
+- **Guest Directors**: Visiting artists can follow along instantly without learning your systems
+
+### Visual Magic ✨
+- **Green highlighting** for currently active cues
+- **Orange preview** for upcoming elements  
+- **Red borders** for critical timing cues
+- **Automatic scrolling** keeps the action visible
+- **"Tetris mode"** hides completed cues for cleaner viewing
+
+### Smart Features:
+- **Late Joiner Sync**: Someone joins mid-show? They automatically catch up to the current moment
+- **Pause Compensation**: Take a break to work something out? The timing adjusts automatically when you resume
+- **Safety Stop**: Instant emergency halt that alerts everyone immediately
+- **Guest Access**: Share a link for people to join without creating accounts
 
 ---
 

@@ -44,6 +44,9 @@
 ### Q: Can people work on scripts at the same time without messing each other up?
 **A:** Yes! Cuebe is designed for real-time collaboration. Multiple people can work on the same script simultaneously, and everyone sees updates immediately. There are safeguards to prevent accidental conflicts.
 
+### Q: What's this "synchronized playback" feature I've heard about?
+**A:** It's like having a conductor for your entire production team! The stage manager or director can start script playback, and everyone else's devices automatically follow along with the same timing, highlighting, and cues. Perfect for tech rehearsals and performances - no more "where are we?" confusion.
+
 ### Q: What happens if someone accidentally deletes something important?
 **A:** Everything has a complete change history, so nothing is ever really "deleted." You can always see what was changed and restore previous versions if needed. Plus, only people with appropriate permissions can make major changes.
 
@@ -58,7 +61,10 @@
 **A:** Yes! You can upload most common file formats (PDF, Word, text files) and Cuebe will help you convert them into editable, collaborative scripts. We're constantly improving our import capabilities.
 
 ### Q: Does Cuebe work on phones and tablets?
-**A:** Absolutely. Cuebe is designed to work on any device - phone, tablet, laptop, or desktop computer. You can check a cue during rehearsal on your phone, then go home and do detailed planning on your computer.
+**A:** Absolutely. Cuebe is designed to work on any device - phone, tablet, laptop, or desktop computer. You can check a cue during rehearsal on your phone, then go home and do detailed planning on your computer. The synchronized playback even works beautifully on phones - perfect for department heads who need to follow along from anywhere in the theater.
+
+### Q: Can people join a synchronized script session without creating an account?
+**A:** Yes! You can share special guest links that let people (like visiting directors, understudies, or temporary crew) follow along with synchronized playback without needing to create accounts. They'll see everything in real-time but won't be able to edit anything.
 
 ### Q: Can I print scripts from Cuebe?
 **A:** Yes, you can export clean, printable versions of your scripts. You can choose what information to include - just dialogue, full technical notes, or specific department information.
@@ -93,7 +99,10 @@
 ## Technical Questions
 
 ### Q: What if our internet goes out during a performance?
-**A:** Once your script is loaded, you can work offline. Cuebe stores information locally on your device, so you can access your cues and notes even without internet. Changes will sync when connectivity returns.
+**A:** Once your script is loaded, you can work offline. Cuebe stores information locally on your device, so you can access your cues and notes even without internet. Changes will sync when connectivity returns. The synchronized playback does need internet to coordinate between devices, but each person still has full access to their script information.
+
+### Q: How does the synchronized playback handle timing if someone joins late?
+**A:** It's smart! When someone joins a synchronized session that's already in progress, their device automatically catches up to the current moment and adjusts all the timing to match where the show actually is. No manual catching up needed.
 
 ### Q: Can we backup our production information?
 **A:** Yes! You can export complete backups of your shows, including all scripts, cues, and notes. You can also export specific information like cue sheets or contact lists.

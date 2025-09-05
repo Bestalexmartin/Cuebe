@@ -128,11 +128,13 @@ This is the fun part - seeing how your team can work together in real-time.
 2. **Update timing** - adjust the length of a scene based on rehearsal  
 3. **Add a note** - put in a reminder or question that others can see
 4. **Make a change** - edit something and watch others see the update immediately
+5. **🎬 Try synchronized playback** - start script playback and watch everyone's devices follow along with automatic highlighting!
 
 ### What to Look For:
 - Everyone can see the same information
 - Updates appear in real-time  
 - People can add information relevant to their departments
+- **Synchronized playback** keeps everyone on the same page during complex sequences
 - Nothing gets lost or overlooked
 
 ---
@@ -149,11 +151,14 @@ Now that the basics are set up, establish how your team will use Cuebe throughou
 ### During Tech Week:
 - **Technical notes** get added directly to relevant cues
 - **Timing adjustments** happen in real-time
+- **Synchronized playback** lets you walk through complex sequences with all departments following along
 - **Problems and solutions** are documented as they're resolved
 
 ### During Performances:
-- **Cue sequences** are locked in and easily accessible
-- **Emergency contacts** are readily available
+- **Synchronized playback** keeps everyone coordinated without relying solely on headset calls
+- **Visual cue highlighting** shows exactly what's active and what's coming next
+- **Safety stop** feature provides instant emergency alerts
+- **Guest access** lets understudies or visiting crew follow along seamlessly
 - **Show reports** can be generated after each performance
 
 ---

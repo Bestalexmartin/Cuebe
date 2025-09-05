@@ -16,6 +16,9 @@ No more hunting through emails, sticky notes, and multiple apps. Your entire pro
 **⚡ Real-Time Collaboration** 
 When the director changes a cue, everyone who needs to know gets updated instantly - your lighting designer, sound operator, and stage manager all stay in sync.
 
+**🎬 Live Synchronized Playback**
+During tech and performances, your entire team can follow the exact same script timing in real-time. No more "where are we?" moments - everyone sees exactly what's happening when.
+
 **📱 Works Everywhere**
 Rehearsal room, tech booth, or your kitchen table at 2 AM - Cuebe works on your phone, tablet, or computer.
 
@@ -29,6 +32,9 @@ Set up your show with basic information - title, dates, venue, and key people. T
 
 ### Build Your Script
 Upload existing scripts or start from scratch. Add cues, notes, and timing information that everyone can access and update in real-time.
+
+### Coordinate in Real-Time
+Use synchronized playback to walk your entire team through complex sequences during tech rehearsals or performances - everyone follows the same timing automatically.
 
 ### Organize Your Team
 Set up departments (lighting, sound, costumes, etc.) and assign crew members with the right permissions for their roles.
