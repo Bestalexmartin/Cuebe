@@ -52,7 +52,7 @@ const MobileClockBar: React.FC<{
   currentScript: any;
   useMilitaryTime: boolean;
   cumulativeDelayMs: number;
-}> = React.memo(({ playbackState, currentScript, useMilitaryTime, cumulativeDelayMs }) => {
+}> = React.memo(({ playbackState, currentScript, useMilitaryTime, cumulativeDelayMs: _cumulativeDelayMs }) => {
   const [timestamp, setTimestamp] = useState(Date.now());
 
   useEffect(() => {
