@@ -16,8 +16,8 @@ const DarkModeSwitch: React.FC = () => {
     <IconButton
       aria-label="Toggle dark mode"
       icon={
-        <AppIcon 
-          name={colorMode === 'light' ? 'moon' : 'sun'} 
+        <AppIcon
+          name={colorMode === 'light' ? 'moon' : 'sun'}
           color={colorMode === 'light' ? 'blue.400' : 'orange.400'}
           boxSize="20px"
         />
@@ -41,14 +41,14 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
   const scriptSyncIconRef = useRef<ScriptSyncIconRef>(null);
-  
+
   const handleMenuOpen = (): void => {
     onMenuOpen();
   };
 
   const syncContext = useScriptSyncContextOptional();
   const syncData = syncContext?.syncData;
-  
+
   // Wire up the context triggerRotation to the actual icon
   useEffect(() => {
     if (syncData?.triggerRotation) {
@@ -76,8 +76,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
       boxSizing="border-box"
     >
       <Flex align="center">
-        <Image boxSize="50px" src="/cuebe.svg" alt="Cuebe Logo" />
-        <Heading as="h1" size="lg" id="app-title">
+        <Image boxSize="60px" src="/cuebe.svg" alt="Cuebe Logo" />
+        <Heading as="h1" size="xl" id="app-title">
           <Text as="span" color="orange.400">
             Cue
           </Text>

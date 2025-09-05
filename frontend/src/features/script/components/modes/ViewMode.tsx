@@ -173,7 +173,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     return (
         <VStack height="100%" spacing={0} align="stretch">
             {/* Header Row */}
-            <ScriptElementsHeader />
+            <ScriptElementsHeader colorizeDepNames={colorizeDepNames} />
 
             {/* Elements List */}
             <Box

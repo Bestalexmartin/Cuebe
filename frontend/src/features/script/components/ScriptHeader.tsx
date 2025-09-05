@@ -91,12 +91,12 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = ({
         >
             {/* Left: Script Title */}
             <HStack spacing={2} align="center">
-                <AppIcon name="script" boxSize="20px" color="white" />
+                <AppIcon name="script" boxSize="20px" color="white" display={{ base: 'none', lg: 'block' }} />
                 <HStack spacing={3} align="center">
                     {show?.show_name && (
                         <>
-                            <Heading as="h2" size="md">{show.show_name}</Heading>
-                            <AppIcon name="arrow-right" boxSize="16px" color="white" />
+                            <Heading as="h2" size="md" display={{ base: 'none', lg: 'block' }}>{show.show_name}</Heading>
+                            <AppIcon name="arrow-right" boxSize="16px" color="white" display={{ base: 'none', lg: 'block' }} />
                         </>
                     )}
                     <Heading as="h2" size="md">{currentScript?.script_name || 'Script'}</Heading>

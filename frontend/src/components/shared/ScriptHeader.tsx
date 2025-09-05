@@ -39,8 +39,8 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = React.memo(({
   return (
     <Flex justify="space-between" align="center" flexShrink={0} mb={4} mt="-2px">
       <HStack spacing="3" align="center">
-        <AppIcon name="script" boxSize="20px" />
-        <Heading as="h2" size="md">{currentScript?.script_name || 'Script'}</Heading>
+        <AppIcon name="script" boxSize="20px" display={{ base: 'none', lg: 'block' }} />
+        <Heading as="h2" size="md" display={{ base: 'none', lg: 'block' }}>{currentScript?.script_name || 'Script'}</Heading>
         {crewContext?.department_name && (
           <Badge 
             colorScheme="blue"

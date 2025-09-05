@@ -242,7 +242,7 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
                 } : {}}
             />
             
-            {/* Time and Status Display - positioned at top center exactly like auth side */}
+            {/* Time and Status Display - positioned at top center exactly like auth side, hidden on mobile */}
             <Box
                 position="fixed"
                 top="16px"
@@ -250,6 +250,7 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
                 transform="translateX(-50%)"
                 zIndex={1001}
                 pointerEvents="none"
+                display={{ base: 'none', md: 'block' }}
             >
                 <Box border="2px solid" borderColor="gray.700" bg="#0F0F0F" borderRadius="md">
                     <HStack spacing={0} align="center">

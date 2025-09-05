@@ -94,7 +94,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
         if (isReadOnly) {
             return;
         }
-        
+
         // Check if the click is on the collapse button - if so, ignore it
         const target = e.target as HTMLElement;
         const isCollapseButton = target.closest('.group-collapse-button');
@@ -344,7 +344,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     style={getOverlayStyle(highlightState)}
                 />
             )}
-            
+
             {/* Extended color overlay for group children - positioned relative to entire row */}
             {isGroupChild && groupParentColor ? (
                 <Box
@@ -369,8 +369,8 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     border="3px solid"
                     borderColor={
                         borderState === 'red_border' ? "red.500" :
-                        isSelected ? "blue.400" :
-                        "orange.400"
+                            isSelected ? "blue.400" :
+                                "orange.400"
                     }
                     borderRadius="none"
                     pointerEvents="none"
@@ -420,43 +420,41 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                 </Box>
 
                 {/* Time Offset */}
-                <Box w="120px" pl={5} pr={4} py={.5} borderColor="gray.500" position="relative">
+                <Box w="120px" minW="100px" pl={5} pr={4} py={.5} borderColor="gray.500" flexShrink={1}>
                     <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight}>
                         {timeDisplay}
                     </Text>
-                    <Box
-                        position="absolute"
-                        right="0"
-                        top="-2px"
-                        height="28px"
-                        width="1px"
-                        bg="gray.400"
-                    />
                 </Box>
 
-                {/* Duration */}
-                <Box w="100px" px={3} position="relative" py={.5} borderColor="gray.500">
+                {/* Duration - hidden third/last (< 768px), compressible */}
+                <Box
+                    w="100px"
+                    px={3}
+                    height="100%"
+                    display={{ base: 'none', md: 'flex' }}
+                    alignItems="center"
+                    justifyContent="center"
+                    minW="60px"
+                    flexShrink={2}
+                    borderLeft="1px solid"
+                    borderColor="#a3aebe"
+                >
                     <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight}>
                         {durationDisplay}
                     </Text>
-                    {!(colorizeDepNames && element.element_type !== 'NOTE' && element.element_type !== 'GROUP') && (
-                        <Box
-                            position="absolute"
-                            right="0"
-                            top="-2px"
-                            height="28px"
-                            width="1px"
-                            bg="gray.400"
-                        />
-                    )}
                 </Box>
 
                 {/* Department Name */}
-                <Box w="100px"
+                <Box
+                    w="100px"
+                    minW="99px"
                     height="100%"
                     display="flex"
                     alignItems="center"
                     px={element.element_type === 'NOTE' || element.element_type === 'GROUP' || !colorizeDepNames ? 3 : 0}
+                    flexShrink={0}
+                    borderLeft={element.element_type === 'NOTE' || element.element_type === 'GROUP' ? "1px solid" : "none"}
+                    borderColor="#a3aebe"
                 >
                     {colorizeDepNames && element.department_color && element.element_type !== 'NOTE' && element.element_type !== 'GROUP' ? (
                         <Box
@@ -482,93 +480,65 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                 </Box>
 
                 {/* Cue ID */}
-                <Box w="80px" px={3} position="relative" py={.5} borderColor="gray.500">
+                <Box w="80px" minW="80px" px={3} height="100%" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft={element.element_type === 'NOTE' || element.element_type === 'GROUP' ? "1px solid" : "none"} borderColor="#a3aebe">
                     <Text fontSize="sm" fontWeight={hasCustomBackground ? "bold" : "normal"} color={cueIdColor} textAlign="center" marginTop="-1px">
                         {dynamicCueID || '\u00A0'}
                     </Text>
-                    {!(colorizeDepNames && element.element_type !== 'NOTE' && element.element_type !== 'GROUP') && (
-                        <Box
-                            position="absolute"
-                            left="0"
-                            top="-2px"
-                            height="28px"
-                            width="1px"
-                            bg="gray.400"
-                        />
-                    )}
-                    <Box
-                        position="absolute"
-                        right="0"
-                        top="-2px"
-                        height="28px"
-                        width="1px"
-                        bg="gray.400"
-                    />
                 </Box>
 
                 {/* Cue Name/Description */}
-                <Box w="240px" pl={6} pr={3} position="relative" py={.5} borderColor="gray.500">
+                <Box flex={1} minW="120px" pl={3} pr={3} height="100%" display="flex" alignItems="center" flexShrink={1} borderLeft="1px solid" borderColor="#a3aebe">
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
                         {element.element_name}
                     </Text>
-                    <Box
-                        position="absolute"
-                        right="0"
-                        top="-2px"
-                        height="28px"
-                        width="1px"
-                        bg="gray.400"
-                    />
                 </Box>
 
-                {/* Cue Notes */}
-                <Box flex={1} pl={6} pr={3} position="relative" py={.5} borderColor="gray.500">
+                {/* Cue Notes - hidden second (< 900px) */}
+                <Box
+                    flex={1}
+                    pl={3}
+                    pr={3}
+                    height="100%"
+                    display={{ base: 'none', lg: 'flex' }}
+                    alignItems="center"
+                    minW="150px"
+                    borderLeft="1px solid"
+                    borderColor="#a3aebe"
+                >
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
                         {element.cue_notes || '\u00A0'}
                     </Text>
-                    <Box
-                        position="absolute"
-                        right="0"
-                        top="-2px"
-                        height="28px"
-                        width="1px"
-                        bg="gray.400"
-                    />
-                    <Box
-                        position="absolute"
-                        right="0"
-                        top="-2px"
-                        height="28px"
-                        width="1px"
-                        bg="gray.400"
-                    />
                 </Box>
 
-                {/* Location */}
-                <Box w="180px" pl={6} pr={3} position="relative" py={.5} borderColor="gray.500">
+                {/* Location - hidden first (< 1200px) */}
+                <Box
+                    w="180px"
+                    minW="180px"
+                    pl={6}
+                    pr={3}
+                    height="100%"
+                    display={{ base: 'none', xl: 'flex' }}
+                    alignItems="center"
+                    flexShrink={0}
+                    borderLeft="1px solid"
+                    borderColor="#a3aebe"
+                >
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
                         {element.location_details || '\u00A0'}
                     </Text>
-                    {element.priority !== 'SAFETY' && (
-                        <Box
-                            position="absolute"
-                            right="0"
-                            top="-2px"
-                            height="28px"
-                            width="1px"
-                            bg="gray.400"
-                        />
-                    )}
                 </Box>
 
                 {/* Priority */}
                 <Box
-                    w="120px"
+                    w="122px"
+                    minW="122px"
                     height="100%"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
-                    px={element.priority === 'SAFETY' ? 0 : 3}
+                    flexShrink={0}
+                    borderLeft={element.priority === 'SAFETY' ? "none" : "1px solid"}
+                    borderColor="#a3aebe"
                 >
                     {isGroup ? (
                         // Groups don't have priorities - show empty space

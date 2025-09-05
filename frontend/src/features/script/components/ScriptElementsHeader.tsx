@@ -3,7 +3,12 @@
 import React from 'react';
 import { Box, HStack, Text } from '@chakra-ui/react';
 
-export const ScriptElementsHeader: React.FC = () => {
+interface ScriptElementsHeaderProps {
+    colorizeDepNames?: boolean;
+}
+
+export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = ({ colorizeDepNames = true }) => {
+    // When colorizeDepNames is true, most borders should be hidden for clean department color display
     return (
         <Box
             bg="black"
@@ -13,66 +18,97 @@ export const ScriptElementsHeader: React.FC = () => {
             zIndex={10}
             mb="1px"
         >
-            <HStack spacing={0} align="center" h="33px">
+            <HStack spacing={0} align="center" h="40px">
                 {/* Department Color Bar */}
                 <Box
                     w="10px"
-                    h="100%"
+                    h="28px"
                     bg="black"
                     flexShrink={0}
                 />
 
                 {/* Time Offset Header */}
-                <Box w="123px" pl={5} pr={4} borderRight="1px solid" borderColor="gray.500">
+                <Box w="123px" minW="100px" pl={5} pr={4} flexShrink={1}>
                     <Text py={.5} fontSize="sm" color="white" fontWeight="bold" textAlign="center">
                         TIME
                     </Text>
                 </Box>
 
-                {/* Duration Header */}
-                <Box w="100px" borderRight="1px solid" borderColor="gray.500">
+                {/* Duration Header - hidden third/last (< 768px), compressible */}
+                <Box 
+                    w="100px" 
+                    minW="60px"
+                    height="28px"
+                    borderLeft="1px solid"
+                    borderColor="#a3aebe"
+                    display={{ base: 'none', md: 'flex' }}
+                    alignItems="center"
+                    justifyContent="center"
+                    flexShrink={2}
+                >
                     <Text py={.5} fontSize="sm" color="white" fontWeight="bold" textAlign="center">
                         DUR
                     </Text>
                 </Box>
 
                 {/* Department Header */}
-                <Box w="100px" height="100%" display="flex" alignItems="center">
+                <Box w="100px" minW="99px" height="28px" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft="1px solid" borderColor="#ffffff">
                     <Text fontSize="sm" color="white" fontWeight="bold" textAlign="center" isTruncated width="100%">
                         DEPT
                     </Text>
                 </Box>
 
                 {/* Cue ID Header */}
-                <Box w="80px" borderRight="1px solid" borderLeft="1px solid" borderColor="gray.500">
+                <Box w="80px" minW="80px" height="28px" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft="1px solid" borderColor="#ffffff">
                     <Text py={.5} fontSize="sm" color="white" fontWeight="bold" textAlign="center">
                         ID
                     </Text>
                 </Box>
 
                 {/* Description Header */}
-                <Box w="240px" pl={6} pr={3} borderRight="1px solid" borderColor="gray.500">
+                <Box flex={1} minW="120px" pl={3} pr={3} height="28px" display="flex" alignItems="center" flexShrink={1} borderLeft="1px solid" borderColor="#ffffff">
                     <Text py={.5} fontSize="sm" color="white" fontWeight="bold" textAlign="left" isTruncated>
                         CUE
                     </Text>
                 </Box>
 
-                {/* Cue Notes Header */}
-                <Box flex={1} pl={6} pr={3} borderRight="1px solid" borderColor="gray.500">
+                {/* Cue Notes Header - hidden second (< 900px) */}
+                <Box 
+                    flex={1} 
+                    pl={3} 
+                    pr={3} 
+                    height="28px"
+                    display={{ base: 'none', lg: 'flex' }}
+                    alignItems="center"
+                    minW="150px"
+                    borderLeft="1px solid"
+                    borderColor="#a3aebe"
+                >
                     <Text py={.5} fontSize="sm" color="white" fontWeight="bold" textAlign="left" isTruncated>
                         NOTES
                     </Text>
                 </Box>
 
-                {/* Location Header */}
-                <Box w="180px" pl={6} pr={3} borderRight="1px solid" borderColor="gray.500">
+                {/* Location Header - hidden first (< 1200px) */}
+                <Box 
+                    w="180px" 
+                    minW="180px" 
+                    pl={6} 
+                    pr={3} 
+                    height="28px"
+                    display={{ base: 'none', xl: 'flex' }}
+                    alignItems="center"
+                    flexShrink={0}
+                    borderLeft="1px solid"
+                    borderColor="#a3aebe"
+                >
                     <Text py={.5} fontSize="sm" color="white" fontWeight="bold" textAlign="left" isTruncated>
                         LOCATION
                     </Text>
                 </Box>
 
                 {/* Priority Header */}
-                <Box w="123px">
+                <Box w="122px" minW="122px" height="28px" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft="1px solid" borderColor="#ffffff">
                     <Text py={.5} fontSize="sm" color="white" fontWeight="bold" textAlign="center">
                         PRIORITY
                     </Text>

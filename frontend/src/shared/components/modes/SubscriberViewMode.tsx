@@ -113,7 +113,7 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
             }}
         >
             <VStack spacing={0} align="stretch">
-                <ScriptElementsHeader />
+                <ScriptElementsHeader colorizeDepNames={colorizeDepNames} />
                 {visibleElements.map((element) => {
                     const highlightState = getElementHighlightState(element.element_id);
                     const borderState = getElementBorderState(element.element_id);
