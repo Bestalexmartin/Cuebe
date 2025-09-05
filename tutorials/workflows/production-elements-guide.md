@@ -27,6 +27,7 @@ A **Script** in Cuebe is much more than just dialogue. It's your complete produc
 - **Cues & Notes**: Add lighting cues, sound cues, actor notes, and technical reminders
 - **Timing Information**: Track scene lengths, act breaks, and transition timing
 - **Real-Time Updates**: When someone updates a cue, everyone sees it immediately
+- **🎬 Synchronized Playback**: Your entire team can follow the same script timing in real-time during tech and performances
 - **Multiple Versions**: Keep different drafts and iterations organized
 
 **Example:** Your "Macbeth" show might have separate scripts for "Rehearsal Draft," "Tech Rehearsal," and "Performance Version."
@@ -85,7 +86,9 @@ CREW members work on SCRIPTS in VENUES
   - Jennifer (Costume Designer)
   - Alex (Stage Manager)
 
-When Sarah adds a lighting cue to the Tech Script, Mike can see it immediately and coordinate his sound cues accordingly. Alex, as Stage Manager, can see all departments' updates and keep everyone coordinated.
+When Sarah adds a lighting cue to the Tech Script, Mike can see it immediately and coordinate his sound cues accordingly. Alex, as Stage Manager, can see all departments' updates and keep everyone coordinated. 
+
+During tech rehearsal, Alex can start synchronized playback, and everyone's devices automatically follow along with the same timing - Sarah sees her lighting cues highlighted exactly when they're active, Mike follows the sound cues in perfect sync, and everyone stays coordinated without confusion.
 
 ## Why This Structure Works
 

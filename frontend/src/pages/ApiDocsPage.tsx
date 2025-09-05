@@ -1,6 +1,6 @@
 // frontend/src/pages/ApiDocsPage.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Text,
@@ -35,103 +35,205 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
 
   // No default content needed since we always have content selected
 
-  // API Overview content
-  const apiOverviewContent = (
-    <VStack spacing={6} align="stretch">
-      <Box>
-        <VStack spacing={3} align="stretch">
-          <Box p={4} border="1px solid" borderColor={borderColor} borderRadius="md">
-            <HStack justify="space-between" mb={2}>
-              <Text fontWeight="semibold">Authentication</Text>
-              <Badge colorScheme="blue">POST, GET</Badge>
-            </HStack>
-            <Text fontSize="sm" color="cardText">
-              User registration, authentication, and guest user management
+  // API Cards matching tutorial section styling
+  const ApiCard = ({ title, methods, description, endpoints, longDescription, colorScheme, isExpanded, onClick, cardRef }: {
+    title: string;
+    methods: string;
+    description: string;
+    endpoints: string;
+    longDescription: string;
+    colorScheme: string;
+    isExpanded: boolean;
+    onClick: () => void;
+    cardRef?: React.RefObject<HTMLDivElement>;
+  }) => {
+    const cardBg = useColorModeValue('white', 'gray.800');
+    const textColor = useColorModeValue('gray.900', 'white');
+    
+    return (
+      <Box
+        ref={cardRef}
+        p={4}
+        rounded="md"
+        shadow="sm"
+        bg={cardBg}
+        borderWidth="2px"
+        borderColor="gray.600"
+        cursor="pointer"
+        _hover={{ borderColor: "orange.400" }}
+        onClick={onClick}
+      >
+        <VStack align="stretch" spacing={3}>
+          <HStack justify="space-between">
+            <Text fontWeight="semibold" fontSize="sm" color={textColor}>
+              {title}
             </Text>
-            <Text fontSize="xs" color="cardText" mt={1}>
-              /api/users/*, /api/webhooks/clerk
-            </Text>
-          </Box>
-
-          <Box p={4} border="1px solid" borderColor={borderColor} borderRadius="md">
-            <HStack justify="space-between" mb={2}>
-              <Text fontWeight="semibold">Crew Management</Text>
-              <Badge colorScheme="green">GET, POST, PATCH, DELETE</Badge>
-            </HStack>
-            <Text fontSize="sm" color="cardText">
-              Manage crew members and their relationships with managers
-            </Text>
-            <Text fontSize="xs" color="cardText" mt={1}>
-              /api/me/crews, /api/crew/*, /api/crew-relationships/*
-            </Text>
-          </Box>
-
-          <Box p={4} border="1px solid" borderColor={borderColor} borderRadius="md">
-            <HStack justify="space-between" mb={2}>
-              <Text fontWeight="semibold">Venues</Text>
-              <Badge colorScheme="purple">GET, POST, PATCH, DELETE</Badge>
-            </HStack>
-            <Text fontSize="sm" color="cardText">
-              Theater venue information and management
-            </Text>
-            <Text fontSize="xs" color="cardText" mt={1}>
-              /api/me/venues, /api/venues/*
-            </Text>
-          </Box>
-
-          <Box p={4} border="1px solid" borderColor={borderColor} borderRadius="md">
-            <HStack justify="space-between" mb={2}>
-              <Text fontWeight="semibold">Departments</Text>
-              <Badge colorScheme="orange">GET, POST, PATCH, DELETE</Badge>
-            </HStack>
-            <Text fontSize="sm" color="cardText">
-              Technical departments (Sound, Lighting, etc.)
-            </Text>
-            <Text fontSize="xs" color="cardText" mt={1}>
-              /api/me/departments, /api/departments/*
-            </Text>
-          </Box>
-
-          <Box p={4} border="1px solid" borderColor={borderColor} borderRadius="md">
-            <HStack justify="space-between" mb={2}>
-              <Text fontWeight="semibold">Shows & Scripts</Text>
-              <Badge colorScheme="red">GET, POST, PATCH, DELETE</Badge>
-            </HStack>
-            <Text fontSize="sm" color="cardText">
-              Theater productions and their call scripts
-            </Text>
-            <Text fontSize="xs" color="cardText" mt={1}>
-              /api/shows/*, /api/scripts/*, /api/me/shows
-            </Text>
-          </Box>
-
-          <Box p={4} border="1px solid" borderColor={borderColor} borderRadius="md">
-            <HStack justify="space-between" mb={2}>
-              <Text fontWeight="semibold">Script Elements</Text>
-              <Badge colorScheme="teal">GET, POST, PATCH, DELETE</Badge>
-            </HStack>
-            <Text fontSize="sm" color="cardText">
-              Individual cues, notes, and groups within theater scripts - lighting cues, sound effects, stage directions, and safety-critical elements
-            </Text>
-            <Text fontSize="xs" color="cardText" mt={1}>
-              /api/scripts/*/elements, /api/elements/*, bulk operations
-            </Text>
-          </Box>
-
-          <Box p={4} border="1px solid" borderColor={borderColor} borderRadius="md">
-            <HStack justify="space-between" mb={2}>
-              <Text fontWeight="semibold">Development & Health</Text>
-              <Badge colorScheme="gray">GET, POST</Badge>
-            </HStack>
-            <Text fontSize="sm" color="cardText">
-              Health checks, diagnostics, and testing endpoints
-            </Text>
-            <Text fontSize="xs" color="cardText" mt={1}>
-              /api/health, /api/dev/*
-            </Text>
-          </Box>
+            <Badge colorScheme={colorScheme} fontSize="xs" px={2} py={1}>
+              {methods}
+            </Badge>
+          </HStack>
+          
+          <Text fontSize="sm" color="cardText" lineHeight="tall">
+            {description}
+          </Text>
+          
+          {isExpanded && (
+            <VStack align="stretch" spacing={3} mt={2}>
+              <Text fontSize="sm" color="cardText" lineHeight="tall">
+                {longDescription}
+              </Text>
+              <Box 
+                p={3} 
+                bg={useColorModeValue('gray.50', 'gray.700')} 
+                borderRadius="md"
+                borderWidth="1px"
+                borderColor="gray.600"
+              >
+                <Text fontSize="xs" fontFamily="mono" color="cardText">
+                  {endpoints}
+                </Text>
+              </Box>
+            </VStack>
+          )}
         </VStack>
       </Box>
+    );
+  };
+
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
+  
+  // Refs for auto-scrolling
+  const cardRefs = useRef<Record<string, React.RefObject<HTMLDivElement>>>({
+    auth: useRef<HTMLDivElement>(null),
+    production: useRef<HTMLDivElement>(null),
+    collaboration: useRef<HTMLDivElement>(null),
+    team: useRef<HTMLDivElement>(null),
+    venues: useRef<HTMLDivElement>(null),
+    docs: useRef<HTMLDivElement>(null),
+    system: useRef<HTMLDivElement>(null),
+  });
+
+  // Auto-scroll to expanded card with proper padding
+  useEffect(() => {
+    if (expandedCard && cardRefs.current[expandedCard]?.current) {
+      // Small delay to allow expansion animation to complete
+      setTimeout(() => {
+        const cardElement = cardRefs.current[expandedCard]?.current;
+        if (cardElement) {
+          const containerElement = cardElement.closest('.edit-form-container');
+          if (containerElement) {
+            const cardRect = cardElement.getBoundingClientRect();
+            const containerRect = containerElement.getBoundingClientRect();
+            const scrollTop = containerElement.scrollTop;
+            
+            // Calculate desired position with 19px padding from top
+            const desiredTopOffset = 19;
+            const cardTopRelativeToContainer = cardRect.top - containerRect.top + scrollTop;
+            const targetScrollTop = cardTopRelativeToContainer - desiredTopOffset;
+            
+            // Only scroll if the card would be too close to the top or off-screen
+            const currentTopOffset = cardRect.top - containerRect.top;
+            if (currentTopOffset < desiredTopOffset || currentTopOffset < 0) {
+              containerElement.scrollTo({
+                top: Math.max(0, targetScrollTop),
+                behavior: 'smooth'
+              });
+            }
+          }
+        }
+      }, 100);
+    }
+  }, [expandedCard]);
+
+  const handleCardClick = (cardId: string) => {
+    setExpandedCard(expandedCard === cardId ? null : cardId);
+  };
+  
+  const apiOverviewContent = (
+    <VStack spacing={4} align="stretch">
+        <ApiCard
+          title="Authentication & User Management"
+          methods="GET, POST, PATCH"
+          description="User authentication, registration, and account management with Clerk integration"
+          endpoints="/api/users/*, /api/webhooks/clerk, /api/users/preferences"
+          longDescription="Handles user registration, authentication flows, and profile management. Integrates with Clerk for secure authentication and supports user preferences including display settings and operational preferences. Provides webhook endpoints for user lifecycle events and supports both authenticated and guest user workflows."
+          colorScheme="blue"
+          isExpanded={expandedCard === 'auth'}
+          onClick={() => handleCardClick('auth')}
+          cardRef={cardRefs.current.auth}
+        />
+
+        <ApiCard
+          title="Production Management"
+          methods="GET, POST, PATCH, DELETE"
+          description="Core theater production workflows - shows, scripts, and production lifecycle"
+          endpoints="/api/shows/*, /api/scripts/*, /api/me/shows, /api/scripts/import/*"
+          longDescription="Central hub for theater productions including show creation, script management, and production scheduling. Supports script import from various formats (CSV, text files) with intelligent parsing and department mapping. Handles script versioning, production timelines, and integrates with venue and crew assignment systems."
+          colorScheme="red"
+          isExpanded={expandedCard === 'production'}
+          onClick={() => handleCardClick('production')}
+          cardRef={cardRefs.current.production}
+        />
+
+        <ApiCard
+          title="Real-Time Script Collaboration"
+          methods="WebSocket, GET, POST, PATCH, DELETE"
+          description="Live script synchronization, cue management, and collaborative editing with WebSocket support"
+          endpoints="/ws/script/*, /api/scripts/*/elements, /api/elements/*, /api/elements/bulk/*"
+          longDescription="Advanced script collaboration system enabling real-time synchronized playback across multiple devices. Features include live cue highlighting, timing synchronization, pause/resume with delay compensation, and 'Tetris mode' for hiding completed elements. Supports bulk operations for efficient script updates and maintains connection state for late-joining participants."
+          colorScheme="green"
+          isExpanded={expandedCard === 'collaboration'}
+          onClick={() => handleCardClick('collaboration')}
+          cardRef={cardRefs.current.collaboration}
+        />
+
+        <ApiCard
+          title="Team & Access Management"
+          methods="GET, POST, PATCH, DELETE"
+          description="Crew management, departments, role assignments, and collaborative sharing"
+          endpoints="/api/me/crews, /api/crew/*, /api/me/departments, /api/departments/*, /api/shows/*/crew/*/share, /shared/*"
+          longDescription="Comprehensive team management including crew member assignments, department organization (lighting, sound, costumes, etc.), and role-based permissions. Features secure sharing tokens for guest access, crew relationship management, and department-specific workflow support. Enables collaborative access without requiring full user accounts."
+          colorScheme="purple"
+          isExpanded={expandedCard === 'team'}
+          onClick={() => handleCardClick('team')}
+          cardRef={cardRefs.current.team}
+        />
+
+        <ApiCard
+          title="Venue & Resource Management"
+          methods="GET, POST, PATCH, DELETE"
+          description="Theater venues, technical specifications, and resource allocation"
+          endpoints="/api/me/venues, /api/venues/*"
+          longDescription="Venue management system for tracking theater spaces, technical specifications, seating arrangements, and equipment details. Supports multiple venue types from rehearsal rooms to main stages, stores contact information, and integrates with production scheduling. Essential for technical planning and resource allocation across productions."
+          colorScheme="orange"
+          isExpanded={expandedCard === 'venues'}
+          onClick={() => handleCardClick('venues')}
+          cardRef={cardRefs.current.venues}
+        />
+
+        <ApiCard
+          title="Documentation & Search"
+          methods="GET"
+          description="Integrated documentation system with intelligent search capabilities"
+          endpoints="/api/docs/search"
+          longDescription="Built-in documentation system with advanced search functionality. Automatically indexes markdown documentation by category and provides contextual search results. Supports both authenticated and guest access, enabling users to quickly find relevant information about features, workflows, and best practices."
+          colorScheme="teal"
+          isExpanded={expandedCard === 'docs'}
+          onClick={() => handleCardClick('docs')}
+          cardRef={cardRefs.current.docs}
+        />
+
+        <ApiCard
+          title="Development & System Health"
+          methods="GET, POST"
+          description="Health monitoring, system diagnostics, and development utilities"
+          endpoints="/api/health, /api/dev/*, /api/system-tests/*"
+          longDescription="Development and monitoring tools including health checks, system diagnostics, performance monitoring, and comprehensive testing endpoints. Features environment validation, API response time monitoring, database connectivity checks, and development utilities for debugging and optimization."
+          colorScheme="gray"
+          isExpanded={expandedCard === 'system'}
+          onClick={() => handleCardClick('system')}
+          cardRef={cardRefs.current.system}
+        />
     </VStack>
   );
 
