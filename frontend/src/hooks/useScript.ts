@@ -125,9 +125,6 @@ export const useScript = (shareToken: string | undefined, updateSharedData?: (up
     // No-op placeholder; unified save flow handles refresh in responses
   }, [viewingScriptId, handleScriptClick]);
 
-  const refreshScriptElementsOnly = useCallback(async () => {
-    // No-op placeholder; unified save flow handles refresh in responses
-  }, [viewingScriptId]);
 
   const updateScriptElementsDirectly = useCallback((newElements: ScriptElement[]) => {
     setScriptElements(newElements);
@@ -190,7 +187,6 @@ export const useScript = (shareToken: string | undefined, updateSharedData?: (up
     handleScriptClick,
     handleBackToShows,
     refreshScriptData,
-    refreshScriptElementsOnly,
     updateScriptElementsDirectly,
     updateSingleElement,
     deleteElement,

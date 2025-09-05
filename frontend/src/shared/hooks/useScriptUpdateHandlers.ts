@@ -16,7 +16,6 @@ interface UpdateCallbacks {
   updateSingleElement: (elementId: string, element: any) => void;
   updateScriptElementsDirectly: (elements: any[]) => void;
   deleteElement: (elementId: string) => void;
-  refreshScriptElementsOnly: () => void;
   refreshSharedData?: () => void; // For full data refresh if needed
   updateScriptInfo?: (changes: any) => void; // For direct script info updates
   getCurrentElements?: () => any[]; // Get current elements for CREATE operations
