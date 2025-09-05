@@ -49,7 +49,7 @@ interface ScriptHeaderProps {
 
 export const ScriptHeader: React.FC<ScriptHeaderProps> = ({
     currentScript,
-    show,
+    show: _show,
     isScriptShared,
     activeMode,
     hasChanges,
@@ -93,12 +93,6 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = ({
             <HStack spacing={2} align="center">
                 <AppIcon name="script" boxSize="20px" color="white" display={{ base: 'none', lg: 'block' }} />
                 <HStack spacing={3} align="center">
-                    {show?.show_name && (
-                        <>
-                            <Heading as="h2" size="md" display={{ base: 'none', lg: 'block' }}>{show.show_name}</Heading>
-                            <AppIcon name="arrow-right" boxSize="16px" color="white" display={{ base: 'none', lg: 'block' }} />
-                        </>
-                    )}
                     <Heading as="h2" size="md">{currentScript?.script_name || 'Script'}</Heading>
                     {(currentScript?.is_shared || isScriptShared) && (
                         <Badge variant="solid" colorScheme="green" fontSize="sm" ml={1} px={2}>

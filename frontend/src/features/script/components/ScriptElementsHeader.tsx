@@ -7,7 +7,7 @@ interface ScriptElementsHeaderProps {
     colorizeDepNames?: boolean;
 }
 
-export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = ({ colorizeDepNames = true }) => {
+export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
     // When colorizeDepNames is true, most borders should be hidden for clean department color display
     return (
         <Box

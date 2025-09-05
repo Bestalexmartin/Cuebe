@@ -103,14 +103,14 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   
   // Refs for auto-scrolling
-  const cardRefs = useRef<Record<string, React.RefObject<HTMLDivElement>>>({
-    auth: useRef<HTMLDivElement>(null),
-    production: useRef<HTMLDivElement>(null),
-    collaboration: useRef<HTMLDivElement>(null),
-    team: useRef<HTMLDivElement>(null),
-    venues: useRef<HTMLDivElement>(null),
-    docs: useRef<HTMLDivElement>(null),
-    system: useRef<HTMLDivElement>(null),
+  const cardRefs = useRef<Record<string, React.RefObject<HTMLDivElement | null>>>({
+    auth: useRef<HTMLDivElement | null>(null),
+    production: useRef<HTMLDivElement | null>(null),
+    collaboration: useRef<HTMLDivElement | null>(null),
+    team: useRef<HTMLDivElement | null>(null),
+    venues: useRef<HTMLDivElement | null>(null),
+    docs: useRef<HTMLDivElement | null>(null),
+    system: useRef<HTMLDivElement | null>(null),
   });
 
   // Auto-scroll to expanded card with proper padding
@@ -160,7 +160,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
           colorScheme="blue"
           isExpanded={expandedCard === 'auth'}
           onClick={() => handleCardClick('auth')}
-          cardRef={cardRefs.current.auth}
+          cardRef={cardRefs.current.auth as React.RefObject<HTMLDivElement>}
         />
 
         <ApiCard
@@ -172,7 +172,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
           colorScheme="red"
           isExpanded={expandedCard === 'production'}
           onClick={() => handleCardClick('production')}
-          cardRef={cardRefs.current.production}
+          cardRef={cardRefs.current.production as React.RefObject<HTMLDivElement>}
         />
 
         <ApiCard
@@ -184,7 +184,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
           colorScheme="green"
           isExpanded={expandedCard === 'collaboration'}
           onClick={() => handleCardClick('collaboration')}
-          cardRef={cardRefs.current.collaboration}
+          cardRef={cardRefs.current.collaboration as React.RefObject<HTMLDivElement>}
         />
 
         <ApiCard
@@ -196,7 +196,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
           colorScheme="purple"
           isExpanded={expandedCard === 'team'}
           onClick={() => handleCardClick('team')}
-          cardRef={cardRefs.current.team}
+          cardRef={cardRefs.current.team as React.RefObject<HTMLDivElement>}
         />
 
         <ApiCard
@@ -208,7 +208,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
           colorScheme="orange"
           isExpanded={expandedCard === 'venues'}
           onClick={() => handleCardClick('venues')}
-          cardRef={cardRefs.current.venues}
+          cardRef={cardRefs.current.venues as React.RefObject<HTMLDivElement>}
         />
 
         <ApiCard
@@ -220,7 +220,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
           colorScheme="teal"
           isExpanded={expandedCard === 'docs'}
           onClick={() => handleCardClick('docs')}
-          cardRef={cardRefs.current.docs}
+          cardRef={cardRefs.current.docs as React.RefObject<HTMLDivElement>}
         />
 
         <ApiCard
@@ -232,7 +232,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
           colorScheme="gray"
           isExpanded={expandedCard === 'system'}
           onClick={() => handleCardClick('system')}
-          cardRef={cardRefs.current.system}
+          cardRef={cardRefs.current.system as React.RefObject<HTMLDivElement>}
         />
     </VStack>
   );
