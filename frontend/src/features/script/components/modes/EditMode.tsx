@@ -678,7 +678,7 @@ const EditModeComponent = forwardRef<EditModeRef, EditModeProps>(({
     return (
         <VStack height="100%" spacing={0} align="stretch">
             {/* Header Row */}
-            <ScriptElementsHeader />
+            <ScriptElementsHeader colorizeDepNames={colorizeDepNames} />
 
             {/* Elements List */}
             <Box ref={scrollContainerRef} flex={1} overflowY="auto" overflowX="hidden" className="hide-scrollbar">

@@ -6,6 +6,7 @@ import {
   Heading,
   HStack,
   Button,
+  Text,
   useColorModeValue,
   Divider,
   Menu,
@@ -44,6 +45,115 @@ const SHOWS_SORT_OPTIONS: SortOption[] = [
   { value: 'date_created', label: 'Created' },
   { value: 'date_updated', label: 'Updated' },
 ];
+
+// Mobile Clock Bar component - extracted from SubscriberPlaybackOverlay
+const MobileClockBar: React.FC<{
+  playbackState: string;
+  currentScript: any;
+  useMilitaryTime: boolean;
+  cumulativeDelayMs: number;
+}> = React.memo(({ playbackState, currentScript, useMilitaryTime, cumulativeDelayMs }) => {
+  const [timestamp, setTimestamp] = useState(Date.now());
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setTimestamp(Date.now());
+    }, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  const formatRealTimeClock = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const hours = useMilitaryTime ? date.getHours() : date.getHours() % 12 || 12;
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
+  };
+
+  const formatShowTimer = (timestamp: number) => {
+    if (!currentScript?.start_time) return "00:00:00";
+    const scriptStart = new Date(currentScript.start_time);
+    const diffMs = scriptStart.getTime() - timestamp;
+    const diffSeconds = Math.round(diffMs / 1000);
+    const hours = Math.floor(Math.abs(diffSeconds) / 3600);
+    const minutes = Math.floor((Math.abs(diffSeconds) % 3600) / 60);
+    const seconds = Math.abs(diffSeconds) % 60;
+    const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return diffSeconds < 0 ? timeStr : `–${timeStr}`;
+  };
+
+  return (
+    <Box
+      display={{ base: 'block', md: 'none' }}
+      bg="#0F0F0F"
+      height="60px"
+      borderBottom="1px solid"
+      borderColor="gray.700"
+      animation={playbackState === 'PAUSED' ? "flash 1s infinite" : undefined}
+      sx={playbackState === 'PAUSED' ? {
+        "@keyframes flash": {
+          "0%, 100%": { opacity: 1 },
+          "50%": { opacity: 0.3 }
+        }
+      } : {}}
+    >
+      <HStack spacing={0} justify="center" align="center" height="100%">
+        {/* Realtime Clock */}
+        <Box 
+          bg="transparent" 
+          color="gray.300" 
+          px="10px" py="3px" 
+          borderRadius="none" 
+          fontSize="3xl" 
+          fontFamily="mono"
+          textAlign="center"
+        >
+          {formatRealTimeClock(timestamp)}
+        </Box>
+        
+        {/* Bullet separator */}
+        <Box bg="transparent" px="5px" py="3px">
+          <Text fontSize="3xl" color="gray.500" fontFamily="mono">•</Text>
+        </Box>
+        
+        {/* Show Timer */}
+        <Box 
+          bg="transparent" 
+          color="red.500" 
+          px="10px" py="3px" 
+          borderRadius="none" 
+          fontSize="3xl" 
+          fontFamily="mono"
+          textAlign="center"
+        >
+          {formatShowTimer(timestamp)}
+        </Box>
+        
+        {/* Bullet separator */}
+        <Box bg="transparent" px="5px" py="3px">
+          <Text fontSize="3xl" color="gray.500" fontFamily="mono">•</Text>
+        </Box>
+        
+        {/* Playback Status */}
+        <Box 
+          bg="transparent" 
+          color={playbackState === 'SAFETY' ? 'orange.500' : playbackState === 'COMPLETE' ? 'green.500' : 'red.500'} 
+          px="10px" py="3px" 
+          borderRadius="none" 
+          fontSize="3xl" 
+          fontFamily="mono"
+          fontWeight="bold"
+          textAlign="center"
+        >
+          {playbackState === 'COMPLETE' ? 'COMPLETE' : playbackState}
+        </Box>
+      </HStack>
+    </Box>
+  );
+});
 
 // Inner component to access synchronized play context
 const SharedPageContent = React.memo(() => {
@@ -438,8 +548,31 @@ const SharedPageContent = React.memo(() => {
           display="flex"
           flexDirection="column"
           p="2rem"
+          position="relative"
         >
-          <Flex direction="column" height="100%">
+          {/* Mobile Clock Bar - positioned to break out above padding */}
+          {viewingScriptId && playbackState !== 'STOPPED' && (
+            <Box
+              position="absolute"
+              top="0"
+              left="0"
+              right="0"
+              zIndex="10"
+            >
+              <MobileClockBar 
+                playbackState={playbackState} 
+                currentScript={currentScript}
+                useMilitaryTime={guestUseMilitaryTime}
+                cumulativeDelayMs={cumulativeDelayMs}
+              />
+            </Box>
+          )}
+
+          <Flex 
+            direction="column" 
+            height="100%" 
+            pt={viewingScriptId && playbackState !== 'STOPPED' ? "60px" : "0"}
+          >
             {/* Header - Shows or Tutorials */}
             {!viewingScriptId && (
               <Flex align="center" flexShrink={0} mb={4}>

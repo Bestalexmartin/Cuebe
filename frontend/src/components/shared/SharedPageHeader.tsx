@@ -26,10 +26,10 @@ export const SharedPageHeader: React.FC<SharedPageHeaderProps> = ({
 }) => {
   const cardBgColor = useColorModeValue('white', 'gray.800');
   const scriptSyncIconRef = useRef<ScriptSyncIconRef>(null);
-  
+
   const syncContext = useScriptSyncContextOptional();
   const syncData = syncContext?.syncData;
-  
+
   // Wire up the context triggerRotation to the actual icon
   useEffect(() => {
     if (syncData?.triggerRotation) {
@@ -54,8 +54,8 @@ export const SharedPageHeader: React.FC<SharedPageHeaderProps> = ({
       boxShadow="sm"
     >
       <Flex align="center">
-        <Image boxSize={{ base: "40px", md: "50px" }} src="/cuebe.svg" alt="Cuebe Logo" />
-        <Heading as="h1" size={{ base: "md", md: "lg" }}>
+        <Image boxSize="60px" src="/cuebe.svg" alt="Cuebe Logo" />
+        <Heading as="h1" size="xl">
           <Text as="span" color="orange.400">
             Cue
           </Text>
