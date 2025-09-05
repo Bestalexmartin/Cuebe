@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { Box, VStack } from '@chakra-ui/react';
 import { CueElement } from '../../../features/script/components/CueElement';
 import { ScriptElementsHeader } from '../../../features/script/components/ScriptElementsHeader';
@@ -26,8 +26,8 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
     elements,
     script,
     useMilitaryTime,
-    onToggleGroupCollapse,
-    groupOverrides,
+    onToggleGroupCollapse: _onToggleGroupCollapse,
+    groupOverrides: _groupOverrides,
     isHighlightingEnabled: _isHighlightingEnabled,
     lookaheadSeconds
 }) => {
@@ -109,13 +109,6 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
         prevVisibleCountRef.current = currentVisibleCount;
     }, [visibleElements.length, isPlaybackPlaying]);
 
-    const setElementRef = useCallback((elementId: string, ref: HTMLDivElement | null) => {
-        if (ref) {
-            elementRefs.current.set(elementId, ref);
-        } else {
-            elementRefs.current.delete(elementId);
-        }
-    }, []);
 
     return (
         <Box
@@ -128,7 +121,7 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
             }}
         >
             <VStack spacing={0} align="stretch">
-                <ScriptElementsHeader colorizeDepNames={colorizeDepNames} />
+                <ScriptElementsHeader />
                 {visibleElements.map((element) => {
                     const highlightState = getElementHighlightState(element.element_id);
                     const borderState = getElementBorderState(element.element_id);

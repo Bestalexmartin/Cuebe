@@ -79,9 +79,9 @@ export const useScript = (shareToken: string | undefined, updateSharedData?: (up
         updateSharedData(prevData => {
           if (!prevData?.shows) return prevData;
           
-          const updatedShows = prevData.shows.map(show => ({
+          const updatedShows = prevData.shows.map((show: any) => ({
             ...show,
-            scripts: show.scripts.map(script => {
+            scripts: show.scripts.map((script: any) => {
               if (script.script_id === scriptId) {
                 return scriptData;
               }

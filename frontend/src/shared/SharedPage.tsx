@@ -263,7 +263,6 @@ const SharedPageContent = React.memo(() => {
   // Playback command handler for synchronized playback
   const lastCommandRef = useRef<{command: string, timestamp: number} | null>(null);
   const onPlaybackCommand = useCallback((message: any) => {
-    const startTime = performance.now();
     
     // Guard against duplicate WebSocket messages within 100ms
     if (lastCommandRef.current && 
@@ -274,7 +273,6 @@ const SharedPageContent = React.memo(() => {
     
     if (message.command && message.timestamp_ms) {
       lastCommandRef.current = {command: message.command, timestamp: message.timestamp_ms};
-      const beforeHandleCommand = performance.now();
       
       handlePlaybackCommand(
         message.command,
@@ -284,7 +282,6 @@ const SharedPageContent = React.memo(() => {
         message.cumulative_delay_ms
       );
       
-      const afterHandleCommand = performance.now();
     }
   }, [handlePlaybackCommand]);
 
