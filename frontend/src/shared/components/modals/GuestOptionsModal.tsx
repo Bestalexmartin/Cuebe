@@ -48,22 +48,22 @@ export const GuestOptionsModal: React.FC<GuestOptionsModalProps> = ({
     const handleClose = async () => {
         try {
             await onSave(lookaheadSeconds, useMilitaryTime);
-            showSuccess('Preferences Updated', 'Your viewing options have been saved successfully.');
+            showSuccess('Preferences Updated', 'Your preferences have been saved successfully.');
             onClose();
         } catch (error) {
-            showError('Failed to save viewing options');
+            showError('Failed to save preferences');
         }
     };
 
     return (
         <BaseModal
-            title="Viewing Options"
+            title="Preferences"
             headerIcon="options"
             headerIconColor="page.text"
             isOpen={isOpen}
             onClose={handleClose}
             primaryAction={{
-                label: "Update Options",
+                label: "Update Preferences",
                 variant: "primary",
                 onClick: handleClose
             }}

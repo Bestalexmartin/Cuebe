@@ -1,7 +1,6 @@
 // frontend/src/shared/components/SharedTutorialsPage.tsx
 import React, { useState } from 'react';
 import {
-  Flex,
   Box,
   VStack,
   HStack,
@@ -11,11 +10,10 @@ import {
   Divider,
   Card,
   CardBody,
-  Heading,
 } from '@chakra-ui/react';
 import { AppIcon } from '../../components/AppIcon';
 import { MarkdownRenderer } from '../../components/shared/MarkdownRenderer';
-import { SCOPED_TUTORIAL_FILES, createQuickAccessItems, TutorialFile } from '../constants/tutorialData';
+import { SCOPED_TUTORIAL_FILES, TutorialFile } from '../constants/tutorialData';
 import { tutorialCache } from '../utils/tutorialCache';
 
 // Scoped side tutorial implementation - independent from Auth side
@@ -119,8 +117,6 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
     }
   };
 
-  // Quick Access items for Scoped side tutorials
-  const quickAccessItems = createQuickAccessItems(loadCategory);
 
   // Group tutorials by category
   const groupTutorialsByCategory = () => {
@@ -136,33 +132,10 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
 
 
   return (
-    <Flex
-      gap="8"
-      height="100%"
-      flexDirection={{ base: 'column', lg: 'row' }}
-      minHeight={0} // Important for flex items to shrink
-    >
-        {/* Left Main Content */}
-        <Box
-          flex="1"
-          display="flex"
-          flexDirection="column"
-          minHeight={0} // Important for flex items to shrink
-        >
-          
-          <Box
-            border="1px solid"
-            borderColor="container.border"
-            p="4"
-            borderRadius="md"
-            flexGrow={1}
-            overflowY="auto"
-            className="hide-scrollbar edit-form-container"
-            minHeight={0} // Important for flex items to shrink
-          >
-            {selectedTutorial ? (
-              // Selected tutorial content
-              <VStack spacing={0} align="stretch" height="100%">
+    <>
+      {selectedTutorial ? (
+        // Selected tutorial content
+        <VStack spacing={0} align="stretch">
                 {isLoading ? (
                   <VStack spacing={4}>
                     <AppIcon name="compass" boxSize="32px" />
@@ -199,20 +172,18 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
                       </VStack>
                     </Box>
                     
-                    {/* Scrollable Content */}
-                    <Box flex={1} overflowY="auto" className="hide-scrollbar">
-                      <Card>
-                        <CardBody>
-                          <MarkdownRenderer content={content} />
-                        </CardBody>
-                      </Card>
-                    </Box>
+                    {/* Tutorial Content */}
+                    <Card>
+                      <CardBody>
+                        <MarkdownRenderer content={content} />
+                      </CardBody>
+                    </Card>
                   </>
                 )}
               </VStack>
-            ) : (
-              // Default content - search results or category overview
-              <VStack spacing={4} align="stretch">
+      ) : (
+        // Default content - search results or category overview
+        <VStack spacing={4} align="stretch">
                 {hasSearched ? (
                   // Search results using DocumentSearchUI pattern
                   searchResults.length === 0 ? (
@@ -398,59 +369,9 @@ ${error instanceof Error ? error.message : 'Unknown error occurred'}
                       </CardBody>
                     </Card>
                   ))
-                )}
-              </VStack>
-            )}
-          </Box>
-        </Box>
-
-        {/* Right QuickAccess Panel - Desktop Only - matches BaseUtilityPage exactly */}
-        <Box
-          width={{ base: '0', lg: '330px' }}
-          minWidth={{ base: '0', lg: '330px' }}
-          display={{ base: 'none', lg: 'flex' }}
-          flexDirection="column"
-          flexShrink={0}
-          minHeight={0} // Important for flex items to shrink
-        >
-          <Box
-            border="1px solid"
-            borderColor="container.border"
-            p="4"
-            borderRadius="md"
-            height="fit-content" // Shrink to fit content
-            maxHeight="100%" // Don't exceed available height
-            overflowY="auto" // Allow scrolling when content exceeds max height
-            className="hide-scrollbar"
-          >
-            <VStack spacing={4} align="stretch">
-              {quickAccessItems.map((item) => (
-                <Box
-                  key={item.id}
-                  borderWidth="2px"
-                  borderRadius="md"
-                  p="4"
-                  shadow="sm"
-                  bg="card.background"
-                  cursor="pointer"
-                  borderColor="gray.600"
-                  _hover={{ borderColor: "orange.400" }}
-                  onClick={item.onClick}
-                >
-                  <HStack spacing="2" align="center" mb="2">
-                    <AppIcon name={item.icon} boxSize="14px" />
-                    <Heading size="xs" textTransform="uppercase">
-                      {item.title}
-                    </Heading>
-                  </HStack>
-                  <Text fontSize="sm" color="cardText" mb="-1">
-                    {item.description}
-                  </Text>
-                </Box>
-              ))}
-            </VStack>
-          </Box>
-        </Box>
-      </Flex>
+        )}
+        </VStack>
+      )}
+    </>
   );
 };

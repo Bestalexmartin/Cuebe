@@ -1,4 +1,4 @@
-// frontend/src/components/shared/SharedShowCard.tsx
+// frontend/src/shared/components/SharedShowCard.tsx
 
 import React from 'react';
 import {
@@ -9,7 +9,7 @@ import {
   Badge,
   useColorModeValue
 } from '@chakra-ui/react';
-import { AppIcon } from '../AppIcon';
+import { AppIcon } from '../../components/AppIcon';
 import { formatDateFriendly, formatAbsoluteTimeStandard } from '../../utils/timeUtils';
 
 // TypeScript interfaces

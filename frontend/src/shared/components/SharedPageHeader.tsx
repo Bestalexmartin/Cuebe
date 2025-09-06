@@ -1,4 +1,4 @@
-// frontend/src/components/shared/SharedPageHeader.tsx
+// frontend/src/shared/components/SharedPageHeader.tsx
 
 import React, { useRef, useEffect } from 'react';
 import {
@@ -9,8 +9,8 @@ import {
   Avatar,
   useColorModeValue
 } from '@chakra-ui/react';
-import { BorderedContainer } from './BorderedContainer';
-import { ScriptSyncIcon, ScriptSyncIconRef } from './ScriptSyncIcon';
+import { BorderedContainer } from '../../components/shared/BorderedContainer';
+import { ScriptSyncIcon, ScriptSyncIconRef } from '../../components/shared/ScriptSyncIcon';
 import { useScriptSyncContextOptional } from '../../contexts/ScriptSyncContext';
 
 interface SharedPageHeaderProps {
@@ -48,9 +48,9 @@ export const SharedPageHeader: React.FC<SharedPageHeaderProps> = ({
       borderBottom="1px solid"
       borderColor="gray.200"
       _dark={{ borderColor: 'gray.700' }}
-      pl={{ base: 4, md: 6 }}
-      pr="2rem"
-      py={3}
+      pl={{ base: 0.5, sm: 5 }}
+      pr={{ base: 3.5, sm: 7 }}
+      py={{ base: 1, sm: 3 }}
       bg={cardBgColor}
       boxShadow="sm"
     >
@@ -62,9 +62,6 @@ export const SharedPageHeader: React.FC<SharedPageHeaderProps> = ({
           </Text>
           <Text as="span" color="blue.400">
             be
-          </Text>
-          <Text as="span" color="#48BB78" ml={2}>
-            Share
           </Text>
         </Heading>
       </Flex>

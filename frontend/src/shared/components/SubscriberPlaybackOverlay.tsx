@@ -208,7 +208,7 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
     script,
     useMilitaryTime
 }) => {
-    const { playbackState, isPlaybackSafety, cumulativeDelayMs } = useSynchronizedPlayContext();
+    const { playbackState, cumulativeDelayMs } = useSynchronizedPlayContext();
     
     // Debug logging
     
@@ -223,8 +223,7 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
                 left={`${contentAreaBounds.left - 1}px`}
                 width={`${contentAreaBounds.width + 2}px`}
                 height={`${contentAreaBounds.height + 2}px`}
-                border="2px solid"
-                borderColor={isPlaybackSafety ? "#EAB308" : "red.500"}
+                border={{ base: "none", sm: "2px solid red" }}
                 borderRadius="md"
                 pointerEvents="none"
                 zIndex={1000}
@@ -245,7 +244,7 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
                 transform="translateX(-50%)"
                 zIndex={1001}
                 pointerEvents="none"
-                display={{ base: 'none', xl: 'block' }}
+                display={{ base: 'none', lg: 'block' }}
             >
                 <Box border="2px solid" borderColor="gray.700" bg="#0F0F0F" borderRadius="md">
                     <HStack spacing={0} align="center">

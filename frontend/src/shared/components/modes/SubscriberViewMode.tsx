@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useRef } from 'react';
-import { Box, VStack } from '@chakra-ui/react';
+import { Box, VStack, useBreakpointValue } from '@chakra-ui/react';
 import { CueElement } from '../../../features/script/components/CueElement';
 import { ScriptElementsHeader } from '../../../features/script/components/ScriptElementsHeader';
 import { useSynchronizedPlayContext } from '../../../contexts/SynchronizedPlayContext';
@@ -33,9 +33,11 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
         shouldHideElement,
         getElementHighlightState,
         getElementBorderState,
-        setElementBoundaries,
-        processBoundariesForTime
+        setElementBoundaries
     } = useSynchronizedPlayContext();
+
+    // Disable colorized department names on mobile (≤425px)
+    const responsiveColorizeDepNames = useBreakpointValue({ base: false, sm: colorizeDepNames });
 
     // Set up timing boundaries when elements or lookahead changes
     useEffect(() => {
@@ -45,12 +47,7 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
         }
     }, [elements, lookaheadSeconds, setElementBoundaries]);
 
-    // Process boundaries for current time
-    useEffect(() => {
-        if (currentTime !== null && playbackState !== 'STOPPED') {
-            processBoundariesForTime(currentTime);
-        }
-    }, [currentTime, playbackState, processBoundariesForTime]);
+    // Note: Context timing engine already processes boundaries; avoid duplicate processing here
 
     // Filter elements based on Tetris-style hiding (hide passed elements)
     const visibleElements = useMemo(() => {
@@ -113,7 +110,9 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
             }}
         >
             <VStack spacing={0} align="stretch">
-                <ScriptElementsHeader colorizeDepNames={colorizeDepNames} />
+                <Box display={{ base: 'none', sm: 'block' }}>
+                    <ScriptElementsHeader colorizeDepNames={responsiveColorizeDepNames} />
+                </Box>
                 {visibleElements.map((element) => {
                     const highlightState = getElementHighlightState(element.element_id);
                     const borderState = getElementBorderState(element.element_id);
@@ -129,7 +128,7 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
                             index={elements.indexOf(element)}
                             allElements={elements}
                             isSelected={false}
-                            colorizeDepNames={colorizeDepNames}
+                            colorizeDepNames={responsiveColorizeDepNames}
                             showClockTimes={showClockTimes}
                             useMilitaryTime={useMilitaryTime}
                             scriptStartTime={script?.start_time}
