@@ -185,17 +185,12 @@ const RealtimeClock: React.FC<{ useMilitaryTime: boolean }> = ({ useMilitaryTime
 
 const ShowTimer: React.FC<{ script: any; playbackState: string }> = ({ script, playbackState }) => {
     const liveTimestamp = useClockTiming();
-    const [frozenTimestamp, setFrozenTimestamp] = useState<number | null>(null);
+    const { pauseStartTime } = usePlayContext();
     
-    useEffect(() => {
-        if ((playbackState === 'COMPLETE' || playbackState === 'PAUSED' || playbackState === 'SAFETY') && frozenTimestamp === null) {
-            setFrozenTimestamp(liveTimestamp);
-        } else if (playbackState === 'PLAYING') {
-            setFrozenTimestamp(null);
-        }
-    }, [playbackState, liveTimestamp, frozenTimestamp]);
-    
-    const timestamp = (playbackState === 'COMPLETE' || playbackState === 'PAUSED' || playbackState === 'SAFETY') && frozenTimestamp ? frozenTimestamp : liveTimestamp;
+    // Use pauseStartTime as the frozen timestamp for PAUSED/SAFETY/COMPLETE, live for others
+    const timestamp = (playbackState === 'PAUSED' || playbackState === 'SAFETY' || playbackState === 'COMPLETE') && pauseStartTime 
+        ? pauseStartTime 
+        : liveTimestamp;
     
     const calculateTMinusTime = useCallback((timestamp: number) => {
         if (!script?.start_time) {
@@ -215,7 +210,7 @@ const ShowTimer: React.FC<{ script: any; playbackState: string }> = ({ script, p
         return diffSeconds < 0 ? timeStr : `–${timeStr}`;
     }, [script?.start_time]);
 
-    const tMinusTime = calculateTMinusTime(frozenTimestamp || timestamp);
+    const tMinusTime = calculateTMinusTime(timestamp);
 
     return (
         <Box 
@@ -233,7 +228,7 @@ const ShowTimer: React.FC<{ script: any; playbackState: string }> = ({ script, p
     );
 };
 
-const PlaybackStatus: React.FC<{ playbackState: string; cumulativeDelayMs?: number }> = ({ playbackState }) => {
+const PlaybackStatus: React.FC<{ playbackState: string; cumulativeDelayMs?: number }> = ({ playbackState, cumulativeDelayMs }) => {
     if (playbackState === 'STOPPED') return null;
 
     const getStatusColor = () => {
@@ -243,7 +238,7 @@ const PlaybackStatus: React.FC<{ playbackState: string; cumulativeDelayMs?: numb
     };
 
     const isComplete = playbackState === 'COMPLETE';
-    const hasDelayTimer = playbackState === 'PAUSED' || playbackState === 'SAFETY' || playbackState === 'COMPLETE';
+    const hasDelayTimer = playbackState === 'PAUSED' || playbackState === 'SAFETY' || (playbackState === 'COMPLETE' && cumulativeDelayMs && cumulativeDelayMs > 0);
     return (
         <Box 
             bg="transparent" 
@@ -386,7 +381,7 @@ export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
                 {/* Time and Status Display - positioned at top center */}
                 <Box
                     position="fixed"
-                    top="16px"
+                    top="22px"
                     left="50%"
                     transform="translateX(-50%)"
                     zIndex={1001}

@@ -99,7 +99,7 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = ({
                             {listenerCount > 0 ? `SHARED • ${listenerCount}` : 'SHARED'}
                         </Badge>
                     )}
-                    {activeMode === 'view' && (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) ? (
+                    {activeMode === 'view' && (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety || isPlaybackComplete) ? (
                         <Badge
                             variant="solid"
                             colorScheme={isHighlightingEnabled ? "blue" : "gray"}

@@ -48,14 +48,15 @@ export const SharedPageHeader: React.FC<SharedPageHeaderProps> = ({
       borderBottom="1px solid"
       borderColor="gray.200"
       _dark={{ borderColor: 'gray.700' }}
-      px={{ base: 4, md: 6 }}
+      pl={{ base: 4, md: 6 }}
+      pr="2rem"
       py={3}
       bg={cardBgColor}
       boxShadow="sm"
     >
       <Flex align="center">
         <Image boxSize="60px" src="/cuebe.svg" alt="Cuebe Logo" />
-        <Heading as="h1" size="xl">
+        <Heading as="h1" size="xl" id="app-title">
           <Text as="span" color="orange.400">
             Cue
           </Text>

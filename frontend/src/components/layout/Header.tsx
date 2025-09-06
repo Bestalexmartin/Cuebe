@@ -69,7 +69,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
       borderBottom="1px solid"
       borderColor="gray.200"
       _dark={{ borderColor: 'gray.700' }}
-      px={{ base: 4, md: 6 }}
+      pl={{ base: 4, md: 6 }}
+      pr="2rem"
       py={3}
       bg={headerBgColor}
       boxShadow="sm"

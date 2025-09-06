@@ -54,6 +54,7 @@ const MobileClockBar: React.FC<{
   cumulativeDelayMs: number;
 }> = React.memo(({ playbackState, currentScript, useMilitaryTime, cumulativeDelayMs: _cumulativeDelayMs }) => {
   const [timestamp, setTimestamp] = useState(Date.now());
+  const { pauseStartTime } = useSynchronizedPlayContext();
 
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -73,10 +74,13 @@ const MobileClockBar: React.FC<{
     return `${hours}:${minutes}:${seconds}`;
   };
 
-  const formatShowTimer = (timestamp: number) => {
+  const formatShowTimer = (liveTimestamp: number) => {
+    const displayTimestamp = (playbackState === 'PAUSED' || playbackState === 'SAFETY' || playbackState === 'COMPLETE') && pauseStartTime 
+      ? pauseStartTime 
+      : liveTimestamp;
     if (!currentScript?.start_time) return "00:00:00";
     const scriptStart = new Date(currentScript.start_time);
-    const diffMs = scriptStart.getTime() - timestamp;
+    const diffMs = scriptStart.getTime() - displayTimestamp;
     const diffSeconds = Math.round(diffMs / 1000);
     const hours = Math.floor(Math.abs(diffSeconds) / 3600);
     const minutes = Math.floor((Math.abs(diffSeconds) % 3600) / 60);
@@ -87,7 +91,7 @@ const MobileClockBar: React.FC<{
 
   return (
     <Box
-      display={{ base: 'block', md: 'none' }}
+      display={{ base: 'block', xl: 'none' }}
       bg="#0F0F0F"
       height="60px"
       borderBottom="1px solid"
@@ -105,7 +109,7 @@ const MobileClockBar: React.FC<{
         <Box 
           bg="transparent" 
           color="gray.300" 
-          px="10px" py="3px" 
+          px="10px" 
           borderRadius="none" 
           fontSize="3xl" 
           fontFamily="mono"
@@ -115,7 +119,7 @@ const MobileClockBar: React.FC<{
         </Box>
         
         {/* Bullet separator */}
-        <Box bg="transparent" px="5px" py="3px">
+        <Box bg="transparent" px="5px" display="flex" alignItems="center" height="100%">
           <Text fontSize="3xl" color="gray.500" fontFamily="mono">•</Text>
         </Box>
         
@@ -123,7 +127,7 @@ const MobileClockBar: React.FC<{
         <Box 
           bg="transparent" 
           color="red.500" 
-          px="10px" py="3px" 
+          px="10px" 
           borderRadius="none" 
           fontSize="3xl" 
           fontFamily="mono"
@@ -133,7 +137,7 @@ const MobileClockBar: React.FC<{
         </Box>
         
         {/* Bullet separator */}
-        <Box bg="transparent" px="5px" py="3px">
+        <Box bg="transparent" px="5px" display="flex" alignItems="center" height="100%">
           <Text fontSize="3xl" color="gray.500" fontFamily="mono">•</Text>
         </Box>
         
@@ -141,7 +145,7 @@ const MobileClockBar: React.FC<{
         <Box 
           bg="transparent" 
           color={playbackState === 'SAFETY' ? 'orange.500' : playbackState === 'COMPLETE' ? 'green.500' : 'red.500'} 
-          px="10px" py="3px" 
+          px="10px" 
           borderRadius="none" 
           fontSize="3xl" 
           fontFamily="mono"
@@ -178,7 +182,8 @@ const SharedPageContent = React.memo(() => {
     cumulativeDelayMs,
     updateElementBoundaries,
     processBoundariesForTime,
-    registerRetimingCallback
+    registerRetimingCallback,
+    resetAllPlaybackState
   } = useSynchronizedPlayContext();
 
   // Tutorial search - extracted to custom hook
@@ -196,6 +201,7 @@ const SharedPageContent = React.memo(() => {
     // This will be passed to SharedTutorialsPage to clear its state
   };
 
+
   // Custom hooks
   const { sharedData, isLoading, error, refreshData, updateSharedData } = useSharedData(shareToken);
   
@@ -212,6 +218,11 @@ const SharedPageContent = React.memo(() => {
     updateSingleElement,
     deleteElement,
   } = useScript(shareToken, updateSharedData, refreshData);
+
+  // Reset all playback and script state on page load/mount to clear persistent state
+  useEffect(() => {
+    resetAllPlaybackState();
+  }, []); // Empty dependency array = runs only on mount
 
   // Function to update script info directly without API call
   const updateScriptInfo = useCallback((changes: any) => {
@@ -681,8 +692,8 @@ const SharedPageContent = React.memo(() => {
                 {/* Script Content */}
                 <Box
                   ref={contentAreaRef}
-                  border={playbackState === 'STOPPED' ? "1px solid" : "none"}
-                  borderColor="container.border"
+                  border="1px solid"
+                  borderColor={playbackState === 'STOPPED' ? "container.border" : "red.500"}
                   borderRadius="md"
                   flexGrow={1}
                   overflow="hidden"
