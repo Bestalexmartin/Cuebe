@@ -42,7 +42,7 @@ export const ActionsMenu: React.FC<ActionsMenuProps> = ({
                 size="xs"
                 rightIcon={<AppIcon name="openmenu" />}
                 isDisabled={isDisabled}
-                _hover={{ bg: 'gray.100', _dark: { bg: 'gray.700' } }}
+                _hover={{ bg: 'orange.400' }}
             >
                 Actions
             </MenuButton>

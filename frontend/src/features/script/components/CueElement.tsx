@@ -420,7 +420,17 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                 </Box>
 
                 {/* Time Offset */}
-                <Box w="120px" minW="100px" pl={5} pr={4} py={.5} borderColor="gray.500" flexShrink={1}>
+                <Box 
+                    w="120px" 
+                    minW="100px" 
+                    pl={5} 
+                    pr={4} 
+                    py={.5} 
+                    borderColor="gray.500" 
+                    flexShrink={1}
+                    borderRight={{ base: "1px solid", sm: "none" }}
+                    borderRightColor="#82919a"
+                >
                     <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight}>
                         {timeDisplay}
                     </Text>
@@ -449,7 +459,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     w="100px"
                     minW="99px"
                     height="100%"
-                    display="flex"
+                    display={{ base: 'none', sm: 'flex' }}
                     alignItems="center"
                     px={element.element_type === 'NOTE' || element.element_type === 'GROUP' || !colorizeDepNames ? 3 : 0}
                     flexShrink={0}
@@ -533,7 +543,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     w="122px"
                     minW="122px"
                     height="100%"
-                    display="flex"
+                    display={{ base: 'none', sm: 'flex' }}
                     alignItems="center"
                     justifyContent="center"
                     flexShrink={0}

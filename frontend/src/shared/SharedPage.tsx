@@ -13,22 +13,26 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
+  Badge,
 } from '@chakra-ui/react';
 import { useParams } from 'react-router-dom';
 import { AppIcon } from '../components/AppIcon';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { formatRoleBadge } from '../constants/userRoles';
 import { useSharedData } from '../hooks/useSharedData';
 import { useScript } from '../hooks/useScript';
+import { useEnhancedToast } from '../utils/toastUtils';
 import { useSorting } from '../hooks/useSorting';
 import { ScriptHeader } from '../components/shared/ScriptHeader';
 import { ShowsList } from '../components/shared/ShowsList';
 import { LoadingSpinner, ErrorState, ScriptLoadingState } from '../components/shared/LoadingStates';
 import { SortMenu, SortOption } from '../components/shared/SortMenu';
-import { SharedPageHeader } from '../components/shared/SharedPageHeader';
+import { SharedPageHeader } from './components/SharedPageHeader';
 import { SearchInput } from '../components/shared/SearchInput';
 import { BorderedContainer } from '../components/shared/BorderedContainer';
 import { useScriptSync } from '../hooks/useScriptSync';
 import { SharedTutorialsPage } from './components/SharedTutorialsPage';
+import { SharedPreferencesPage } from './components/SharedPreferencesPage';
 import { GuestDarkModeSwitch } from './components/GuestDarkModeSwitch';
 import { useTutorialSearch } from './hooks/useTutorialSearch';
 import { useScriptUpdateHandlers } from './hooks/useScriptUpdateHandlers';
@@ -36,8 +40,7 @@ import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
 import { SynchronizedPlayProvider, useSynchronizedPlayContext } from '../contexts/SynchronizedPlayContext';
 import { SubscriberViewMode } from './components/modes/SubscriberViewMode';
 import { SubscriberPlaybackOverlay } from './components/SubscriberPlaybackOverlay';
-import { GuestOptionsModal } from './components/modals/GuestOptionsModal';
-import { createGuestActionMenuConfig } from './config/guestActionMenuConfig';
+import { MobileSearchModal } from './components/modals/MobileSearchModal';
 
 const SHOWS_SORT_OPTIONS: SortOption[] = [
   { value: 'show_name', label: 'Name' },
@@ -75,8 +78,8 @@ const MobileClockBar: React.FC<{
   };
 
   const formatShowTimer = (liveTimestamp: number) => {
-    const displayTimestamp = (playbackState === 'PAUSED' || playbackState === 'SAFETY' || playbackState === 'COMPLETE') && pauseStartTime 
-      ? pauseStartTime 
+    const displayTimestamp = (playbackState === 'PAUSED' || playbackState === 'SAFETY' || playbackState === 'COMPLETE') && pauseStartTime
+      ? pauseStartTime
       : liveTimestamp;
     if (!currentScript?.start_time) return "00:00:00";
     const scriptStart = new Date(currentScript.start_time);
@@ -91,7 +94,7 @@ const MobileClockBar: React.FC<{
 
   return (
     <Box
-      display={{ base: 'block', xl: 'none' }}
+      display={{ base: 'block', lg: 'none' }}
       bg="#0F0F0F"
       height="60px"
       borderBottom="1px solid"
@@ -106,48 +109,48 @@ const MobileClockBar: React.FC<{
     >
       <HStack spacing={0} justify="center" align="center" height="100%">
         {/* Realtime Clock */}
-        <Box 
-          bg="transparent" 
-          color="gray.300" 
-          px="10px" 
-          borderRadius="none" 
-          fontSize="3xl" 
+        <Box
+          bg="transparent"
+          color="gray.300"
+          px={{ base: "7px", sm: "10px" }}
+          borderRadius="none"
+          fontSize={{ base: "xl", sm: "3xl" }}
           fontFamily="mono"
           textAlign="center"
         >
           {formatRealTimeClock(timestamp)}
         </Box>
-        
+
         {/* Bullet separator */}
-        <Box bg="transparent" px="5px" display="flex" alignItems="center" height="100%">
-          <Text fontSize="3xl" color="gray.500" fontFamily="mono">•</Text>
+        <Box bg="transparent" px={{ base: "3px", sm: "5px" }} display="flex" alignItems="center" height="100%">
+          <Text fontSize={{ base: "xl", sm: "3xl" }} color="gray.500" fontFamily="mono">•</Text>
         </Box>
-        
+
         {/* Show Timer */}
-        <Box 
-          bg="transparent" 
-          color="red.500" 
-          px="10px" 
-          borderRadius="none" 
-          fontSize="3xl" 
+        <Box
+          bg="transparent"
+          color="red.500"
+          px={{ base: "7px", sm: "10px" }}
+          borderRadius="none"
+          fontSize={{ base: "xl", sm: "3xl" }}
           fontFamily="mono"
           textAlign="center"
         >
           {formatShowTimer(timestamp)}
         </Box>
-        
+
         {/* Bullet separator */}
-        <Box bg="transparent" px="5px" display="flex" alignItems="center" height="100%">
-          <Text fontSize="3xl" color="gray.500" fontFamily="mono">•</Text>
+        <Box bg="transparent" px={{ base: "3px", sm: "5px" }} display="flex" alignItems="center" height="100%">
+          <Text fontSize={{ base: "xl", sm: "3xl" }} color="gray.500" fontFamily="mono">•</Text>
         </Box>
-        
+
         {/* Playback Status */}
-        <Box 
-          bg="transparent" 
-          color={playbackState === 'SAFETY' ? 'orange.500' : playbackState === 'COMPLETE' ? 'green.500' : 'red.500'} 
-          px="10px" 
-          borderRadius="none" 
-          fontSize="3xl" 
+        <Box
+          bg="transparent"
+          color={playbackState === 'SAFETY' ? 'orange.500' : playbackState === 'COMPLETE' ? 'green.500' : 'red.500'}
+          px={{ base: "7px", sm: "10px" }}
+          borderRadius="none"
+          fontSize={{ base: "xl", sm: "3xl" }}
           fontFamily="mono"
           fontWeight="bold"
           textAlign="center"
@@ -165,15 +168,22 @@ const SharedPageContent = React.memo(() => {
   const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
   const [showTutorials, setShowTutorials] = useState<boolean>(false);
+  const [showPreferences, setShowPreferences] = useState<boolean>(false);
   const [contentAreaBounds, setContentAreaBounds] = useState<DOMRect | null>(null);
-  const [showGuestOptions, setShowGuestOptions] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [guestLookaheadSeconds, setGuestLookaheadSeconds] = useState(30);
   const [guestUseMilitaryTime, setGuestUseMilitaryTime] = useState(false);
+  const savedLookaheadRef = useRef<number | null>(null);
+  const savedMilitaryRef = useRef<boolean | null>(null);
   const triggerRotationRef = useRef<(() => void) | null>(null);
-  const contentAreaRef = useRef<HTMLDivElement>(null);
+  const { showSuccess, showError } = useEnhancedToast();
   
+  // Track when preferences view is left to trigger optional auto-save
+  const prevShowPreferences = useRef(showPreferences);
+  const contentAreaRef = useRef<HTMLDivElement>(null);
+
   // Access synchronized play context
-  const { 
+  const {
     handlePlaybackCommand,
     setScript,
     playbackState,
@@ -204,7 +214,7 @@ const SharedPageContent = React.memo(() => {
 
   // Custom hooks
   const { sharedData, isLoading, error, refreshData, updateSharedData } = useSharedData(shareToken);
-  
+
   // Custom hooks - useScript provides script viewing functionality with element handlers
   const {
     viewingScriptId,
@@ -355,7 +365,7 @@ const SharedPageContent = React.memo(() => {
     registerRetimingCallback(cb);
     return () => {
       // Unregister by setting a no-op to avoid stale closures
-      registerRetimingCallback(() => {});
+      registerRetimingCallback(() => { });
     };
   }, [registerRetimingCallback, updateScriptElementsDirectly, updateElementBoundaries, processBoundariesForTime, guestLookaheadSeconds, adjustFutureOffsets]);
 
@@ -368,8 +378,12 @@ const SharedPageContent = React.memo(() => {
         const response = await fetch(`/api/shared/${encodeURIComponent(shareToken)}/preferences`);
         if (response.ok) {
           const preferences = await response.json();
-          setGuestLookaheadSeconds(preferences.lookahead_seconds || 30);
-          setGuestUseMilitaryTime(preferences.use_military_time || false);
+          const la = preferences.lookahead_seconds ?? 30;
+          const mil = preferences.use_military_time ?? false;
+          setGuestLookaheadSeconds(la);
+          setGuestUseMilitaryTime(mil);
+          savedLookaheadRef.current = la;
+          savedMilitaryRef.current = mil;
         }
       } catch (error) {
         console.error('Failed to load guest preferences:', error);
@@ -406,9 +420,10 @@ const SharedPageContent = React.memo(() => {
 
   // Removed group collapse state/handler (unused in subscriber view)
 
-  // Guest options functionality
+  // Preferences navigation
   const handleOptionsClick = useCallback(() => {
-    setShowGuestOptions(true);
+    setShowPreferences(true);
+    setShowTutorials(false);
   }, []);
 
   const handleGuestOptionsSave = useCallback(async (lookaheadSeconds: number, useMilitaryTime: boolean) => {
@@ -428,15 +443,34 @@ const SharedPageContent = React.memo(() => {
 
       if (response.ok) {
         const updatedPreferences = await response.json();
-        setGuestLookaheadSeconds(updatedPreferences.lookahead_seconds || 30);
-        setGuestUseMilitaryTime(updatedPreferences.use_military_time || false);
+        const la = updatedPreferences.lookahead_seconds ?? 30;
+        const mil = updatedPreferences.use_military_time ?? false;
+        setGuestLookaheadSeconds(la);
+        setGuestUseMilitaryTime(mil);
+        savedLookaheadRef.current = la;
+        savedMilitaryRef.current = mil;
+        showSuccess('Preferences Updated', 'Your preferences have been saved successfully.');
       } else {
         throw new Error('Failed to save preferences');
       }
     } catch (error) {
+      showError('Failed to save preferences');
       throw error;
     }
   }, [shareToken]);
+
+  // Auto-save preferences when leaving preferences view, only if changed
+  useEffect(() => {
+    if (prevShowPreferences.current && !showPreferences) {
+      const changed =
+        savedLookaheadRef.current !== guestLookaheadSeconds ||
+        savedMilitaryRef.current !== guestUseMilitaryTime;
+      if (changed) {
+        handleGuestOptionsSave(guestLookaheadSeconds, guestUseMilitaryTime);
+      }
+    }
+    prevShowPreferences.current = showPreferences;
+  }, [showPreferences, guestLookaheadSeconds, guestUseMilitaryTime, handleGuestOptionsSave]);
 
   // Trigger rotation on data received (ping/pong and incoming updates)
   const onDataReceived = useCallback(() => {
@@ -445,9 +479,9 @@ const SharedPageContent = React.memo(() => {
   }, []);
 
   // Other websocket callbacks - kept simple and stable
-  const onConnect = useCallback(() => {}, []);
-  const onDisconnect = useCallback(() => {}, []);
-  const onError = useCallback(() => {}, []);
+  const onConnect = useCallback(() => { }, []);
+  const onDisconnect = useCallback(() => { }, []);
+  const onError = useCallback(() => { }, []);
 
   // Websocket setup - connects when we have a script ID
   const scriptSync = useScriptSync(viewingScriptId, shareToken, {
@@ -461,7 +495,7 @@ const SharedPageContent = React.memo(() => {
 
   // Update sync context for header display
   const { setSyncData } = useScriptSyncContext();
-  
+
   // Simple sync data - only update when connection actually changes
   const syncData = useMemo(() => {
     if (!viewingScriptId) return null;
@@ -474,11 +508,11 @@ const SharedPageContent = React.memo(() => {
       userType: 'crew_member' as const,
       triggerRotation: triggerRotationRef
     };
-  }, [viewingScriptId, scriptSync.isConnected, scriptSync.isConnecting]);
-  
+  }, [viewingScriptId, scriptSync.isConnected, scriptSync.isConnecting, scriptSync.connectionCount, scriptSync.connectionError]);
+
   useEffect(() => {
     setSyncData(syncData);
-    
+
     // Cleanup when component unmounts
     return () => setSyncData(null);
   }, [syncData, setSyncData]);
@@ -505,7 +539,7 @@ const SharedPageContent = React.memo(() => {
       if (ro && ro.observe) {
         ro.observe(node);
         return () => {
-          try { ro.disconnect(); } catch {}
+          try { ro.disconnect(); } catch { }
         };
       }
     }
@@ -537,10 +571,17 @@ const SharedPageContent = React.memo(() => {
       <Box
         display="grid"
         gridTemplateRows="auto 1fr"
-        height="100vh"
+        height="100dvh"
         width="100vw"
         overflow="hidden"
         bg={bgColor}
+        sx={{
+          // Fallback for browsers that don't support dvh
+          height: "100vh",
+          "@supports (height: 100dvh)": {
+            height: "100dvh"
+          }
+        }}
       >
         {/* Header */}
         <SharedPageHeader
@@ -558,20 +599,85 @@ const SharedPageContent = React.memo(() => {
           overflow="hidden"
           display="flex"
           flexDirection="column"
-          p="2rem"
+          p={{ base: "0", sm: "2rem" }}
           position="relative"
+          height="100%"
         >
-          {/* Mobile Clock Bar - positioned to break out above padding */}
-          {viewingScriptId && playbackState !== 'STOPPED' && (
+          {/* Mobile Script Info Bar - positioned above clock */}
+          {viewingScriptId && (
             <Box
+              display={{ base: 'block', sm: 'none' }}
               position="absolute"
               top="0"
               left="0"
               right="0"
+              zIndex="11"
+              bg={bgColor}
+              py="16px"
+              px={{ base: "1rem", sm: "2rem" }}
+              borderBottom="1px solid"
+              borderColor="gray.200"
+              _dark={{ borderColor: 'gray.700' }}
+            >
+              <Flex justify="space-between" align="center">
+                <Flex align="center" gap="2">
+                  {crewContext?.department_name && (
+                    <Badge
+                      colorScheme="blue"
+                      variant="solid"
+                      fontSize="sm"
+                      size="md"
+                      style={{ backgroundColor: crewContext.department_color || '#3182CE' }}
+                    >
+                      {crewContext.department_name}
+                    </Badge>
+                  )}
+                  {crewContext?.show_role && (
+                    <Badge
+                      colorScheme="green"
+                      variant="solid"
+                      fontSize="sm"
+                      size="md"
+                    >
+                      {formatRoleBadge(crewContext.show_role)}
+                    </Badge>
+                  )}
+                </Flex>
+                <Menu>
+                  <MenuButton
+                    as={Button}
+                    bg="blue.400"
+                    color="white"
+                    size="xs"
+                    _hover={{ bg: 'orange.400' }}
+                    rightIcon={<AppIcon name="openmenu" />}
+                  >
+                    Options
+                  </MenuButton>
+                  <MenuList>
+                    <MenuItem onClick={handleOptionsClick}>
+                      Viewing Options
+                    </MenuItem>
+                    <MenuItem onClick={handleBackToShows}>
+                      Back to Shows
+                    </MenuItem>
+                  </MenuList>
+                </Menu>
+              </Flex>
+            </Box>
+          )}
+
+          {/* Mobile Clock Bar - positioned below mobile script info */}
+          {viewingScriptId && playbackState !== 'STOPPED' && (
+            <Box
+              position="absolute"
+              top={{ base: "56px", sm: "0" }}
+              left="0"
+              right="0"
               zIndex="10"
             >
-              <MobileClockBar 
-                playbackState={playbackState} 
+              <MobileClockBar
+                playbackState={playbackState}
                 currentScript={currentScript}
                 useMilitaryTime={guestUseMilitaryTime}
                 cumulativeDelayMs={cumulativeDelayMs}
@@ -579,104 +685,196 @@ const SharedPageContent = React.memo(() => {
             </Box>
           )}
 
-          <Flex 
-            direction="column" 
-            height="100%" 
-            pt={viewingScriptId && playbackState !== 'STOPPED' ? "60px" : "0"}
+          <Flex
+            direction="column"
+            height="100%"
+            pt={{
+              base: viewingScriptId
+                ? playbackState !== 'STOPPED'
+                  ? "104px"  // Mobile: script info + clock - 12px adjustment
+                  : "44px"   // Mobile: script info only - 12px adjustment
+                : "0",
+              sm: viewingScriptId && playbackState !== 'STOPPED' ? "60px" : "0",  // Tablet: just clock space
+              lg: "0"  // Desktop: no padding, clock moved to overlay
+            }}
           >
             {/* Header - Shows or Tutorials */}
             {!viewingScriptId && (
-              <Flex align="center" flexShrink={0} mb={4}>
+              <Flex align="center" flexShrink={0} mb={4} px={{ base: "1rem", sm: "0" }} mt={{ base: "16px", sm: "0" }}>
                 {/* Left side - Title */}
                 <HStack spacing="2" align="center">
                   <AppIcon
-                    name={showTutorials ? 'compass' : 'show'}
-                    boxSize={showTutorials ? '23px' : '25px'}
+                    name={showPreferences ? 'options' : showTutorials ? 'compass' : 'show'}
+                    boxSize={showPreferences ? '23px' : showTutorials ? '23px' : '25px'}
                   />
                   <Heading as="h2" size="md">
-                    {showTutorials
-                      ? hasSearched && searchResults.length > 0
-                        ? `Tutorials • ${searchResults.length} Result${searchResults.length !== 1 ? 's' : ''}`
-                        : 'Tutorials'
-                      : 'Shows'}
+                    {showPreferences
+                      ? 'Preferences'
+                      : showTutorials
+                        ? hasSearched && searchResults.length > 0
+                          ? (
+                              <>
+                                <Text as="span" display={{ base: "inline", sm: "none" }}>
+                                  Tutorials
+                                </Text>
+                                <Text as="span" display={{ base: "none", sm: "inline" }}>
+                                  {`Tutorials • ${searchResults.length} Result${searchResults.length !== 1 ? 's' : ''}`}
+                                </Text>
+                              </>
+                            )
+                          : 'Tutorials'
+                        : 'Shows'}
                   </Heading>
                 </HStack>
 
-                {/* Right side - Actions aligned to content */}
-                <Box flex="1" display="flex" justifyContent="space-between" alignItems="center" ml="8">
-                  {/* Header actions positioned above main content - right aligned to content area */}
-                  <Box flex="1" display="flex" justifyContent="flex-end" mr="8">
-                    {showTutorials ? (
-                      <SearchInput
-                        searchQuery={searchQuery}
-                        onSearchQueryChange={setSearchQuery}
-                        isSearching={isSearching}
-                        onSearch={(query) => handleSearch(query, clearPageState)}
-                        onClearSearch={clearSearch}
-                        placeholder="Search tutorials..."
-                      />
-                    ) : null}
-                  </Box>
-
-                  {/* Utilities menu positioned above quick access */}
-                  <Box width="330px" display="flex" justifyContent="flex-end">
-                    <HStack spacing="2">
-                      {!showTutorials && (
-                        <>
-                          <SortMenu
-                            sortBy={sortBy}
-                            sortDirection={sortDirection}
-                            sortOptions={SHOWS_SORT_OPTIONS}
-                            onSortClick={handleSortClick}
+                {/* Right side - Actions */}
+                <Flex flex="1" justify="flex-end" align="center">
+                  <HStack spacing="2">
+                    {/* Search for tutorials - not shown in preferences */}
+                    {showTutorials && !showPreferences && (
+                      <>
+                        {/* Desktop search input >425px */}
+                        <Box display={{ base: "none", sm: "block" }}>
+                          <SearchInput
+                            searchQuery={searchQuery}
+                            onSearchQueryChange={setSearchQuery}
+                            isSearching={isSearching}
+                            onSearch={(query) => handleSearch(query, clearPageState)}
+                            onClearSearch={clearSearch}
+                            placeholder="Search tutorials..."
                           />
-                          <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
-                        </>
-                      )}
-                      <Menu>
-                        <MenuButton
-                          as={Button}
-                          bg="blue.400"
-                          color="white"
+                        </Box>
+
+                        {/* Mobile search button <=425px */}
+                        <Button
+                          display={{ base: "block", sm: "none" }}
                           size="xs"
-                          _hover={{ bg: 'orange.400' }}
-                          rightIcon={<AppIcon name="openmenu" />}
+                          rightIcon={<AppIcon name="search" height="10px" transform="translate(-2px, 1px)" />}
+                          pl="14px"
+                          onClick={() => setShowMobileSearch(true)}
                         >
-                          Utilities
-                        </MenuButton>
-                        <MenuList>
-                          {showTutorials ? (
-                            <MenuItem onClick={() => setShowTutorials(false)}>
-                              <AppIcon name="show" boxSize="16px" mr={2} />
-                              Return to Shows
-                            </MenuItem>
-                          ) : (
-                            <MenuItem onClick={() => setShowTutorials(true)}>
-                              <AppIcon name="compass" boxSize="16px" mr={2} />
-                              Tutorials
-                            </MenuItem>
-                          )}
-                        </MenuList>
-                      </Menu>
-                    </HStack>
-                  </Box>
-                </Box>
+                          Search
+                        </Button>
+
+                        <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
+                      </>
+                    )}
+                    {!showTutorials && !showPreferences && (
+                      <>
+                        <SortMenu
+                          sortBy={sortBy}
+                          sortDirection={sortDirection}
+                          sortOptions={SHOWS_SORT_OPTIONS}
+                          onSortClick={handleSortClick}
+                        />
+                        <Divider orientation="vertical" height="20px" borderColor="gray.400" mx="2" />
+                      </>
+                    )}
+                    <Menu>
+                      <MenuButton
+                        as={Button}
+                        bg="blue.400"
+                        color="white"
+                        size="xs"
+                        _hover={{ bg: 'orange.400' }}
+                        rightIcon={<AppIcon name="openmenu" />}
+                      >
+                        View Mode
+                      </MenuButton>
+                      <MenuList minW="140px">
+                        <MenuItem 
+                          onClick={() => {
+                            setShowTutorials(false);
+                            setShowPreferences(false);
+                          }}
+                          isDisabled={!showTutorials && !showPreferences}
+                          opacity={!showTutorials && !showPreferences ? 0.4 : 1}
+                        >
+                          <AppIcon name="show" boxSize="16px" mr={2} />
+                          Shows
+                        </MenuItem>
+                        <MenuItem 
+                          onClick={() => {
+                            setShowTutorials(false);
+                            setShowPreferences(true);
+                          }}
+                          isDisabled={showPreferences}
+                          opacity={showPreferences ? 0.4 : 1}
+                        >
+                          <AppIcon name="options" boxSize="16px" mr={2} />
+                          Preferences
+                        </MenuItem>
+                        <MenuItem 
+                          onClick={() => {
+                            setShowTutorials(true);
+                            setShowPreferences(false);
+                          }}
+                          isDisabled={showTutorials}
+                          opacity={showTutorials ? 0.4 : 1}
+                        >
+                          <AppIcon name="compass" boxSize="16px" mr={2} />
+                          Tutorials
+                        </MenuItem>
+                      </MenuList>
+                    </Menu>
+                  </HStack>
+                </Flex>
               </Flex>
             )}
 
             {/* Content Area */}
-            {showTutorials ? (
-              <Box height="100%" flex="1">
-                <SharedTutorialsPage
-                  shareToken={shareToken}
-                  onClose={() => setShowTutorials(false)}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  searchResults={searchResults}
-                  isSearching={isSearching}
-                  hasSearched={hasSearched}
-                  handleSearch={handleSearch}
-                  clearSearch={clearSearch}
-                />
+            {showPreferences ? (
+              <Box
+                border={{ base: "none", sm: "1px solid var(--chakra-colors-container-border)" }}
+                p={{ base: "1rem", sm: "4" }}
+                borderRadius={{ base: "0", sm: "md" }}
+                flex={1}
+                height="100%"
+                overflow="hidden"
+                mt={{ base: "-16px", sm: "0" }}
+                minHeight={0}
+              >
+                <Box
+                  height="100%"
+                  overflowY="auto"
+                  className="hide-scrollbar"
+                >
+                  <SharedPreferencesPage
+                    useMilitaryTime={guestUseMilitaryTime}
+                    lookaheadSeconds={guestLookaheadSeconds}
+                    onMilitaryTimeChange={setGuestUseMilitaryTime}
+                    onLookaheadSecondsChange={setGuestLookaheadSeconds}
+                  />
+                </Box>
+              </Box>
+            ) : showTutorials ? (
+              <Box
+                border={{ base: "none", sm: "1px solid var(--chakra-colors-container-border)" }}
+                p={{ base: "1rem", sm: "4" }}
+                borderRadius={{ base: "0", sm: "md" }}
+                flex={1}
+                height="100%"
+                overflow="hidden"
+                mt={{ base: "-16px", sm: "0" }}
+                minHeight={0}
+              >
+                <Box
+                  height="100%"
+                  overflowY="auto"
+                  className="hide-scrollbar"
+                >
+                  <SharedTutorialsPage
+                    shareToken={shareToken}
+                    onClose={() => setShowTutorials(false)}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    searchResults={searchResults}
+                    isSearching={isSearching}
+                    hasSearched={hasSearched}
+                    handleSearch={handleSearch}
+                    clearSearch={clearSearch}
+                  />
+                </Box>
               </Box>
             ) : viewingScriptId ? (
               <>
@@ -684,22 +882,22 @@ const SharedPageContent = React.memo(() => {
                   currentScript={currentScript}
                   crewContext={crewContext}
                   onBackToShows={handleBackToShows}
-                  actions={createGuestActionMenuConfig({
-                    onOptionsClick: handleOptionsClick
-                  })}
+                  onOptionsClick={handleOptionsClick}
                 />
 
                 {/* Script Content */}
                 <Box
                   ref={contentAreaRef}
-                  border="1px solid"
-                  borderColor={playbackState === 'STOPPED' ? "container.border" : "red.500"}
-                  borderRadius="md"
+                  border={{
+                    base: "none",
+                    sm: `1px solid ${playbackState !== 'STOPPED' ? 'transparent' : 'var(--chakra-colors-container-border)'}`
+                  }}
+                  borderRadius={{ base: "0", sm: "md" }}
                   flexGrow={1}
                   overflow="hidden"
                   display="flex"
                   flexDirection="column"
-                  mt="-1px"
+                  mt={{ base: "-1px", sm: "0" }}
                 >
                   <ScriptLoadingState
                     isLoading={isLoadingScript}
@@ -709,7 +907,7 @@ const SharedPageContent = React.memo(() => {
                   {!isLoadingScript && !scriptError && (
                     <Box
                       flex={1}
-                      p="4"
+                      p={{ base: "0", sm: "4" }}
                       overflow="hidden"
                       minHeight={0}
                       maxHeight="100%"
@@ -726,13 +924,13 @@ const SharedPageContent = React.memo(() => {
                     </Box>
                   )}
                 </Box>
-                
+
                 {/* Synchronized Playback Overlay */}
                 {(() => {
                   const shouldShow = playbackState !== 'STOPPED' && contentAreaBounds;
                   return shouldShow ? (
                     <SubscriberPlaybackOverlay
-                      contentAreaBounds={contentAreaBounds}
+                      contentAreaBounds={contentAreaBounds!}
                       script={currentScript}
                       useMilitaryTime={guestUseMilitaryTime}
                     />
@@ -742,25 +940,32 @@ const SharedPageContent = React.memo(() => {
             ) : (
               <>
                 <Box
-                  border="1px solid"
-                  borderColor="container.border"
-                  p="4"
-                  borderRadius="md"
-                  flexGrow={1}
-                  overflowY="auto"
-                  className="hide-scrollbar"
+                  border={{ base: "none", sm: "1px solid var(--chakra-colors-container-border)" }}
+                  p={{ base: "1rem", sm: "4" }}
+                  borderRadius={{ base: "0", sm: "md" }}
+                  flex={1}
+                  height="100%"
+                  overflow="hidden"
+                  mt={{ base: "-17px", sm: "0" }}
+                  minHeight={0}
                 >
-                  <ShowsList
-                    sortedShows={sortedShows}
-                    selectedShowId={selectedShowId}
-                    hoveredCardId={hoveredCardId}
-                    sortBy={sortBy}
-                    sortDirection={sortDirection}
-                    sharedData={sharedData}
-                    onShowHover={setHoveredCardId}
-                    onShowClick={handleShowClick}
-                    onScriptClick={handleScriptClick}
-                  />
+                  <Box
+                    height="100%"
+                    overflowY="auto"
+                    className="hide-scrollbar"
+                  >
+                    <ShowsList
+                      sortedShows={sortedShows}
+                      selectedShowId={selectedShowId}
+                      hoveredCardId={hoveredCardId}
+                      sortBy={sortBy}
+                      sortDirection={sortDirection}
+                      sharedData={sharedData}
+                      onShowHover={setHoveredCardId}
+                      onShowClick={handleShowClick}
+                      onScriptClick={handleScriptClick}
+                    />
+                  </Box>
                 </Box>
               </>
             )}
@@ -768,15 +973,13 @@ const SharedPageContent = React.memo(() => {
         </Box>
       </Box>
 
-      {/* Guest Options Modal */}
-      <GuestOptionsModal
-        isOpen={showGuestOptions}
-        onClose={() => setShowGuestOptions(false)}
-        initialLookaheadSeconds={guestLookaheadSeconds}
-        initialUseMilitaryTime={guestUseMilitaryTime}
-        onSave={handleGuestOptionsSave}
+      {/* Mobile Search Modal */}
+      <MobileSearchModal
+        isOpen={showMobileSearch}
+        onClose={() => setShowMobileSearch(false)}
+        onSearch={(query) => handleSearch(query, clearPageState)}
       />
-    </ErrorBoundary>
+    </ErrorBoundary >
   );
 });
 
