@@ -437,7 +437,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     minW="60px"
                     flexShrink={2}
                     borderLeft="1px solid"
-                    borderColor="#a3aebe"
+                    borderColor="#82919a"
                 >
                     <Text fontSize="sm" color={textColor} textAlign="center" fontWeight={fontWeight}>
                         {durationDisplay}
@@ -454,7 +454,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     px={element.element_type === 'NOTE' || element.element_type === 'GROUP' || !colorizeDepNames ? 3 : 0}
                     flexShrink={0}
                     borderLeft={element.element_type === 'NOTE' || element.element_type === 'GROUP' ? "1px solid" : "none"}
-                    borderColor="#a3aebe"
+                    borderColor="#82919a"
                 >
                     {colorizeDepNames && element.department_color && element.element_type !== 'NOTE' && element.element_type !== 'GROUP' ? (
                         <Box
@@ -480,14 +480,14 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                 </Box>
 
                 {/* Cue ID */}
-                <Box w="80px" minW="80px" px={3} height="100%" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft={element.element_type === 'NOTE' || element.element_type === 'GROUP' ? "1px solid" : "none"} borderColor="#a3aebe">
+                <Box w="80px" minW="80px" px={3} height="100%" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft={element.element_type === 'NOTE' || element.element_type === 'GROUP' ? "1px solid" : "none"} borderColor="#82919a">
                     <Text fontSize="sm" fontWeight={hasCustomBackground ? "bold" : "normal"} color={cueIdColor} textAlign="center" marginTop="-1px">
                         {dynamicCueID || '\u00A0'}
                     </Text>
                 </Box>
 
                 {/* Cue Name/Description */}
-                <Box flex={1} minW="120px" pl={3} pr={3} height="100%" display="flex" alignItems="center" flexShrink={1} borderLeft="1px solid" borderColor="#a3aebe">
+                <Box flex={1} minW="120px" pl={3} pr={3} height="100%" display="flex" alignItems="center" flexShrink={1} borderLeft="1px solid" borderColor="#82919a">
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
                         {element.element_name}
                     </Text>
@@ -503,7 +503,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     alignItems="center"
                     minW="150px"
                     borderLeft="1px solid"
-                    borderColor="#a3aebe"
+                    borderColor="#82919a"
                 >
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
                         {element.cue_notes || '\u00A0'}
@@ -521,7 +521,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     alignItems="center"
                     flexShrink={0}
                     borderLeft="1px solid"
-                    borderColor="#a3aebe"
+                    borderColor="#82919a"
                 >
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
                         {element.location_details || '\u00A0'}
@@ -538,7 +538,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     justifyContent="center"
                     flexShrink={0}
                     borderLeft={element.priority === 'SAFETY' ? "none" : "1px solid"}
-                    borderColor="#a3aebe"
+                    borderColor="#82919a"
                 >
                     {isGroup ? (
                         // Groups don't have priorities - show empty space

@@ -183,7 +183,9 @@ export const useScriptSync = (
     try {
       // Build WebSocket URL
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = process.env.NODE_ENV === 'development' ? 'localhost:8000' : window.location.host;
+      const host = process.env.NODE_ENV === 'development' 
+        ? `${window.location.hostname}:8000` 
+        : window.location.host;
       let wsUrl = `${protocol}//${host}/ws/script/${scriptId}`;
       
       // Add authentication parameters
