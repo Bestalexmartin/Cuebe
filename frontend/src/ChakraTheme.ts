@@ -179,6 +179,11 @@ const semanticTokens = {
       _light: "orange.400",
       _dark: "orange.400",
     },
+    // Clock colors
+    "amber": {
+      _light: "#FFBF00",
+      _dark: "#FFBF00",
+    },
   },
 };
 

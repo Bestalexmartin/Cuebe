@@ -143,7 +143,8 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                     return {
                         ...prev,
                         playbackState: 'COMPLETE' as SyncPlaybackState,
-                        elementStates: clearedStates
+                        elementStates: clearedStates,
+                        pauseStartTime: localNow // Set pauseStartTime to freeze timers at completion
                     };
                     
                 case 'STOP':
@@ -329,13 +330,15 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
             );
             
             if (scriptCompleteBoundary && !hasActiveElements) {
+                const now = Date.now();
                 const clearedStates = new Map<string, SyncElementHighlightState>();
                 prev.elementStates.forEach((_, id) => clearedStates.set(id, 'inactive'));
                 return {
                     ...prev,
                     playbackState: 'COMPLETE',
                     elementStates: clearedStates,
-                    elementBorderStates: new Map(prev.elementBorderStates)
+                    elementBorderStates: new Map(prev.elementBorderStates),
+                    pauseStartTime: now // Set pauseStartTime to freeze timers at completion
                 };
             }
             

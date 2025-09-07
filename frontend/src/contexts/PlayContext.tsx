@@ -148,6 +148,7 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
     }, []);
 
     const completePlayback = useCallback(() => {
+        const now = Date.now();
         setPlayState(prev => {
             const clearedStates = new Map<string, ElementHighlightState>();
             // Set all elements to inactive (un-shade all)
@@ -158,7 +159,8 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
             return {
                 ...prev,
                 playbackState: 'COMPLETE',
-                elementStates: clearedStates
+                elementStates: clearedStates,
+                pauseStartTime: now // Set pauseStartTime to freeze timers at completion
                 // Keep elementBorderStates, startTime, currentTime, cumulativeDelayMs unchanged
             };
         });
@@ -267,11 +269,13 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
             
             if (scriptCompleteBoundary) {
                 // Trigger script completion - preserve border states and timing
+                const now = Date.now();
                 return {
                     ...prev,
                     playbackState: 'COMPLETE',
                     elementStates: new Map(Array.from(prev.elementStates.entries()).map(([id, _]) => [id, 'inactive' as ElementHighlightState])),
-                    elementBorderStates: new Map(prev.elementBorderStates) // Explicitly preserve border states
+                    elementBorderStates: new Map(prev.elementBorderStates), // Explicitly preserve border states
+                    pauseStartTime: now // Set pauseStartTime to freeze timers at completion
                 };
             }
             
