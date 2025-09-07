@@ -25,15 +25,24 @@ interface ScriptHeaderProps {
   // kept for API compatibility, unused locally
   useMilitaryTime?: boolean;
   actions?: any[];
+  // New props for View Mode menu
+  showPreferences?: boolean;
+  showTutorials?: boolean;
+  setShowPreferences?: (show: boolean) => void;
+  setShowTutorials?: (show: boolean) => void;
 }
 
 export const ScriptHeader: React.FC<ScriptHeaderProps> = React.memo(({
   currentScript,
   crewContext,
   onBackToShows,
-  onOptionsClick,
+  onOptionsClick: _onOptionsClick,
   useMilitaryTime: _useMilitaryTime = false,
-  actions: _actions = []
+  actions: _actions = [],
+  showPreferences: _showPreferences = false,
+  showTutorials: _showTutorials = false,
+  setShowPreferences,
+  setShowTutorials
 }) => {
   // Playback state not displayed here; keep header lean
 
@@ -69,7 +78,7 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = React.memo(({
 
 
       <HStack spacing="2" display={{ base: 'none', sm: 'flex' }}>
-        {onOptionsClick && (
+        {setShowPreferences && setShowTutorials && (
           <Menu>
             <MenuButton
               as={Button}
@@ -79,14 +88,38 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = React.memo(({
               _hover={{ bg: 'orange.400' }}
               rightIcon={<AppIcon name="openmenu" />}
             >
-              Options
+              View Mode
             </MenuButton>
-            <MenuList>
-              <MenuItem onClick={onOptionsClick}>
-                Viewing Options
+            <MenuList minW="140px">
+              <MenuItem 
+                onClick={() => {
+                  setShowTutorials(false);
+                  setShowPreferences(false);
+                  onBackToShows();
+                }}
+              >
+                <AppIcon name="show" boxSize="16px" mr={2} />
+                Shows
               </MenuItem>
-              <MenuItem onClick={onBackToShows}>
-                Back to Shows
+              <MenuItem 
+                onClick={() => {
+                  onBackToShows(); // Exit script mode first
+                  setShowTutorials(false);
+                  setShowPreferences(true);
+                }}
+              >
+                <AppIcon name="options" boxSize="16px" mr={2} />
+                Preferences
+              </MenuItem>
+              <MenuItem 
+                onClick={() => {
+                  onBackToShows(); // Exit script mode first
+                  setShowTutorials(true);
+                  setShowPreferences(false);
+                }}
+              >
+                <AppIcon name="compass" boxSize="16px" mr={2} />
+                Tutorials
               </MenuItem>
             </MenuList>
           </Menu>

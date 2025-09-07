@@ -111,7 +111,7 @@ const MobileClockBar: React.FC<{
         {/* Realtime Clock */}
         <Box
           bg="transparent"
-          color="gray.300"
+          color="amber"
           px={{ base: "7px", sm: "10px" }}
           borderRadius="none"
           fontSize={{ base: "xl", sm: "3xl" }}
@@ -882,7 +882,10 @@ const SharedPageContent = React.memo(() => {
                   currentScript={currentScript}
                   crewContext={crewContext}
                   onBackToShows={handleBackToShows}
-                  onOptionsClick={handleOptionsClick}
+                  showPreferences={showPreferences}
+                  showTutorials={showTutorials}
+                  setShowPreferences={setShowPreferences}
+                  setShowTutorials={setShowTutorials}
                 />
 
                 {/* Script Content */}

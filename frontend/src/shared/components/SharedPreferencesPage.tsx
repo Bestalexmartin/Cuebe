@@ -38,7 +38,7 @@ export const SharedPreferencesPage: React.FC<SharedPreferencesPageProps> = ({
                     View Options
                 </Text>
 
-                <FormControl>
+                <FormControl ml="20px">
                     <HStack align="center" spacing={5}>
                         <Switch
                             id="militarytime-switch"
@@ -65,7 +65,7 @@ export const SharedPreferencesPage: React.FC<SharedPreferencesPageProps> = ({
                     Playback Options
                 </Text>
 
-                <FormControl>
+                <FormControl ml="20px">
                     <HStack align="start" spacing={5} mb={1}>
                         <VStack align="start" spacing={0} flex={1}>
                             <HStack spacing={2} align="center" width="100%">
@@ -105,7 +105,7 @@ export const SharedPreferencesPage: React.FC<SharedPreferencesPageProps> = ({
                                     <Text fontSize="md">seconds</Text>
                                 </HStack>
                             </HStack>
-                            <Text fontSize="xs" color="gray.500" lineHeight="1.3" whiteSpace="normal" maxWidth="300px" mt={2}>
+                            <Text fontSize="xs" color="gray.500" lineHeight="1.3" mt={2}>
                                 How many seconds ahead to highlight upcoming cues during playback
                             </Text>
                         </VStack>

@@ -44,7 +44,7 @@ const RealtimeClock: React.FC<{ useMilitaryTime: boolean }> = ({ useMilitaryTime
     return (
         <Box 
             bg="transparent" 
-            color="gray.300" 
+            color="amber" 
             pl="16px" pr="8px" py="2px" 
             borderRadius="none" 
             fontSize="2xl" 
