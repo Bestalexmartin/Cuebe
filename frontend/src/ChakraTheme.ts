@@ -26,6 +26,16 @@ const config = {
   useSystemColorMode: true,
 };
 
+// Custom breakpoints - moved mobile breakpoint from <=425px to <=636px
+const breakpoints = {
+  base: "0px",
+  sm: "637px", // Changed from default 480px to 637px (636px + 1)
+  md: "768px",
+  lg: "992px",
+  xl: "1280px",
+  "2xl": "1536px",
+};
+
 const colors = {
   blue: { 400: "#6495ED" },
   orange: { 400: "#e79e40" },
@@ -291,6 +301,7 @@ const styles = {
 
 const chakraTheme = extendTheme({
   config,
+  breakpoints,
   colors,
   semanticTokens,
   components,

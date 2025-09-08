@@ -53,6 +53,7 @@ interface SynchronizedPlayContextValue {
     shouldHideElement: (elementId: string) => boolean;
     setScript: (script: any) => void;
     registerRetimingCallback: (callback: (operation: any) => void) => void;
+    setCurrentTime: (timeMs: number) => void;
     
     // Computed values
     getElapsedTime: () => number;
@@ -82,7 +83,6 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         passedElements: new Set()
     });
     
-    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const retimingCallbackRef = useRef<((operation: any) => void) | null>(null);
 
     const handlePlaybackCommand = useCallback((command: string, _serverTimestampMs: number, showTimeMs?: number, _startTime?: string, cumulativeDelayMs?: number) => {
@@ -183,7 +183,8 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         elements.forEach(element => {
             const start = element.offset_ms || 0;
             const endTime = start + lookbehindMs;
-            if (endTime > scriptEndTime) {
+            // Only consider positive end times for script completion
+            if (endTime > scriptEndTime && endTime > 0) {
                 scriptEndTime = endTime;
             }
         });
@@ -253,7 +254,8 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         elements.forEach(element => {
             const start = element.offset_ms || 0;
             const endTime = start + lookbehindMs;
-            if (endTime > scriptEndTime) {
+            // Only consider positive end times for script completion
+            if (endTime > scriptEndTime && endTime > 0) {
                 scriptEndTime = endTime;
             }
         });
@@ -314,7 +316,9 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
 
     const processBoundariesForTime = useCallback((currentTimeMs: number) => {
         setSyncPlayState(prev => {
+            console.log('🔍 Guest processBoundariesForTime called with currentTimeMs:', currentTimeMs, 'playbackState:', prev.playbackState);
             if (prev.playbackState === 'STOPPED') {
+                console.log('⚠️ Guest processBoundariesForTime called while STOPPED - ignoring');
                 return prev;
             }
             
@@ -370,6 +374,10 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                         if ((boundary.action === 'upcoming' || boundary.action === 'current' || boundary.action === 'inactive') && boundary.time > latestHighlightTime) {
                             latestHighlightTime = boundary.time;
                             currentState = boundary.action as SyncElementHighlightState;
+                            // Debug logging for negative offset elements
+                            if (boundary.time < 0) {
+                                console.log('🎯 Guest boundary processed for negative element:', elementId, 'time:', boundary.time, 'action:', boundary.action, 'currentTime:', currentTimeMs);
+                            }
                         } else if ((boundary.action === 'red_border' || boundary.action === 'none') && boundary.time > latestBorderTime) {
                             latestBorderTime = boundary.time;
                             currentBorderState = boundary.action as SyncElementBorderState;
@@ -474,54 +482,6 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
     // Subscriber timing engine - copied from working host PlaybackTimingProvider pattern
     const [script, setScript] = useState<any>(null);
     
-    const computeShowTime = useCallback(() => {
-        if (!script?.start_time) return null;
-        return Date.now() - new Date(script.start_time).getTime();
-    }, [script?.start_time]);
-
-    const clearTimer = useCallback(() => {
-        if (timerRef.current !== null) {
-            clearTimeout(timerRef.current);
-            timerRef.current = null;
-        }
-    }, []);
-
-    const scheduleNext = useCallback(() => {
-        clearTimer();
-        const now = computeShowTime();
-        if (now === null) return;
-
-        setSyncPlayState(prev => ({
-            ...prev,
-            currentTime: now
-        }));
-        
-        processBoundariesForTime(now);
-
-        const arr = syncPlayState.timingBoundaries || [];
-        let nextIndex = 0;
-        for (let i = 0; i < arr.length; i++) {
-            if (arr[i].time <= now) nextIndex = i + 1;
-            else break;
-        }
-        
-        if (nextIndex >= arr.length) return;
-        
-        const nextTime = arr[nextIndex].time;
-        const delay = Math.max(0, nextTime - now);
-        timerRef.current = setTimeout(() => {
-            const current = computeShowTime();
-            if (current === null) return;
-            setSyncPlayState(prev => ({
-                ...prev,
-                currentTime: current
-            }));
-            processBoundariesForTime(current);
-            if (syncPlayState.playbackState === 'PLAYING' && script?.start_time) {
-                scheduleNext();
-            }
-        }, delay);
-    }, [clearTimer, computeShowTime, syncPlayState.playbackState, syncPlayState.timingBoundaries, script?.start_time]);
 
     // Trigger retiming callback when lastPauseDurationMs changes (performance optimization)
     useEffect(() => {
@@ -537,19 +497,6 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         }
     }, [syncPlayState.lastPauseDurationMs, syncPlayState.currentTime]);
 
-    useEffect(() => {
-        if (!script?.start_time) {
-            clearTimer();
-            return;
-        }
-
-        if (syncPlayState.playbackState === 'PLAYING') {
-            scheduleNext();
-            return () => clearTimer();
-        }
-
-        clearTimer();
-    }, [syncPlayState.playbackState, script?.start_time, scheduleNext, clearTimer]);
 
     const getElementHighlightState = useCallback((elementId: string): SyncElementHighlightState | undefined => {
         return syncPlayState.elementStates.get(elementId);
@@ -558,6 +505,13 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
     const getElementBorderState = useCallback((elementId: string): SyncElementBorderState | undefined => {
         return syncPlayState.elementBorderStates.get(elementId);
     }, [syncPlayState.elementBorderStates]);
+
+    const setCurrentTime = useCallback((timeMs: number) => {
+        setSyncPlayState(prev => ({
+            ...prev,
+            currentTime: timeMs
+        }));
+    }, []);
 
     const getElapsedTime = useCallback((): number => {
         if (!syncPlayState.startTime) return 0;
@@ -592,6 +546,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         shouldHideElement,
         setScript: setScriptCallback,
         registerRetimingCallback,
+        setCurrentTime,
         
         // Computed values
         getElapsedTime,

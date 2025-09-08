@@ -36,6 +36,11 @@ export const useSharedData = (shareToken: string | undefined) => {
         );
 
         if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            // Token expired or revoked - redirect immediately
+            window.location.href = '/shared/expired';
+            return;
+          }
           if (response.status === 404) {
             throw new Error("Share link not found or expired");
           }

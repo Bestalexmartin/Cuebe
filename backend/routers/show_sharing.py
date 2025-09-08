@@ -338,6 +338,30 @@ async def update_guest_user_preferences(
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
 
 
+@router.get("/shared/{share_token}/validate")
+async def validate_share_token(
+    share_token: str,
+    db: Session = Depends(get_db)
+):
+    """Lightweight token validation endpoint for periodic auth checks"""
+    try:
+        crew_assignment = db.query(models.CrewAssignment).filter(
+            models.CrewAssignment.share_token == share_token,
+            models.CrewAssignment.is_active == True
+        ).first()
+        
+        if not crew_assignment:
+            raise HTTPException(status_code=401, detail="Share token expired or revoked")
+        
+        return {"valid": True, "status": "active"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error validating share token {share_token}: {e}")
+        raise HTTPException(status_code=500, detail="Validation error")
+
+
 @router.get("/shared/{share_token}/tutorials/search", response_model=SearchResponse)
 async def search_shared_tutorials(
     share_token: str,
