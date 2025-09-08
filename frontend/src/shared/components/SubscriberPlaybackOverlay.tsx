@@ -1,9 +1,18 @@
-import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback, useRef } from 'react';
 import { Box, HStack, Text } from "@chakra-ui/react";
 import { useSynchronizedPlayContext } from '../../contexts/SynchronizedPlayContext';
 
 // Clock timing context for subscriber side
 const SubscriberClockContext = createContext<{ timestamp: number }>({ timestamp: Date.now() });
+
+// Playback timing context - isolated for boundary processing (like auth side)
+const SubscriberPlaybackTimingContext = createContext<{ 
+    currentPlaybackTime: number | null;
+    processBoundariesForTime: (timeMs: number) => void;
+}>({ 
+    currentPlaybackTime: null,
+    processBoundariesForTime: () => {}
+});
 
 const SubscriberClockProvider: React.FC<{ children: React.ReactNode }> = React.memo(({ children }) => {
     const [timestamp, setTimestamp] = useState(Date.now());
@@ -29,6 +38,122 @@ const useSubscriberClock = () => {
     const context = useContext(SubscriberClockContext);
     return context.timestamp;
 };
+
+const SubscriberPlaybackTimingProvider: React.FC<{ 
+    children: React.ReactNode;
+    script: any;
+    isPlaybackPlaying: boolean;
+    isPlaybackComplete: boolean;
+    isPlaybackPaused: boolean;
+    isPlaybackSafety: boolean;
+    processBoundariesForTime: (timeMs: number) => void;
+}> = React.memo(({ children, script, isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, processBoundariesForTime }) => {
+    const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number | null>(null);
+    const finalShowTimeRef = useRef<number | null>(null);
+    const timerRef = useRef<number | null>(null);
+    const nextIndexRef = useRef<number>(0);
+    const { timingBoundaries, setCurrentTime, cumulativeDelayMs } = useSynchronizedPlayContext();
+
+    const computeShowTime = useCallback(() => {
+        if (!script?.start_time) return null;
+        return Date.now() - new Date(script.start_time).getTime() + (cumulativeDelayMs || 0);
+    }, [script?.start_time]);
+
+    const clearTimer = useCallback(() => {
+        if (timerRef.current !== null) {
+            window.clearTimeout(timerRef.current);
+            timerRef.current = null;
+        }
+    }, []);
+
+    const findNextIndex = useCallback((t: number) => {
+        const arr = timingBoundaries || [];
+        let lo = 0, hi = arr.length;
+        while (lo < hi) {
+            const mid = (lo + hi) >>> 1;
+            if (arr[mid].time <= t) lo = mid + 1; else hi = mid;
+        }
+        return lo;
+    }, [timingBoundaries]);
+
+    const scheduleNext = useCallback(() => {
+        clearTimer();
+        const now = computeShowTime();
+        if (now === null) return;
+
+        console.log('🔄 Guest scheduleNext: currentTime =', now, 'cumulativeDelayMs =', cumulativeDelayMs);
+        setCurrentPlaybackTime(now);
+        setCurrentTime(now);
+        processBoundariesForTime(now);
+
+        const arr = timingBoundaries || [];
+        nextIndexRef.current = findNextIndex(now);
+        if (nextIndexRef.current >= arr.length) {
+            return;
+        }
+        const nextTime = arr[nextIndexRef.current].time;
+        const delay = Math.max(0, nextTime - now);
+        timerRef.current = window.setTimeout(() => {
+            const current = computeShowTime();
+            if (current === null) return;
+            setCurrentPlaybackTime(current);
+            setCurrentTime(current);
+            processBoundariesForTime(current);
+            nextIndexRef.current = findNextIndex(current);
+            if (isPlaybackPlaying && script?.start_time) {
+                scheduleNext();
+            }
+        }, delay);
+    }, [clearTimer, computeShowTime, findNextIndex, isPlaybackPlaying, processBoundariesForTime, timingBoundaries, script?.start_time]);
+
+    useEffect(() => {
+        if (!script?.start_time) {
+            clearTimer();
+            return;
+        }
+
+        if (isPlaybackComplete) {
+            clearTimer();
+            if (finalShowTimeRef.current !== null) {
+                setCurrentPlaybackTime(finalShowTimeRef.current);
+            }
+            return;
+        }
+
+        if (isPlaybackPaused || isPlaybackSafety) {
+            clearTimer();
+            const now = computeShowTime();
+            if (now !== null) {
+                finalShowTimeRef.current = now;
+                setCurrentPlaybackTime(now);
+                setCurrentTime(now);
+                processBoundariesForTime(now);
+            }
+            return;
+        }
+
+        if (isPlaybackPlaying) {
+            finalShowTimeRef.current = null;
+            scheduleNext();
+            return () => clearTimer();
+        }
+
+        clearTimer();
+    }, [isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, script?.start_time, scheduleNext, clearTimer, computeShowTime, processBoundariesForTime]);
+
+    useEffect(() => {
+        if (isPlaybackPlaying && script?.start_time) {
+            scheduleNext();
+            return () => clearTimer();
+        }
+    }, [timingBoundaries, isPlaybackPlaying, script?.start_time, scheduleNext, clearTimer]);
+
+    return (
+        <SubscriberPlaybackTimingContext.Provider value={{ currentPlaybackTime, processBoundariesForTime }}>
+            {children}
+        </SubscriberPlaybackTimingContext.Provider>
+    );
+});
 
 // Exact clock component from auth side
 const RealtimeClock: React.FC<{ useMilitaryTime: boolean }> = ({ useMilitaryTime }) => {
@@ -201,14 +326,16 @@ interface SubscriberPlaybackOverlayProps {
     contentAreaBounds: DOMRect;
     script: any;
     useMilitaryTime: boolean;
+    processBoundariesForTime: (timeMs: number) => void;
 }
 
 export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps> = React.memo(({
     contentAreaBounds,
     script,
-    useMilitaryTime
+    useMilitaryTime,
+    processBoundariesForTime
 }) => {
-    const { playbackState, cumulativeDelayMs } = useSynchronizedPlayContext();
+    const { playbackState, isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, cumulativeDelayMs } = useSynchronizedPlayContext();
     
     // Debug logging
     
@@ -216,8 +343,16 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
 
     return (
         <SubscriberClockProvider>
-            {/* Red border overlay */}
-            <Box
+            <SubscriberPlaybackTimingProvider 
+                script={script}
+                isPlaybackPlaying={isPlaybackPlaying}
+                isPlaybackComplete={isPlaybackComplete}
+                isPlaybackPaused={isPlaybackPaused}
+                isPlaybackSafety={isPlaybackSafety}
+                processBoundariesForTime={processBoundariesForTime}
+            >
+                {/* Red border overlay */}
+                <Box
                 position="fixed"
                 top={`${contentAreaBounds.top - 1}px`}
                 left={`${contentAreaBounds.left - 1}px`}
@@ -283,6 +418,7 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
                     </HStack>
                 </Box>
             </Box>
+            </SubscriberPlaybackTimingProvider>
         </SubscriberClockProvider>
     );
 });

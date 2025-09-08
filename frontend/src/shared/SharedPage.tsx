@@ -21,6 +21,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { formatRoleBadge } from '../constants/userRoles';
 import { useSharedData } from '../hooks/useSharedData';
 import { useScript } from '../hooks/useScript';
+import { useTokenValidation } from '../hooks/useTokenValidation';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { useSorting } from '../hooks/useSorting';
 import { ScriptHeader } from '../components/shared/ScriptHeader';
@@ -178,11 +179,28 @@ const SharedPageContent = React.memo(() => {
   const triggerRotationRef = useRef<(() => void) | null>(null);
   const { showSuccess, showError } = useEnhancedToast();
   
+  // Token validation - redirect to expired page if token is revoked
+  const handleTokenExpired = useCallback(() => {
+    window.location.href = '/shared/expired';
+  }, []);
+
+  const { isValid } = useTokenValidation(shareToken, {
+    intervalMs: 45000, // Check every 45 seconds
+    onExpired: handleTokenExpired,
+    enabled: true
+  });
+
+  // If token is invalid, don't render anything (redirect will happen)
+  if (!isValid) {
+    return null;
+  }
+  
   // Track when preferences view is left to trigger optional auto-save
   const prevShowPreferences = useRef(showPreferences);
   const contentAreaRef = useRef<HTMLDivElement>(null);
 
-  // Access synchronized play context
+  // Access synchronized play context - minimize destructuring to reduce re-renders
+  const syncContext = useSynchronizedPlayContext();
   const {
     handlePlaybackCommand,
     setScript,
@@ -192,9 +210,9 @@ const SharedPageContent = React.memo(() => {
     cumulativeDelayMs,
     updateElementBoundaries,
     processBoundariesForTime,
-    registerRetimingCallback,
     resetAllPlaybackState
-  } = useSynchronizedPlayContext();
+  } = syncContext;
+
 
   // Tutorial search - extracted to custom hook
   const {
@@ -335,39 +353,37 @@ const SharedPageContent = React.memo(() => {
     }
   }, [viewingScriptId]);
 
-  // Register centralized retiming callback from sync context to adjust future offsets on UNPAUSE
+  // Set up timing boundaries when elements or lookahead changes (like authorized side)
+  const lastElementsRef = useRef<any[]>([]);
+  const lastLookaheadRef = useRef<number>(0);
   useEffect(() => {
-    const cb = (op: any) => {
-      if (!op || op.type !== 'BULK_OFFSET_ADJUSTMENT') return;
-      const delayMs = op.delay_ms || 0;
-      const currentMs = op.current_time_ms || 0;
-      if (delayMs <= 0) return;
+    if (scriptElements.length > 0 && 
+        (scriptElements !== lastElementsRef.current || guestLookaheadSeconds !== lastLookaheadRef.current)) {
+      const lookaheadMs = guestLookaheadSeconds * 1000;
+      updateElementBoundaries?.(scriptElements, lookaheadMs);
+      lastElementsRef.current = scriptElements;
+      lastLookaheadRef.current = guestLookaheadSeconds;
+    }
+  }, [scriptElements, guestLookaheadSeconds]);
 
-      const base = scriptElementsRef.current || [];
-      if (!Array.isArray(base) || base.length === 0) return;
-      const adjusted = adjustFutureOffsets(base, currentMs, delayMs);
+  // Handle offset adjustments when resuming from pause (like usePlaybackAdjustment on authorized side)
+  useEffect(() => {
+    if (!lastPauseDurationMs || !currentTime || !scriptElements.length) {
+      return;
+    }
+    
+    // Adjust future element offsets by the pause duration
+    const adjustedElements = adjustFutureOffsets(scriptElements, currentTime, lastPauseDurationMs);
+    updateScriptElementsDirectly(adjustedElements);
 
-      updateScriptElementsDirectly(adjusted);
+    // Refresh timing boundaries for the adjusted elements
+    try {
+      updateElementBoundaries?.(adjustedElements, guestLookaheadSeconds * 1000);
+    } catch (_) {
+      // best-effort only
+    }
+  }, [lastPauseDurationMs, currentTime, scriptElements, updateScriptElementsDirectly, adjustFutureOffsets, updateElementBoundaries, guestLookaheadSeconds]);
 
-      // Refresh timing boundaries and process immediately to avoid flicker
-      try {
-        if (updateElementBoundaries) {
-          updateElementBoundaries(adjusted, guestLookaheadSeconds * 1000);
-        }
-        if (processBoundariesForTime && typeof currentMs === 'number') {
-          processBoundariesForTime(currentMs);
-        }
-      } catch (_) {
-        // noop - boundary refresh is best-effort
-      }
-    };
-
-    registerRetimingCallback(cb);
-    return () => {
-      // Unregister by setting a no-op to avoid stale closures
-      registerRetimingCallback(() => { });
-    };
-  }, [registerRetimingCallback, updateScriptElementsDirectly, updateElementBoundaries, processBoundariesForTime, guestLookaheadSeconds, adjustFutureOffsets]);
 
   // Load guest preferences
   useEffect(() => {
@@ -733,7 +749,7 @@ const SharedPageContent = React.memo(() => {
                     {/* Search for tutorials - not shown in preferences */}
                     {showTutorials && !showPreferences && (
                       <>
-                        {/* Desktop search input >425px */}
+                        {/* Desktop search input >636px */}
                         <Box display={{ base: "none", sm: "block" }}>
                           <SearchInput
                             searchQuery={searchQuery}
@@ -745,7 +761,7 @@ const SharedPageContent = React.memo(() => {
                           />
                         </Box>
 
-                        {/* Mobile search button <=425px */}
+                        {/* Mobile search button <=636px */}
                         <Button
                           display={{ base: "block", sm: "none" }}
                           size="xs"
@@ -778,6 +794,8 @@ const SharedPageContent = React.memo(() => {
                         size="xs"
                         _hover={{ bg: 'orange.400' }}
                         rightIcon={<AppIcon name="openmenu" />}
+                        isDisabled={playbackState !== 'STOPPED'}
+                        opacity={playbackState !== 'STOPPED' ? 0.4 : 1}
                       >
                         View Mode
                       </MenuButton>
@@ -936,6 +954,7 @@ const SharedPageContent = React.memo(() => {
                       contentAreaBounds={contentAreaBounds!}
                       script={currentScript}
                       useMilitaryTime={guestUseMilitaryTime}
+                      processBoundariesForTime={processBoundariesForTime}
                     />
                   ) : null;
                 })()}

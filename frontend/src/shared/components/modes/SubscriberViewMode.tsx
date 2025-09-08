@@ -36,7 +36,7 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
         setElementBoundaries
     } = useSynchronizedPlayContext();
 
-    // Disable colorized department names on mobile (≤425px)
+    // Disable colorized department names on mobile (≤636px)
     const responsiveColorizeDepNames = useBreakpointValue({ base: false, sm: colorizeDepNames });
 
     // Set up timing boundaries when elements or lookahead changes

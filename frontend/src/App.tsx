@@ -19,6 +19,7 @@ import { ApiDocsPage } from './pages/ApiDocsPage';
 import { DocumentationPage } from './pages/DocumentationPage';
 import { TutorialsPage } from './pages/TutorialsPage';
 import { SharedPage } from './shared/SharedPage';
+import { ExpiredSharePage } from './shared/components/ExpiredSharePage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ScriptSyncProvider } from './contexts/ScriptSyncContext';
 import { PlayProvider } from './contexts/PlayContext';
@@ -44,8 +45,9 @@ const App: React.FC = () => {
       <ScriptSyncProvider>
         <PlayProvider>
         <Routes>
-        {/* Shared page route - no header layout */}
+        {/* Shared page routes - no header layout */}
         <Route path="/shared/:shareToken" element={<SharedPage />} />
+        <Route path="/shared/expired" element={<ExpiredSharePage />} />
         
         {/* All other routes with Header Layout */}
         <Route path="*" element={

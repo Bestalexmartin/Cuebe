@@ -47,6 +47,16 @@ export const useScript = (shareToken: string | undefined, updateSharedData?: (up
   
   const { handlePlaybackCommand, resetAllPlaybackState } = useSynchronizedPlayContext();
 
+  const clearScriptState = useCallback(() => {
+    // Always reset playback state when leaving script view
+    handlePlaybackCommand('STOP', Date.now());
+    
+    setViewingScriptId(null);
+    setScriptElements([]);
+    setScriptError(null);
+    setCrewContext(null);
+  }, [handlePlaybackCommand]);
+
   const handleScriptClick = useCallback(async (scriptId: string) => {
     // Reset all playback state and element states before loading new script
     resetAllPlaybackState();
@@ -69,6 +79,11 @@ export const useScript = (shareToken: string | undefined, updateSharedData?: (up
       );
 
       if (!elementsResponse.ok) {
+        if (elementsResponse.status === 401 || elementsResponse.status === 403) {
+          // Token expired or revoked - redirect immediately
+          window.location.href = '/shared/expired';
+          return;
+        }
         throw new Error('Failed to load script data');
       }
 
@@ -100,26 +115,20 @@ export const useScript = (shareToken: string | undefined, updateSharedData?: (up
       setCrewContext(scriptData.crew_context || null);
     } catch (err) {
       setScriptError(err instanceof Error ? err.message : 'Failed to load script');
-      setViewingScriptId(null);
+      clearScriptState();
     } finally {
       setIsLoadingScript(false);
     }
-  }, [shareToken]);
+  }, [shareToken, clearScriptState]);
 
   const handleBackToShows = useCallback(() => {
-    // Reset playback state to STOPPED when leaving script view
-    handlePlaybackCommand('STOP', Date.now());
-    
-    setViewingScriptId(null);
-    setScriptElements([]);
-    setScriptError(null);
-    setCrewContext(null);
+    clearScriptState();
     
     // Refresh show card data for guest users
     if (refreshSharedData) {
       refreshSharedData();
     }
-  }, [refreshSharedData, handlePlaybackCommand]);
+  }, [refreshSharedData, clearScriptState]);
 
   const refreshScriptData = useCallback(() => {
     // No-op placeholder; unified save flow handles refresh in responses

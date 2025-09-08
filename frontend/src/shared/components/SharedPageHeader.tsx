@@ -56,7 +56,7 @@ export const SharedPageHeader: React.FC<SharedPageHeaderProps> = ({
     >
       <Flex align="center">
         <Image boxSize="60px" src="/cuebe.svg" alt="Cuebe Logo" />
-        <Heading as="h1" size="xl" id="app-title">
+        <Heading as="h1" fontSize="4xl" id="app-title">
           <Text as="span" color="orange.400">
             Cue
           </Text>
