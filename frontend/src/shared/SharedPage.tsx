@@ -436,12 +436,6 @@ const SharedPageContent = React.memo(() => {
 
   // Removed group collapse state/handler (unused in subscriber view)
 
-  // Preferences navigation
-  const handleOptionsClick = useCallback(() => {
-    setShowPreferences(true);
-    setShowTutorials(false);
-  }, []);
-
   const handleGuestOptionsSave = useCallback(async (lookaheadSeconds: number, useMilitaryTime: boolean) => {
     if (!shareToken) return;
 
@@ -668,14 +662,38 @@ const SharedPageContent = React.memo(() => {
                     _hover={{ bg: 'orange.400' }}
                     rightIcon={<AppIcon name="openmenu" />}
                   >
-                    Options
+                    View Mode
                   </MenuButton>
-                  <MenuList>
-                    <MenuItem onClick={handleOptionsClick}>
-                      Viewing Options
+                  <MenuList minW="140px">
+                    <MenuItem 
+                      onClick={() => {
+                        setShowTutorials(false);
+                        setShowPreferences(false);
+                        handleBackToShows();
+                      }}
+                    >
+                      <AppIcon name="show" boxSize="16px" mr={2} />
+                      Shows
                     </MenuItem>
-                    <MenuItem onClick={handleBackToShows}>
-                      Back to Shows
+                    <MenuItem 
+                      onClick={() => {
+                        handleBackToShows(); // Exit script mode first
+                        setShowTutorials(false);
+                        setShowPreferences(true);
+                      }}
+                    >
+                      <AppIcon name="options" boxSize="16px" mr={2} />
+                      Preferences
+                    </MenuItem>
+                    <MenuItem 
+                      onClick={() => {
+                        handleBackToShows(); // Exit script mode first
+                        setShowTutorials(true);
+                        setShowPreferences(false);
+                      }}
+                    >
+                      <AppIcon name="compass" boxSize="16px" mr={2} />
+                      Tutorials
                     </MenuItem>
                   </MenuList>
                 </Menu>

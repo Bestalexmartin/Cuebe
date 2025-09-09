@@ -368,7 +368,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     top="-3px"
                     border="3px solid"
                     borderColor={
-                        borderState === 'red_border' ? "red.500" :
+                        borderState === 'red_border' ? "#e23122" :
                             isSelected ? "blue.400" :
                                 "orange.400"
                     }
