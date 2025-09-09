@@ -42,22 +42,20 @@ const useSubscriberClock = () => {
 const SubscriberPlaybackTimingProvider: React.FC<{ 
     children: React.ReactNode;
     script: any;
-    isPlaybackPlaying: boolean;
-    isPlaybackComplete: boolean;
-    isPlaybackPaused: boolean;
-    isPlaybackSafety: boolean;
     processBoundariesForTime: (timeMs: number) => void;
-}> = React.memo(({ children, script, isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, processBoundariesForTime }) => {
+}> = React.memo(({ children, script, processBoundariesForTime }) => {
     const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number | null>(null);
     const finalShowTimeRef = useRef<number | null>(null);
     const timerRef = useRef<number | null>(null);
     const nextIndexRef = useRef<number>(0);
-    const { timingBoundaries, setCurrentTime, cumulativeDelayMs } = useSynchronizedPlayContext();
+    const { timingBoundaries, setCurrentTime, cumulativeDelayMs, playbackState, isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety } = useSynchronizedPlayContext();
 
     const computeShowTime = useCallback(() => {
         if (!script?.start_time) return null;
-        return Date.now() - new Date(script.start_time).getTime() + (cumulativeDelayMs || 0);
-    }, [script?.start_time]);
+        const showTime = Date.now() - new Date(script.start_time).getTime() + (cumulativeDelayMs || 0);
+        console.log('⏰ computeShowTime:', showTime, 'script.start_time:', script.start_time, 'cumulativeDelayMs:', cumulativeDelayMs);
+        return showTime;
+    }, [script?.start_time, cumulativeDelayMs]);
 
     const clearTimer = useCallback(() => {
         if (timerRef.current !== null) {
@@ -147,6 +145,30 @@ const SubscriberPlaybackTimingProvider: React.FC<{
             return () => clearTimer();
         }
     }, [timingBoundaries, isPlaybackPlaying, script?.start_time, scheduleNext, clearTimer]);
+
+    // Process boundaries immediately when cumulativeDelayMs changes during playback
+    useEffect(() => {
+        if (playbackState !== 'STOPPED' && (isPlaybackPlaying || isPlaybackPaused) && script?.start_time) {
+            const current = computeShowTime();
+            if (current !== null) {
+                console.log('🔄 cumulativeDelayMs changed, reprocessing boundaries at time:', current, 'playbackState:', playbackState);
+                setCurrentTime(current);
+                processBoundariesForTime(current);
+            }
+        }
+    }, [cumulativeDelayMs, playbackState, isPlaybackPlaying, isPlaybackPaused, script?.start_time, computeShowTime, setCurrentTime, processBoundariesForTime]);
+
+    // Process boundaries immediately when timing boundaries change and we have a current time
+    useEffect(() => {
+        if (playbackState !== 'STOPPED' && (isPlaybackPlaying || isPlaybackPaused) && script?.start_time && timingBoundaries.length > 0) {
+            const current = computeShowTime();
+            if (current !== null) {
+                console.log('📋 timingBoundaries changed, processing at time:', current, 'playbackState:', playbackState);
+                setCurrentTime(current);
+                processBoundariesForTime(current);
+            }
+        }
+    }, [timingBoundaries, playbackState, isPlaybackPlaying, isPlaybackPaused, script?.start_time, computeShowTime, setCurrentTime, processBoundariesForTime]);
 
     return (
         <SubscriberPlaybackTimingContext.Provider value={{ currentPlaybackTime, processBoundariesForTime }}>
@@ -345,10 +367,6 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
         <SubscriberClockProvider>
             <SubscriberPlaybackTimingProvider 
                 script={script}
-                isPlaybackPlaying={isPlaybackPlaying}
-                isPlaybackComplete={isPlaybackComplete}
-                isPlaybackPaused={isPlaybackPaused}
-                isPlaybackSafety={isPlaybackSafety}
                 processBoundariesForTime={processBoundariesForTime}
             >
                 {/* Red border overlay */}
@@ -358,7 +376,10 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
                 left={`${contentAreaBounds.left - 1}px`}
                 width={`${contentAreaBounds.width + 2}px`}
                 height={`${contentAreaBounds.height + 2}px`}
-                border={{ base: "none", sm: "2px solid red" }}
+                border={{ 
+                    base: "none", 
+                    sm: `2px solid ${playbackState === 'SAFETY' ? "#EAB308" : "#e23122"}` 
+                }}
                 borderRadius="md"
                 pointerEvents="none"
                 zIndex={1000}

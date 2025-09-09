@@ -178,6 +178,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         const lookbehindMs = 5000; // Keep current highlight for 5s after element start
         const redBorderMs = 5000; // Red border active for 5s after start
         
+        console.log('🔵 setElementBoundaries called with lookaheadMs:', lookaheadMs, 'elements:', elements.length);
         
         let scriptEndTime = 0;
         elements.forEach(element => {
@@ -193,11 +194,16 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
             const start = element.offset_ms || 0;
             
             if (lookaheadMs > 0) {
+                const upcomingTime = start - lookaheadMs;
                 boundaries.push({
-                    time: start - lookaheadMs,
+                    time: upcomingTime,
                     elementId: element.element_id,
                     action: 'upcoming'
                 });
+                // Debug logging for negative offset elements
+                if (start <= 0) {
+                    console.log('🟡 Negative boundary created - element:', element.element_id, 'offset:', start, 'upcoming time:', upcomingTime, 'lookahead:', lookaheadMs);
+                }
             }
             
             boundaries.push({
@@ -238,10 +244,12 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         setSyncPlayState(prev => ({
             ...prev,
             timingBoundaries: boundaries,
-            // Preserve existing element states instead of resetting to initial states
-            elementStates: prev.elementStates.size > 0 ? prev.elementStates : initialStates,
-            elementBorderStates: prev.elementBorderStates.size > 0 ? prev.elementBorderStates : initialBorderStates
+            // Always reset element states to empty when boundaries change to force reprocessing
+            elementStates: new Map(),
+            elementBorderStates: new Map()
         }));
+        
+        // Timing provider will handle immediate boundary processing via useEffect
     }, []);
 
     const updateElementBoundaries = useCallback((elements: any[], lookaheadMs: number) => {
@@ -360,30 +368,21 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                 }
             }
             
-            // Process elements more efficiently
+            // Process elements using the same simple approach as auth side
             for (const elementId of elementIds) {
                 let currentState: SyncElementHighlightState = 'inactive';
                 let currentBorderState: SyncElementBorderState = 'none';
                 
-                // Find most recent boundaries for this element (optimize: avoid sorting)
-                let latestHighlightTime = -1;
-                let latestBorderTime = -1;
-                
-                for (const boundary of prev.timingBoundaries) {
-                    if (boundary.elementId === elementId && boundary.time <= currentTimeMs) {
-                        if ((boundary.action === 'upcoming' || boundary.action === 'current' || boundary.action === 'inactive') && boundary.time > latestHighlightTime) {
-                            latestHighlightTime = boundary.time;
+                // Process all boundaries for this element at current time (same as PlayContext)
+                prev.timingBoundaries
+                    .filter(b => b.elementId === elementId && b.time <= currentTimeMs)
+                    .forEach(boundary => {
+                        if (boundary.action === 'upcoming' || boundary.action === 'current' || boundary.action === 'inactive') {
                             currentState = boundary.action as SyncElementHighlightState;
-                            // Debug logging for negative offset elements
-                            if (boundary.time < 0) {
-                                console.log('🎯 Guest boundary processed for negative element:', elementId, 'time:', boundary.time, 'action:', boundary.action, 'currentTime:', currentTimeMs);
-                            }
-                        } else if ((boundary.action === 'red_border' || boundary.action === 'none') && boundary.time > latestBorderTime) {
-                            latestBorderTime = boundary.time;
+                        } else if (boundary.action === 'red_border' || boundary.action === 'none') {
                             currentBorderState = boundary.action as SyncElementBorderState;
                         }
-                    }
-                }
+                    });
                 
                 // Check state changes (lazy Map creation)
                 const previousState = prev.elementStates.get(elementId);
@@ -391,6 +390,8 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                     if (!newStates) newStates = new Map(prev.elementStates);
                     newStates.set(elementId, currentState);
                     hasChanges = true;
+                    // Debug logging for state changes on negative offset elements
+                    console.log('🎯 State change for element:', elementId, 'from:', previousState, 'to:', currentState, 'at time:', currentTimeMs);
                 }
                 
                 const previousBorderState = prev.elementBorderStates.get(elementId);
