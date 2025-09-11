@@ -257,15 +257,15 @@ const SharedPageContent = React.memo(() => {
   // Function to update script info directly without API call
   type ScriptInfoChange = Record<string, { old_value: unknown; new_value: any }>;
   const updateScriptInfo = useCallback((changes: ScriptInfoChange) => {
-    if (!viewingScriptId) return;
+    if (!viewingScriptIdRef.current) return;
 
-    updateSharedData(prevData => {
+    updateSharedDataRef.current(prevData => {
       if (!prevData?.shows) return prevData;
 
       const updatedShows = prevData.shows.map(show => ({
         ...show,
         scripts: show.scripts.map(script => {
-          if (script.script_id === viewingScriptId) {
+          if (script.script_id === viewingScriptIdRef.current) {
             const updatedScript = { ...script };
 
             // Apply each change
@@ -285,12 +285,18 @@ const SharedPageContent = React.memo(() => {
 
       return { ...prevData, shows: updatedShows };
     });
-  }, [viewingScriptId, updateSharedData]);
+  }, []);
 
   // Memoize the getCurrentElements callback to prevent render loops - use ref for stability
   const scriptElementsRef = useRef<ScriptElement[]>(scriptElements);
   scriptElementsRef.current = scriptElements;
   const getCurrentElements = useCallback((): ScriptElement[] => scriptElementsRef.current, []);
+
+  // Use refs for callback stability in updateHandlerCallbacks
+  const viewingScriptIdRef = useRef<string | null>(viewingScriptId);
+  const updateSharedDataRef = useRef(updateSharedData);
+  viewingScriptIdRef.current = viewingScriptId;
+  updateSharedDataRef.current = updateSharedData;
 
   // Utility: adjust only future element offsets by a delay
   const adjustFutureOffsets = useCallback((elements: ScriptElement[], currentMs: number, delayMs: number) => {
@@ -303,6 +309,21 @@ const SharedPageContent = React.memo(() => {
     });
   }, []);
 
+  // Debounced boundary updater to prevent redundant calls
+  const boundaryUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const debouncedUpdateBoundaries = useCallback((elements: ScriptElement[], lookaheadMs: number) => {
+    if (boundaryUpdateTimeoutRef.current) {
+      clearTimeout(boundaryUpdateTimeoutRef.current);
+    }
+    boundaryUpdateTimeoutRef.current = setTimeout(() => {
+      try {
+        updateElementBoundaries?.(elements, lookaheadMs);
+      } catch (_) {
+        // best-effort only
+      }
+    }, 50); // 50ms debounce
+  }, [updateElementBoundaries]);
+
   // Get current script from shared data (for script metadata) - preserve old functionality
   const currentScript = useMemo(() => {
     if (!viewingScriptId || !sharedData?.shows) return null;
@@ -313,8 +334,11 @@ const SharedPageContent = React.memo(() => {
   }, [viewingScriptId, sharedData?.shows]);
 
   // Pass script to synchronized context for timing calculations
+  const lastSetScriptRef = useRef<any>(null);
   useEffect(() => {
-    if (currentScript) {
+    // Guard: only set script if it has actually changed
+    if (currentScript && currentScript !== lastSetScriptRef.current) {
+      lastSetScriptRef.current = currentScript;
       setScript(currentScript);
     }
   }, [currentScript, setScript]);
@@ -323,37 +347,46 @@ const SharedPageContent = React.memo(() => {
   // Late joiner retiming - apply cumulative delay when first joining mid-script
   // Only run on true late join (provider sets lastPauseDurationMs undefined when starting fresh)
   const hasAppliedCumulativeDelayRef = useRef(false);
+  const appliedCumulativeDelayRef = useRef<number>(0);
+  const currentTimeRef = useRef<number | null>(currentTime);
+  currentTimeRef.current = currentTime;
+  
   useEffect(() => {
+    // Guard: prevent redundant applications of the same cumulative delay
     if (
       !hasAppliedCumulativeDelayRef.current &&
       cumulativeDelayMs > 0 &&
+      appliedCumulativeDelayRef.current !== cumulativeDelayMs &&
       // Guard against normal pause/resume cycles to avoid double-applying
       (lastPauseDurationMs === undefined || lastPauseDurationMs === null) &&
       currentScript &&
-      currentTime &&
+      currentTimeRef.current &&
       scriptElements.length > 0 &&
       (playbackState === 'PLAYING' || playbackState === 'PAUSED')
     ) {
       hasAppliedCumulativeDelayRef.current = true;
+      appliedCumulativeDelayRef.current = cumulativeDelayMs;
 
-      const adjustedElements = adjustFutureOffsets(scriptElements, currentTime, cumulativeDelayMs);
+      const adjustedElements = adjustFutureOffsets(scriptElements, currentTimeRef.current, cumulativeDelayMs);
       updateScriptElementsDirectly(adjustedElements);
 
       // Proactively refresh timing boundaries and process to stabilize highlights
+      debouncedUpdateBoundaries(adjustedElements, guestLookaheadSeconds * 1000);
       try {
-        updateElementBoundaries?.(adjustedElements, guestLookaheadSeconds * 1000);
-        processBoundariesForTime?.(currentTime);
+        processBoundariesForTime?.(currentTimeRef.current);
       } catch (_) {
         // best-effort only
       }
     }
-  }, [cumulativeDelayMs, lastPauseDurationMs, currentScript, currentTime, scriptElements, playbackState, updateScriptElementsDirectly, adjustFutureOffsets, updateElementBoundaries, processBoundariesForTime, guestLookaheadSeconds]);
+  }, [cumulativeDelayMs, lastPauseDurationMs, currentScript, scriptElements, playbackState, updateScriptElementsDirectly, adjustFutureOffsets, debouncedUpdateBoundaries, processBoundariesForTime, guestLookaheadSeconds]);
 
   // Reset late joiner flag when leaving script
   useEffect(() => {
     if (!viewingScriptId) {
       hasAppliedCumulativeDelayRef.current = false;
       hasAppliedPauseAdjustmentRef.current = false;
+      appliedCumulativeDelayRef.current = 0;
+      lastPauseDurationRef.current = null;
     }
   }, [viewingScriptId]);
 
@@ -363,38 +396,42 @@ const SharedPageContent = React.memo(() => {
   const lastElementsLengthRef = useRef<number>(0);
   useEffect(() => {
     if (scriptElements.length > 0 && 
-        (scriptElements.length !== lastElementsLengthRef.current || guestLookaheadSeconds !== lastLookaheadRef.current)) {
+        (scriptElements !== lastElementsRef.current || guestLookaheadSeconds !== lastLookaheadRef.current)) {
       const lookaheadMs = guestLookaheadSeconds * 1000;
-      updateElementBoundaries?.(scriptElements, lookaheadMs);
+      debouncedUpdateBoundaries(scriptElements, lookaheadMs);
       lastElementsRef.current = scriptElements;
       lastElementsLengthRef.current = scriptElements.length;
       lastLookaheadRef.current = guestLookaheadSeconds;
     }
-  }, [scriptElements.length, guestLookaheadSeconds, updateElementBoundaries]);
+  }, [scriptElements, guestLookaheadSeconds, debouncedUpdateBoundaries]);
 
   // Handle offset adjustments when resuming from pause (like usePlaybackAdjustment on authorized side)
   const hasAppliedPauseAdjustmentRef = useRef(false);
+  const lastPauseDurationRef = useRef<number | null>(null);
+  
   useEffect(() => {
-    if (!lastPauseDurationMs || !currentTime || !scriptElements.length || hasAppliedPauseAdjustmentRef.current) {
+    // Guard: only proceed if pause duration has actually changed and meets conditions
+    if (!lastPauseDurationMs || 
+        !currentTimeRef.current || 
+        !scriptElements.length || 
+        hasAppliedPauseAdjustmentRef.current ||
+        lastPauseDurationRef.current === lastPauseDurationMs) {
       return;
     }
     
+    lastPauseDurationRef.current = lastPauseDurationMs;
     hasAppliedPauseAdjustmentRef.current = true;
     
     // Adjust future element offsets by the pause duration
-    const adjustedElements = adjustFutureOffsets(scriptElements, currentTime, lastPauseDurationMs);
+    const adjustedElements = adjustFutureOffsets(scriptElements, currentTimeRef.current, lastPauseDurationMs);
     updateScriptElementsDirectly(adjustedElements);
 
     // Refresh timing boundaries for the adjusted elements
-    try {
-      updateElementBoundaries?.(adjustedElements, guestLookaheadSeconds * 1000);
-    } catch (_) {
-      // best-effort only
-    }
+    debouncedUpdateBoundaries(adjustedElements, guestLookaheadSeconds * 1000);
 
     // Reset flag after brief timeout to allow future adjustments
     setTimeout(() => { hasAppliedPauseAdjustmentRef.current = false; }, 100);
-  }, [lastPauseDurationMs, currentTime, updateScriptElementsDirectly, adjustFutureOffsets, updateElementBoundaries, guestLookaheadSeconds]);
+  }, [lastPauseDurationMs, updateScriptElementsDirectly, adjustFutureOffsets, debouncedUpdateBoundaries, guestLookaheadSeconds]);
 
 
   // Load guest preferences
@@ -429,7 +466,7 @@ const SharedPageContent = React.memo(() => {
     refreshSharedData: refreshData,
     updateScriptInfo,
     getCurrentElements,
-  }), [updateSingleElement, updateScriptElementsDirectly, deleteElement, refreshData, updateScriptInfo]);
+  }), [updateSingleElement, updateScriptElementsDirectly, deleteElement, refreshData, updateScriptInfo, getCurrentElements]);
 
   // WebSocket update handlers - with stable callbacks object
   const { handleUpdate } = useScriptUpdateHandlers(updateHandlerCallbacks);
