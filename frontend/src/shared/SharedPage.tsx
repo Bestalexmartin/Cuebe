@@ -546,13 +546,6 @@ const SharedPageContent = React.memo(() => {
     return () => setSyncData(null);
   }, [syncData, setSyncData]);
 
-  // Force clear sync data immediately when leaving script view
-  useEffect(() => {
-    if (!viewingScriptId) {
-      setSyncData(null);
-    }
-  }, [viewingScriptId, setSyncData]);
-
   // Track content area bounds for overlay positioning via ResizeObserver
   useEffect(() => {
     const node = contentAreaRef.current;
