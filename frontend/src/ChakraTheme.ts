@@ -31,7 +31,7 @@ const breakpoints = {
   base: "0px",
   sm: "637px", // Changed from default 480px to 637px (636px + 1)
   md: "768px",
-  lg: "992px",
+  lg: "1086px",
   xl: "1280px",
   "2xl": "1536px",
 };
