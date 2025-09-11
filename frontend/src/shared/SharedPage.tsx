@@ -102,13 +102,6 @@ const MobileClockBar: React.FC<{
       height="60px"
       borderBottom="1px solid"
       borderColor="gray.700"
-      animation={playbackState === 'PAUSED' ? "flash 1s infinite" : undefined}
-      sx={playbackState === 'PAUSED' ? {
-        "@keyframes flash": {
-          "0%, 100%": { opacity: 1 },
-          "50%": { opacity: 0.3 }
-        }
-      } : {}}
     >
       <HStack spacing={0} justify="center" align="center" height="100%">
         {/* Realtime Clock */}
@@ -117,7 +110,7 @@ const MobileClockBar: React.FC<{
           color="amber"
           px={{ base: "7px", sm: "10px" }}
           borderRadius="none"
-          fontSize={{ base: "xl", sm: "3xl" }}
+          fontSize={{ base: "2xl", sm: "3xl" }}
           fontFamily="mono"
           textAlign="center"
         >
@@ -126,7 +119,7 @@ const MobileClockBar: React.FC<{
 
         {/* Bullet separator */}
         <Box bg="transparent" px={{ base: "3px", sm: "5px" }} display="flex" alignItems="center" height="100%">
-          <Text fontSize={{ base: "xl", sm: "3xl" }} color="gray.500" fontFamily="mono">•</Text>
+          <Text fontSize={{ base: "2xl", sm: "3xl" }} color="gray.500" fontFamily="mono">•</Text>
         </Box>
 
         {/* Show Timer */}
@@ -135,7 +128,7 @@ const MobileClockBar: React.FC<{
           color="red.500"
           px={{ base: "7px", sm: "10px" }}
           borderRadius="none"
-          fontSize={{ base: "xl", sm: "3xl" }}
+          fontSize={{ base: "2xl", sm: "3xl" }}
           fontFamily="mono"
           textAlign="center"
         >
@@ -144,7 +137,7 @@ const MobileClockBar: React.FC<{
 
         {/* Bullet separator */}
         <Box bg="transparent" px={{ base: "3px", sm: "5px" }} display="flex" alignItems="center" height="100%">
-          <Text fontSize={{ base: "xl", sm: "3xl" }} color="gray.500" fontFamily="mono">•</Text>
+          <Text fontSize={{ base: "2xl", sm: "3xl" }} color="gray.500" fontFamily="mono">•</Text>
         </Box>
 
         {/* Playback Status */}
@@ -153,10 +146,17 @@ const MobileClockBar: React.FC<{
           color={playbackState === 'SAFETY' ? 'orange.500' : playbackState === 'COMPLETE' ? 'green.500' : 'red.500'}
           px={{ base: "7px", sm: "10px" }}
           borderRadius="none"
-          fontSize={{ base: "xl", sm: "3xl" }}
+          fontSize={{ base: "2xl", sm: "3xl" }}
           fontFamily="mono"
           fontWeight="bold"
           textAlign="center"
+          animation={playbackState === 'PAUSED' ? "flash 1s infinite" : undefined}
+          sx={playbackState === 'PAUSED' ? {
+            "@keyframes flash": {
+              "0%, 100%": { opacity: 1 },
+              "50%": { opacity: 0.3 }
+            }
+          } : {}}
         >
           {playbackState === 'COMPLETE' ? 'COMPLETE' : playbackState}
         </Box>
