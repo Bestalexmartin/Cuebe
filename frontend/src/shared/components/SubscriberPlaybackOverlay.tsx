@@ -138,35 +138,6 @@ const SubscriberPlaybackTimingProvider: React.FC<{
         clearTimer();
     }, [isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, script?.start_time, scheduleNext, clearTimer, computeShowTime, processBoundariesForTime]);
 
-    useEffect(() => {
-        if (isPlaybackPlaying && script?.start_time) {
-            scheduleNext();
-            return () => clearTimer();
-        }
-    }, [timingBoundaries, isPlaybackPlaying, script?.start_time, scheduleNext, clearTimer]);
-
-    // Process boundaries immediately when cumulativeDelayMs changes during playback
-    useEffect(() => {
-        if (playbackState !== 'STOPPED' && (isPlaybackPlaying || isPlaybackPaused) && script?.start_time) {
-            const current = computeShowTime();
-            if (current !== null) {
-                setCurrentTime(current);
-                processBoundariesForTime(current);
-            }
-        }
-    }, [cumulativeDelayMs, playbackState, isPlaybackPlaying, isPlaybackPaused, script?.start_time, computeShowTime, setCurrentTime, processBoundariesForTime]);
-
-    // Process boundaries immediately when timing boundaries change and we have a current time
-    useEffect(() => {
-        if (playbackState !== 'STOPPED' && (isPlaybackPlaying || isPlaybackPaused) && script?.start_time && timingBoundaries.length > 0) {
-            const current = computeShowTime();
-            if (current !== null) {
-                setCurrentTime(current);
-                processBoundariesForTime(current);
-            }
-        }
-    }, [timingBoundaries, playbackState, isPlaybackPlaying, isPlaybackPaused, script?.start_time, computeShowTime, setCurrentTime, processBoundariesForTime]);
-
     return (
         <SubscriberPlaybackTimingContext.Provider value={{ currentPlaybackTime, processBoundariesForTime }}>
             {children}

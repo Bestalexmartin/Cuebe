@@ -1,6 +1,6 @@
 // frontend/src/contexts/PlayContext.tsx
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
 import type { ScriptElement } from '../features/script/types/scriptElements';
 
 export type PlaybackState = 'STOPPED' | 'PLAYING' | 'PAUSED' | 'SAFETY' | 'COMPLETE';
@@ -396,14 +396,41 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
         return currentMs >= elementStart && (elementDurationMs ? currentMs <= elementEnd : true);
     }, [playState.playbackState, playState.currentTime]);
 
-    const contextValue: PlayContextValue = {
-        // State
-        playbackState: playState.playbackState,
+    // Memoize computed boolean values to prevent unnecessary recalculation
+    const computedValues = useMemo(() => ({
         isPlaybackPlaying: playState.playbackState === 'PLAYING',
         isPlaybackPaused: playState.playbackState === 'PAUSED',
         isPlaybackStopped: playState.playbackState === 'STOPPED',
         isPlaybackSafety: playState.playbackState === 'SAFETY',
-        isPlaybackComplete: playState.playbackState === 'COMPLETE',
+        isPlaybackComplete: playState.playbackState === 'COMPLETE'
+    }), [playState.playbackState]);
+
+    // Memoize action functions to maintain stable references
+    const actions = useMemo(() => ({
+        startPlayback,
+        pausePlayback,
+        stopPlayback,
+        safetyStop,
+        completePlayback,
+        setCurrentTime,
+        setPlaybackRate,
+        setElementBoundaries,
+        processBoundariesForTime,
+        clearAllElementStates
+    }), [startPlayback, pausePlayback, stopPlayback, safetyStop, completePlayback, setCurrentTime, setPlaybackRate, setElementBoundaries, processBoundariesForTime, clearAllElementStates]);
+
+    // Memoize computed functions to maintain stable references
+    const computedFunctions = useMemo(() => ({
+        getElapsedTime,
+        isElementActive,
+        getElementHighlightState,
+        getElementBorderState
+    }), [getElapsedTime, isElementActive, getElementHighlightState, getElementBorderState]);
+
+    // Memoize the complete context value
+    const contextValue: PlayContextValue = useMemo(() => ({
+        // State (direct references - will update when playState changes)
+        playbackState: playState.playbackState,
         startTime: playState.startTime,
         currentTime: playState.currentTime,
         playbackRate: playState.playbackRate,
@@ -414,24 +441,29 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
         elementBorderStates: playState.elementBorderStates,
         timingBoundaries: playState.timingBoundaries,
         
-        // Actions
-        startPlayback,
-        pausePlayback,
-        stopPlayback,
-        safetyStop,
-        completePlayback,
-        setCurrentTime,
-        setPlaybackRate,
-        setElementBoundaries,
-        processBoundariesForTime,
-        clearAllElementStates,
+        // Computed values (memoized)
+        ...computedValues,
         
-        // Computed values
-        getElapsedTime,
-        isElementActive,
-        getElementHighlightState,
-        getElementBorderState
-    };
+        // Actions (memoized)
+        ...actions,
+        
+        // Computed functions (memoized)
+        ...computedFunctions
+    }), [
+        playState.playbackState,
+        playState.startTime,
+        playState.currentTime,
+        playState.playbackRate,
+        playState.cumulativeDelayMs,
+        playState.pauseStartTime,
+        playState.lastPauseDurationMs,
+        playState.elementStates,
+        playState.elementBorderStates,
+        playState.timingBoundaries,
+        computedValues,
+        actions,
+        computedFunctions
+    ]);
 
     return (
         <PlayContext.Provider value={contextValue}>
