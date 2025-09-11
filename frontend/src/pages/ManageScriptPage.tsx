@@ -854,7 +854,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         }) || [];
 
         return filtered;
-    }, [editQueueElements, filteredDepartmentIds, editQueueElements?.map(el => el.sequence).join(',')]);
+    }, [editQueueElements, filteredDepartmentIds]);
 
     const departmentFilteredAllElements = useMemo(() => {
         if (filteredDepartmentIds.length === 0) {
@@ -873,7 +873,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             // Show elements that belong to selected departments
             return element.department_id && filteredDepartmentIds.includes(element.department_id);
         }) || [];
-    }, [allEditQueueElements, filteredDepartmentIds, allEditQueueElements?.map(el => el.sequence).join(',')]);
+    }, [allEditQueueElements, filteredDepartmentIds]);
 
     // Set up timing boundaries when elements or lookahead changes
     useEffect(() => {

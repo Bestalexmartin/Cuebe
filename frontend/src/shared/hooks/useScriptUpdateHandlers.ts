@@ -12,6 +12,8 @@ interface ScriptUpdate {
   changes?: any;
 }
 
+// Keep types flexible here to align with shared operations
+
 interface UpdateCallbacks {
   updateSingleElement: (elementId: string, element: any) => void;
   updateScriptElementsDirectly: (elements: any[]) => void;

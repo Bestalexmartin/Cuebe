@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode, useRef, useEffect } from 'react';
+import type { ScriptElement } from '../features/script/types/scriptElements';
 
 export type SyncPlaybackState = 'STOPPED' | 'PLAYING' | 'PAUSED' | 'SAFETY' | 'COMPLETE';
 export type SyncElementHighlightState = 'current' | 'upcoming' | 'inactive';
@@ -170,15 +171,11 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         
     }, []);
 
-    const setElementBoundaries = useCallback((elements: any[], lookaheadMs: number) => {
+    const setElementBoundaries = useCallback((elements: ScriptElement[], lookaheadMs: number) => {
         const boundaries: SyncTimingBoundary[] = [];
-        const initialStates = new Map<string, SyncElementHighlightState>();
-        const initialBorderStates = new Map<string, SyncElementBorderState>();
         
         const lookbehindMs = 5000; // Keep current highlight for 5s after element start
         const redBorderMs = 5000; // Red border active for 5s after start
-        
-        console.log('🔵 setElementBoundaries called with lookaheadMs:', lookaheadMs, 'elements:', elements.length);
         
         let scriptEndTime = 0;
         elements.forEach(element => {
@@ -202,7 +199,6 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                 });
                 // Debug logging for negative offset elements
                 if (start <= 0) {
-                    console.log('🟡 Negative boundary created - element:', element.element_id, 'offset:', start, 'upcoming time:', upcomingTime, 'lookahead:', lookaheadMs);
                 }
             }
             
@@ -252,7 +248,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
         // Timing provider will handle immediate boundary processing via useEffect
     }, []);
 
-    const updateElementBoundaries = useCallback((elements: any[], lookaheadMs: number) => {
+    const updateElementBoundaries = useCallback((elements: ScriptElement[], lookaheadMs: number) => {
         // Update timing boundaries without resetting element states to prevent flickering
         const boundaries: SyncTimingBoundary[] = [];
         const lookbehindMs = 5000;
@@ -324,9 +320,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
 
     const processBoundariesForTime = useCallback((currentTimeMs: number) => {
         setSyncPlayState(prev => {
-            console.log('🔍 Guest processBoundariesForTime called with currentTimeMs:', currentTimeMs, 'playbackState:', prev.playbackState);
             if (prev.playbackState === 'STOPPED') {
-                console.log('⚠️ Guest processBoundariesForTime called while STOPPED - ignoring');
                 return prev;
             }
             
@@ -391,7 +385,6 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
                     newStates.set(elementId, currentState);
                     hasChanges = true;
                     // Debug logging for state changes on negative offset elements
-                    console.log('🎯 State change for element:', elementId, 'from:', previousState, 'to:', currentState, 'at time:', currentTimeMs);
                 }
                 
                 const previousBorderState = prev.elementBorderStates.get(elementId);
@@ -481,7 +474,7 @@ export const SynchronizedPlayProvider: React.FC<SynchronizedPlayProviderProps> =
     }, []);
 
     // Subscriber timing engine - copied from working host PlaybackTimingProvider pattern
-    const [script, setScript] = useState<any>(null);
+    const [, setScript] = useState<any>(null);
     
 
     // Trigger retiming callback when lastPauseDurationMs changes (performance optimization)

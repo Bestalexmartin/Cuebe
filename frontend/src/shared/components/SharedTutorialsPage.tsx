@@ -14,6 +14,7 @@ import {
 import { AppIcon } from '../../components/AppIcon';
 import { MarkdownRenderer } from '../../components/shared/MarkdownRenderer';
 import { SCOPED_TUTORIAL_FILES, TutorialFile } from '../constants/tutorialData';
+import type { TutorialSearchResult } from '../hooks/useTutorialSearch';
 import { tutorialCache } from '../utils/tutorialCache';
 
 // Scoped side tutorial implementation - independent from Auth side
@@ -22,7 +23,7 @@ interface SharedTutorialsPageProps {
   onClose: () => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  searchResults: any[];
+  searchResults: TutorialSearchResult[];
   isSearching: boolean;
   hasSearched: boolean;
   handleSearch: (query: string, onClearState?: () => void) => void;
@@ -47,7 +48,7 @@ export const SharedTutorialsPage: React.FC<SharedTutorialsPageProps> = ({
   const [tutorialFiles] = useState(SCOPED_TUTORIAL_FILES);
 
 
-  const handleSearchResultClick = (result: any) => {
+  const handleSearchResultClick = (result: TutorialSearchResult) => {
     const file = tutorialFiles.find(f => f.name === result.title || f.path === result.file_path);
     if (file) {
       clearSearch();

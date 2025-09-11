@@ -93,7 +93,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                 const shareData = await response.json();
                 tokenMap.set(userId, shareData.share_token);
               } else {
-                warn(`❌ Failed to get share token for user ${userId}: ${response.status} ${response.statusText}`);
               }
             } catch (error) {
               console.error(`💥 Error fetching share token for user ${userId}:`, error);
@@ -176,7 +175,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
           setShareTokens(prev => new Map(prev).set(crewMember.user_id, shareData.share_token));
         }
       } catch (shareError) {
-        warn('Failed to generate share token for new assignment:', shareError);
         // Don't fail the whole operation for share token issues
       }
 
@@ -814,4 +812,3 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
     </Box>
   );
 };
-import { warn } from '../../../utils/logger';

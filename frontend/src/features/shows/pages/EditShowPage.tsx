@@ -1,6 +1,6 @@
 // frontend/src/features/shows/pages/EditShowPage.tsx
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
     Box, VStack, HStack, Text, Spinner, Flex
 } from "@chakra-ui/react";
@@ -70,6 +70,11 @@ export const EditShowPage: React.FC = () => {
         data: venues,
         isLoading: isLoadingVenues
     } = useResource<Venue>('/api/me/venues');
+
+    // Memoize venue options to prevent recreation on every render
+    const venueOptions = useMemo(() => 
+        venues?.map(venue => ({ value: venue.venue_id, label: venue.venue_name })) || []
+    , [venues]);
 
     // Form management
     const form = useValidatedFormSchema<ShowFormData>(
@@ -371,7 +376,7 @@ export const EditShowPage: React.FC = () => {
                                 value={form.formData.venue_id}
                                 onChange={(value) => handleChange('venue_id', value)}
                                 placeholder={isLoadingVenues ? "Loading venues..." : "Select venue"}
-                                options={venues?.map(venue => ({ value: venue.venue_id, label: venue.venue_name })) || []}
+                                options={venueOptions}
                                 isDisabled={isLoadingVenues}
                             />
                         </HStack>

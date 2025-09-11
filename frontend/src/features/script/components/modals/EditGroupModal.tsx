@@ -1,6 +1,6 @@
 // frontend/src/features/script/components/modals/EditGroupModal.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
     VStack,
     Input,
@@ -60,7 +60,9 @@ export const EditGroupModal: React.FC<EditGroupModalProps> = ({
         }
     }, [element]);
 
-    const childrenIds = element ? getGroupChildren(element.element_id, allElements).map(el => el.element_id) : [];
+    const childrenIds = useMemo(() => 
+        element ? getGroupChildren(element.element_id, allElements).map(el => el.element_id) : []
+    , [element, allElements]);
 
     const resetForm = () => {
         setFormData(INITIAL_FORM_DATA);
