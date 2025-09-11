@@ -1,6 +1,7 @@
 // frontend/src/contexts/PlayContext.tsx
 
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import type { ScriptElement } from '../features/script/types/scriptElements';
 
 export type PlaybackState = 'STOPPED' | 'PLAYING' | 'PAUSED' | 'SAFETY' | 'COMPLETE';
 export type ElementHighlightState = 'current' | 'upcoming' | 'inactive';
@@ -51,7 +52,7 @@ interface PlayContextValue {
     completePlayback: () => void;
     setCurrentTime: (timeMs: number) => void;
     setPlaybackRate: (rate: number) => void;
-    setElementBoundaries: (elements: any[], lookaheadMs: number) => void;
+    setElementBoundaries: (elements: ScriptElement[], lookaheadMs: number) => void;
     processBoundariesForTime: (currentTimeMs: number) => void;
     clearAllElementStates: () => void;
     
@@ -91,7 +92,6 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
             if (prev.pauseStartTime) {
                 const thisPauseDurationMs = now - prev.pauseStartTime;
                 const newCumulativeDelay = prev.cumulativeDelayMs + thisPauseDurationMs;
-                console.log('🔄 PlayContext PLAY accumulation:', {thisPauseDurationMs, prevCumulative: prev.cumulativeDelayMs, newCumulative: newCumulativeDelay});
                 return {
                     ...prev,
                     playbackState: 'PLAYING',
@@ -166,7 +166,7 @@ export const PlayProvider: React.FC<PlayProviderProps> = ({ children }) => {
         });
     }, []);
 
-    const setElementBoundaries = useCallback((elements: any[], lookaheadMs: number) => {
+    const setElementBoundaries = useCallback((elements: ScriptElement[], lookaheadMs: number) => {
         const boundaries: TimingBoundary[] = [];
         const initialStates = new Map<string, ElementHighlightState>();
         const initialBorderStates = new Map<string, ElementBorderState>();

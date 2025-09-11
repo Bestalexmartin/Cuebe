@@ -1,6 +1,7 @@
 # backend/main.py
 
 import logging
+import os
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -61,9 +62,14 @@ app.add_middleware(
 # INCLUDE ROUTERS
 # =============================================================================
 
+# Determine environment flags for gating dev/test routes
+ENABLE_DEV_ROUTES = (
+    os.getenv("ENABLE_DEV_ROUTES") in {"1", "true", "True"}
+    or os.getenv("APP_ENV", "development").lower() in {"dev", "development", "local"}
+)
+
 # Include all routers
 app.include_router(webhooks.router)     # Webhook endpoints at /api/webhooks/*
-app.include_router(development.router)  # Development endpoints at /api/dev/*, /api/health
 app.include_router(users.router)        # User management at /api/users/*
 app.include_router(crews.router)        # Crew management at /api/me/crews, /api/crew/*
 app.include_router(venues.router)       # Venue management at /api/me/venues, /api/venues/*
@@ -75,7 +81,12 @@ app.include_router(script_elements.router)  # Script elements CRUD at /api/scrip
 app.include_router(show_sharing.router) # Show-level sharing at /api/shows/*/crew/*/share, /shared/*
 app.include_router(docs_search.router)  # Documentation search at /api/docs/search
 app.include_router(script_sync.router)  # WebSocket script synchronization at /ws/script/*
-app.include_router(system_tests.router) # System testing endpoints at /api/system-tests/*
+if ENABLE_DEV_ROUTES:
+    app.include_router(development.router)  # Development endpoints at /api/dev/*, /api/health
+    app.include_router(system_tests.router) # System testing endpoints at /api/system-tests/*
+    logger.info("Development and system test routes ENABLED")
+else:
+    logger.info("Development and system test routes DISABLED")
 
 # =============================================================================
 # CLEAN LIGHT MODE DOCUMENTATION ENDPOINTS  

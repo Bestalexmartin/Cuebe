@@ -25,7 +25,7 @@ import { formatTimeOffset } from '../../../../utils/timeUtils';
 import { matchDepartment } from '../utils/departmentMatcher';
 import { loadSavedDepartmentMappings, saveDepartmentMappings } from '../utils/departmentMappingStorage';
 import { DepartmentMappingStep } from './DepartmentMappingStep';
-import { warn, error } from '../../../../utils/logger';
+import { error } from '../../../../utils/logger';
 
 interface ScriptImportModalProps {
   isOpen: boolean;
@@ -180,7 +180,6 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
             setExistingDepartments(departments);
           }
         } catch (error) {
-          warn('Failed to fetch existing departments:', error);
           setExistingDepartments([]);
         }
       };

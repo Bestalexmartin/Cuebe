@@ -2,7 +2,7 @@
 // Shared element operation logic - mirrors backend operations.py
 // debug logging removed for production sweep
 
-interface ElementLike {
+export interface ElementLike {
   element_id: string;
   sequence: number;
   offset_ms: number;

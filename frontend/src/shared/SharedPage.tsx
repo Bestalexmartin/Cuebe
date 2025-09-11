@@ -42,6 +42,8 @@ import { SynchronizedPlayProvider, useSynchronizedPlayContext } from '../context
 import { SubscriberViewMode } from './components/modes/SubscriberViewMode';
 import { SubscriberPlaybackOverlay } from './components/SubscriberPlaybackOverlay';
 import { MobileSearchModal } from './components/modals/MobileSearchModal';
+import type { Script } from '../features/shows/types';
+import type { ScriptElement } from '../features/script/types/scriptElements';
 
 const SHOWS_SORT_OPTIONS: SortOption[] = [
   { value: 'show_name', label: 'Name' },
@@ -53,7 +55,7 @@ const SHOWS_SORT_OPTIONS: SortOption[] = [
 // Mobile Clock Bar component - extracted from SubscriberPlaybackOverlay
 const MobileClockBar: React.FC<{
   playbackState: string;
-  currentScript: any;
+  currentScript: (Pick<Script, 'start_time'> & { script_id?: string }) | null;
   useMilitaryTime: boolean;
   cumulativeDelayMs: number;
 }> = React.memo(({ playbackState, currentScript, useMilitaryTime, cumulativeDelayMs: _cumulativeDelayMs }) => {
@@ -253,7 +255,8 @@ const SharedPageContent = React.memo(() => {
   }, []); // Empty dependency array = runs only on mount
 
   // Function to update script info directly without API call
-  const updateScriptInfo = useCallback((changes: any) => {
+  type ScriptInfoChange = Record<string, { old_value: unknown; new_value: any }>;
+  const updateScriptInfo = useCallback((changes: ScriptInfoChange) => {
     if (!viewingScriptId) return;
 
     updateSharedData(prevData => {
@@ -267,7 +270,7 @@ const SharedPageContent = React.memo(() => {
 
             // Apply each change
             for (const [field, changeData] of Object.entries(changes)) {
-              const { new_value } = changeData as { old_value: any; new_value: any };
+              const { new_value } = changeData as { old_value: unknown; new_value: any };
               if (field === 'script_name') updatedScript.script_name = new_value;
               else if (field === 'script_status') updatedScript.script_status = new_value;
               else if (field === 'start_time') updatedScript.start_time = new_value;
@@ -285,12 +288,12 @@ const SharedPageContent = React.memo(() => {
   }, [viewingScriptId, updateSharedData]);
 
   // Memoize the getCurrentElements callback to prevent render loops - use ref for stability
-  const scriptElementsRef = useRef(scriptElements);
+  const scriptElementsRef = useRef<ScriptElement[]>(scriptElements);
   scriptElementsRef.current = scriptElements;
-  const getCurrentElements = useCallback(() => scriptElementsRef.current, []);
+  const getCurrentElements = useCallback((): ScriptElement[] => scriptElementsRef.current, []);
 
   // Utility: adjust only future element offsets by a delay
-  const adjustFutureOffsets = useCallback((elements: any[], currentMs: number, delayMs: number) => {
+  const adjustFutureOffsets = useCallback((elements: ScriptElement[], currentMs: number, delayMs: number) => {
     if (!Array.isArray(elements) || !currentMs || !delayMs) return elements;
     return elements.map(element => {
       const currentOffset = element.offset_ms || 0;
@@ -354,7 +357,7 @@ const SharedPageContent = React.memo(() => {
   }, [viewingScriptId]);
 
   // Set up timing boundaries when elements or lookahead changes (like authorized side)
-  const lastElementsRef = useRef<any[]>([]);
+  const lastElementsRef = useRef<ScriptElement[]>([]);
   const lastLookaheadRef = useRef<number>(0);
   useEffect(() => {
     if (scriptElements.length > 0 && 
@@ -423,7 +426,14 @@ const SharedPageContent = React.memo(() => {
   const { handleUpdate } = useScriptUpdateHandlers(updateHandlerCallbacks);
 
   // Playback command handler for synchronized playback (no local dedupe)
-  const onPlaybackCommand = useCallback((message: any) => {
+  type PlaybackCommandMessage = {
+    command?: 'PLAY' | 'PAUSE' | 'SAFETY' | 'COMPLETE' | 'STOP';
+    timestamp_ms?: number;
+    show_time_ms?: number;
+    start_time?: string;
+    cumulative_delay_ms?: number;
+  };
+  const onPlaybackCommand = useCallback((message: PlaybackCommandMessage) => {
     if (!message?.command) return;
     handlePlaybackCommand(
       message.command,

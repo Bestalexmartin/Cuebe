@@ -1,5 +1,4 @@
 // frontend/src/features/script/import/utils/departmentMappingStorage.ts
-import { warn } from '../../../../utils/logger';
 
 export interface DepartmentMapping {
   incomingName: string;
@@ -16,7 +15,6 @@ export const loadSavedDepartmentMappings = (): DepartmentMapping[] => {
     const saved = sessionStorage.getItem(DEPARTMENT_MAPPINGS_KEY);
     return saved ? JSON.parse(saved) : [];
   } catch (error) {
-    warn('Failed to load saved department mappings:', error);
     return [];
   }
 };
@@ -28,7 +26,6 @@ export const saveDepartmentMappings = (mappings: DepartmentMapping[]): void => {
   try {
     sessionStorage.setItem(DEPARTMENT_MAPPINGS_KEY, JSON.stringify(mappings));
   } catch (error) {
-    warn('Failed to save department mappings:', error);
   }
 };
 
@@ -39,7 +36,6 @@ export const clearSavedDepartmentMappings = (): void => {
   try {
     sessionStorage.removeItem(DEPARTMENT_MAPPINGS_KEY);
   } catch (error) {
-    warn('Failed to clear saved department mappings:', error);
   }
 };
 

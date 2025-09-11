@@ -61,7 +61,6 @@ export const useTokenValidation = (
           return;
         }
         // For server errors (500, etc.), don't invalidate - could be temporary
-        console.warn('Token validation server error:', response.status);
         return;
       }
 
@@ -75,7 +74,6 @@ export const useTokenValidation = (
       }
     } catch (error) {
       // Network errors shouldn't invalidate the token - could be temporary
-      console.warn('Token validation network error:', error);
     } finally {
       setIsValidating(false);
     }

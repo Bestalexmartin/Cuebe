@@ -24,6 +24,11 @@ docker-compose.override.yml
 
 # Personal logs
 devlog.txt
+*.log
+backend/**/*.log
+
+# Local backup dumps
+cuebe_backup.sql
 
 # AI Assistant Instructions (local only)
 /.ai-instructions.md

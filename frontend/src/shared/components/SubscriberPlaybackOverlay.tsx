@@ -1,6 +1,7 @@
 import React, { useState, useEffect, createContext, useContext, useCallback, useRef } from 'react';
 import { Box, HStack, Text } from "@chakra-ui/react";
 import { useSynchronizedPlayContext } from '../../contexts/SynchronizedPlayContext';
+import type { Script } from '../../features/shows/types';
 
 // Clock timing context for subscriber side
 const SubscriberClockContext = createContext<{ timestamp: number }>({ timestamp: Date.now() });
@@ -41,7 +42,7 @@ const useSubscriberClock = () => {
 
 const SubscriberPlaybackTimingProvider: React.FC<{ 
     children: React.ReactNode;
-    script: any;
+    script: (Pick<Script, 'start_time'> & { script_id?: string }) | null;
     processBoundariesForTime: (timeMs: number) => void;
 }> = React.memo(({ children, script, processBoundariesForTime }) => {
     const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number | null>(null);
@@ -53,7 +54,6 @@ const SubscriberPlaybackTimingProvider: React.FC<{
     const computeShowTime = useCallback(() => {
         if (!script?.start_time) return null;
         const showTime = Date.now() - new Date(script.start_time).getTime() + (cumulativeDelayMs || 0);
-        console.log('⏰ computeShowTime:', showTime, 'script.start_time:', script.start_time, 'cumulativeDelayMs:', cumulativeDelayMs);
         return showTime;
     }, [script?.start_time, cumulativeDelayMs]);
 
@@ -79,7 +79,6 @@ const SubscriberPlaybackTimingProvider: React.FC<{
         const now = computeShowTime();
         if (now === null) return;
 
-        console.log('🔄 Guest scheduleNext: currentTime =', now, 'cumulativeDelayMs =', cumulativeDelayMs);
         setCurrentPlaybackTime(now);
         setCurrentTime(now);
         processBoundariesForTime(now);
@@ -151,7 +150,6 @@ const SubscriberPlaybackTimingProvider: React.FC<{
         if (playbackState !== 'STOPPED' && (isPlaybackPlaying || isPlaybackPaused) && script?.start_time) {
             const current = computeShowTime();
             if (current !== null) {
-                console.log('🔄 cumulativeDelayMs changed, reprocessing boundaries at time:', current, 'playbackState:', playbackState);
                 setCurrentTime(current);
                 processBoundariesForTime(current);
             }
@@ -163,7 +161,6 @@ const SubscriberPlaybackTimingProvider: React.FC<{
         if (playbackState !== 'STOPPED' && (isPlaybackPlaying || isPlaybackPaused) && script?.start_time && timingBoundaries.length > 0) {
             const current = computeShowTime();
             if (current !== null) {
-                console.log('📋 timingBoundaries changed, processing at time:', current, 'playbackState:', playbackState);
                 setCurrentTime(current);
                 processBoundariesForTime(current);
             }
@@ -346,7 +343,7 @@ const DelayTimer: React.FC<{
 
 interface SubscriberPlaybackOverlayProps {
     contentAreaBounds: DOMRect;
-    script: any;
+    script: (Pick<Script, 'start_time'> & { script_id?: string }) | null;
     useMilitaryTime: boolean;
     processBoundariesForTime: (timeMs: number) => void;
 }
@@ -357,7 +354,7 @@ export const SubscriberPlaybackOverlay: React.FC<SubscriberPlaybackOverlayProps>
     useMilitaryTime,
     processBoundariesForTime
 }) => {
-    const { playbackState, isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, cumulativeDelayMs } = useSynchronizedPlayContext();
+    const { playbackState, cumulativeDelayMs } = useSynchronizedPlayContext();
     
     // Debug logging
     

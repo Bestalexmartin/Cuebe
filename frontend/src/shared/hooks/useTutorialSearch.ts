@@ -1,8 +1,18 @@
 import { useState } from 'react';
 
+export interface TutorialSearchResult {
+  title?: string;
+  file_path?: string;
+  category?: string;
+  snippet?: string;
+  relevance_score?: number;
+  // Allow server to include extra fields
+  [key: string]: any;
+}
+
 export const useTutorialSearch = (shareToken?: string) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<TutorialSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
