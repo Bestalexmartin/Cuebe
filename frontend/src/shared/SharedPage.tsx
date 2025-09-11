@@ -353,27 +353,33 @@ const SharedPageContent = React.memo(() => {
   useEffect(() => {
     if (!viewingScriptId) {
       hasAppliedCumulativeDelayRef.current = false;
+      hasAppliedPauseAdjustmentRef.current = false;
     }
   }, [viewingScriptId]);
 
   // Set up timing boundaries when elements or lookahead changes (like authorized side)
   const lastElementsRef = useRef<ScriptElement[]>([]);
   const lastLookaheadRef = useRef<number>(0);
+  const lastElementsLengthRef = useRef<number>(0);
   useEffect(() => {
     if (scriptElements.length > 0 && 
-        (scriptElements !== lastElementsRef.current || guestLookaheadSeconds !== lastLookaheadRef.current)) {
+        (scriptElements.length !== lastElementsLengthRef.current || guestLookaheadSeconds !== lastLookaheadRef.current)) {
       const lookaheadMs = guestLookaheadSeconds * 1000;
       updateElementBoundaries?.(scriptElements, lookaheadMs);
       lastElementsRef.current = scriptElements;
+      lastElementsLengthRef.current = scriptElements.length;
       lastLookaheadRef.current = guestLookaheadSeconds;
     }
-  }, [scriptElements, guestLookaheadSeconds]);
+  }, [scriptElements.length, guestLookaheadSeconds, updateElementBoundaries]);
 
   // Handle offset adjustments when resuming from pause (like usePlaybackAdjustment on authorized side)
+  const hasAppliedPauseAdjustmentRef = useRef(false);
   useEffect(() => {
-    if (!lastPauseDurationMs || !currentTime || !scriptElements.length) {
+    if (!lastPauseDurationMs || !currentTime || !scriptElements.length || hasAppliedPauseAdjustmentRef.current) {
       return;
     }
+    
+    hasAppliedPauseAdjustmentRef.current = true;
     
     // Adjust future element offsets by the pause duration
     const adjustedElements = adjustFutureOffsets(scriptElements, currentTime, lastPauseDurationMs);
@@ -385,7 +391,10 @@ const SharedPageContent = React.memo(() => {
     } catch (_) {
       // best-effort only
     }
-  }, [lastPauseDurationMs, currentTime, scriptElements, updateScriptElementsDirectly, adjustFutureOffsets, updateElementBoundaries, guestLookaheadSeconds]);
+
+    // Reset flag after brief timeout to allow future adjustments
+    setTimeout(() => { hasAppliedPauseAdjustmentRef.current = false; }, 100);
+  }, [lastPauseDurationMs, currentTime, updateScriptElementsDirectly, adjustFutureOffsets, updateElementBoundaries, guestLookaheadSeconds]);
 
 
   // Load guest preferences
@@ -412,7 +421,7 @@ const SharedPageContent = React.memo(() => {
     loadGuestPreferences();
   }, [shareToken]);
 
-  // Memoize the callbacks object with more stable dependencies
+  // Memoize the callbacks object with stable dependencies
   const updateHandlerCallbacks = useMemo(() => ({
     updateSingleElement,
     updateScriptElementsDirectly,
@@ -420,7 +429,7 @@ const SharedPageContent = React.memo(() => {
     refreshSharedData: refreshData,
     updateScriptInfo,
     getCurrentElements,
-  }), [updateSingleElement, updateScriptElementsDirectly, deleteElement, refreshData, updateScriptInfo, getCurrentElements]);
+  }), [updateSingleElement, updateScriptElementsDirectly, deleteElement, refreshData, updateScriptInfo]);
 
   // WebSocket update handlers - with stable callbacks object
   const { handleUpdate } = useScriptUpdateHandlers(updateHandlerCallbacks);
