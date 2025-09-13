@@ -61,10 +61,7 @@ class ScriptConnectionManager:
             playback_message = {
                 "type": "playback_command",
                 "command": current_state["command"],
-                "timestamp_ms": current_state["timestamp_ms"],
-                "show_time_ms": current_state.get("show_time_ms"),
-                "start_time": current_state.get("start_time"),
-                "cumulative_delay_ms": current_state.get("cumulative_delay_ms")
+                "timestamp_ms": current_state["timestamp_ms"]
             }
             await websocket.send_text(json.dumps(playback_message))
             # Also send a dedicated status message with cumulative pause time
@@ -351,8 +348,7 @@ async def handle_script_update(websocket: WebSocket, script_id: str, message: di
             return
         
         command = message.get("command")
-        cumulative_delay_ms = message.get("cumulative_delay_ms")
-        logger.info(f"🎮 BACKEND: Received {command} command with cumulative_delay_ms: {cumulative_delay_ms}")
+        logger.info(f"🎮 BACKEND: Received playback command: {command}")
         
         if command not in ["PLAY", "PAUSE", "SAFETY", "COMPLETE", "STOP"]:
             error_response = websocket_schemas.WebSocketErrorResponse(
@@ -365,10 +361,7 @@ async def handle_script_update(websocket: WebSocket, script_id: str, message: di
         playback_response = websocket_schemas.PlaybackCommandResponse(
             script_id=script_id,
             command=command,
-            timestamp_ms=int(datetime.now().timestamp() * 1000),
-            show_time_ms=message.get("show_time_ms"),
-            start_time=message.get("start_time"),
-            cumulative_delay_ms=message.get("cumulative_delay_ms")
+            timestamp_ms=int(datetime.now().timestamp() * 1000)
         )
         
         # Update server-side playback state for late joiner sync (exclude STOP commands)
@@ -378,9 +371,7 @@ async def handle_script_update(websocket: WebSocket, script_id: str, message: di
             connection_manager.script_playback_state[script_id] = {
                 "command": command,
                 "timestamp_ms": playback_response.timestamp_ms,
-                "show_time_ms": message.get("show_time_ms"),
-                "start_time": message.get("start_time"),
-                "cumulative_delay_ms": message.get("cumulative_delay_ms")
+                # cumulative_delay_ms is maintained by playback_status handler
             }
         
         # Broadcast to all connections in the script room (including sender for confirmation)

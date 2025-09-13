@@ -350,7 +350,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         safetyStop,
         setElementBoundaries, 
         processBoundariesForTime, 
-        currentShowTime: currentTime,
         engine
     } = useShowTimeEngine();
     
@@ -644,9 +643,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         elementActions,
         editModeRef,
         setCurrentSelectedElementIds,
-        sendPlaybackCommand,
-        script: effectiveCurrentScript,
-        totalPauseTime: engine.totalPauseTime
+        sendPlaybackCommand
     });
 
 

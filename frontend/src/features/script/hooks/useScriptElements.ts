@@ -10,8 +10,7 @@ interface UseScriptElementsReturn {
 }
 
 export const useScriptElements = (): UseScriptElementsReturn => {
-    // STRIPPED FOR REBUILD: This hook no longer fetches - elements should come from unified endpoint
-    // TODO REBUILD: This hook may not be needed if all usage switches to unified loading
+    // This hook no longer fetches; elements should come from unified endpoint
     
     const elements: ScriptElement[] = [];
     const isLoading = false;

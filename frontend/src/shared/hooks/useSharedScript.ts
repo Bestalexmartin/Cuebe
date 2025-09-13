@@ -45,15 +45,10 @@ export const useSharedScript = (shareToken: string | undefined, updateSharedData
   const [scriptError, setScriptError] = useState<string | null>(null);
   const [crewContext, setCrewContext] = useState<CrewContext | null>(null);
   
-  const { clearAllElementStates, resetAllPlaybackState, engine } = useSharedShowTimeEngine();
+  const { resetAllPlaybackState, engine } = useSharedShowTimeEngine();
   
   // Create compatibility functions
-  const handlePlaybackCommand = useCallback((command: string, _timestamp: number) => {
-    if (command === 'STOP') {
-      // Note: Shared side doesn't control playback, just clears state
-      clearAllElementStates();
-    }
-  }, [clearAllElementStates]);
+  // No-op: scoped side does not drive playback; provider manages state.
   
   const hardResetPlaybackState = useCallback(() => {
     try { resetAllPlaybackState(); } catch {}

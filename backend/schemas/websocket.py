@@ -61,9 +61,7 @@ class PlaybackCommandResponse(WebSocketBaseResponse):
     script_id: str
     command: str  # PLAY, PAUSE, SAFETY, COMPLETE, STOP
     timestamp_ms: int  # Server timestamp for latency correction
-    show_time_ms: Optional[int] = None  # Current show time offset for synchronization
-    start_time: Optional[str] = None  # ISO format start time for new plays
-    cumulative_delay_ms: Optional[int] = None  # Accumulated pause delays for timing adjustments
+    # No timing payloads here; late-joiners receive timing via playback_status
 
 
 class PlaybackStatusResponse(WebSocketBaseResponse):

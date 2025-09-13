@@ -191,7 +191,6 @@ const SharedPageContent = React.memo(({ onScriptChange }: { onScriptChange?: (sc
     playbackState,
     setElementBoundaries: updateElementBoundaries,
     processBoundariesForTime,
-    clearAllElementStates,
     currentShowTime,
     handlePlaybackCommand,
     resetAllPlaybackState,
