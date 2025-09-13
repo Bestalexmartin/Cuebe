@@ -1118,23 +1118,7 @@ function applyOperationToElements(
       // Normalize sequences to close gaps left by the deleted group parent
       return normalizeSequences(ungroupedElements);
 
-    case "BULK_OFFSET_ADJUSTMENT":
-      const bulkOffsetOp = operation as any;
-      const affectedIds = bulkOffsetOp.affected_element_ids || [];
-      const delayMs = bulkOffsetOp.delay_ms || 0;
-      const adjustedElements = elements.map((el) => {
-        if (affectedIds.includes(el.element_id)) {
-          const baseOffset = typeof el.offset_ms === 'number' ? el.offset_ms : 0;
-          const newOffsetMs = baseOffset + delayMs;
-          return {
-            ...el,
-            offset_ms: newOffsetMs
-          };
-        }
-        return el;
-      });
-
-      return adjustedElements;
+    
 
     default:
       return elements;

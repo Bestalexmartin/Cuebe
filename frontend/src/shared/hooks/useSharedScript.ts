@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
-import { ScriptElement } from '../features/script/types/scriptElements';
-import { validateShareToken, encodeShareToken, INVALID_SHARE_TOKEN_ERROR } from '../utils/tokenValidation';
-import { useShowTimeEngine } from '../contexts/ShowTimeEngineProvider';
+import { ScriptElement } from '../../features/script/types/scriptElements';
+import { validateShareToken, encodeShareToken, INVALID_SHARE_TOKEN_ERROR } from '../../utils/tokenValidation';
+import { useSharedShowTimeEngine } from '../contexts/SharedShowTimeEngineProvider';
 
 /**
  * Recalculate durations for all group elements based on their children
@@ -38,40 +38,40 @@ interface CrewContext {
   user_name?: string;
 }
 
-export const useScript = (shareToken: string | undefined, updateSharedData?: (updater: (prev: any) => any) => void, refreshSharedData?: () => void) => {
+export const useSharedScript = (shareToken: string | undefined, updateSharedData?: (updater: (prev: any) => any) => void, refreshSharedData?: () => void) => {
   const [viewingScriptId, setViewingScriptId] = useState<string | null>(null);
   const [scriptElements, setScriptElements] = useState<ScriptElement[]>([]);
   const [isLoadingScript, setIsLoadingScript] = useState(false);
   const [scriptError, setScriptError] = useState<string | null>(null);
   const [crewContext, setCrewContext] = useState<CrewContext | null>(null);
   
-  const { stopPlayback, clearAllElementStates } = useShowTimeEngine();
+  const { clearAllElementStates, resetAllPlaybackState, engine } = useSharedShowTimeEngine();
   
   // Create compatibility functions
   const handlePlaybackCommand = useCallback((command: string, _timestamp: number) => {
     if (command === 'STOP') {
-      stopPlayback();
+      // Note: Shared side doesn't control playback, just clears state
+      clearAllElementStates();
     }
-  }, [stopPlayback]);
+  }, [clearAllElementStates]);
   
-  const resetAllPlaybackState = useCallback(() => {
-    clearAllElementStates();
-    stopPlayback();
-  }, [clearAllElementStates, stopPlayback]);
+  const hardResetPlaybackState = useCallback(() => {
+    try { resetAllPlaybackState(); } catch {}
+    try { engine.setScript(null); } catch {}
+  }, [resetAllPlaybackState, engine]);
 
   const clearScriptState = useCallback(() => {
-    // Always reset playback state when leaving script view
-    handlePlaybackCommand('STOP', Date.now());
-    
+    // Hard reset playback and timing, and forget script data
+    hardResetPlaybackState();
     setViewingScriptId(null);
     setScriptElements([]);
     setScriptError(null);
     setCrewContext(null);
-  }, [handlePlaybackCommand]);
+  }, [hardResetPlaybackState]);
 
   const handleScriptClick = useCallback(async (scriptId: string) => {
     // Reset all playback state and element states before loading new script
-    resetAllPlaybackState();
+    hardResetPlaybackState();
     
     // Clear previous script element data (preserve crew context for websocket auth)
     setScriptElements([]);
@@ -131,7 +131,7 @@ export const useScript = (shareToken: string | undefined, updateSharedData?: (up
     } finally {
       setIsLoadingScript(false);
     }
-  }, [shareToken, clearScriptState]);
+  }, [shareToken, clearScriptState, hardResetPlaybackState]);
 
   const handleBackToShows = useCallback(() => {
     clearScriptState();

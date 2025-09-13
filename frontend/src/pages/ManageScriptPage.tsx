@@ -21,7 +21,7 @@ import { convertLocalToUTC } from '../utils/timeUtils';
 import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
 import { useScriptSync } from '../hooks/useScriptSync';
 import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
-import { usePlayContext } from '../contexts/PlayContext';
+import { useShowTimeEngine, ShowTimeEngineProvider } from '../contexts/ShowTimeEngineProvider';
 // Save flow extracted into hook
 import { useSaveScript } from '../features/script/hooks/useSaveScript';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
@@ -48,12 +48,24 @@ import { EditHistoryView } from '../components/EditHistoryView';
 
 import { useElementModalActions } from '../features/script/hooks/useElementModalActions';
 import { useScriptModalHandlers } from '../features/script/hooks/useScriptModalHandlers';
+
+// Component to update ShowTimeEngine when script changes
+const ScriptAwareShowTimeEngineUpdater: React.FC<{ script: any; children: React.ReactNode }> = ({ script, children }) => {
+    const { engine } = useShowTimeEngine();
+    
+    useEffect(() => {
+        if (script?.start_time) {
+            engine.setScript(script.start_time);
+        }
+    }, [engine, script?.start_time]);
+    
+    return <>{children}</>;
+};
 import { useScriptNavigation } from '../hooks/useScriptNavigation';
 import { useScriptFormSync } from '../features/script/hooks/useScriptFormSync';
 import { useScriptUIState } from '../features/script/hooks/useScriptUIState';
 import { useScriptModeHandlers } from '../features/script/hooks/useScriptModeHandlers';
 import { useScriptSharing } from '../features/script/hooks/useScriptSharing';
-import { usePlaybackAdjustment } from '../features/script/hooks/usePlaybackAdjustment';
 import { useScriptModalConfig } from '../features/script/hooks/useScriptModalConfig';
 import { createActionMenuConfig } from '../features/script/config/actionMenuConfig';
 import { FloatingValidationErrorPanel } from '../components/base/FloatingValidationErrorPanel';
@@ -167,6 +179,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         connectionError: syncConnectionError, 
         sendUpdate: sendSyncUpdate,
         sendPlaybackCommand: sendSyncPlaybackCommand,
+        sendPlaybackStatus: sendSyncPlaybackStatus,
         connect: connectSync
     } = useScriptSync(
         scriptId || '',
@@ -324,8 +337,22 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         applyLocalChange  // Use wrapped applyLocalChange that blocks during VIEW mode
     );
     
-    // Play state from context
-    const { playbackState, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, startPlayback, pausePlayback, stopPlayback, safetyStop, setElementBoundaries, processBoundariesForTime, currentTime, cumulativeDelayMs, lastPauseDurationMs } = usePlayContext();
+    // Play state from ShowTimeEngine
+    const { 
+        playbackState, 
+        isPlaybackPlaying, 
+        isPlaybackPaused, 
+        isPlaybackSafety, 
+        isPlaybackComplete, 
+        startPlayback, 
+        pausePlayback, 
+        stopPlayback, 
+        safetyStop,
+        setElementBoundaries, 
+        processBoundariesForTime, 
+        currentShowTime: currentTime,
+        engine
+    } = useShowTimeEngine();
     
 
     // Wipe edit history when entering COMPLETE state
@@ -349,21 +376,35 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     const effectiveCurrentScript = currentScript || contextCurrentScript;
 
     // Playback synchronization for scoped sides - using scriptSync's sendPlaybackCommand
-    // Use ref to always get latest cumulativeDelayMs value
-    const cumulativeDelayMsRef = useRef(cumulativeDelayMs);
-    cumulativeDelayMsRef.current = cumulativeDelayMs;
-    
     const sendPlaybackCommand = useCallback((command: string) => {
         if (sendSyncPlaybackCommand) {
-            const latestCumulativeDelay = cumulativeDelayMsRef.current;
-            sendSyncPlaybackCommand(
-                command,
-                currentTime || undefined,
-                command === 'PLAY' ? effectiveCurrentScript?.start_time : undefined,
-                command === 'PLAY' ? (latestCumulativeDelay || 0) : undefined
-            );
+            sendSyncPlaybackCommand(command);
+            try {
+                // Also send current cumulative pause so late joiners have accurate delay
+                sendSyncPlaybackStatus?.(engine.totalPauseTime || 0);
+            } catch {}
         }
-    }, [sendSyncPlaybackCommand, effectiveCurrentScript?.start_time, currentTime]);
+    }, [sendSyncPlaybackCommand, sendSyncPlaybackStatus, engine]);
+
+    // Late-joiner handshake: when connection (re)establishes, broadcast current state
+    const prevConnectedRef = useRef<boolean>(false);
+    useEffect(() => {
+        if (isSyncConnected && !prevConnectedRef.current) {
+            const stateToCommand = (state: string): 'PLAY' | 'PAUSE' | 'SAFETY' | 'COMPLETE' | 'STOP' => {
+                switch (state) {
+                    case 'PLAYING': return 'PLAY';
+                    case 'PAUSED': return 'PAUSE';
+                    case 'SAFETY': return 'SAFETY';
+                    case 'COMPLETE': return 'COMPLETE';
+                    default: return 'STOP';
+                }
+            };
+            const cmd = stateToCommand(playbackState);
+            try { sendPlaybackCommand(cmd); } catch {}
+            try { sendSyncPlaybackStatus?.(engine.totalPauseTime || 0); } catch {}
+        }
+        prevConnectedRef.current = isSyncConnected;
+    }, [isSyncConnected, playbackState, sendPlaybackCommand, sendSyncPlaybackStatus, engine]);
 
 
 
@@ -373,15 +414,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         sendPlaybackCommand('SAFETY');
     }, [safetyStop, sendPlaybackCommand]);
 
-    // Playback adjustment hook - handles offset adjustments during pause/resume
-    usePlaybackAdjustment({
-        scriptId,
-        allEditQueueElements,
-        applyLocalChange,
-        effectiveCurrentScript,
-        lastPauseDurationMs,
-        currentTime
-    });
+    // Note: Playback timing adjustments now handled internally by ShowTimeEngine
 
 
     // Crew data now comes from context
@@ -611,7 +644,9 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         elementActions,
         editModeRef,
         setCurrentSelectedElementIds,
-        sendPlaybackCommand
+        sendPlaybackCommand,
+        script: effectiveCurrentScript,
+        totalPauseTime: engine.totalPauseTime
     });
 
 
@@ -910,7 +945,8 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     const totalChangesCount = pendingOperations.length;
 
     return (
-        <ErrorBoundary context="Script Management Page">
+        <ScriptAwareShowTimeEngineUpdater script={effectiveCurrentScript}>
+            <ErrorBoundary context="Script Management Page">
             <Flex width="100%" height="100%" p="2rem" flexDirection="column" boxSizing="border-box">
                 <ScriptHeader
                     currentScript={effectiveCurrentScript}
@@ -1304,10 +1340,10 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                     isPlaybackSafety={isPlaybackSafety}
                     processBoundariesForTime={processBoundariesForTime}
                     useMilitaryTime={activePreferences.useMilitaryTime}
-                    cumulativeDelayMs={cumulativeDelayMs}
                 />
             )}
         </ErrorBoundary>
+        </ScriptAwareShowTimeEngineUpdater>
     );
 };
 
@@ -1325,17 +1361,19 @@ export const ManageScriptPage: React.FC<ManageScriptPageProps> = React.memo(({ i
     
     return (
         <ModalProvider>
-            <ScriptDataProvider 
-                scriptId={scriptId}
-                elementsToPass={undefined}
-                editQueueOptions={undefined}
-            >
-                <ManageScriptPageInner 
-                    isMenuOpen={isMenuOpen}
-                    onMenuClose={onMenuClose}
-                    getToken={getToken}
-                />
-            </ScriptDataProvider>
+            <ShowTimeEngineProvider>
+                <ScriptDataProvider 
+                    scriptId={scriptId}
+                    elementsToPass={undefined}
+                    editQueueOptions={undefined}
+                >
+                    <ManageScriptPageInner 
+                        isMenuOpen={isMenuOpen}
+                        onMenuClose={onMenuClose}
+                        getToken={getToken}
+                    />
+                </ScriptDataProvider>
+            </ShowTimeEngineProvider>
         </ModalProvider>
     );
 });

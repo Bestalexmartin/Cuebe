@@ -25,6 +25,8 @@ interface UseScriptModeHandlersProps {
     editModeRef: React.RefObject<any>;
     setCurrentSelectedElementIds: (ids: string[]) => void;
     sendPlaybackCommand?: (command: string) => void; // Function to send playback commands via WebSocket
+    script?: { start_time?: string };
+    totalPauseTime?: number;
 }
 
 export const useScriptModeHandlers = ({
@@ -50,7 +52,9 @@ export const useScriptModeHandlers = ({
     elementActions,
     editModeRef,
     setCurrentSelectedElementIds,
-    sendPlaybackCommand
+    sendPlaybackCommand,
+    script,
+    totalPauseTime
 }: UseScriptModeHandlersProps) => {
     
     const handleJump = useCallback((direction: 'top' | 'bottom') => {
@@ -149,16 +153,17 @@ export const useScriptModeHandlers = ({
                 case 'play':
                     if (playbackState === 'STOPPED') {
                         startPlayback();
-                        sendPlaybackCommand?.('PLAY');
+                        // Don't send show time - let scoped side calculate its own based on start_time and pause time
+                        sendPlaybackCommand?.('PLAY', undefined, script?.start_time, totalPauseTime);
                     } else if (playbackState === 'PLAYING') {
                         pausePlayback();
                         sendPlaybackCommand?.('PAUSE');
                     } else if (playbackState === 'PAUSED') {
                         startPlayback();
-                        sendPlaybackCommand?.('PLAY');
+                        sendPlaybackCommand?.('PLAY', undefined, script?.start_time, totalPauseTime);
                     } else if (playbackState === 'SAFETY') {
                         startPlayback();
-                        sendPlaybackCommand?.('PLAY');
+                        sendPlaybackCommand?.('PLAY', undefined, script?.start_time, totalPauseTime);
                     } else if (playbackState === 'COMPLETE') {
                         stopPlayback();
                         sendPlaybackCommand?.('STOP');

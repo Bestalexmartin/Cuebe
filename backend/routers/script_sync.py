@@ -67,6 +67,12 @@ class ScriptConnectionManager:
                 "cumulative_delay_ms": current_state.get("cumulative_delay_ms")
             }
             await websocket.send_text(json.dumps(playback_message))
+            # Also send a dedicated status message with cumulative pause time
+            status_response = websocket_schemas.PlaybackStatusResponse(
+                script_id=script_id,
+                cumulative_delay_ms=int(current_state.get("cumulative_delay_ms") or 0)
+            )
+            await websocket.send_text(status_response.model_dump_json())
     
     async def disconnect(self, websocket: WebSocket):
         """Remove WebSocket connection from all rooms"""
@@ -381,6 +387,26 @@ async def handle_script_update(websocket: WebSocket, script_id: str, message: di
         await connection_manager.broadcast_to_script(script_id, playback_response.model_dump_json())
         
         logger.info(f"Playback command broadcast: {command} for script {script_id} by {access_info['user_name']}")
+
+    elif message_type == "playback_status":
+        # Update server-side playback metadata like cumulative delay (owners/crew only)
+        if access_info["access_type"] not in ["owner", "crew_member"]:
+            error_response = websocket_schemas.WebSocketErrorResponse(
+                message="Permission denied: Only script owners can send playback status"
+            )
+            await websocket.send_text(error_response.model_dump_json())
+            return
+        
+        cumulative_delay_ms = int(message.get("cumulative_delay_ms") or 0)
+        # Ensure state bucket exists
+        state = connection_manager.script_playback_state.get(script_id, {
+            "command": "STOP",
+            "timestamp_ms": int(datetime.now().timestamp() * 1000)
+        })
+        state["cumulative_delay_ms"] = cumulative_delay_ms
+        connection_manager.script_playback_state[script_id] = state
+        # Optionally acknowledge (silent success is fine)
+        logger.info(f"Playback status updated for script {script_id}: cumulative_delay_ms={cumulative_delay_ms}")
     
     else:
         error_response = websocket_schemas.WebSocketErrorResponse(

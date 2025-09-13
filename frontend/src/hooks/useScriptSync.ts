@@ -18,8 +18,11 @@ interface ScriptUpdate {
   connected_users?: number;
   command?: 'PLAY' | 'PAUSE' | 'SAFETY' | 'COMPLETE' | 'STOP';
   timestamp_ms?: number;
-  show_time_ms?: number;
-  start_time?: string;
+}
+
+interface PlaybackStatusUpdate {
+  type: 'playback_status';
+  script_id?: string;
   cumulative_delay_ms?: number;
 }
 
@@ -29,9 +32,12 @@ interface OutgoingMessage {
   changes?: any;
   operation_id?: string;
   command?: string;
-  show_time_ms?: number;
-  start_time?: string;
-  cumulative_delay_ms?: number;
+  timestamp_ms?: number;
+}
+
+interface StatusMessage {
+  type: 'playback_status';
+  cumulative_delay_ms: number;
 }
 
 interface UseScriptSyncOptions {
@@ -42,6 +48,7 @@ interface UseScriptSyncOptions {
   onDataReceived?: () => void; // Called when any data received
   onConnectionEstablished?: () => void; // Called when connection first established
   onPlaybackCommand?: (command: ScriptUpdate) => void; // Called when playback command received
+  onPlaybackStatus?: (status: PlaybackStatusUpdate) => void; // Called when playback status received
   autoReconnect?: boolean;
 }
 
@@ -52,7 +59,8 @@ interface UseScriptSyncReturn {
   lastUpdate: ScriptUpdate | null;
   connectionError: string | null;
   sendUpdate: (message: Partial<OutgoingMessage>) => boolean;
-  sendPlaybackCommand: (command: string, showTimeMs?: number, startTime?: string, cumulativeDelayMs?: number) => boolean;
+  sendPlaybackCommand: (command: string) => boolean;
+  sendPlaybackStatus: (cumulativeDelayMs: number) => boolean;
   sendPing: () => void;
   getConnectionInfo: () => void;
   connect: () => void;
@@ -91,7 +99,7 @@ export const useScriptSync = (
 
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
-      const message: ScriptUpdate = JSON.parse(event.data);
+      const message: any = JSON.parse(event.data);
       // Update connection count if server provides it on any message type
       if (typeof message.connected_users === 'number') {
         setConnectionCount(message.connected_users);
@@ -135,6 +143,10 @@ export const useScriptSync = (
           // debug removed
           optionsRef.current.onPlaybackCommand?.(message);
           optionsRef.current.onDataReceived?.(); // Trigger rotation for playback commands
+          break;
+        case 'playback_status':
+          optionsRef.current.onPlaybackStatus?.(message);
+          optionsRef.current.onDataReceived?.();
           break;
           
         default:
@@ -264,18 +276,28 @@ export const useScriptSync = (
     sendMessage({ type: 'get_connection_info' });
   }, [sendMessage]);
 
-  const sendPlaybackCommand = useCallback((command: string, showTimeMs?: number, startTime?: string, cumulativeDelayMs?: number): boolean => {
+  const sendPlaybackCommand = useCallback((command: string): boolean => {
     const message: OutgoingMessage = {
       type: 'playback_command',
       command,
-      show_time_ms: showTimeMs,
-      start_time: startTime,
-      cumulative_delay_ms: cumulativeDelayMs
+      timestamp_ms: Date.now()
     };
     
     const ok = sendMessage(message);
     if (ok) {
       optionsRef.current.onDataReceived?.(); // Trigger rotation for outgoing playback command
+    }
+    return ok;
+  }, [sendMessage]);
+
+  const sendPlaybackStatus = useCallback((cumulativeDelayMs: number): boolean => {
+    const message: StatusMessage = {
+      type: 'playback_status',
+      cumulative_delay_ms: cumulativeDelayMs
+    } as any;
+    const ok = sendMessage(message as any);
+    if (ok) {
+      optionsRef.current.onDataReceived?.();
     }
     return ok;
   }, [sendMessage]);
@@ -332,6 +354,7 @@ export const useScriptSync = (
     connectionError,
     sendUpdate,
     sendPlaybackCommand,
+    sendPlaybackStatus,
     sendPing,
     getConnectionInfo,
     connect,
