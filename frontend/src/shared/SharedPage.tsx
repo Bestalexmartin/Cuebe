@@ -20,7 +20,7 @@ import { AppIcon } from '../components/AppIcon';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { formatRoleBadge } from '../constants/userRoles';
 import { useSharedData } from '../hooks/useSharedData';
-import { useScript } from '../hooks/useScript';
+import { useSharedScript } from './hooks/useSharedScript';
 import { useTokenValidation } from '../hooks/useTokenValidation';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { useSorting } from '../hooks/useSorting';
@@ -38,7 +38,7 @@ import { GuestDarkModeSwitch } from './components/GuestDarkModeSwitch';
 import { useTutorialSearch } from './hooks/useTutorialSearch';
 import { useScriptUpdateHandlers } from './hooks/useScriptUpdateHandlers';
 import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
-import { SynchronizedPlayProvider, useSynchronizedPlayContext } from '../contexts/SynchronizedPlayContext';
+import { SharedShowTimeEngineProvider, useSharedShowTimeEngine } from './contexts/SharedShowTimeEngineProvider';
 import { SubscriberViewMode } from './components/modes/SubscriberViewMode';
 import { SubscriberPlaybackOverlay } from './components/SubscriberPlaybackOverlay';
 import { MobileSearchModal } from './components/modals/MobileSearchModal';
@@ -57,20 +57,8 @@ const MobileClockBar: React.FC<{
   playbackState: string;
   currentScript: (Pick<Script, 'start_time'> & { script_id?: string }) | null;
   useMilitaryTime: boolean;
-  cumulativeDelayMs: number;
-}> = React.memo(({ playbackState, currentScript, useMilitaryTime, cumulativeDelayMs: _cumulativeDelayMs }) => {
-  const [timestamp, setTimestamp] = useState(Date.now());
-  const { pauseStartTime } = useSynchronizedPlayContext();
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      setTimestamp(Date.now());
-    }, 1000);
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []);
+}> = React.memo(({ playbackState, currentScript, useMilitaryTime }) => {
+  const { engine, currentTimestamp: timestamp } = useSharedShowTimeEngine();
 
   const formatRealTimeClock = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -80,19 +68,15 @@ const MobileClockBar: React.FC<{
     return `${hours}:${minutes}:${seconds}`;
   };
 
-  const formatShowTimer = (liveTimestamp: number) => {
-    const displayTimestamp = (playbackState === 'PAUSED' || playbackState === 'SAFETY' || playbackState === 'COMPLETE') && pauseStartTime
-      ? pauseStartTime
-      : liveTimestamp;
+  const formatShowTimer = () => {
     if (!currentScript?.start_time) return "00:00:00";
-    const scriptStart = new Date(currentScript.start_time);
-    const diffMs = scriptStart.getTime() - displayTimestamp;
-    const diffSeconds = Math.round(diffMs / 1000);
-    const hours = Math.floor(Math.abs(diffSeconds) / 3600);
-    const minutes = Math.floor((Math.abs(diffSeconds) % 3600) / 60);
-    const seconds = Math.abs(diffSeconds) % 60;
+    const showTime = engine.getCurrentShowTime();
+    const totalSeconds = Math.floor(Math.abs(showTime) / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
     const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    return diffSeconds < 0 ? timeStr : `–${timeStr}`;
+    return showTime < 0 ? `–${timeStr}` : timeStr;
   };
 
   return (
@@ -132,7 +116,7 @@ const MobileClockBar: React.FC<{
           fontFamily="mono"
           textAlign="center"
         >
-          {formatShowTimer(timestamp)}
+          {formatShowTimer()}
         </Box>
 
         {/* Bullet separator */}
@@ -166,7 +150,7 @@ const MobileClockBar: React.FC<{
 });
 
 // Inner component to access synchronized play context
-const SharedPageContent = React.memo(() => {
+const SharedPageContent = React.memo(({ onScriptChange }: { onScriptChange?: (script: any) => void }) => {
   const { shareToken } = useParams<{ shareToken: string }>();
   const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
   const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
@@ -201,19 +185,22 @@ const SharedPageContent = React.memo(() => {
   const prevShowPreferences = useRef(showPreferences);
   const contentAreaRef = useRef<HTMLDivElement>(null);
 
-  // Access synchronized play context - minimize destructuring to reduce re-renders
-  const syncContext = useSynchronizedPlayContext();
+  // Access show time engine context - minimize destructuring to reduce re-renders
+  const syncContext = useSharedShowTimeEngine();
   const {
-    handlePlaybackCommand,
-    setScript,
     playbackState,
-    lastPauseDurationMs,
-    currentTime,
-    cumulativeDelayMs,
-    updateElementBoundaries,
+    setElementBoundaries: updateElementBoundaries,
     processBoundariesForTime,
-    resetAllPlaybackState
+    clearAllElementStates,
+    currentShowTime,
+    handlePlaybackCommand,
+    resetAllPlaybackState,
+    engine
   } = syncContext;
+  // handlePlaybackCommand now comes from SharedShowTimeEngine context
+  
+  // Engine-driven show time
+  const currentTime = currentShowTime;
 
 
   // Tutorial search - extracted to custom hook
@@ -247,12 +234,16 @@ const SharedPageContent = React.memo(() => {
     updateScriptElementsDirectly,
     updateSingleElement,
     deleteElement,
-  } = useScript(shareToken, updateSharedData, refreshData);
+  } = useSharedScript(shareToken, updateSharedData, refreshData);
 
   // Reset all playback and script state on page load/mount to clear persistent state
   useEffect(() => {
     resetAllPlaybackState();
-  }, []); // Empty dependency array = runs only on mount
+    return () => {
+      try { resetAllPlaybackState(); } catch {}
+      try { engine.setScript(null); } catch {}
+    };
+  }, [resetAllPlaybackState, engine]); // Empty dependency array = runs only on mount
 
   // Function to update script info directly without API call
   type ScriptInfoChange = Record<string, { old_value: unknown; new_value: any }>;
@@ -298,18 +289,7 @@ const SharedPageContent = React.memo(() => {
   viewingScriptIdRef.current = viewingScriptId;
   updateSharedDataRef.current = updateSharedData;
 
-  // Utility: adjust only future element offsets by a delay
-  const adjustFutureOffsets = useCallback((elements: ScriptElement[], currentMs: number, delayMs: number) => {
-    if (!Array.isArray(elements) || !currentMs || !delayMs) return elements;
-    return elements.map(element => {
-      const currentOffset = element.offset_ms || 0;
-      return currentOffset > currentMs
-        ? { ...element, offset_ms: currentOffset + delayMs }
-        : element;
-    });
-  }, []);
-
-  // Debounced boundary updater to prevent redundant calls
+  // Debounced boundary updater to prevent redundant calls (shared page uses provider update)
   const boundaryUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const debouncedUpdateBoundaries = useCallback((elements: ScriptElement[], lookaheadMs: number) => {
     if (boundaryUpdateTimeoutRef.current) {
@@ -321,7 +301,7 @@ const SharedPageContent = React.memo(() => {
       } catch (_) {
         // best-effort only
       }
-    }, 50); // 50ms debounce
+    }, 50);
   }, [updateElementBoundaries]);
 
   // Get current script from shared data (for script metadata) - preserve old functionality
@@ -333,64 +313,23 @@ const SharedPageContent = React.memo(() => {
     return foundScript;
   }, [viewingScriptId, sharedData?.shows]);
 
-  // Pass script to synchronized context for timing calculations
+  // Pass script to show time engine for timing calculations
   const lastSetScriptRef = useRef<any>(null);
   useEffect(() => {
     // Guard: only set script if it has actually changed
-    if (currentScript && currentScript !== lastSetScriptRef.current) {
+    if (currentScript !== lastSetScriptRef.current) {
       lastSetScriptRef.current = currentScript;
-      setScript(currentScript);
-    }
-  }, [currentScript, setScript]);
-
-
-  // Late joiner retiming - apply cumulative delay when first joining mid-script
-  // Only run on true late join (provider sets lastPauseDurationMs undefined when starting fresh)
-  const hasAppliedCumulativeDelayRef = useRef(false);
-  const appliedCumulativeDelayRef = useRef<number>(0);
-  const currentTimeRef = useRef<number | null>(currentTime);
-  currentTimeRef.current = currentTime;
-  
-  useEffect(() => {
-    // Guard: prevent redundant applications of the same cumulative delay
-    if (
-      !hasAppliedCumulativeDelayRef.current &&
-      cumulativeDelayMs > 0 &&
-      appliedCumulativeDelayRef.current !== cumulativeDelayMs &&
-      // Guard against normal pause/resume cycles to avoid double-applying
-      (lastPauseDurationMs === undefined || lastPauseDurationMs === null) &&
-      currentScript &&
-      currentTimeRef.current &&
-      scriptElements.length > 0 &&
-      (playbackState === 'PLAYING' || playbackState === 'PAUSED')
-    ) {
-      hasAppliedCumulativeDelayRef.current = true;
-      appliedCumulativeDelayRef.current = cumulativeDelayMs;
-
-      const adjustedElements = adjustFutureOffsets(scriptElements, currentTimeRef.current, cumulativeDelayMs);
-      updateScriptElementsDirectly(adjustedElements);
-
-      // Proactively refresh timing boundaries and process to stabilize highlights
-      debouncedUpdateBoundaries(adjustedElements, guestLookaheadSeconds * 1000);
-      try {
-        processBoundariesForTime?.(currentTimeRef.current);
-      } catch (_) {
-        // best-effort only
+      if (onScriptChange) {
+        onScriptChange(currentScript);
       }
     }
-  }, [cumulativeDelayMs, lastPauseDurationMs, currentScript, scriptElements, playbackState, updateScriptElementsDirectly, adjustFutureOffsets, debouncedUpdateBoundaries, processBoundariesForTime, guestLookaheadSeconds]);
+  }, [currentScript, onScriptChange]);
 
-  // Reset late joiner flag when leaving script
-  useEffect(() => {
-    if (!viewingScriptId) {
-      hasAppliedCumulativeDelayRef.current = false;
-      hasAppliedPauseAdjustmentRef.current = false;
-      appliedCumulativeDelayRef.current = 0;
-      lastPauseDurationRef.current = null;
-    }
-  }, [viewingScriptId]);
 
-  // Set up timing boundaries when elements or lookahead changes (like authorized side)
+  const currentTimeRef = useRef<number | null>(currentTime);
+  currentTimeRef.current = currentTime;
+
+  // Set up timing boundaries when elements or lookahead changes
   const lastElementsRef = useRef<ScriptElement[]>([]);
   const lastLookaheadRef = useRef<number>(0);
   const lastElementsLengthRef = useRef<number>(0);
@@ -404,35 +343,6 @@ const SharedPageContent = React.memo(() => {
       lastLookaheadRef.current = guestLookaheadSeconds;
     }
   }, [scriptElements, guestLookaheadSeconds, debouncedUpdateBoundaries]);
-
-  // Handle offset adjustments when resuming from pause (like usePlaybackAdjustment on authorized side)
-  const hasAppliedPauseAdjustmentRef = useRef(false);
-  const lastPauseDurationRef = useRef<number | null>(null);
-  
-  useEffect(() => {
-    // Guard: only proceed if pause duration has actually changed and meets conditions
-    if (!lastPauseDurationMs || 
-        !currentTimeRef.current || 
-        !scriptElements.length || 
-        hasAppliedPauseAdjustmentRef.current ||
-        lastPauseDurationRef.current === lastPauseDurationMs) {
-      return;
-    }
-    
-    lastPauseDurationRef.current = lastPauseDurationMs;
-    hasAppliedPauseAdjustmentRef.current = true;
-    
-    // Adjust future element offsets by the pause duration
-    const adjustedElements = adjustFutureOffsets(scriptElements, currentTimeRef.current, lastPauseDurationMs);
-    updateScriptElementsDirectly(adjustedElements);
-
-    // Refresh timing boundaries for the adjusted elements
-    debouncedUpdateBoundaries(adjustedElements, guestLookaheadSeconds * 1000);
-
-    // Reset flag after brief timeout to allow future adjustments
-    setTimeout(() => { hasAppliedPauseAdjustmentRef.current = false; }, 100);
-  }, [lastPauseDurationMs, updateScriptElementsDirectly, adjustFutureOffsets, debouncedUpdateBoundaries, guestLookaheadSeconds]);
-
 
   // Load guest preferences
   useEffect(() => {
@@ -475,18 +385,12 @@ const SharedPageContent = React.memo(() => {
   type PlaybackCommandMessage = {
     command?: 'PLAY' | 'PAUSE' | 'SAFETY' | 'COMPLETE' | 'STOP';
     timestamp_ms?: number;
-    show_time_ms?: number;
-    start_time?: string;
-    cumulative_delay_ms?: number;
   };
   const onPlaybackCommand = useCallback((message: PlaybackCommandMessage) => {
     if (!message?.command) return;
     handlePlaybackCommand(
       message.command,
-      message.timestamp_ms || Date.now(),
-      message.show_time_ms,
-      message.start_time,
-      message.cumulative_delay_ms
+      message.timestamp_ms || Date.now()
     );
   }, [handlePlaybackCommand]);
 
@@ -557,6 +461,13 @@ const SharedPageContent = React.memo(() => {
     onError,
     onDataReceived,
     onPlaybackCommand,
+    onPlaybackStatus: (status) => {
+      if (typeof status?.cumulative_delay_ms === 'number') {
+        try {
+          syncContext.handlePlaybackStatus(status.cumulative_delay_ms);
+        } catch {}
+      }
+    },
   });
 
   // Update sync context for header display
@@ -763,7 +674,6 @@ const SharedPageContent = React.memo(() => {
                 playbackState={playbackState}
                 currentScript={currentScript}
                 useMilitaryTime={guestUseMilitaryTime}
-                cumulativeDelayMs={cumulativeDelayMs}
               />
             </Box>
           )}
@@ -1073,9 +983,11 @@ const SharedPageContent = React.memo(() => {
 });
 
 export const SharedPage = React.memo(() => {
+  const [currentScript, setCurrentScript] = useState<any>(null);
+  
   return (
-    <SynchronizedPlayProvider>
-      <SharedPageContent />
-    </SynchronizedPlayProvider>
+    <SharedShowTimeEngineProvider script={currentScript}>
+      <SharedPageContent onScriptChange={setCurrentScript} />
+    </SharedShowTimeEngineProvider>
   );
 });

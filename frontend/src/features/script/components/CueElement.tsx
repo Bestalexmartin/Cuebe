@@ -8,8 +8,10 @@ import { BiSolidRightArrow } from "react-icons/bi";
 import { ScriptElement } from '../types/scriptElements';
 import { getTextColorForBackground } from '../../../utils/colorUtils';
 import { AppIcon } from '../../../components/AppIcon';
-import { formatTimeOffset, formatAbsoluteTime } from '../../../utils/timeUtils';
-import { ElementHighlightState, ElementBorderState } from '../../../contexts/PlayContext';
+import { formatTimeOffset } from '../../../utils/timeUtils';
+import { formatElementTime } from '../../../utils/showTimeUtils';
+import { useShowTimeEngine } from '../../../contexts/ShowTimeEngineProvider';
+import { ElementHighlightState, ElementBorderState } from '../../../contexts/ShowTimeEngineProvider';
 
 interface CueElementProps {
     element: ScriptElement;
@@ -29,6 +31,9 @@ interface CueElementProps {
     borderState?: ElementBorderState | null;
     mode?: 'edit' | 'view';
     isReadOnly?: boolean;
+    // Optional props for timing context - provided when timing engine is not available via context
+    totalPauseTime?: number;
+    showTimeEngine?: any;
 }
 
 export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) => {
@@ -64,6 +69,8 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                 return { backgroundColor: 'rgba(0, 0, 0, 0.0)' }; // No overlay - fully visible
             case 'upcoming':
                 return { backgroundColor: 'rgba(0, 0, 0, 0.35)' }; // 35% dimming
+            case 'past':
+                return { backgroundColor: 'rgba(0, 0, 0, 0.8)' }; // 80% dimming for past elements
             case 'inactive':
                 return { backgroundColor: 'rgba(0, 0, 0, 0.8)' }; // 80% dimming
         }
@@ -244,20 +251,34 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
         return `${deptPrefix}-${departmentCueCount.toString().padStart(2, '0')}`;
     })();
 
+    // Get ShowTimeEngine for pause-aware timing - use props if provided, otherwise context
+    let engine, totalPauseTime;
+    if (props.showTimeEngine !== undefined && props.totalPauseTime !== undefined) {
+        // Use provided props (for shared context)
+        engine = props.showTimeEngine;
+        totalPauseTime = props.totalPauseTime;
+    } else {
+        // Use context (for auth context)
+        const contextData = useShowTimeEngine();
+        engine = contextData.engine;
+        totalPauseTime = contextData.totalPauseTime;
+    }
+
     const timeDisplay = useMemo(() => {
         const timeValue = element.offset_ms || 0;
 
-        // If clock times are requested, use absolute time formatting
+        // If clock times are requested, use ShowTimeEngine-aware formatting
         if (showClockTimes) {
             if (!scriptStartTime) {
                 return '--:--:--'; // Placeholder to prevent offset time from showing
             }
-            return formatAbsoluteTime(scriptStartTime, timeValue, effectiveUseMilitaryTime);
+            // Use ShowTimeEngine-aware utility that accounts for pause time
+            return formatElementTime(element, { start_time: scriptStartTime }, engine, effectiveUseMilitaryTime);
         }
 
         // Show offset time when clock times are not requested
         return formatTimeOffset(timeValue, effectiveUseMilitaryTime);
-    }, [element.offset_ms, showClockTimes, scriptStartTime, effectiveUseMilitaryTime]);
+    }, [element, showClockTimes, scriptStartTime, effectiveUseMilitaryTime, engine, totalPauseTime]);
 
     const durationDisplay = useMemo(() => {
         // For SHOW START note, compute actual show duration as:

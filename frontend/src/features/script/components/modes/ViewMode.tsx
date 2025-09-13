@@ -5,7 +5,7 @@ import { VStack, Text, Box, Flex } from '@chakra-ui/react';
 import { CueElement } from '../CueElement';
 import { ScriptElementsHeader } from '../ScriptElementsHeader';
 import { ScriptElement } from '../../types/scriptElements';
-import { usePlayContext } from '../../../../contexts/PlayContext';
+import { useShowTimeEngine } from '../../../../contexts/ShowTimeEngineProvider';
 
 interface ViewModeProps {
     scriptId: string; // Required by parent but not used in pure presentation component
@@ -47,8 +47,8 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     isHighlightingEnabled = true,
     lookaheadSeconds: _lookaheadSeconds = 30
 }, ref) => {
-    // Get play context for element highlighting
-    const { isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, getElementHighlightState, getElementBorderState } = usePlayContext();
+    // Get show time engine for element highlighting
+    const { isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, getElementHighlightState, getElementBorderState } = useShowTimeEngine();
     
 
     // Ensure View mode prerequisites (auto-sort, clock time display) are enforced on mount
@@ -236,7 +236,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                             
                             // Get element highlight state from boundary system during PLAYING, PAUSED, or SAFETY when enabled
                             const isActivePlayback = (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) && !isPlaybackComplete;
-                            const highlightState = (isActivePlayback && isHighlightingEnabled) ? getElementHighlightState(element.element_id) : undefined;
+                            const highlightState = (isActivePlayback && isHighlightingEnabled) ? getElementHighlightState(element.element_id) || null : null;
                             // Red border is active during PLAYING and COMPLETE states
                             const borderState = (isPlaybackPlaying || isPlaybackComplete) ? getElementBorderState(element.element_id) : undefined;
                             

@@ -66,6 +66,13 @@ class PlaybackCommandResponse(WebSocketBaseResponse):
     cumulative_delay_ms: Optional[int] = None  # Accumulated pause delays for timing adjustments
 
 
+class PlaybackStatusResponse(WebSocketBaseResponse):
+    """Response conveying current playback status metadata for late joiners"""
+    type: str = "playback_status"
+    script_id: str
+    cumulative_delay_ms: int = 0  # Current accumulated pause duration in ms
+
+
 class WebSocketErrorResponse(WebSocketBaseResponse):
     """Response for WebSocket errors"""
     type: str = "error"

@@ -1,9 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback, createContext, useContext } from 'react';
+import React, { useState, useRef, useEffect, useCallback, createContext } from 'react';
 import { Box, HStack, Text } from "@chakra-ui/react";
-import { usePlayContext } from '../../../contexts/PlayContext';
-
-// Clock timing context - isolated to prevent page-wide re-renders
-const ClockTimingContext = createContext<{ timestamp: number }>({ timestamp: Date.now() });
+import { useShowTimeEngine } from '../../../contexts/ShowTimeEngineProvider';
+import { formatShowTimer } from '../../../utils/showTimeUtils';
 
 // Playback timing context - isolated for boundary processing
 const PlaybackTimingContext = createContext<{ 
@@ -14,30 +12,6 @@ const PlaybackTimingContext = createContext<{
     processBoundariesForTime: () => {}
 });
 
-const ClockTimingProvider: React.FC<{ children: React.ReactNode }> = React.memo(({ children }) => {
-    const [timestamp, setTimestamp] = useState(Date.now());
-
-    useEffect(() => {
-        const intervalId = setInterval(() => {
-            setTimestamp(Date.now());
-        }, 1000);
-
-        return () => {
-            clearInterval(intervalId);
-        };
-    }, []);
-
-    return (
-        <ClockTimingContext.Provider value={{ timestamp }}>
-            {children}
-        </ClockTimingContext.Provider>
-    );
-});
-
-const useClockTiming = () => {
-    const context = useContext(ClockTimingContext);
-    return context.timestamp;
-};
 
 const PlaybackTimingProvider: React.FC<{ 
     children: React.ReactNode;
@@ -52,12 +26,12 @@ const PlaybackTimingProvider: React.FC<{
     const finalShowTimeRef = useRef<number | null>(null);
     const timerRef = useRef<number | null>(null);
     const nextIndexRef = useRef<number>(0);
-    const { timingBoundaries, setCurrentTime } = usePlayContext();
+    const { timingBoundaries, currentShowTime } = useShowTimeEngine();
 
-    const computeShowTime = useCallback(() => {
-        if (!script?.start_time) return null;
-        return Date.now() - new Date(script.start_time).getTime();
-    }, [script?.start_time]);
+    // Show time now comes directly from ShowTimeEngine
+    const getShowTime = useCallback(() => {
+        return currentShowTime;
+    }, [currentShowTime]);
 
     const clearTimer = useCallback(() => {
         if (timerRef.current !== null) {
@@ -78,11 +52,10 @@ const PlaybackTimingProvider: React.FC<{
 
     const scheduleNext = useCallback(() => {
         clearTimer();
-        const now = computeShowTime();
+        const now = getShowTime();
         if (now === null) return;
 
         setCurrentPlaybackTime(now);
-        setCurrentTime(now);
         processBoundariesForTime(now);
 
         const arr = timingBoundaries || [];
@@ -93,17 +66,16 @@ const PlaybackTimingProvider: React.FC<{
         const nextTime = arr[nextIndexRef.current].time;
         const delay = Math.max(0, nextTime - now);
         timerRef.current = window.setTimeout(() => {
-            const current = computeShowTime();
+            const current = getShowTime();
             if (current === null) return;
             setCurrentPlaybackTime(current);
-            setCurrentTime(current);
             processBoundariesForTime(current);
             nextIndexRef.current = findNextIndex(current);
             if (isPlaybackPlaying && script?.start_time) {
                 scheduleNext();
             }
         }, delay);
-    }, [clearTimer, computeShowTime, findNextIndex, isPlaybackPlaying, processBoundariesForTime, timingBoundaries, script?.start_time]);
+    }, [clearTimer, getShowTime, findNextIndex, isPlaybackPlaying, processBoundariesForTime, timingBoundaries, script?.start_time]);
 
     useEffect(() => {
         if (!script?.start_time) {
@@ -122,11 +94,10 @@ const PlaybackTimingProvider: React.FC<{
 
         if (isPlaybackPaused || isPlaybackSafety) {
             clearTimer();
-            const now = computeShowTime();
+            const now = getShowTime();
             if (now !== null) {
                 finalShowTimeRef.current = now;
                 setCurrentPlaybackTime(now);
-                setCurrentTime(now);
                 processBoundariesForTime(now);
             }
             return;
@@ -139,7 +110,7 @@ const PlaybackTimingProvider: React.FC<{
         }
 
         clearTimer();
-    }, [isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, script?.start_time, scheduleNext, clearTimer, computeShowTime, processBoundariesForTime]);
+    }, [isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, script?.start_time, scheduleNext, clearTimer, getShowTime, processBoundariesForTime]);
 
     useEffect(() => {
         if (isPlaybackPlaying && script?.start_time) {
@@ -158,7 +129,7 @@ const PlaybackTimingProvider: React.FC<{
 
 // Time and Status Components
 const RealtimeClock: React.FC<{ useMilitaryTime: boolean }> = ({ useMilitaryTime }) => {
-    const timestamp = useClockTiming();
+    const { currentTimestamp: timestamp } = useShowTimeEngine();
     const formatTime = (timestamp: number) => {
         const date = new Date(timestamp);
         const hours = useMilitaryTime ? date.getHours() : date.getHours() % 12 || 12;
@@ -183,34 +154,18 @@ const RealtimeClock: React.FC<{ useMilitaryTime: boolean }> = ({ useMilitaryTime
     );
 };
 
-const ShowTimer: React.FC<{ script: any; playbackState: string }> = ({ script, playbackState }) => {
-    const liveTimestamp = useClockTiming();
-    const { pauseStartTime } = usePlayContext();
+const ShowTimer: React.FC<{ script: any; playbackState: string }> = ({ script }) => {
+    const { currentShowTime } = useShowTimeEngine();
     
-    // Use pauseStartTime as the frozen timestamp for PAUSED/SAFETY/COMPLETE, live for others
-    const timestamp = (playbackState === 'PAUSED' || playbackState === 'SAFETY' || playbackState === 'COMPLETE') && pauseStartTime 
-        ? pauseStartTime 
-        : liveTimestamp;
-    
-    const calculateTMinusTime = useCallback((timestamp: number) => {
-        if (!script?.start_time) {
-            return "00:00:00";
-        }
+    // Calculate show time based on ShowTimeEngine
+    const calculateShowTime = useCallback(() => {
+        if (!script?.start_time) return "00:00:00";
+        
+        // Use the engine's computed show time which accounts for pauses
+        return formatShowTimer(currentShowTime);
+    }, [script?.start_time, currentShowTime]);
 
-        const scriptStart = new Date(script.start_time);
-        
-        const diffMs = scriptStart.getTime() - timestamp;
-        const diffSeconds = Math.round(diffMs / 1000);
-        
-        const hours = Math.floor(Math.abs(diffSeconds) / 3600);
-        const minutes = Math.floor((Math.abs(diffSeconds) % 3600) / 60);
-        const seconds = Math.abs(diffSeconds) % 60;
-        
-        const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        return diffSeconds < 0 ? timeStr : `–${timeStr}`;
-    }, [script?.start_time]);
-
-    const tMinusTime = calculateTMinusTime(timestamp);
+    const showTimeDisplay = calculateShowTime();
 
     return (
         <Box 
@@ -223,12 +178,14 @@ const ShowTimer: React.FC<{ script: any; playbackState: string }> = ({ script, p
             minWidth="110px"
             textAlign="center"
         >
-            {tMinusTime}
+            {showTimeDisplay}
         </Box>
     );
 };
 
-const PlaybackStatus: React.FC<{ playbackState: string; cumulativeDelayMs?: number }> = ({ playbackState, cumulativeDelayMs }) => {
+const PlaybackStatus: React.FC<{ playbackState: string }> = ({ playbackState }) => {
+    const { engine } = useShowTimeEngine();
+    
     if (playbackState === 'STOPPED') return null;
 
     const getStatusColor = () => {
@@ -238,7 +195,7 @@ const PlaybackStatus: React.FC<{ playbackState: string; cumulativeDelayMs?: numb
     };
 
     const isComplete = playbackState === 'COMPLETE';
-    const hasDelayTimer = playbackState === 'PAUSED' || playbackState === 'SAFETY' || (playbackState === 'COMPLETE' && cumulativeDelayMs && cumulativeDelayMs > 0);
+    const hasDelayTimer = playbackState === 'PAUSED' || playbackState === 'SAFETY' || (playbackState === 'COMPLETE' && engine.totalPauseTime > 0);
     return (
         <Box 
             bg="transparent" 
@@ -267,26 +224,37 @@ const PlaybackStatus: React.FC<{ playbackState: string; cumulativeDelayMs?: numb
 
 const DelayTimer: React.FC<{ 
     playbackState: string; 
-    cumulativeDelayMs?: number;
-}> = React.memo(({ playbackState, cumulativeDelayMs = 0 }) => {
-    const liveTimestamp = useClockTiming();
-    const { pauseStartTime } = usePlayContext();
-    const timestamp = playbackState === 'COMPLETE' ? 0 : liveTimestamp;
+}> = ({ playbackState }) => {
+    const { engine } = useShowTimeEngine();
+    const [, forceUpdate] = useState({});
+
+    // Force re-render every second during pause to update timer display
+    useEffect(() => {
+        if (playbackState === 'PAUSED' || playbackState === 'SAFETY') {
+            const interval = setInterval(() => {
+                forceUpdate({});
+            }, 1000);
+            return () => clearInterval(interval);
+        }
+    }, [playbackState]);
 
     if (playbackState !== 'PAUSED' && playbackState !== 'SAFETY' && playbackState !== 'COMPLETE') return null;
 
     let displayTime: string;
     if (playbackState === 'COMPLETE') {
-        if (!cumulativeDelayMs || cumulativeDelayMs <= 0) return null;
-        const totalCumulativeSeconds = Math.floor((cumulativeDelayMs || 0) / 1000);
+        // Show cumulative delay for COMPLETE state
+        if (!engine.totalPauseTime || engine.totalPauseTime <= 0) return null;
+        const totalCumulativeSeconds = Math.floor(engine.totalPauseTime / 1000);
         const minutes = Math.floor(totalCumulativeSeconds / 60);
         const seconds = totalCumulativeSeconds % 60;
         displayTime = `+${minutes}:${seconds.toString().padStart(2, '0')}`;
     } else {
-        const sessionMs = pauseStartTime ? (timestamp - pauseStartTime) : 0;
-        const totalDelaySeconds = Math.max(0, Math.ceil(sessionMs / 1000));
-        const minutes = Math.floor(totalDelaySeconds / 60);
-        const seconds = totalDelaySeconds % 60;
+        // Show session delay for PAUSED/SAFETY states (resets each pause)
+        const timestamp = Date.now();
+        const sessionMs = engine.pausedAt ? (timestamp - engine.pausedAt) : 0;
+        const sessionSeconds = Math.max(0, Math.floor(sessionMs / 1000)); // Use floor, not ceil
+        const minutes = Math.floor(sessionSeconds / 60);
+        const seconds = sessionSeconds % 60;
         displayTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
 
@@ -312,13 +280,7 @@ const DelayTimer: React.FC<{
             {displayTime}
         </Box>
     );
-}, (prevProps, nextProps) => {
-    if (prevProps.playbackState === 'COMPLETE' && nextProps.playbackState === 'COMPLETE') {
-        return prevProps.cumulativeDelayMs === nextProps.cumulativeDelayMs;
-    }
-    return prevProps.playbackState === nextProps.playbackState && 
-           prevProps.cumulativeDelayMs === nextProps.cumulativeDelayMs;
-});
+};
 
 interface PlaybackOverlayProps {
     contentAreaBounds: DOMRect | null;
@@ -330,7 +292,6 @@ interface PlaybackOverlayProps {
     isPlaybackSafety: boolean;
     processBoundariesForTime: (timeMs: number) => void;
     useMilitaryTime: boolean;
-    cumulativeDelayMs: number;
 }
 
 export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
@@ -342,11 +303,9 @@ export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
     isPlaybackPaused,
     isPlaybackSafety,
     processBoundariesForTime,
-    useMilitaryTime,
-    cumulativeDelayMs
+    useMilitaryTime
 }) => {
     return (
-        <ClockTimingProvider>
             <PlaybackTimingProvider 
                 script={script}
                 isPlaybackPlaying={isPlaybackPlaying}
@@ -409,22 +368,21 @@ export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
                             </Box>
                             
                             {/* Playback Status */}
-                            <PlaybackStatus playbackState={playbackState} cumulativeDelayMs={cumulativeDelayMs} />
+                            <PlaybackStatus playbackState={playbackState} />
                             
                             {/* Bullet separator for paused/safety/complete mode - only show if there will be a delay timer */}
                             {((playbackState === 'PAUSED' || playbackState === 'SAFETY') || 
-                              (playbackState === 'COMPLETE' && cumulativeDelayMs > 0)) && (
+                              (playbackState === 'COMPLETE')) && (
                                 <Box bg="#0F0F0F" px="4px" py="2px">
                                     <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
                                 </Box>
                             )}
                             
                             {/* Delay Timer - in PAUSED, SAFETY, and COMPLETE modes */}
-                            <DelayTimer playbackState={playbackState} cumulativeDelayMs={cumulativeDelayMs} />
+                            <DelayTimer playbackState={playbackState} />
                         </HStack>
                     </Box>
                 </Box>
             </PlaybackTimingProvider>
-        </ClockTimingProvider>
     );
 };

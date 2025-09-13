@@ -2,7 +2,7 @@ import React, { useMemo, useEffect, useRef } from 'react';
 import { Box, VStack, useBreakpointValue } from '@chakra-ui/react';
 import { CueElement } from '../../../features/script/components/CueElement';
 import { ScriptElementsHeader } from '../../../features/script/components/ScriptElementsHeader';
-import { useSynchronizedPlayContext } from '../../../contexts/SynchronizedPlayContext';
+import { useSharedShowTimeEngine } from '../../contexts/SharedShowTimeEngineProvider';
 
 interface SubscriberViewModeProps {
     scriptId: string;
@@ -14,7 +14,7 @@ interface SubscriberViewModeProps {
     lookaheadSeconds: number;
 }
 
-export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(({
+export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = ({
     scriptId: _scriptId,
     colorizeDepNames,
     showClockTimes,
@@ -29,12 +29,14 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
     const {
         playbackState,
         isPlaybackPlaying,
-        currentTime,
+        currentShowTime: currentTime,
         shouldHideElement,
         getElementHighlightState,
         getElementBorderState,
-        setElementBoundaries
-    } = useSynchronizedPlayContext();
+        setElementBoundaries,
+        engine,
+        totalPauseTime
+    } = useSharedShowTimeEngine();
 
     // Disable colorized department names on mobile (≤636px)
     const responsiveColorizeDepNames = useBreakpointValue({ base: false, sm: colorizeDepNames });
@@ -137,18 +139,12 @@ export const SubscriberViewMode: React.FC<SubscriberViewModeProps> = React.memo(
                             highlightState={finalHighlightState}
                             borderState={finalBorderState}
                             isReadOnly={true}
+                            totalPauseTime={totalPauseTime}
+                            showTimeEngine={engine}
                         />
                     );
                 })}
             </VStack>
         </Box>
     );
-}, (prevProps, nextProps) => {
-    return (
-        prevProps.scriptId === nextProps.scriptId &&
-        prevProps.colorizeDepNames === nextProps.colorizeDepNames &&
-        prevProps.showClockTimes === nextProps.showClockTimes &&
-        prevProps.elements === nextProps.elements &&
-        prevProps.script === nextProps.script
-    );
-});
+};

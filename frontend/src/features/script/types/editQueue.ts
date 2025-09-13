@@ -123,13 +123,6 @@ export interface UngroupElementsOperation extends BaseEditOperation {
     group_element_id: string;
 }
 
-export interface BulkOffsetAdjustmentOperation extends BaseEditOperation {
-    type: 'BULK_OFFSET_ADJUSTMENT';
-    delay_ms: number;
-    affected_element_ids: string[];
-    current_time_ms: number; // Current playback position
-}
-
 export type EditOperation = 
     | ReorderOperation 
     | UpdateFieldOperation 
@@ -145,8 +138,7 @@ export type EditOperation =
     | BatchCollapseGroupsOperation
     | CreateGroupOperation
     | UngroupElementsOperation
-    | UpdateGroupWithPropagationOperation
-    | BulkOffsetAdjustmentOperation;
+    | UpdateGroupWithPropagationOperation;
 
 export interface EditQueue {
     operations: EditOperation[];
