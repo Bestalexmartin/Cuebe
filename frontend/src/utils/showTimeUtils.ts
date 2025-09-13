@@ -2,6 +2,7 @@
 
 import type { ScriptElement } from '../features/script/types/scriptElements';
 import type { ShowTimeEngine } from '../contexts/ShowTimeEngine';
+import { debugScopedTiming } from './debug';
 
 export interface Script {
     start_time: string;
@@ -56,6 +57,37 @@ export function formatShowTimer(showTime: number): string {
     const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     // Use -1000 threshold to avoid showing both -0:00 and 0:00
     return showTime < -999 ? `–${timeStr}` : timeStr;
+}
+
+/**
+ * Compute pause-aware display show time for shared/subscriber clocks with a safe
+ * fallback on the first PLAY frame (when engine hasn't ticked yet).
+ */
+export function computeDisplayShowTime(
+    scriptStartTime: string | undefined,
+    playbackState: string,
+    showTimeEngine: ShowTimeEngine,
+    currentShowTime: number,
+    currentTimestamp?: number
+): number {
+    let showTime = currentShowTime;
+    if (scriptStartTime && playbackState !== 'STOPPED') {
+        // If the first engine tick hasn't landed yet, derive from wall clock
+        if (Math.abs(showTime) < 500) {
+            const ts = typeof currentTimestamp === 'number' ? currentTimestamp : Date.now();
+            const start = new Date(scriptStartTime).getTime();
+            showTime = ts - start - (showTimeEngine.totalPauseTime || 0);
+        }
+    }
+    debugScopedTiming('computeDisplayShowTime', {
+        scriptStartTime,
+        playbackState,
+        currentShowTime,
+        currentTimestamp,
+        totalPauseTime: showTimeEngine.totalPauseTime,
+        resolvedShowTime: showTime
+    });
+    return showTime;
 }
 
 /**

@@ -195,14 +195,7 @@ export class ShowTimeEngineImpl implements ShowTimeEngine {
 
     // Script Management
     setScript(scriptStartTime?: string | Date | number | null): void {
-        // Preserve cumulative pause time when switching scripts to avoid losing late-join status.
-        const preservedPause = this._totalPauseTime;
-
-        // Reset state without clearing total pause time
-        this._playbackState = 'STOPPED';
-        this._showStartedAt = null;
-        this._pausedAt = null;
-
+        // Update script start time without altering playback state.
         if (scriptStartTime) {
             if (typeof scriptStartTime === 'string') {
                 this._scriptStartTime = new Date(scriptStartTime).getTime();
@@ -214,10 +207,8 @@ export class ShowTimeEngineImpl implements ShowTimeEngine {
         } else {
             this._scriptStartTime = null;
         }
-
-        this._totalPauseTime = preservedPause;
-        this._notifyStateChange();
-        this._stopUpdateLoop();
+        // Notify listeners so UI can recompute immediately
+        this._notifyShowTimeUpdate();
     }
 
     // Sync Helpers
