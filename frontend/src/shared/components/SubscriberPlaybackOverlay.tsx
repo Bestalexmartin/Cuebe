@@ -1,8 +1,8 @@
 import React, { useState, useEffect, createContext, useCallback, useRef } from 'react';
 import { Box, HStack, Text } from "@chakra-ui/react";
 import { useSharedShowTimeEngine } from '../contexts/SharedShowTimeEngineProvider';
+import { computeDisplayShowTime, formatShowTimer as formatShowTimerString } from '../../utils/showTimeUtils';
 import type { Script } from '../../features/shows/types';
-import { formatShowTimer } from '../../utils/showTimeUtils';
 
 // Playback timing context - isolated for boundary processing (like auth side)
 const SubscriberPlaybackTimingContext = createContext<{ 
@@ -27,9 +27,19 @@ const SubscriberPlaybackTimingProvider: React.FC<{
 
     const computeShowTime = useCallback(() => {
         if (!script?.start_time) return null;
-        const showTime = engine.getCurrentShowTime();
-        return showTime;
-    }, [script?.start_time, engine]);
+        const state = isPlaybackPlaying
+            ? 'PLAYING'
+            : isPlaybackPaused
+            ? 'PAUSED'
+            : isPlaybackSafety
+            ? 'SAFETY'
+            : isPlaybackComplete
+            ? 'COMPLETE'
+            : 'STOPPED';
+        const base = engine.getCurrentShowTime();
+        const effective = computeDisplayShowTime(script.start_time, state, engine, base, Date.now());
+        return effective;
+    }, [script?.start_time, engine, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete]);
 
     const clearTimer = useCallback(() => {
         if (timerRef.current !== null) {
@@ -143,10 +153,17 @@ const RealtimeClock: React.FC<{ useMilitaryTime: boolean }> = ({ useMilitaryTime
     );
 };
 
-// Show timer using ShowTimeEngine (pause-aware)
-const ShowTimer: React.FC<{ script: any; playbackState: string }> = ({ script }) => {
-    const { currentShowTime } = useSharedShowTimeEngine();
-    const display = script?.start_time ? formatShowTimer(currentShowTime) : '00:00:00';
+// Show timer using ShowTimeEngine (pause-aware) with safe fallback
+const ShowTimer: React.FC<{ script: any; playbackState: string }> = ({ script, playbackState }) => {
+    const { currentShowTime, engine, currentTimestamp } = useSharedShowTimeEngine();
+    const showTimeMs = computeDisplayShowTime(
+        script?.start_time,
+        playbackState,
+        engine,
+        currentShowTime,
+        currentTimestamp
+    );
+    const display = script?.start_time ? formatShowTimerString(showTimeMs) : '00:00:00';
     return (
         <Box 
             bg="transparent" 

@@ -44,6 +44,7 @@ import { SubscriberPlaybackOverlay } from './components/SubscriberPlaybackOverla
 import { MobileSearchModal } from './components/modals/MobileSearchModal';
 import type { Script } from '../features/shows/types';
 import type { ScriptElement } from '../features/script/types/scriptElements';
+import { computeDisplayShowTime, formatShowTimer as formatShowTimerString } from '../utils/showTimeUtils';
 
 const SHOWS_SORT_OPTIONS: SortOption[] = [
   { value: 'show_name', label: 'Name' },
@@ -58,7 +59,7 @@ const MobileClockBar: React.FC<{
   currentScript: (Pick<Script, 'start_time'> & { script_id?: string }) | null;
   useMilitaryTime: boolean;
 }> = React.memo(({ playbackState, currentScript, useMilitaryTime }) => {
-  const { engine, currentTimestamp: timestamp } = useSharedShowTimeEngine();
+  const { engine, currentTimestamp: timestamp, currentShowTime } = useSharedShowTimeEngine();
 
   const formatRealTimeClock = (timestamp: number) => {
     const date = new Date(timestamp);
@@ -70,13 +71,14 @@ const MobileClockBar: React.FC<{
 
   const formatShowTimer = () => {
     if (!currentScript?.start_time) return "00:00:00";
-    const showTime = engine.getCurrentShowTime();
-    const totalSeconds = Math.floor(Math.abs(showTime) / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    return showTime < 0 ? `–${timeStr}` : timeStr;
+    const showTimeMs = computeDisplayShowTime(
+      currentScript.start_time,
+      playbackState,
+      engine,
+      currentShowTime,
+      timestamp
+    );
+    return formatShowTimerString(showTimeMs);
   };
 
   return (

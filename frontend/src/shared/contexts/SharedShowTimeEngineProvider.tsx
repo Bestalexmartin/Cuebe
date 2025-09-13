@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { ShowTimeEngine, ShowTimeEngineImpl, PlaybackState } from '../../contexts/ShowTimeEngine';
 import type { ScriptElement } from '../../features/script/types/scriptElements';
+import { computeDisplayShowTime } from '../../utils/showTimeUtils';
+import { debugScopedTiming } from '../../utils/debug';
 
 export type SharedElementHighlightState = 'inactive' | 'upcoming' | 'current' | 'past';
 export type SharedElementBorderState = 'red_border' | 'none';
@@ -109,12 +111,26 @@ export const SharedShowTimeEngineProvider: React.FC<SharedShowTimeEngineProvider
         engine.setScript(script?.start_time);
     }, [engine, script?.start_time]);
 
-    // Process boundaries when show time updates
+    // Process boundaries when show time updates (use safe display time on first PLAY frame)
     useEffect(() => {
         if (timingBoundaries.length > 0) {
-            processBoundariesForTime(currentShowTime);
+            const effectiveTime = computeDisplayShowTime(
+                script?.start_time,
+                playbackState,
+                engine,
+                currentShowTime,
+                currentTimestamp
+            );
+            debugScopedTiming('processBoundariesForTime:tick', {
+                playbackState,
+                currentShowTime,
+                currentTimestamp,
+                effectiveTime,
+                boundaries: timingBoundaries.length
+            });
+            processBoundariesForTime(effectiveTime);
         }
-    }, [currentShowTime, timingBoundaries]);
+    }, [currentShowTime, timingBoundaries, playbackState, engine, currentTimestamp, script?.start_time]);
 
     // WebSocket playback command handler for scoped side
     const handlePlaybackCommand = useCallback((command: string, _serverTimestampMs: number) => {
@@ -126,6 +142,17 @@ export const SharedShowTimeEngineProvider: React.FC<SharedShowTimeEngineProvider
         switch (command) {
             case 'PLAY':
                 engine.start();
+                // Immediately process boundaries using effective time to seed correct states
+                try {
+                    const effectiveTime = computeDisplayShowTime(
+                        script?.start_time,
+                        'PLAYING',
+                        engine,
+                        engine.getCurrentShowTime(),
+                        Date.now()
+                    );
+                    processBoundariesForTime(effectiveTime);
+                } catch {}
                 break;
                 
             case 'PAUSE':
@@ -299,6 +326,20 @@ export const SharedShowTimeEngineProvider: React.FC<SharedShowTimeEngineProvider
         if (playbackState === 'STOPPED') {
             return;
         }
+        
+        // Debug boundaries and states near zero to catch premature reveals
+        try {
+            if (Math.abs(currentTimeMs) <= 1500 && timingBoundaries.length > 0) {
+                const nearZero = timingBoundaries
+                    .filter(b => Math.abs(b.time) <= 2000 && b.elementId !== 'SCRIPT_COMPLETE')
+                    .slice(0, 8);
+                if (nearZero.length) {
+                    // eslint-disable-next-line @typescript-eslint/no-var-requires
+                    const { debugScopedTiming } = require('../../utils/debug');
+                    debugScopedTiming('boundariesNearZero', { currentTimeMs, nearZero });
+                }
+            }
+        } catch {}
         
         // Check for script completion first
         const hasActiveElements = timingBoundaries.some(boundary => 
