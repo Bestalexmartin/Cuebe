@@ -96,7 +96,7 @@ export const useScriptFormSync = ({
     // Clear pending changes after successful save
     // STRIPPED FOR REBUILD: This was part of the broken coordinated refresh architecture
     const clearPendingChanges = useCallback(() => {
-        // TODO REBUILD: Restore clearing of pending changes after unified save
+        
         // if (activeMode === 'info') {
         //     updateOriginalData({
         //         script_name: form.formData.script_name,

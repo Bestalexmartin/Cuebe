@@ -1,6 +1,6 @@
 // frontend/src/shared/utils/elementOperations.ts
 // Shared element operation logic - mirrors backend operations.py
-// debug logging removed for production sweep
+ 
 
 export interface ElementLike {
   element_id: string;
@@ -63,7 +63,7 @@ function applyUpdateGroupWithPropagation(elementsById: Map<string, ElementLike>,
     Object.entries(operation.field_updates).forEach(([field, value]) => {
       element[field] = value;
     });
-    // removed debug log
+    
   }
   
   // Propagate offset changes to children
@@ -72,7 +72,7 @@ function applyUpdateGroupWithPropagation(elementsById: Map<string, ElementLike>,
       const child = elementsById.get(childId);
       if (child) {
         child.offset_ms += operation.offset_delta_ms;
-        // removed debug log
+        
       }
     });
   }
@@ -95,11 +95,9 @@ function applyDeleteElement(elementsById: Map<string, ElementLike>, operation: a
 }
 
 function applyReorder(elementsById: Map<string, ElementLike>, _operation: any): ElementLike[] {
-  // TODO: Implement reorder logic mirroring backend
   return Array.from(elementsById.values());
 }
 
 function applyBulkReorder(elementsById: Map<string, ElementLike>, _operation: any): ElementLike[] {
-  // TODO: Implement bulk reorder logic mirroring backend  
   return Array.from(elementsById.values());
 }
