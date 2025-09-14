@@ -10,7 +10,7 @@ services:
     runtime: python
     buildCommand: cd backend && pip install -r requirements.txt
     startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
-    plan: free
+    plan: starter
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
@@ -22,26 +22,26 @@ services:
       - key: ALLOWED_ORIGINS
         value: https://cuebe-frontend.onrender.com
       - key: CLERK_PUBLISHABLE_KEY
-        sync: false  # Set this manually in Render dashboard
+        sync: false # Set this manually in Render dashboard
       - key: CLERK_SECRET_KEY
-        sync: false  # Set this manually in Render dashboard
+        sync: false # Set this manually in Render dashboard
       - key: CLERK_PEM_PUBLIC_KEY
-        sync: false  # Set this manually in Render dashboard
+        sync: false # Set this manually in Render dashboard
       - key: CLERK_WEBHOOK_SECRET
-        sync: false  # Set this manually in Render dashboard
+        sync: false # Set this manually in Render dashboard
 
   # React Frontend Static Site
   - type: web
     name: cuebe-frontend
     runtime: static
     buildCommand: cd frontend && npm install && npm run build
-    rootDir: frontend
+    staticPublishPath: ./frontend/dist
     plan: free
     buildFilter:
       paths:
-      - frontend/**
+        - frontend/**
     envVars:
       - key: VITE_API_BASE_URL
         value: https://cuebe-backend.onrender.com
       - key: VITE_CLERK_PUBLISHABLE_KEY
-        sync: false  # Set this manually in Render dashboard
+        sync: false # Set this manually in Render dashboard
