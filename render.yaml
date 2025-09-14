@@ -8,7 +8,6 @@ services:
   - type: web
     name: cuebe-backend
     runtime: python
-    runtimeVersion: "3.11"
     buildCommand: cd backend && pip install -r requirements.txt
     startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
     plan: starter
