@@ -10,7 +10,7 @@ services:
     runtime: python
     buildCommand: cd backend && pip install -r requirements.txt
     startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
-    plan: starter
+    plan: free
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
@@ -35,8 +35,8 @@ services:
     name: cuebe-frontend
     runtime: static
     buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
-    plan: starter
+    rootDir: frontend
+    plan: free
     buildFilter:
       paths:
       - frontend/**
