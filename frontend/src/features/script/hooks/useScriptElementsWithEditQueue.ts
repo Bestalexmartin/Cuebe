@@ -231,7 +231,9 @@ export const useScriptElementsWithEditQueue = (
 
   const updateServerElements = useCallback((freshElements: ScriptElement[]) => {
     setServerElements(freshElements);
-    setCurrentElements([...freshElements]); // Also update current elements
+    // Recalculate group timings for fresh elements from server before setting current elements
+    const elementsWithCalculatedGroupTimings = recalculateGroupTimings([...freshElements]);
+    setCurrentElements(elementsWithCalculatedGroupTimings);
   }, []);
 
   const discardChanges = useCallback(() => {

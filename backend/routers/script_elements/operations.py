@@ -366,20 +366,26 @@ def _apply_create_group_in_memory(elements_by_id: dict, script_id: UUID, operati
 def _apply_toggle_group_collapse_in_memory(elements_by_id: dict, operation_data: dict, user):
     """Apply TOGGLE_GROUP_COLLAPSE operation in-memory."""
     from datetime import datetime, timezone
-    
+
     element_id = operation_data.get("element_id")
     target_collapsed_state = operation_data.get("target_collapsed_state")
-    
+
     # Find the group element
     element = elements_by_id.get(element_id)
     if not element:
         raise ValueError(f"Element {element_id} not found")
-    
+
+    # Ensure target_collapsed_state is a valid boolean, defaulting to False if None
+    if target_collapsed_state is None:
+        target_collapsed_state = False
+    else:
+        target_collapsed_state = bool(target_collapsed_state)
+
     # Update collapse state
     element.is_collapsed = target_collapsed_state
     element.updated_by = user.user_id
     element.date_updated = datetime.now(timezone.utc)
-    
+
     return {
         "operation": "toggle_group_collapse",
         "element_id": element_id,
