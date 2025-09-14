@@ -1,6 +1,7 @@
 // frontend/src/utils/saveScript.ts
 
 import { EditOperation } from '../features/script/types/editQueue';
+import { getApiUrl } from '../config/api';
 
 export interface SaveScriptParams {
   scriptId: string;
@@ -88,7 +89,7 @@ export const saveScript = async ({
       })
     };
     
-    const response = await fetch(`/api/scripts/${scriptId}`, {
+    const response = await fetch(getApiUrl(`api/scripts/${scriptId}`), {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
