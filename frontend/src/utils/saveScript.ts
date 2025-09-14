@@ -77,6 +77,12 @@ export const saveScript = async ({
         } : {}),
         ...('affected_children' in op ? {
           affected_children: op.affected_children
+        } : {}),
+        ...('target_collapsed_state' in op ? {
+          target_collapsed_state: op.target_collapsed_state
+        } : {}),
+        ...('group_element_ids' in op ? {
+          group_element_ids: op.group_element_ids
         } : {})
         };
       })
