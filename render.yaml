@@ -1,0 +1,46 @@
+databases:
+  - name: cuebe-postgres
+    databaseName: cuebe_db
+    user: cuebe_user
+
+services:
+  # FastAPI Backend Service
+  - type: web
+    name: cuebe-backend
+    runtime: python
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cuebe-postgres
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+      - key: ALLOWED_ORIGINS
+        value: https://cuebe-frontend.onrender.com
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false  # Set this manually in Render dashboard
+      - key: CLERK_SECRET_KEY
+        sync: false  # Set this manually in Render dashboard
+      - key: CLERK_PEM_PUBLIC_KEY
+        sync: false  # Set this manually in Render dashboard
+      - key: CLERK_WEBHOOK_SECRET
+        sync: false  # Set this manually in Render dashboard
+
+  # React Frontend Static Site
+  - type: static
+    name: cuebe-frontend
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    plan: starter
+    buildFilter:
+      paths:
+      - frontend/**
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://cuebe-backend.onrender.com
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        sync: false  # Set this manually in Render dashboard
