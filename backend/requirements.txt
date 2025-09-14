@@ -36,7 +36,7 @@ mdurl==0.1.2
 multidict==6.6.3
 orjson==3.10.18
 propcache==0.3.2
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.10
 pyasn1==0.6.1
 pycares==4.9.0
 pycparser==2.22
