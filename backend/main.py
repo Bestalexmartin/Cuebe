@@ -50,9 +50,17 @@ if RATE_LIMITING_ENABLED and RateLimitExceeded is not None and rate_limit_exceed
 else:
     logger.warning("Rate limiting disabled - slowapi package not available")
 
+# CORS configuration - support both local development and production
+allowed_origins = ["http://localhost:5173"]
+
+# Add production origin if specified
+production_origin = os.getenv("ALLOWED_ORIGINS")
+if production_origin:
+    allowed_origins.extend([origin.strip() for origin in production_origin.split(",")])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

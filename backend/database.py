@@ -8,13 +8,18 @@ from sqlalchemy.orm import sessionmaker
 # Disable database logging for cleaner output
 logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
 
-DATABASE_URL = "postgresql://{user}:{password}@{host}:{port}/{db}".format(
-    user=os.getenv("POSTGRES_USER"),
-    password=os.getenv("POSTGRES_PASSWORD"),
-    host="db",
-    port="5432",
-    db=os.getenv("POSTGRES_DB"),
-)
+# Check if DATABASE_URL is provided (for production/Render.com)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# If no DATABASE_URL, construct it from individual components (for local development)
+if not DATABASE_URL:
+    DATABASE_URL = "postgresql://{user}:{password}@{host}:{port}/{db}".format(
+        user=os.getenv("POSTGRES_USER"),
+        password=os.getenv("POSTGRES_PASSWORD"),
+        host="db",
+        port="5432",
+        db=os.getenv("POSTGRES_DB"),
+    )
 
 engine = create_engine(
     DATABASE_URL,
