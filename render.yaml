@@ -20,7 +20,7 @@ services:
       - key: ENVIRONMENT
         value: production
       - key: ALLOWED_ORIGINS
-        value: https://cuebe.app
+        value: https://cuebe.app,https://cuebe-frontend.onrender.com
       - key: CLERK_PUBLISHABLE_KEY
         sync: false # Set this manually in Render dashboard
       - key: CLERK_SECRET_KEY
