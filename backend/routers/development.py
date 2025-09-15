@@ -160,3 +160,40 @@ def run_tests(
 @rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def read_root(request: Request):
     return {"status": "ok"}
+
+@router.post("/migrate")
+@rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+def run_database_migrations(request: Request):
+    """Run database migrations using Alembic"""
+    try:
+        logger.info("Starting database migration...")
+        result = subprocess.run(
+            ["alembic", "upgrade", "head"],
+            cwd="/opt/render/project/src/backend",
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minute timeout
+        )
+
+        if result.returncode == 0:
+            logger.info("Database migration completed successfully")
+            return {
+                "status": "success",
+                "message": "Database migrations completed successfully",
+                "output": result.stdout
+            }
+        else:
+            logger.error(f"Migration failed: {result.stderr}")
+            return {
+                "status": "error",
+                "message": "Database migration failed",
+                "error": result.stderr,
+                "output": result.stdout
+            }
+
+    except subprocess.TimeoutExpired:
+        logger.error("Migration command timed out")
+        raise HTTPException(status_code=408, detail="Migration timed out after 5 minutes")
+    except Exception as e:
+        logger.error(f"Error running migration: {e}")
+        raise HTTPException(status_code=500, detail=f"Migration execution failed: {str(e)}")
