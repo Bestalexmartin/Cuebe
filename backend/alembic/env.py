@@ -18,14 +18,18 @@ if config.config_file_name is not None:
 
 # --- START OF CUSTOM CONFIGURATION ---
 
-# 2. Construct the database URL from the loaded environment variables
-DATABASE_URL = "postgresql://{user}:{password}@{host}:{port}/{db}".format(
-    user=os.getenv("POSTGRES_USER"),
-    password=os.getenv("POSTGRES_PASSWORD"),
-    host="db",
-    port="5432",
-    db=os.getenv("POSTGRES_DB"),
-)
+# 2. Get DATABASE_URL (production) or construct from components (development)
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# If no DATABASE_URL, construct it from individual components (for local development)
+if not DATABASE_URL:
+    DATABASE_URL = "postgresql://{user}:{password}@{host}:{port}/{db}".format(
+        user=os.getenv("POSTGRES_USER"),
+        password=os.getenv("POSTGRES_PASSWORD"),
+        host="db",
+        port="5432",
+        db=os.getenv("POSTGRES_DB"),
+    )
 
 
 # 3. Add your model's MetaData object for 'autogenerate' support
