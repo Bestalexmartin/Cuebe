@@ -197,3 +197,65 @@ def run_database_migrations(request: Request):
     except Exception as e:
         logger.error(f"Error running migration: {e}")
         raise HTTPException(status_code=500, detail=f"Migration execution failed: {str(e)}")
+
+@router.post("/migrate/reset")
+@rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+def reset_migration_state(request: Request):
+    """Reset migration state and recreate from scratch"""
+    try:
+        logger.info("Resetting migration state...")
+
+        # First, stamp the database to the latest revision without running migrations
+        stamp_result = subprocess.run(
+            ["alembic", "stamp", "head"],
+            cwd="/opt/render/project/src/backend",
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+
+        if stamp_result.returncode != 0:
+            logger.error(f"Stamp failed: {stamp_result.stderr}")
+            return {
+                "status": "error",
+                "message": "Failed to stamp migration state",
+                "error": stamp_result.stderr,
+                "output": stamp_result.stdout
+            }
+
+        logger.info("Migration state reset successfully")
+        return {
+            "status": "success",
+            "message": "Migration state reset to head",
+            "output": stamp_result.stdout
+        }
+
+    except subprocess.TimeoutExpired:
+        logger.error("Reset command timed out")
+        raise HTTPException(status_code=408, detail="Reset timed out after 1 minute")
+    except Exception as e:
+        logger.error(f"Error resetting migration state: {e}")
+        raise HTTPException(status_code=500, detail=f"Reset execution failed: {str(e)}")
+
+@router.post("/migrate/create-tables")
+@rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
+def create_all_tables(request: Request, db: Session = Depends(get_db)):
+    """Create all tables using SQLAlchemy metadata (bypass migrations)"""
+    try:
+        logger.info("Creating all tables from SQLAlchemy metadata...")
+
+        # Import models to ensure all tables are registered
+        import models
+
+        # Create all tables
+        models.Base.metadata.create_all(bind=db.bind)
+
+        logger.info("All tables created successfully")
+        return {
+            "status": "success",
+            "message": "All tables created from SQLAlchemy metadata"
+        }
+
+    except Exception as e:
+        logger.error(f"Error creating tables: {e}")
+        raise HTTPException(status_code=500, detail=f"Table creation failed: {str(e)}")
