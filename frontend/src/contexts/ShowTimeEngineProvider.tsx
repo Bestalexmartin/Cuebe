@@ -1,6 +1,7 @@
 // frontend/src/contexts/ShowTimeEngineProvider.tsx
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode, useRef } from 'react';
+import { useSyncExternalStore } from 'react';
 import { ShowTimeEngine, ShowTimeEngineImpl, PlaybackState } from './ShowTimeEngine';
 import type { ScriptElement } from '../features/script/types/scriptElements';
 
@@ -56,6 +57,35 @@ interface ShowTimeEngineContextValue {
 
 const ShowTimeEngineContext = createContext<ShowTimeEngineContextValue | null>(null);
 
+// Stable-controls-only context to avoid 100ms ticker re-renders in parents
+interface ShowTimeControlsContextValue {
+    engine: ShowTimeEngine;
+    playbackState: PlaybackState;
+    totalPauseTime: number;
+    isPlaybackPlaying: boolean;
+    isPlaybackPaused: boolean;
+    isPlaybackStopped: boolean;
+    isPlaybackSafety: boolean;
+    isPlaybackComplete: boolean;
+    startPlayback: () => void;
+    pausePlayback: () => void;
+    safetyStop: () => void;
+    completePlayback: () => void;
+    stopPlayback: () => void;
+    setElementBoundaries: (elements: ScriptElement[], lookaheadMs: number) => void;
+    clearAllElementStates: () => void;
+}
+
+const ShowTimeControlsContext = createContext<ShowTimeControlsContextValue | null>(null);
+
+// Stable selectors context so consumers don't re-render on ticker updates
+interface ShowTimeSelectorsContextValue {
+    subscribeElement: (elementId: string, listener: () => void) => () => void;
+    getHighlight: (elementId: string) => ElementHighlightState | null;
+    getBorder: (elementId: string) => ElementBorderState | null;
+}
+const ShowTimeSelectorsContext = createContext<ShowTimeSelectorsContextValue | null>(null);
+
 interface ShowTimeEngineProviderProps {
     children: ReactNode;
     script?: { start_time: string } | null;
@@ -71,6 +101,22 @@ export const ShowTimeEngineProvider: React.FC<ShowTimeEngineProviderProps> = ({ 
     const [elementBorderStates, setElementBorderStates] = useState<Map<string, ElementBorderState>>(new Map());
     const [timingBoundaries, setTimingBoundaries] = useState<TimingBoundary[]>([]);
     const [passedElements, setPassedElements] = useState<Set<string>>(new Set());
+
+    // Refs to latest maps for selector access without causing provider re-renders
+    const elementStatesRef = useRef(elementStates);
+    const elementBorderStatesRef = useRef(elementBorderStates);
+    useEffect(() => { elementStatesRef.current = elementStates; }, [elementStates]);
+    useEffect(() => { elementBorderStatesRef.current = elementBorderStates; }, [elementBorderStates]);
+
+    // Per-element listeners to notify only affected components
+    const listenersRef = useRef<Map<string, Set<() => void>>>(new Map());
+    const notifyElement = useCallback((elementId: string) => {
+        const set = listenersRef.current.get(elementId);
+        if (!set) return;
+        set.forEach(fn => {
+            try { fn(); } catch {}
+        });
+    }, []);
 
     // Setup engine callbacks
     useEffect(() => {
@@ -90,10 +136,13 @@ export const ShowTimeEngineProvider: React.FC<ShowTimeEngineProviderProps> = ({ 
         engine.onShowTimeUpdate(handleShowTimeUpdate);
         engine.onTimestampUpdate(handleTimestampUpdate);
 
-        // Periodically update totalPauseTime for UI reactivity
+        // Periodically update totalPauseTime for UI reactivity (avoid stale closure)
+        const lastPauseRef = { current: 0 } as { current: number };
+        lastPauseRef.current = engine.totalPauseTime;
         const pauseTimeInterval = setInterval(() => {
             const currentTotal = engine.totalPauseTime;
-            if (currentTotal !== totalPauseTime) {
+            if (currentTotal !== lastPauseRef.current) {
+                lastPauseRef.current = currentTotal;
                 setTotalPauseTime(currentTotal);
             }
         }, 100);
@@ -222,6 +271,7 @@ export const ShowTimeEngineProvider: React.FC<ShowTimeEngineProviderProps> = ({ 
         let newBorderStates: Map<string, ElementBorderState> | null = null;
         let newPassedElements: Set<string> | null = null;
         let hasChanges = false;
+        const changedIds = new Set<string>();
         
         // Get unique element IDs more efficiently
         const elementIds = new Set<string>();
@@ -261,6 +311,7 @@ export const ShowTimeEngineProvider: React.FC<ShowTimeEngineProviderProps> = ({ 
                 if (!newStates) newStates = new Map(elementStates);
                 newStates.set(elementId, currentState);
                 hasChanges = true;
+                changedIds.add(elementId);
             }
             
             const previousBorderState = elementBorderStates.get(elementId);
@@ -268,6 +319,7 @@ export const ShowTimeEngineProvider: React.FC<ShowTimeEngineProviderProps> = ({ 
                 if (!newBorderStates) newBorderStates = new Map(elementBorderStates);
                 newBorderStates.set(elementId, currentBorderState);
                 hasChanges = true;
+                changedIds.add(elementId);
             }
             
             // Mark elements as passed when they become past (for Tetris scrolling)
@@ -285,9 +337,23 @@ export const ShowTimeEngineProvider: React.FC<ShowTimeEngineProviderProps> = ({ 
         }
         
         if (hasChanges) {
-            setElementStates(newStates || elementStates);
-            setElementBorderStates(newBorderStates || elementBorderStates);
-            setPassedElements(newPassedElements || passedElements);
+            const nextStates = newStates || elementStates;
+            const nextBorders = newBorderStates || elementBorderStates;
+            const nextPassed = newPassedElements || passedElements;
+
+            // Update selector refs first so subscribers read the latest snapshot
+            elementStatesRef.current = nextStates;
+            elementBorderStatesRef.current = nextBorders;
+
+            // Then update React state (for context consumers that read maps)
+            setElementStates(nextStates);
+            setElementBorderStates(nextBorders);
+            setPassedElements(nextPassed);
+
+            // Finally, notify only the elements that changed
+            if (changedIds.size > 0) {
+                changedIds.forEach(id => notifyElement(id));
+            }
         }
     }, [timingBoundaries, playbackState, elementStates, elementBorderStates, passedElements, completePlayback]);
 
@@ -322,7 +388,7 @@ export const ShowTimeEngineProvider: React.FC<ShowTimeEngineProviderProps> = ({ 
     const isPlaybackSafety = playbackState === 'SAFETY';
     const isPlaybackComplete = playbackState === 'COMPLETE';
 
-    // Memoize context value
+    // Memoize context value (includes ticker fields; use only where needed)
     const contextValue = useMemo(() => ({
         engine,
         playbackState,
@@ -377,10 +443,76 @@ export const ShowTimeEngineProvider: React.FC<ShowTimeEngineProviderProps> = ({ 
         shouldHideElement
     ]);
 
+    // Memoize controls-only context value; exclude ticker fields so identity is stable across ticks
+    const controlsValue = useMemo<ShowTimeControlsContextValue>(() => ({
+        engine,
+        playbackState,
+        totalPauseTime,
+        isPlaybackPlaying,
+        isPlaybackPaused,
+        isPlaybackStopped,
+        isPlaybackSafety,
+        isPlaybackComplete,
+        startPlayback,
+        pausePlayback,
+        safetyStop,
+        completePlayback,
+        stopPlayback,
+        setElementBoundaries,
+        clearAllElementStates,
+    }), [
+        engine,
+        playbackState,
+        totalPauseTime,
+        isPlaybackPlaying,
+        isPlaybackPaused,
+        isPlaybackStopped,
+        isPlaybackSafety,
+        isPlaybackComplete,
+        startPlayback,
+        pausePlayback,
+        safetyStop,
+        completePlayback,
+        stopPlayback,
+        setElementBoundaries,
+        clearAllElementStates,
+    ]);
+
+    // Stable selectors API (does not change with ticker)
+    const selectorsValue = useMemo<ShowTimeSelectorsContextValue>(() => ({
+        subscribeElement: (elementId: string, listener: () => void) => {
+            let set = listenersRef.current.get(elementId);
+            if (!set) {
+                set = new Set();
+                listenersRef.current.set(elementId, set);
+            }
+            set.add(listener);
+            return () => {
+                const s = listenersRef.current.get(elementId);
+                if (!s) return;
+                s.delete(listener);
+                if (s.size === 0) listenersRef.current.delete(elementId);
+            };
+        },
+        getHighlight: (elementId: string) => {
+            // Remove shading when complete or stopped
+            if (playbackState === 'COMPLETE' || playbackState === 'STOPPED') return null;
+            return elementStatesRef.current.get(elementId) || null;
+        },
+        getBorder: (elementId: string) => {
+            if (playbackState === 'COMPLETE' || playbackState === 'STOPPED') return null;
+            return elementBorderStatesRef.current.get(elementId) || null;
+        },
+    }), [playbackState]);
+
     return (
-        <ShowTimeEngineContext.Provider value={contextValue}>
-            {children}
-        </ShowTimeEngineContext.Provider>
+        <ShowTimeControlsContext.Provider value={controlsValue}>
+            <ShowTimeSelectorsContext.Provider value={selectorsValue}>
+                <ShowTimeEngineContext.Provider value={contextValue}>
+                    {children}
+                </ShowTimeEngineContext.Provider>
+            </ShowTimeSelectorsContext.Provider>
+        </ShowTimeControlsContext.Provider>
     );
 };
 
@@ -401,4 +533,51 @@ export const usePlayState = () => {
 export const usePlayActions = () => {
     const { startPlayback, pausePlayback, stopPlayback, safetyStop, completePlayback } = useShowTimeEngine();
     return { startPlayback, pausePlayback, stopPlayback, safetyStop, completePlayback };
+};
+
+// Controls-only hook (stable across 100ms ticker updates)
+export const useShowTimeControls = (): ShowTimeControlsContextValue => {
+    const context = useContext(ShowTimeControlsContext);
+    if (!context) {
+        throw new Error('useShowTimeControls must be used within a ShowTimeEngineProvider');
+    }
+    return context;
+};
+
+// Optional variant: returns null if not within provider
+export const useShowTimeControlsOptional = (): ShowTimeControlsContextValue | null => {
+    return useContext(ShowTimeControlsContext);
+};
+
+// Per-element playback state subscription: re-renders only when that element changes
+export const useElementPlaybackState = (elementId: string) => {
+    const selectors = useContext(ShowTimeSelectorsContext);
+    if (!selectors) {
+        // Outside provider: return static values
+        return { highlight: null as ElementHighlightState | null, border: null as ElementBorderState | null };
+    }
+    const subscribe = (onStoreChange: () => void) => selectors.subscribeElement(elementId, onStoreChange);
+    // Important: return a primitive snapshot to avoid identity changes causing re-render loops
+    const getSnapshotKey = () => {
+        const h = selectors.getHighlight(elementId) || '';
+        const b = selectors.getBorder(elementId) || '';
+        return `${h}|${b}`;
+    };
+    const key = useSyncExternalStore(subscribe, getSnapshotKey, getSnapshotKey);
+    const [highlightStr, borderStr] = key.split('|');
+    const highlight = (highlightStr || null) as ElementHighlightState | null;
+    const border = (borderStr || null) as ElementBorderState | null;
+    return { highlight, border };
+};
+
+// Stable selectors access (does not trigger re-renders on ticks)
+export const usePlaybackSelectors = () => {
+    const selectors = useContext(ShowTimeSelectorsContext);
+    if (!selectors) {
+        return {
+            getHighlight: (_: string) => null as ElementHighlightState | null,
+            getBorder: (_: string) => null as ElementBorderState | null,
+        };
+    }
+    return selectors;
 };

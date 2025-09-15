@@ -1,5 +1,5 @@
 // API configuration for development and production
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+export const API_BASE_URL = (import.meta as any).env.VITE_API_BASE_URL || '';
 
 export const getApiUrl = (path: string): string => {
   // Remove leading slash if present to avoid double slashes

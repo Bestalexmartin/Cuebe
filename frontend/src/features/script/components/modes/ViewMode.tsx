@@ -5,7 +5,7 @@ import { VStack, Text, Box, Flex } from '@chakra-ui/react';
 import { CueElement } from '../CueElement';
 import { ScriptElementsHeader } from '../ScriptElementsHeader';
 import { ScriptElement } from '../../types/scriptElements';
-import { useShowTimeEngine } from '../../../../contexts/ShowTimeEngineProvider';
+import { useShowTimeControls, usePlaybackSelectors } from '../../../../contexts/ShowTimeEngineProvider';
 
 interface ViewModeProps {
     scriptId: string; // Required by parent but not used in pure presentation component
@@ -44,11 +44,12 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
     onScrollStateChange,
     onToggleGroupCollapse,
     onViewModeActivation,
-    isHighlightingEnabled = true,
+    isHighlightingEnabled: _isHighlightingEnabled = true,
     lookaheadSeconds: _lookaheadSeconds = 30
 }, ref) => {
-    // Get show time engine for element highlighting
-    const { isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, getElementHighlightState, getElementBorderState } = useShowTimeEngine();
+    // Get stable playback state booleans & actions (no ticker subscription)
+    const { isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete } = useShowTimeControls();
+    const playbackSelectors = usePlaybackSelectors();
     
 
     // Ensure View mode prerequisites (auto-sort, clock time display) are enforced on mount
@@ -129,10 +130,10 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
         const isActivePlayback = (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) && !isPlaybackComplete;
         if (!isActivePlayback) return;
 
-        // Find current element
+        // Find current element (query selectors without subscribing to ticks)
         let currentElementId: string | null = null;
         for (const el of elements) {
-            const state = getElementHighlightState(el.element_id);
+            const state = playbackSelectors.getHighlight(el.element_id);
             if (state === 'current') {
                 currentElementId = el.element_id;
                 break;
@@ -168,7 +169,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
             const target = Math.min(desiredTop, maxScrollTop);
             container.scrollTo({ top: target, behavior: 'smooth' });
         }
-    }, [elements, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, getElementHighlightState]);
+    }, [elements, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete, playbackSelectors]);
 
     return (
         <VStack height="100%" spacing={0} align="stretch">
@@ -233,13 +234,8 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                         {displayElements.map((element, index) => {
                             // Only show clock times if we have the required script start time
                             const shouldShowClockTimes = showClockTimes && !!script?.start_time;
-                            
-                            // Get element highlight state from boundary system during PLAYING, PAUSED, or SAFETY when enabled
-                            const isActivePlayback = (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) && !isPlaybackComplete;
-                            const highlightState = (isActivePlayback && isHighlightingEnabled) ? getElementHighlightState(element.element_id) || null : null;
-                            // Red border is active during PLAYING and COMPLETE states
-                            const borderState = (isPlaybackPlaying || isPlaybackComplete) ? getElementBorderState(element.element_id) : undefined;
-                            
+
+                            // Element highlight/border handled inside CueElement via subscription
 
                             return (
                                 <CueElement
@@ -253,8 +249,7 @@ const ViewModeComponent = forwardRef<ViewModeRef, ViewModeProps>(({
                                     scriptStartTime={script?.start_time}
                                     scriptEndTime={script?.end_time}
                                     onToggleGroupCollapse={onToggleGroupCollapse}
-                                    highlightState={highlightState}
-                                    borderState={borderState}
+                                    // highlight/border come from element-specific subscription
                                 />
                             );
                         })}
