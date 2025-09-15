@@ -20,13 +20,12 @@ const PlaybackTimingProvider: React.FC<{
     isPlaybackComplete: boolean;
     isPlaybackPaused: boolean;
     isPlaybackSafety: boolean;
-    processBoundariesForTime: (timeMs: number) => void;
-}> = React.memo(({ children, script, isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety, processBoundariesForTime }) => {
+}> = React.memo(({ children, script, isPlaybackPlaying, isPlaybackComplete, isPlaybackPaused, isPlaybackSafety }) => {
     const [currentPlaybackTime, setCurrentPlaybackTime] = useState<number | null>(null);
     const finalShowTimeRef = useRef<number | null>(null);
     const timerRef = useRef<number | null>(null);
     const nextIndexRef = useRef<number>(0);
-    const { timingBoundaries, currentShowTime } = useShowTimeEngine();
+    const { timingBoundaries, currentShowTime, processBoundariesForTime } = useShowTimeEngine();
 
     // Show time now comes directly from ShowTimeEngine
     const getShowTime = useCallback(() => {
@@ -185,7 +184,7 @@ const ShowTimer: React.FC<{ script: any; playbackState: string }> = ({ script })
 
 const PlaybackStatus: React.FC<{ playbackState: string }> = ({ playbackState }) => {
     const { engine } = useShowTimeEngine();
-    
+
     if (playbackState === 'STOPPED') return null;
 
     const getStatusColor = () => {
@@ -197,14 +196,14 @@ const PlaybackStatus: React.FC<{ playbackState: string }> = ({ playbackState }) 
     const isComplete = playbackState === 'COMPLETE';
     const hasDelayTimer = playbackState === 'PAUSED' || playbackState === 'SAFETY' || (playbackState === 'COMPLETE' && engine.totalPauseTime > 0);
     return (
-        <Box 
-            bg="transparent" 
-            color={getStatusColor()} 
-            pl="8px" 
+        <Box
+            bg="transparent"
+            color={getStatusColor()}
+            pl="8px"
             pr={hasDelayTimer ? "8px" : "16px"}
-            py="2px" 
-            borderRadius="none" 
-            fontSize="2xl" 
+            py="2px"
+            borderRadius="none"
+            fontSize="2xl"
             fontFamily="mono"
             fontWeight="bold"
             minWidth="100px"
@@ -290,11 +289,10 @@ interface PlaybackOverlayProps {
     isPlaybackComplete: boolean;
     isPlaybackPaused: boolean;
     isPlaybackSafety: boolean;
-    processBoundariesForTime: (timeMs: number) => void;
     useMilitaryTime: boolean;
 }
 
-export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
+export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = React.memo(({
     contentAreaBounds,
     script,
     playbackState,
@@ -302,17 +300,22 @@ export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
     isPlaybackComplete,
     isPlaybackPaused,
     isPlaybackSafety,
-    processBoundariesForTime,
     useMilitaryTime
 }) => {
+    const { engine } = useShowTimeEngine();
+
+    // Determine if delay timer will be shown
+    const showDelayTimer = playbackState === 'PAUSED' ||
+                          playbackState === 'SAFETY' ||
+                          (playbackState === 'COMPLETE' && engine.totalPauseTime > 0);
+
     return (
-            <PlaybackTimingProvider 
+            <PlaybackTimingProvider
                 script={script}
                 isPlaybackPlaying={isPlaybackPlaying}
                 isPlaybackComplete={isPlaybackComplete}
                 isPlaybackPaused={isPlaybackPaused}
                 isPlaybackSafety={isPlaybackSafety}
-                processBoundariesForTime={processBoundariesForTime}
             >
                 {/* Border overlay */}
                 {contentAreaBounds && (
@@ -336,7 +339,7 @@ export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
                         } : {}}
                     />
                 )}
-                
+
                 {/* Time and Status Display - positioned at top center */}
                 <Box
                     position="fixed"
@@ -350,34 +353,33 @@ export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
                         <HStack spacing={0} align="center">
                             {/* Realtime Clock */}
                             <RealtimeClock useMilitaryTime={useMilitaryTime} />
-                            
+
                             {/* Bullet separator */}
                             <Box bg="#0F0F0F" px="4px" py="2px">
                                 <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
                             </Box>
-                            
+
                             {/* Show Timer */}
-                            <ShowTimer 
+                            <ShowTimer
                                 script={script}
                                 playbackState={playbackState}
                             />
-                            
+
                             {/* Bullet separator */}
                             <Box bg="#0F0F0F" px="4px" py="2px">
                                 <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
                             </Box>
-                            
+
                             {/* Playback Status */}
                             <PlaybackStatus playbackState={playbackState} />
-                            
-                            {/* Bullet separator for paused/safety/complete mode - only show if there will be a delay timer */}
-                            {((playbackState === 'PAUSED' || playbackState === 'SAFETY') || 
-                              (playbackState === 'COMPLETE')) && (
+
+                            {/* Bullet separator for paused/safety/complete mode - only show if delay timer will be shown */}
+                            {showDelayTimer && (
                                 <Box bg="#0F0F0F" px="4px" py="2px">
                                     <Text fontSize="2xl" color="gray.500" fontFamily="mono">•</Text>
                                 </Box>
                             )}
-                            
+
                             {/* Delay Timer - in PAUSED, SAFETY, and COMPLETE modes */}
                             <DelayTimer playbackState={playbackState} />
                         </HStack>
@@ -385,4 +387,4 @@ export const PlaybackOverlay: React.FC<PlaybackOverlayProps> = ({
                 </Box>
             </PlaybackTimingProvider>
     );
-};
+});

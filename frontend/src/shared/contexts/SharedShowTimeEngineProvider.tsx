@@ -91,10 +91,12 @@ export const SharedShowTimeEngineProvider: React.FC<SharedShowTimeEngineProvider
         engine.onShowTimeUpdate(handleShowTimeUpdate);
         engine.onTimestampUpdate(handleTimestampUpdate);
 
-        // Periodically update totalPauseTime for UI reactivity
+        // Periodically update totalPauseTime for UI reactivity (avoid stale closure)
+        const lastPauseRef = { current: engine.totalPauseTime } as { current: number };
         const pauseTimeInterval = setInterval(() => {
             const currentTotal = engine.totalPauseTime;
-            if (currentTotal !== totalPauseTime) {
+            if (currentTotal !== lastPauseRef.current) {
+                lastPauseRef.current = currentTotal;
                 setTotalPauseTime(currentTotal);
             }
         }, 100);
@@ -543,4 +545,9 @@ export const useSharedShowTimeEngine = (): SharedShowTimeEngineContextValue => {
 export const useSharedPlayState = () => {
     const { playbackState, isPlaybackPlaying, isPlaybackPaused, isPlaybackStopped, currentShowTime } = useSharedShowTimeEngine();
     return { playbackState, isPlaybackPlaying, isPlaybackPaused, isPlaybackStopped, currentShowTime };
+};
+
+// Optional variant: returns null if not within provider
+export const useSharedShowTimeEngineOptional = (): SharedShowTimeEngineContextValue | null => {
+    return useContext(SharedShowTimeEngineContext);
 };

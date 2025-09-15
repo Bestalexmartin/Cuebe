@@ -21,7 +21,7 @@ import { convertLocalToUTC } from '../utils/timeUtils';
 import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
 import { useScriptSync } from '../hooks/useScriptSync';
 import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
-import { useShowTimeEngine, ShowTimeEngineProvider } from '../contexts/ShowTimeEngineProvider';
+import { ShowTimeEngineProvider, useShowTimeControls } from '../contexts/ShowTimeEngineProvider';
 // Save flow extracted into hook
 import { useSaveScript } from '../features/script/hooks/useSaveScript';
 import { EditQueueFormatter } from '../features/script/utils/editQueueFormatter';
@@ -51,7 +51,7 @@ import { useScriptModalHandlers } from '../features/script/hooks/useScriptModalH
 
 // Component to update ShowTimeEngine when script changes
 const ScriptAwareShowTimeEngineUpdater: React.FC<{ script: any; children: React.ReactNode }> = ({ script, children }) => {
-    const { engine } = useShowTimeEngine();
+    const { engine } = useShowTimeControls();
     
     useEffect(() => {
         if (script?.start_time) {
@@ -98,11 +98,12 @@ const INITIAL_FORM_STATE: ScriptFormData = {
 
 
 // Create a wrapper component that isolates the auth hook
-const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => Promise<string | null> }> = ({ 
+const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => Promise<string | null> }> = React.memo(({ 
     isMenuOpen, 
     onMenuClose, 
     getToken 
 }) => {
+
     const contentAreaRef = useRef<HTMLDivElement>(null);
     const [contentAreaBounds, setContentAreaBounds] = useState<DOMRect | null>(null);
     const { showSuccess, showError } = useEnhancedToast();
@@ -172,11 +173,11 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     };
 
     // Real-time sync for collaborative editing - RESTORED
-    const { 
-        isConnected: isSyncConnected, 
-        isConnecting: isSyncConnecting, 
-        connectionCount: syncConnectionCount, 
-        connectionError: syncConnectionError, 
+    const {
+        isConnected: isSyncConnected,
+        isConnecting: isSyncConnecting,
+        connectionCount: syncConnectionCount,
+        connectionError: syncConnectionError,
         sendUpdate: sendSyncUpdate,
         sendPlaybackCommand: sendSyncPlaybackCommand,
         sendPlaybackStatus: sendSyncPlaybackStatus,
@@ -187,29 +188,40 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         scriptSyncOptions
     );
 
-    // Update sync context for header display - FIXED FOR RENDER LOOP
+    // Update ScriptSyncContext so header icon and counts work
     const { setSyncData } = useScriptSyncContext();
-    
-    // Memoize sync data to prevent unnecessary context updates
-    const syncData = useMemo(() => {
-        if (!scriptId) return null;
-        
-        return {
-            isConnected: isSyncConnected,
-            isConnecting: isSyncConnecting,
-            connectionCount: syncConnectionCount,
-            connectionError: syncConnectionError,
-            userType: 'stage_manager' as const,
-            triggerRotation: triggerRotationRef
-        };
-    }, [scriptId, isSyncConnected, isSyncConnecting, syncConnectionCount, syncConnectionError, triggerRotationRef]);
-    
+    // Only update sync context when values actually change to avoid update loops
+    const lastSyncKeyRef = useRef<string>("");
     useEffect(() => {
-        setSyncData(syncData);
-        
-        // Cleanup when component unmounts
-        return () => setSyncData(null);
-    }, [syncData, setSyncData]);
+        if (!scriptId) return;
+        const key = [
+            scriptId,
+            isSyncConnected ? 1 : 0,
+            isSyncConnecting ? 1 : 0,
+            syncConnectionCount ?? 0,
+            syncConnectionError ?? ''
+        ].join('|');
+        if (key !== lastSyncKeyRef.current) {
+            lastSyncKeyRef.current = key;
+            setSyncData({
+                scriptId,
+                isConnected: isSyncConnected,
+                isConnecting: isSyncConnecting,
+                connectionCount: syncConnectionCount,
+                connectionError: syncConnectionError,
+                userType: 'stage_manager' as const,
+                triggerRotation: triggerRotationRef
+            } as any);
+        }
+    }, [scriptId, isSyncConnected, isSyncConnecting, syncConnectionCount, syncConnectionError, setSyncData]);
+
+    // Clear sync data only on unmount
+    useEffect(() => {
+        return () => {
+            setSyncData(null);
+        };
+    }, [setSyncData]);
+
 
     // applyLocalChangeWithSync will be defined after editQueueHook
 
@@ -270,7 +282,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     // Always call hooks (React requirement), but conditionally process data
     const dataReady = sourceScript && !isLoadingScript;
     
-    // Edit queue data now comes from context
+    // Edit queue data now comes from context (reverted - not the culprit)
     const editQueueElements = elements;
 
     // Unified save function via hook (auto-save and manual save use this)
@@ -322,10 +334,60 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         return currentState;
     }, [autoSortCues, pendingOperations]);
 
-    // Use preview preferences when options modal is open, otherwise use saved preferences  
-    const activePreferences = modalState.isOpen(MODAL_NAMES.OPTIONS) && previewPreferences
-        ? previewPreferences
-        : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval, lookaheadSeconds, playHeartbeatIntervalSec };
+    // Check options modal state for preferences
+    const isOptionsModalOpen = modalState.isOpen(MODAL_NAMES.OPTIONS);
+
+    // Memoize individual preference values for stable EditMode props
+    const editModeColorizeDepNames = useMemo(() => {
+        return isOptionsModalOpen && previewPreferences ? previewPreferences.colorizeDepNames : colorizeDepNames;
+    }, [isOptionsModalOpen, previewPreferences, colorizeDepNames]);
+
+    const editModeShowClockTimes = useMemo(() => {
+        return isOptionsModalOpen && previewPreferences ? previewPreferences.showClockTimes : showClockTimes;
+    }, [isOptionsModalOpen, previewPreferences, showClockTimes]);
+
+    const editModeAutoSortCues = useMemo(() => {
+        return isOptionsModalOpen && previewPreferences ? previewPreferences.autoSortCues : currentAutoSortState;
+    }, [isOptionsModalOpen, previewPreferences, currentAutoSortState]);
+
+    const editModeUseMilitaryTime = useMemo(() => {
+        return isOptionsModalOpen && previewPreferences ? previewPreferences.useMilitaryTime : useMilitaryTime;
+    }, [isOptionsModalOpen, previewPreferences, useMilitaryTime]);
+
+    // Memoize ViewMode preference props for stability
+    const viewModeColorizeDepNames = editModeColorizeDepNames; // Same logic
+    const viewModeShowClockTimes = editModeShowClockTimes; // Same logic
+    const viewModeAutoSortCues = editModeAutoSortCues; // Same logic
+    const viewModeUseMilitaryTime = editModeUseMilitaryTime; // Same logic
+
+    const viewModeLookaheadSeconds = useMemo(() => {
+        return isOptionsModalOpen && previewPreferences ? previewPreferences.lookaheadSeconds : lookaheadSeconds;
+    }, [isOptionsModalOpen, previewPreferences, lookaheadSeconds]);
+
+    // Use preview preferences when options modal is open, otherwise use saved preferences
+    const activePreferences = useMemo(() => {
+        return isOptionsModalOpen && previewPreferences
+            ? previewPreferences
+            : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval, lookaheadSeconds, playHeartbeatIntervalSec };
+    }, [isOptionsModalOpen, previewPreferences, darkMode, colorizeDepNames, showClockTimes, currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval, lookaheadSeconds, playHeartbeatIntervalSec]);
+
+    // Debug: Check if activePreferences is changing frequently
+    const renderCountRef = useRef(0);
+    const prevValuesRef = useRef<{ activePreferences?: any }>({});
+
+    renderCountRef.current++;
+
+    if (prevValuesRef.current.activePreferences) {
+        const changed = JSON.stringify(prevValuesRef.current.activePreferences) !== JSON.stringify(activePreferences);
+        if (changed) {
+            console.log('🔄 activePreferences changed:', {
+                prev: prevValuesRef.current.activePreferences,
+                new: activePreferences,
+                renderCount: renderCountRef.current
+            });
+        }
+    }
+    prevValuesRef.current.activePreferences = activePreferences;
 
     const { activeMode, setActiveMode } = useScriptModes('view');
     
@@ -349,10 +411,20 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         stopPlayback, 
         safetyStop,
         setElementBoundaries, 
-        processBoundariesForTime, 
         engine
-    } = useShowTimeEngine();
-    
+    } = useShowTimeControls();
+
+
+
+    // Memoize playback-related props to prevent cascade re-renders
+    const playbackProps = useMemo(() => ({
+        playbackState,
+        isPlaybackPlaying,
+        isPlaybackPaused,
+        isPlaybackSafety,
+        isPlaybackComplete
+    }), [playbackState, isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, isPlaybackComplete]);
+
 
     // Wipe edit history when entering COMPLETE state
     useEffect(() => {
@@ -370,9 +442,10 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         applyLocalChange,
         setActiveMode
     });
-    
+
     // Use form sync result or context fallback
     const effectiveCurrentScript = currentScript || contextCurrentScript;
+
 
     // Playback synchronization for scoped sides - using scriptSync's sendPlaybackCommand
     const sendPlaybackCommand = useCallback((command: string) => {
@@ -544,7 +617,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     }, [modalState, navigate, playbackState, stopPlayback, sourceScript, scriptId]);
 
 
-    // Auto-save functionality - OPTIMIZED to prevent render loops, paused during VIEW mode
+    // Auto-save functionality - re-enabled (not the culprit)
     const { isAutoSaving, secondsUntilNextSave, showSaveSuccess, isPaused, togglePause } = useAutoSave({
         autoSaveInterval: activeMode === 'view' ? 0 : activePreferences.autoSaveInterval, // Disable during VIEW mode
         hasUnsavedChanges,
@@ -578,6 +651,17 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     
     prevValues.current = currentValues;
 
+    // Memoized callbacks for elementActions stability
+    const clearSelection = useCallback(() => {
+        editModeRef.current?.clearSelection();
+        setCurrentSelectedElementIds([]);
+    }, []);
+
+    const setSelectedElementIds = useCallback((ids: string[]) => {
+        setCurrentSelectedElementIds(ids);
+        // EditMode manages its own selection state
+    }, []);
+
     // Element modal actions hook
     const elementActions = useElementModalActions({
         scriptId,
@@ -587,17 +671,13 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         modalState,
         modalNames: MODAL_NAMES,
         selectedElementIds: currentSelectedElementIds,
-        clearSelection: () => {
-            editModeRef.current?.clearSelection();
-            setCurrentSelectedElementIds([]);
-        },
-        setSelectedElementIds: (ids: string[]) => {
-            setCurrentSelectedElementIds(ids);
-            // EditMode manages its own selection state
-        }
+        clearSelection,
+        setSelectedElementIds
     });
     
-    const handleSelectionChange = elementActions.setSelectedElementIds;
+    const handleSelectionChange = useCallback((ids: string[]) => {
+        setSelectedElementIds(ids);
+    }, [setSelectedElementIds]);
 
     // Sharing operations hook
     const { 
@@ -678,13 +758,15 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     useEffect(() => {
         if ((isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety || isPlaybackComplete) && contentAreaRef.current) {
             const updateBounds = () => {
-                setContentAreaBounds(contentAreaRef.current!.getBoundingClientRect());
+                if (contentAreaRef.current) {
+                    setContentAreaBounds(contentAreaRef.current.getBoundingClientRect());
+                }
             };
-            
+
             updateBounds();
             window.addEventListener('resize', updateBounds);
             window.addEventListener('scroll', updateBounds);
-            
+
             return () => {
                 window.removeEventListener('resize', updateBounds);
                 window.removeEventListener('scroll', updateBounds);
@@ -700,9 +782,8 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
             if (isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) {
                 e.preventDefault();
-                e.returnValue = 'This will end playback of this script.';
                 modalState.openModal(MODAL_NAMES.EMERGENCY_EXIT);
-                return e.returnValue;
+                return 'This will end playback of this script.';
             }
         };
 
@@ -953,11 +1034,11 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                     hasChanges={hasChanges}
                     hasUnsavedChanges={hasUnsavedChanges}
                     isFormValid={form.isValid}
-                    playbackState={playbackState}
-                    isPlaybackPlaying={isPlaybackPlaying}
-                    isPlaybackPaused={isPlaybackPaused}
-                    isPlaybackSafety={isPlaybackSafety}
-                    isPlaybackComplete={isPlaybackComplete}
+                    playbackState={playbackProps.playbackState}
+                    isPlaybackPlaying={playbackProps.isPlaybackPlaying}
+                    isPlaybackPaused={playbackProps.isPlaybackPaused}
+                    isPlaybackSafety={playbackProps.isPlaybackSafety}
+                    isPlaybackComplete={playbackProps.isPlaybackComplete}
                     activePreferences={activePreferences}
                     showSaveSuccess={showSaveSuccess}
                     isAutoSaving={isAutoSaving}
@@ -987,7 +1068,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                         display="flex"
                         flexDirection="column"
                         border="1px solid"
-                        borderColor={isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety || isPlaybackComplete ? "transparent" : "container.border"}
+                        borderColor={playbackProps.isPlaybackPlaying || playbackProps.isPlaybackPaused || playbackProps.isPlaybackSafety || playbackProps.isPlaybackComplete ? "transparent" : "container.border"}
                         ref={contentAreaRef}
                         width={isMobile ? "100%" : "calc(100% - 106px)"} // Full width on mobile, account for toolbar on desktop
                         zIndex={1}
@@ -1024,16 +1105,32 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                                 {/* Render active mode component */}
                                 {activeMode === 'info' && <InfoMode form={form} />}
                                 {activeMode === 'view' && (
-                                    <ViewMode ref={viewModeRef} scriptId={scriptId || ''} colorizeDepNames={activePreferences.colorizeDepNames} showClockTimes={activePreferences.showClockTimes} autoSortCues={activePreferences.autoSortCues} useMilitaryTime={activePreferences.useMilitaryTime} onScrollStateChange={handleScrollStateChange} elements={departmentFilteredElements} allElements={departmentFilteredAllElements} script={effectiveCurrentScript} onToggleGroupCollapse={toggleGroupCollapse} groupOverrides={groupOverrides} onViewModeActivation={handleViewModeActivation} isHighlightingEnabled={isHighlightingEnabled} lookaheadSeconds={activePreferences.lookaheadSeconds} />
+                                    <ViewMode
+                                        ref={viewModeRef}
+                                        scriptId={scriptId || ''}
+                                        colorizeDepNames={viewModeColorizeDepNames}
+                                        showClockTimes={viewModeShowClockTimes}
+                                        autoSortCues={viewModeAutoSortCues}
+                                        useMilitaryTime={viewModeUseMilitaryTime}
+                                        onScrollStateChange={handleScrollStateChange}
+                                        elements={departmentFilteredElements}
+                                        allElements={departmentFilteredAllElements}
+                                        script={effectiveCurrentScript}
+                                        onToggleGroupCollapse={toggleGroupCollapse}
+                                        groupOverrides={groupOverrides}
+                                        onViewModeActivation={handleViewModeActivation}
+                                        isHighlightingEnabled={isHighlightingEnabled}
+                                        lookaheadSeconds={viewModeLookaheadSeconds}
+                                    />
                                 )}
                                 {activeMode === 'edit' && (
                                     <EditMode
                                         ref={editModeRef}
                                         scriptId={scriptId || ''}
-                                        colorizeDepNames={activePreferences.colorizeDepNames}
-                                        showClockTimes={activePreferences.showClockTimes}
-                                        autoSortCues={activePreferences.autoSortCues}
-                                        useMilitaryTime={activePreferences.useMilitaryTime}
+                                        colorizeDepNames={editModeColorizeDepNames}
+                                        showClockTimes={editModeShowClockTimes}
+                                        autoSortCues={editModeAutoSortCues}
+                                        useMilitaryTime={editModeUseMilitaryTime}
                                         onAutoSortChange={handleAutoSortToggle}
                                         onScrollStateChange={handleScrollStateChange}
                                         onSelectionChange={handleSelectionChange}
@@ -1069,11 +1166,11 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                                 toolButtons={toolButtons}
                                 onModeChange={handleModeChange}
                                 activeMode={activeMode}
-                                playbackState={playbackState}
+                                playbackState={playbackProps.playbackState}
                             />
-                            
+
                             {/* Safety Stop Button - visible during playback, ghosted in safety mode, hidden in complete mode */}
-                            {(isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety) && !isPlaybackComplete && (
+                            {(playbackProps.isPlaybackPlaying || playbackProps.isPlaybackPaused || playbackProps.isPlaybackSafety) && !playbackProps.isPlaybackComplete && (
                                 <Box
                                 width="100%"
                                 height="50px"
@@ -1082,11 +1179,11 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
                                 display="flex"
                                 alignItems="center"
                                 justifyContent="center"
-                                cursor={isPlaybackSafety ? "not-allowed" : "pointer"}
+                                cursor={playbackProps.isPlaybackSafety ? "not-allowed" : "pointer"}
                                 transition="all 0.2s"
-                                onClick={isPlaybackSafety ? undefined : handleSafetyStop}
-                                opacity={isPlaybackSafety ? 0.4 : 1}
-                                _hover={isPlaybackSafety ? {} : {
+                                onClick={playbackProps.isPlaybackSafety ? undefined : handleSafetyStop}
+                                opacity={playbackProps.isPlaybackSafety ? 0.4 : 1}
+                                _hover={playbackProps.isPlaybackSafety ? {} : {
                                     "& .safety-stripes": {
                                         background: `repeating-linear-gradient(
                                             -45deg,
@@ -1326,23 +1423,22 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
             </Modal>
 
             {/* Playback overlay with border and time displays */}
-            {(isPlaybackPlaying || isPlaybackPaused || isPlaybackSafety || isPlaybackComplete) && contentAreaBounds && (
+            {(playbackProps.isPlaybackPlaying || playbackProps.isPlaybackPaused || playbackProps.isPlaybackSafety || playbackProps.isPlaybackComplete) && contentAreaBounds && (
                 <PlaybackOverlay
                     contentAreaBounds={contentAreaBounds}
                     script={effectiveCurrentScript}
-                    playbackState={playbackState}
-                    isPlaybackPlaying={isPlaybackPlaying}
-                    isPlaybackComplete={isPlaybackComplete}
-                    isPlaybackPaused={isPlaybackPaused}
-                    isPlaybackSafety={isPlaybackSafety}
-                    processBoundariesForTime={processBoundariesForTime}
+                    playbackState={playbackProps.playbackState}
+                    isPlaybackPlaying={playbackProps.isPlaybackPlaying}
+                    isPlaybackComplete={playbackProps.isPlaybackComplete}
+                    isPlaybackPaused={playbackProps.isPlaybackPaused}
+                    isPlaybackSafety={playbackProps.isPlaybackSafety}
                     useMilitaryTime={activePreferences.useMilitaryTime}
                 />
             )}
         </ErrorBoundary>
         </ScriptAwareShowTimeEngineUpdater>
     );
-};
+});
 
 // Outer component that handles auth and passes getToken down
 export const ManageScriptPage: React.FC<ManageScriptPageProps> = React.memo(({ isMenuOpen, onMenuClose }) => {

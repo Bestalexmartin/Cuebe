@@ -10,7 +10,8 @@ import { getTextColorForBackground } from '../../../utils/colorUtils';
 import { AppIcon } from '../../../components/AppIcon';
 import { formatTimeOffset } from '../../../utils/timeUtils';
 import { formatElementTime } from '../../../utils/showTimeUtils';
-import { useShowTimeEngine } from '../../../contexts/ShowTimeEngineProvider';
+import { useShowTimeControlsOptional, useElementPlaybackState } from '../../../contexts/ShowTimeEngineProvider';
+import { useSharedShowTimeEngineOptional } from '../../../shared/contexts/SharedShowTimeEngineProvider';
 import { ElementHighlightState, ElementBorderState } from '../../../contexts/ShowTimeEngineProvider';
 
 interface CueElementProps {
@@ -36,7 +37,7 @@ interface CueElementProps {
     showTimeEngine?: any;
 }
 
-export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) => {
+const CueElementComponent: React.FC<CueElementProps> = (props: CueElementProps) => {
     const {
         element,
         index,
@@ -251,18 +252,17 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
         return `${deptPrefix}-${departmentCueCount.toString().padStart(2, '0')}`;
     })();
 
-    // Get ShowTimeEngine for pause-aware timing - use props if provided, otherwise context
-    let engine, totalPauseTime;
-    if (props.showTimeEngine !== undefined && props.totalPauseTime !== undefined) {
-        // Use provided props (for shared context)
-        engine = props.showTimeEngine;
-        totalPauseTime = props.totalPauseTime;
-    } else {
-        // Use context (for auth context)
-        const contextData = useShowTimeEngine();
-        engine = contextData.engine;
-        totalPauseTime = contextData.totalPauseTime;
-    }
+    // Get stable controls (engine and totalPauseTime) without subscribing to 100ms ticker
+    // Prefer explicit props if provided (used by shared page)
+    const controls = useShowTimeControlsOptional();
+    const sharedControls = useSharedShowTimeEngineOptional();
+    const engine = props.showTimeEngine ?? controls?.engine ?? sharedControls?.engine;
+    const totalPauseTime = props.totalPauseTime ?? controls?.totalPauseTime ?? sharedControls?.totalPauseTime ?? 0;
+
+    // Subscribe to element-specific playback state (no parent re-render)
+    const { highlight, border } = useElementPlaybackState(element.element_id);
+    const effectiveHighlight: ElementHighlightState | null = highlightState ?? highlight;
+    const effectiveBorder: ElementBorderState | null = borderState ?? border;
 
     const timeDisplay = useMemo(() => {
         const timeValue = element.offset_ms || 0;
@@ -273,7 +273,10 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                 return '--:--:--'; // Placeholder to prevent offset time from showing
             }
             // Use ShowTimeEngine-aware utility that accounts for pause time
-            return formatElementTime(element, { start_time: scriptStartTime }, engine, effectiveUseMilitaryTime);
+            if (engine) {
+                return formatElementTime(element, { start_time: scriptStartTime }, engine, effectiveUseMilitaryTime);
+            }
+            return '--:--:--';
         }
 
         // Show offset time when clock times are not requested
@@ -353,7 +356,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
             {...(isDragEnabled ? { ...attributes, ...listeners } : {})}
         >
             {/* Playback highlight overlay - only show during playback */}
-            {highlightState && (
+            {effectiveHighlight && (
                 <Box
                     position="absolute"
                     top="-3px"
@@ -362,7 +365,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     bottom="-3px"
                     pointerEvents="none"
                     zIndex={15}
-                    style={getOverlayStyle(highlightState)}
+                    style={getOverlayStyle(effectiveHighlight)}
                 />
             )}
 
@@ -380,7 +383,7 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
             ) : null}
 
             {/* Border overlay - appears above group color bar */}
-            {(borderState === 'red_border' || isSelected || (isHovered && (isDragEnabled || onSelect || onEdit))) && (
+            {(effectiveBorder === 'red_border' || isSelected || (isHovered && (isDragEnabled || onSelect || onEdit))) && (
                 <Box
                     position="absolute"
                     w="calc(100% + 6px)"
@@ -389,14 +392,14 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
                     top="-3px"
                     border="3px solid"
                     borderColor={
-                        borderState === 'red_border' ? "#e23122" :
+                        effectiveBorder === 'red_border' ? "#e23122" :
                             isSelected ? "blue.400" :
                                 "orange.400"
                     }
                     borderRadius="none"
                     pointerEvents="none"
                     zIndex={20}
-                    boxShadow={borderState === 'red_border' ? "inset 0 0 3px rgba(239, 68, 68, 0.8), inset 0 0 6px rgba(239, 68, 68, 0.5)" : "none"}
+                    boxShadow={effectiveBorder === 'red_border' ? "inset 0 0 3px rgba(239, 68, 68, 0.8), inset 0 0 6px rgba(239, 68, 68, 0.5)" : "none"}
                 />
             )}
 
@@ -639,3 +642,22 @@ export const CueElement: React.FC<CueElementProps> = (props: CueElementProps) =>
         </Box>
     );
 };
+
+export const CueElement: React.FC<CueElementProps> = React.memo(CueElementComponent, (prev, next) => {
+    // Fast bail-out when the element reference and relevant props are unchanged
+    return (
+        prev.element === next.element &&
+        prev.index === next.index &&
+        prev.isSelected === next.isSelected &&
+        prev.colorizeDepNames === next.colorizeDepNames &&
+        prev.showClockTimes === next.showClockTimes &&
+        prev.useMilitaryTime === next.useMilitaryTime &&
+        prev.scriptStartTime === next.scriptStartTime &&
+        prev.scriptEndTime === next.scriptEndTime &&
+        prev.isDragEnabled === next.isDragEnabled &&
+        prev.isReadOnly === next.isReadOnly &&
+        prev.highlightState === next.highlightState &&
+        prev.borderState === next.borderState &&
+        prev.allElements === next.allElements
+    );
+});
