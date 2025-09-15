@@ -14,6 +14,7 @@ import { FormInput } from '../../../../components/form/FormField';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
 import { useResource } from '../../../../hooks/useResource';
+import { getApiUrl } from '../../../../config/api';
 import { convertLocalToUTC } from '../../../../utils/timeUtils';
 
 // TypeScript interfaces
@@ -73,7 +74,7 @@ export const CreateShowModal: React.FC<CreateShowModalProps> = ({
     isLoading: isLoadingVenues,
     createResource: createVenue,
     refetch: refetchVenues,
-  } = useResource<Venue>('/api/me/venues', {
+  } = useResource<Venue>(getApiUrl('/api/me/venues'), {
     fetchOnMount: false,
   });
 

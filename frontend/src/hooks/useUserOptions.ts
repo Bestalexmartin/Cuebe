@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useEnhancedToast } from '../utils/toastUtils';
+import { getApiUrl } from '../config/api';
 
 export interface UserOptions {
     colorizeDepNames: boolean;
@@ -66,7 +67,7 @@ export const useUserOptions = () => {
                     return;
                 }
 
-                const response = await fetch('/api/users/options', {
+                const response = await fetch(getApiUrl('/api/users/options'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
@@ -128,7 +129,7 @@ export const useUserOptions = () => {
                 return false;
             }
 
-            const response = await fetch('/api/users/options', {
+            const response = await fetch(getApiUrl('/api/users/options'), {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -185,7 +186,7 @@ export const useUserOptions = () => {
                 return false;
             }
 
-            const response = await fetch('/api/users/options', {
+            const response = await fetch(getApiUrl('/api/users/options'), {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,

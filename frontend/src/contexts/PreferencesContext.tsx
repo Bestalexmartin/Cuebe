@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useEnhancedToast } from '../utils/toastUtils';
+import { getApiUrl } from '../config/api';
 
 // Field name mapping between frontend (camelCase) and backend (snake_case)
 const FIELD_MAPPING = {
@@ -179,7 +180,7 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                     return;
                 }
 
-                const response = await fetch('/api/users/preferences', {
+                const response = await fetch(getApiUrl('/api/users/preferences'), {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
@@ -245,7 +246,7 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                 return false;
             }
 
-            const response = await fetch('/api/users/preferences', {
+            const response = await fetch(getApiUrl('/api/users/preferences'), {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -304,7 +305,7 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
                 return false;
             }
 
-            const response = await fetch('/api/users/preferences', {
+            const response = await fetch(getApiUrl('/api/users/preferences'), {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,

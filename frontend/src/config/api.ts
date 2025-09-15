@@ -7,5 +7,12 @@ export const getApiUrl = (path: string): string => {
 
   // In development, use relative paths (proxy handles routing)
   // In production, use the full API base URL
-  return API_BASE_URL ? `${API_BASE_URL}/${cleanPath}` : `/${cleanPath}`;
+  const finalUrl = API_BASE_URL ? `${API_BASE_URL}/${cleanPath}` : `/${cleanPath}`;
+
+  console.log('🔍 DEBUG: getApiUrl called with:', path);
+  console.log('🔍 DEBUG: API_BASE_URL:', API_BASE_URL);
+  console.log('🔍 DEBUG: cleanPath:', cleanPath);
+  console.log('🔍 DEBUG: finalUrl:', finalUrl);
+
+  return finalUrl;
 };

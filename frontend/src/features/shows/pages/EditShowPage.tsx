@@ -8,6 +8,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from '@clerk/clerk-react';
 import { useShow } from "../hooks/useShow";
 import { useResource } from '../../../hooks/useResource';
+import { getApiUrl } from '../../../config/api';
 import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm';
 import { BaseEditPage } from '../../../components/base/BaseEditPage';
 import { ActionItem } from '../../../components/ActionsMenu';
@@ -69,7 +70,7 @@ export const EditShowPage: React.FC = () => {
     const {
         data: venues,
         isLoading: isLoadingVenues
-    } = useResource<Venue>('/api/me/venues');
+    } = useResource<Venue>(getApiUrl('/api/me/venues'));
 
     // Memoize venue options to prevent recreation on every render
     const venueOptions = useMemo(() => 
