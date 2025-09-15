@@ -479,6 +479,7 @@ const SharedPageContent = React.memo(({ onScriptChange }: { onScriptChange?: (sc
     if (!viewingScriptId) return null;
     
     return {
+      scriptId: viewingScriptId,
       isConnected: scriptSync.isConnected,
       isConnecting: scriptSync.isConnecting,
       connectionCount: scriptSync.connectionCount,

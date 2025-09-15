@@ -107,6 +107,12 @@ export const useScriptElementsWithEditQueue = (
   // Keep a ref to the last computed elements to prevent flicker during save
   const lastComputedElementsRef = useRef<ScriptElement[]>([]);
 
+  // Simple reference equality check for now - revert deep comparison optimization
+  const arraysEqual = useCallback((a: ScriptElement[], b: ScriptElement[]) => {
+    // Just use reference equality for now to avoid expensive comparisons during playback
+    return a === b;
+  }, []);
+
   // Rebuild current elements when needed, otherwise use existing state
   const rebuildCurrentElements = useCallback(
     (baseElements: ScriptElement[], operationsToApply: EditOperation[]) => {
@@ -133,8 +139,10 @@ export const useScriptElementsWithEditQueue = (
         setCurrentElements([...serverElements]);
         setNeedsRebuild(false);
       } else if (operations.length === 0) {
-        // Server elements changed and no pending operations - update currentElements
-        setCurrentElements([...serverElements]);
+        // Server elements changed and no pending operations - update currentElements only if content changed
+        if (!arraysEqual(currentElements, serverElements)) {
+          setCurrentElements([...serverElements]);
+        }
         setNeedsRebuild(false);
       } else {
         // Server elements changed with pending operations - trigger rebuild
@@ -150,13 +158,18 @@ export const useScriptElementsWithEditQueue = (
         serverElements,
         operations,
       );
-      setCurrentElements(rebuiltElements);
+      // Only update if the rebuilt elements are actually different
+      if (!arraysEqual(currentElements, rebuiltElements)) {
+        setCurrentElements(rebuiltElements);
+      }
       setNeedsRebuild(false);
     }
-  }, [needsRebuild, serverElements, operations, rebuildCurrentElements]);
+  }, [needsRebuild, serverElements, operations, rebuildCurrentElements, currentElements, arraysEqual]);
 
-  // Compute display elements from current elements
-  const { elements, allElements } = useMemo(() => {
+  // Compute display elements from current elements - memoized arrays for stable references
+  const allElements = useMemo(() => currentElements, [currentElements]);
+
+  const elements = useMemo(() => {
     // REMOVED: isSaving check - no longer tracking save state
 
     // Filter out collapsed child elements for display
@@ -178,10 +191,7 @@ export const useScriptElementsWithEditQueue = (
     // Store the computed elements for potential use during save
     lastComputedElementsRef.current = visibleElements;
 
-    return {
-      elements: visibleElements,
-      allElements: currentElements, // Include all elements for group summary calculations
-    };
+    return visibleElements;
   }, [currentElements]); // REMOVED: isSaving dependency
 
   // REMOVED: initializeElements callback - now handled directly in useEffect to avoid infinite loops
@@ -230,17 +240,25 @@ export const useScriptElementsWithEditQueue = (
   );
 
   const updateServerElements = useCallback((freshElements: ScriptElement[]) => {
-    setServerElements(freshElements);
+    // Only update serverElements if they actually changed
+    if (!arraysEqual(serverElements, freshElements)) {
+      setServerElements(freshElements);
+    }
     // Recalculate group timings for fresh elements from server before setting current elements
     const elementsWithCalculatedGroupTimings = recalculateGroupTimings([...freshElements]);
-    setCurrentElements(elementsWithCalculatedGroupTimings);
-  }, []);
+    // Only update currentElements if they actually changed
+    if (!arraysEqual(currentElements, elementsWithCalculatedGroupTimings)) {
+      setCurrentElements(elementsWithCalculatedGroupTimings);
+    }
+  }, [serverElements, currentElements, arraysEqual]);
 
   const discardChanges = useCallback(() => {
     editQueueRef.current.clearQueue();
-    // Reset currentElements to serverElements since we've cleared all edits
-    setCurrentElements([...serverElements]);
-  }, [serverElements]);
+    // Reset currentElements to serverElements since we've cleared all edits - only if different
+    if (!arraysEqual(currentElements, serverElements)) {
+      setCurrentElements([...serverElements]);
+    }
+  }, [serverElements, currentElements, arraysEqual]);
 
   const undoOperation = useCallback(() => {
     editQueueRef.current.undo();
