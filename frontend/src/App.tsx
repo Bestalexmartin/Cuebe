@@ -1,5 +1,4 @@
-// frontend/src/App.tsx
-
+// App.tsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { SignedIn, SignedOut } from "@clerk/clerk-react";
@@ -23,128 +22,61 @@ import { ExpiredSharePage } from './shared/components/ExpiredSharePage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ScriptSyncProvider } from './contexts/ScriptSyncContext';
 
-// TypeScript interfaces
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
-
-// Protected Route Component - wraps any component that requires authentication
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => (
+const ProtectedRoute: React.FC<React.PropsWithChildren> = ({ children }) => (
   <>
     <SignedIn>{children}</SignedIn>
     <SignedOut><Navigate to="/sign-in" replace /></SignedOut>
   </>
 );
 
-const App: React.FC = () => {
-  const { isOpen: isMenuOpen, onOpen: onMenuOpen, onClose: onMenuClose } = useDisclosure();
+// Layout used for “everything except shared/*”
+const Shell: React.FC<{ isMenuOpen: boolean; onMenuOpen: () => void; onMenuClose: () => void; }> = ({ isMenuOpen, onMenuOpen, onMenuClose }) => (
+  <Box display="grid" gridTemplateRows="auto 1fr" height="100vh" width="100vw" overflow="hidden">
+    <Header onMenuOpen={onMenuOpen} isMenuOpen={isMenuOpen} />
+    <Box as="main" overflow="hidden">
+      <Routes>
+        {/* Public */}
+        <Route path="/sign-in/*" element={<SignInPage />} />
+        <Route path="/sign-up/*" element={<SignUpPage />} />
 
+        {/* Private */}
+        <Route path="/dashboard" element={<ProtectedRoute><DashboardPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} /></ProtectedRoute>} />
+        <Route path="/shows/:showId/edit" element={<ProtectedRoute><EditShowPage /></ProtectedRoute>} />
+        <Route path="/scripts/:scriptId/manage" element={<ProtectedRoute><ManageScriptPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} /></ProtectedRoute>} />
+        <Route path="/user-profile/*" element={<ProtectedRoute><UserProfilePage /></ProtectedRoute>} />
+        <Route path="/venues/:venueId/edit" element={<ProtectedRoute><EditVenuePage /></ProtectedRoute>} />
+        <Route path="/departments/:departmentId/edit" element={<ProtectedRoute><EditDepartmentPage /></ProtectedRoute>} />
+        <Route path="/crew/:crewId/edit" element={<ProtectedRoute><EditCrewPage /></ProtectedRoute>} />
+        <Route path="/test-tools" element={<ProtectedRoute><TestToolsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} /></ProtectedRoute>} />
+        <Route path="/api-documentation" element={<ProtectedRoute><ApiDocsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} /></ProtectedRoute>} />
+        <Route path="/documentation" element={<ProtectedRoute><DocumentationPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} /></ProtectedRoute>} />
+        <Route path="/tutorials" element={<ProtectedRoute><TutorialsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} /></ProtectedRoute>} />
+
+        {/* Catch-all inside shell */}
+        <Route path="*" element={
+          <>
+            <SignedIn><Navigate to="/dashboard" replace /></SignedIn>
+            <SignedOut><Navigate to="/sign-in" replace /></SignedOut>
+          </>
+        } />
+      </Routes>
+    </Box>
+  </Box>
+);
+
+const App: React.FC = () => {
+  const disc = useDisclosure();
   return (
     <ErrorBoundary context="Application Root">
       <ScriptSyncProvider>
         <Routes>
-        {/* Shared page routes - no header layout */}
-        <Route path="/shared/:shareToken" element={<SharedPage />} />
-        <Route path="/shared/expired" element={<ExpiredSharePage />} />
-        
-        {/* All other routes with Header Layout */}
-        <Route path="*" element={
-          <Box
-            display="grid"
-            gridTemplateRows="auto 1fr"
-            height="100vh"
-            width="100vw"
-            overflow="hidden"
-          >
-            <Header onMenuOpen={onMenuOpen} isMenuOpen={isMenuOpen} />
+          {/* Routes without layout */}
+          <Route path="/shared/:shareToken" element={<SharedPage />} />
+          <Route path="/shared/expired" element={<ExpiredSharePage />} />
 
-            <Box as="main" overflow="hidden">
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/sign-in/*" element={<SignInPage />} />
-                <Route path="/sign-up/*" element={<SignUpPage />} />
-
-                {/* Private Routes */}
-                <Route path="/dashboard" element={
-                  <ProtectedRoute>
-                    <DashboardPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/shows/:showId/edit" element={
-                  <ProtectedRoute>
-                    <EditShowPage />
-                  </ProtectedRoute>
-                } />
-
-                {/* Script management route - elevated from edit hierarchy */}
-                <Route path="/scripts/:scriptId/manage" element={
-                  <ProtectedRoute>
-                    <ManageScriptPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/user-profile/*" element={
-                  <ProtectedRoute>
-                    <UserProfilePage />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/venues/:venueId/edit" element={
-                  <ProtectedRoute>
-                    <EditVenuePage />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/departments/:departmentId/edit" element={
-                  <ProtectedRoute>
-                    <EditDepartmentPage />
-                  </ProtectedRoute>
-                } />
-                
-                <Route path="/crew/:crewId/edit" element={
-                  <ProtectedRoute>
-                    <EditCrewPage />
-                  </ProtectedRoute>
-                } />
-
-                {/* Test Tools Route */}
-
-                <Route path="/test-tools" element={
-                  <ProtectedRoute>
-                    <TestToolsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/api-documentation" element={
-                  <ProtectedRoute>
-                    <ApiDocsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/documentation" element={
-                  <ProtectedRoute>
-                    <DocumentationPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="/tutorials" element={
-                  <ProtectedRoute>
-                    <TutorialsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} />
-                  </ProtectedRoute>
-                } />
-
-                <Route path="*" element={
-                  <>
-                    <SignedIn><Navigate to="/dashboard" replace /></SignedIn>
-                    <SignedOut><Navigate to="/sign-in" replace /></SignedOut>
-                  </>
-                } />
-              </Routes>
-            </Box>
-          </Box>
-        } />
-      </Routes>
+          {/* Everything else uses Shell */}
+          <Route path="/*" element={<Shell isMenuOpen={disc.isOpen} onMenuOpen={disc.onOpen} onMenuClose={disc.onClose} />} />
+        </Routes>
       </ScriptSyncProvider>
     </ErrorBoundary>
   );
