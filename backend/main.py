@@ -134,6 +134,18 @@ else:
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():
+    # Determine the correct OpenAPI URL - use absolute URL for production
+    openapi_url = app.openapi_url
+    if not openapi_url.startswith('http'):
+        # If relative URL, make it absolute using the current request context
+        # In production this should be https://api.cuebe.app/openapi.json
+        base_url = os.getenv("API_BASE_URL", "")
+        if base_url:
+            openapi_url = f"{base_url}{openapi_url}"
+        else:
+            # Fallback - assume same domain
+            openapi_url = f"https://api.cuebe.app{openapi_url}"
+
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -161,7 +173,7 @@ async def custom_swagger_ui_html():
         <script>
         window.onload = function() {{
             const ui = SwaggerUIBundle({{
-                url: '{app.openapi_url}',
+                url: '{openapi_url}',
                 dom_id: '#swagger-ui',
                 deepLinking: true,
                 presets: [
@@ -182,6 +194,18 @@ async def custom_swagger_ui_html():
 
 @app.get("/redoc", include_in_schema=False)
 async def custom_redoc_html():
+    # Determine the correct OpenAPI URL - use absolute URL for production
+    openapi_url = app.openapi_url
+    if not openapi_url.startswith('http'):
+        # If relative URL, make it absolute using the current request context
+        # In production this should be https://api.cuebe.app/openapi.json
+        base_url = os.getenv("API_BASE_URL", "")
+        if base_url:
+            openapi_url = f"{base_url}{openapi_url}"
+        else:
+            # Fallback - assume same domain
+            openapi_url = f"https://api.cuebe.app{openapi_url}"
+
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -204,7 +228,7 @@ async def custom_redoc_html():
         </style>
     </head>
     <body>
-        <redoc spec-url='{app.openapi_url}' hide-download-button></redoc>
+        <redoc spec-url='{openapi_url}' hide-download-button></redoc>
         <script src="https://cdn.jsdelivr.net/npm/redoc@2.1.2/bundles/redoc.standalone.js"></script>
     </body>
     </html>
