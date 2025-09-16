@@ -11,9 +11,8 @@ services:
     name: cuebe-backend
     runtime: python
     plan: starter
-    workDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
@@ -23,10 +22,8 @@ services:
           property: connectionString
       - key: ENVIRONMENT
         value: production
-      # Make sure your CORS uses this (comma-separated or parsed by your app):
       - key: ALLOWED_ORIGINS
         value: https://cuebe.app,https://www.cuebe.app,https://cuebe-frontend.onrender.com
-      # Secrets set in dashboard:
       - key: CLERK_PUBLISHABLE_KEY
         sync: false
       - key: CLERK_SECRET_KEY
@@ -39,11 +36,11 @@ services:
   # =========================
   # React Frontend (Static Site)
   # =========================
-  - type: static_site
+  - type: web
     name: cuebe-frontend
-    workDir: frontend
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: frontend/dist
     buildFilter:
       paths:
         - frontend/**
@@ -52,8 +49,18 @@ services:
         source: /*
         destination: /index.html
     envVars:
-      # Point to your API’s custom domain once you attach it:
       - key: VITE_API_BASE_URL
         value: https://api.cuebe.app
       - key: VITE_CLERK_PUBLISHABLE_KEY
-        sync: false
+        sync: false # set pk_live_xxx in dashboard
+      - key: VITE_CLERK_SIGN_IN_URL
+        value: /sign-in
+      - key: VITE_CLERK_SIGN_UP_URL
+        value: /sign-up
+      - key: VITE_CLERK_AFTER_SIGN_IN_URL
+        value: /dashboard
+      - key: VITE_CLERK_AFTER_SIGN_UP_URL
+        value: /dashboard
+      # optional — only if you created CNAME clerk.cuebe.app -> frontend-api.clerk.services
+      - key: VITE_CLERK_FRONTEND_API
+        value: clerk.cuebe.app
