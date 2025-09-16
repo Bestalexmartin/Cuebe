@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@clerk/clerk-react";
+import { getApiUrl } from "../../../config/api";
 
 // TypeScript interfaces
 interface CrewMember {
@@ -40,7 +41,7 @@ export const useCrews = (): UseCrewsReturn => {
       setError(null);
 
       const token = await getToken();
-      const response = await fetch("/api/me/crews", {
+      const response = await fetch(getApiUrl("/api/me/crews"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
