@@ -23,6 +23,7 @@ import {
   useClipboard
 } from '@chakra-ui/react';
 import { useAuth } from '@clerk/clerk-react';
+import { getApiUrl } from '../../config/api';
 import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
@@ -464,7 +465,7 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
         throw new Error('Authentication token not available');
       }
 
-      const response = await fetch('/api/system-tests/filesystem-permissions', {
+      const response = await fetch(getApiUrl('/api/system-tests/filesystem-permissions'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -529,7 +530,7 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
         throw new Error('Authentication token not available');
       }
 
-      const response = await fetch('/api/system-tests/external-services', {
+      const response = await fetch(getApiUrl('/api/system-tests/external-services'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`

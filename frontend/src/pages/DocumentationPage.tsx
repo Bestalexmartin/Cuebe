@@ -22,6 +22,7 @@ import { MarkdownRenderer } from '../components/shared/MarkdownRenderer';
 import { DocFile, groupAndSortDocuments, getDocumentsForCategory } from '../utils/documentSorting';
 import { useDocumentSearch } from '../hooks/useDocumentSearch';
 import { useAuth } from '@clerk/clerk-react';
+import { getApiUrl } from '../config/api';
 
 interface DocumentationPageProps {
   isMenuOpen: boolean;
@@ -69,7 +70,7 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
           headers['Authorization'] = `Bearer ${authToken}`;
         }
         
-        const response = await fetch('/api/docs/index', { headers });
+        const response = await fetch(getApiUrl('/api/docs/index'), { headers });
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
