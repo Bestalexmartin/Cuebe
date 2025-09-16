@@ -4,14 +4,18 @@ databases:
     user: cuebe_user
 
 services:
-  # FastAPI Backend Service
+  # =========================
+  # FastAPI Backend (Web Service)
+  # =========================
   - type: web
     name: cuebe-backend
     runtime: python
-    buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
     plan: starter
+    workDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --proxy-headers
     healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -19,23 +23,27 @@ services:
           property: connectionString
       - key: ENVIRONMENT
         value: production
+      # Make sure your CORS uses this (comma-separated or parsed by your app):
       - key: ALLOWED_ORIGINS
-        value: https://cuebe.app,https://cuebe-frontend.onrender.com
+        value: https://cuebe.app,https://www.cuebe.app,https://cuebe-frontend.onrender.com
+      # Secrets set in dashboard:
       - key: CLERK_PUBLISHABLE_KEY
-        sync: false # Set this manually in Render dashboard
+        sync: false
       - key: CLERK_SECRET_KEY
-        sync: false # Set this manually in Render dashboard
+        sync: false
       - key: CLERK_PEM_PUBLIC_KEY
-        sync: false # Set this manually in Render dashboard
+        sync: false
       - key: CLERK_WEBHOOK_SECRET
-        sync: false # Set this manually in Render dashboard
+        sync: false
 
-  # React Frontend Static Site
-  - type: web
+  # =========================
+  # React Frontend (Static Site)
+  # =========================
+  - type: static_site
     name: cuebe-frontend
-    runtime: static
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
+    workDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
     buildFilter:
       paths:
         - frontend/**
@@ -44,7 +52,8 @@ services:
         source: /*
         destination: /index.html
     envVars:
+      # Point to your API’s custom domain once you attach it:
       - key: VITE_API_BASE_URL
-        value: https://cuebe-backend.onrender.com
+        value: https://api.cuebe.app
       - key: VITE_CLERK_PUBLISHABLE_KEY
-        sync: false # Set this manually in Render dashboard
+        sync: false
