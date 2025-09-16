@@ -11,6 +11,7 @@ import {
 } from '@chakra-ui/react';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { BaseUtilityPage } from '../components/base/BaseUtilityPage';
+import { API_BASE_URL } from '../config/api';
 
 interface ApiDocsPageProps {
   isMenuOpen: boolean;
@@ -251,7 +252,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
             bg="white"
           >
             <iframe
-              src="/docs"
+              src={`${API_BASE_URL || 'https://api.cuebe.app'}/docs`}
               width="100%"
               height="100%"
               style={{ 
@@ -275,7 +276,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
             bg={bgColor}
           >
             <iframe
-              src="/redoc"
+              src={`${API_BASE_URL || 'https://api.cuebe.app'}/redoc`}
               width="100%"
               height="100%"
               style={{ border: 'none' }}
@@ -294,7 +295,7 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
             bg="white"
           >
             <iframe
-              src="/docs"
+              src={`${API_BASE_URL || 'https://api.cuebe.app'}/docs`}
               width="100%"
               height="100%"
               style={{ 
