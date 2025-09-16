@@ -25,6 +25,7 @@ import {
   useDisclosure
 } from '@chakra-ui/react';
 import { useAuth } from '@clerk/clerk-react';
+import { getApiUrl } from '../../config/api';
 import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
@@ -105,7 +106,7 @@ export const PytestTest: React.FC = () => {
         throw new Error('Authentication token not available');
       }
 
-      const response = await fetch('/api/system-tests/run-pytest-suite', {
+      const response = await fetch(getApiUrl('/api/system-tests/run-pytest-suite'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -153,7 +154,7 @@ export const PytestTest: React.FC = () => {
         throw new Error('Authentication token not available');
       }
 
-      const response = await fetch('/api/system-tests/test-fixtures-status', {
+      const response = await fetch(getApiUrl('/api/system-tests/test-fixtures-status'), {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -194,7 +195,7 @@ export const PytestTest: React.FC = () => {
         throw new Error('Authentication token not available');
       }
 
-      const response = await fetch('/api/system-tests/create-test-data', {
+      const response = await fetch(getApiUrl('/api/system-tests/create-test-data'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

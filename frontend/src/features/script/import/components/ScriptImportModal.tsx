@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { getApiUrl } from '../../../../config/api';
 import {
   VStack,
   HStack,
@@ -170,7 +171,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
       const fetchDepartments = async () => {
         try {
           const token = await getToken();
-          const response = await fetch('/api/me/departments', {
+          const response = await fetch(getApiUrl('/api/me/departments'), {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -358,7 +359,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
 
       // Dev-only logs removed
 
-      const response = await fetch('/api/scripts/import', {
+      const response = await fetch(getApiUrl('/api/scripts/import'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

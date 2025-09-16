@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { getApiUrl } from '../../../config/api';
 
 // TypeScript interfaces
 interface DepartmentCrewAssignment {
@@ -59,7 +60,7 @@ export const useDepartment = (departmentId: string | undefined): UseDepartmentRe
             }
             
             // Use the enhanced departments endpoint that includes crew assignments
-            const response = await fetch('/api/me/departments', {
+            const response = await fetch(getApiUrl('/api/me/departments'), {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 

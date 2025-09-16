@@ -22,6 +22,7 @@ import {
 import { useAuth } from '@clerk/clerk-react';
 import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
+import { getApiUrl } from '../../config/api';
 
 // TypeScript interfaces
 interface DatabaseConnectionResult {
@@ -202,7 +203,7 @@ export const PerformanceTest: React.FC = () => {
         throw new Error('Authentication token not available');
       }
 
-      const response = await fetch('/api/system-tests/database-connectivity', {
+      const response = await fetch(getApiUrl('/api/system-tests/database-connectivity'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -257,7 +258,7 @@ export const PerformanceTest: React.FC = () => {
         throw new Error('Authentication token not available');
       }
 
-      const response = await fetch('/api/system-tests/api-endpoints', {
+      const response = await fetch(getApiUrl('/api/system-tests/api-endpoints'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -308,7 +309,7 @@ export const PerformanceTest: React.FC = () => {
 
       const authToken = await getAuthTokenOnce();
 
-      const response = await fetch('/api/system-tests/system-performance', {
+      const response = await fetch(getApiUrl('/api/system-tests/system-performance'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -353,7 +354,7 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Checking for speedtest-cli on host system...');
       setProgress(5);
 
-      const prepResponse = await fetch('/api/system-tests/prepare-speedtest', {
+      const prepResponse = await fetch(getApiUrl('/api/system-tests/prepare-speedtest'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -390,7 +391,7 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Running download speed test (this may take 20-30 seconds)...');
       setProgress(50);
 
-      const response = await fetch('/api/system-tests/network-speed', {
+      const response = await fetch(getApiUrl('/api/system-tests/network-speed'), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

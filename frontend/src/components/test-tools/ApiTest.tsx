@@ -17,6 +17,7 @@ import {
 } from '@chakra-ui/react';
 import { useAuth } from '@clerk/clerk-react';
 import { AppIcon } from '../AppIcon';
+import { getApiUrl } from '../../config/api';
 
 interface TestResult {
   test_suite: string;
@@ -69,7 +70,7 @@ export const ApiTest: React.FC<ApiTestProps> = ({
         throw new Error('Authentication token not available');
       }
       
-      const prepResponse = await fetch('/api/system-tests/prepare-pytest', {
+      const prepResponse = await fetch(getApiUrl('/api/system-tests/prepare-pytest'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
