@@ -36,45 +36,24 @@ export const useResource = <T = any>(
         setError(null);
 
         try {
-            console.log('🔍 DEBUG: Starting API call to:', endpoint);
             const token = await getToken();
-            console.log('🔍 DEBUG: Token retrieved:', token ? 'Yes' : 'No', token ? `(${token.substring(0, 20)}...)` : '');
-
             if (!token) {
                 throw new Error('Authentication token not available');
             }
 
-            console.log('🔍 DEBUG: Making fetch request to:', endpoint);
             const response = await fetch(endpoint, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
 
-            console.log('🔍 DEBUG: Response status:', response.status);
-            console.log('🔍 DEBUG: Response headers:', Object.fromEntries(response.headers.entries()));
-            console.log('🔍 DEBUG: Response URL:', response.url);
-
             if (!response.ok) {
-                const responseText = await response.text();
-                console.log('🔍 DEBUG: Error response body:', responseText.substring(0, 200));
-                throw new Error(`Failed to fetch ${endpoint}: ${response.status} ${response.statusText}`);
+                throw new Error(`Failed to fetch ${endpoint}`);
             }
 
-            const responseText = await response.text();
-            console.log('🔍 DEBUG: Raw response (first 200 chars):', responseText.substring(0, 200));
-
-            try {
-                const result: T[] = JSON.parse(responseText);
-                setData(result);
-                console.log('🔍 DEBUG: Successfully parsed JSON, got', Array.isArray(result) ? result.length : 'non-array', 'items');
-            } catch (parseError) {
-                console.error('🔍 DEBUG: JSON parse error:', parseError);
-                console.log('🔍 DEBUG: Full response text:', responseText);
-                throw new Error(`JSON parse error: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
-            }
+            const result: T[] = await response.json();
+            setData(result);
         } catch (err) {
-            console.error('🔍 DEBUG: Fetch error:', err);
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
             setError(errorMessage);
             showError(errorMessage);

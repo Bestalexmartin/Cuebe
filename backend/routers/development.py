@@ -163,7 +163,10 @@ def read_root(request: Request):
 
 @router.post("/migrate")
 @rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
-def run_database_migrations(request: Request):
+def run_database_migrations(
+    request: Request,
+    current_user: models.User = Depends(get_current_user)
+):
     """Run database migrations using Alembic"""
     try:
         logger.info("Starting database migration...")
@@ -200,7 +203,10 @@ def run_database_migrations(request: Request):
 
 @router.post("/migrate/reset")
 @rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
-def reset_migration_state(request: Request):
+def reset_migration_state(
+    request: Request,
+    current_user: models.User = Depends(get_current_user)
+):
     """Reset migration state and recreate from scratch"""
     try:
         logger.info("Resetting migration state...")
@@ -239,7 +245,11 @@ def reset_migration_state(request: Request):
 
 @router.post("/migrate/create-tables")
 @rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
-def create_all_tables(request: Request, db: Session = Depends(get_db)):
+def create_all_tables(
+    request: Request,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Create all tables using SQLAlchemy metadata (bypass migrations)"""
     try:
         logger.info("Creating all tables from SQLAlchemy metadata...")
