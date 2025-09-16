@@ -16,10 +16,17 @@ from database import get_db
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-bearer_scheme = HTTPBearer()
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_current_user_claims(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> Dict:
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header missing",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     pem_key_str = os.getenv("CLERK_PEM_PUBLIC_KEY")
     if not pem_key_str:
         raise HTTPException(status_code=500, detail="Missing PEM Public Key")
