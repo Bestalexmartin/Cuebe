@@ -97,6 +97,14 @@ export const CommonValidationRules = {
     ]
   }),
 
+  // Name fields with no minimum length (for crew names)
+  nameNoMin: (maxLength = 50, entityType = 'Name') => ({
+    required: false,
+    rules: [
+      ValidationRules.maxLength(maxLength, `${entityType} must be no more than ${maxLength} characters`)
+    ]
+  }),
+
   // Email fields
   email: () => ({
     required: false,
@@ -232,14 +240,14 @@ export const CrewValidationSchemas = {
   // Create Crew modal
   crew: {
     email_address: CommonValidationRules.email(),
-    fullname_first: CommonValidationRules.entityName(4, 50, 'First name'),
-    fullname_last: CommonValidationRules.entityName(4, 50, 'Last name')
+    fullname_first: CommonValidationRules.nameNoMin(50, 'First name'),
+    fullname_last: CommonValidationRules.nameNoMin(50, 'Last name')
   } as FormValidationConfig,
 
   // Edit Crew page (expanded fields)
   crewEdit: {
-    fullname_first: CommonValidationRules.entityName(4, 50, 'First name'),
-    fullname_last: CommonValidationRules.entityName(4, 50, 'Last name'),
+    fullname_first: CommonValidationRules.nameNoMin(50, 'First name'),
+    fullname_last: CommonValidationRules.nameNoMin(50, 'Last name'),
     email_address: CommonValidationRules.email(),
     phone_number: CommonValidationRules.phone(),
     notes: CommonValidationRules.notes(1000)
