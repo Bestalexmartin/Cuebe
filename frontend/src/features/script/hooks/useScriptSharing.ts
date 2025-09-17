@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { ScriptMode } from './useScriptModes';
+import { getApiUrl } from '../../../config/api';
 
 interface UseScriptSharingProps {
     scriptId: string | undefined;
@@ -38,7 +39,7 @@ export const useScriptSharing = ({
             if (!token) throw new Error('Authentication required');
 
             // Update script to set is_shared = true
-            const response = await fetch(`/api/scripts/${scriptId}`, {
+            const response = await fetch(getApiUrl(`/api/scripts/${scriptId}`), {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -77,7 +78,7 @@ export const useScriptSharing = ({
             if (!token) throw new Error('Authentication required');
 
             // Update script to set is_shared = false
-            const response = await fetch(`/api/scripts/${scriptId}`, {
+            const response = await fetch(getApiUrl(`/api/scripts/${scriptId}`), {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${token}`,

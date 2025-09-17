@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
 import { useEnhancedToast } from "../../../utils/toastUtils";
 import { useDashboardNavigation } from "../../../hooks/useDashboardNavigation";
+import { getApiUrl } from "../../../config/api";
 
 interface UseScriptModalHandlersParams {
   scriptId: string | undefined;
@@ -265,7 +266,7 @@ export const useScriptModalHandlers = ({
         throw new Error("Authentication token not available");
       }
 
-      const response = await fetch(`/api/scripts/${scriptId}`, {
+      const response = await fetch(getApiUrl(`/api/scripts/${scriptId}`), {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

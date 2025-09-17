@@ -21,6 +21,7 @@ import { formatRole } from '../../../../constants/userRoles';
 import { AppIcon } from '../../../../components/AppIcon';
 import { useAuth } from '@clerk/clerk-react';
 import { useEnhancedToast } from '../../../../utils/toastUtils';
+import { getApiUrl } from '../../../../config/api';
 
 interface CrewBioModalProps {
   isOpen: boolean;
@@ -76,7 +77,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
             return;
           }
 
-          const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
+          const response = await fetch(getApiUrl(`/api/shows/${showId}/crew/${crewMember.user_id}/share`), {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -116,7 +117,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
         // After external refresh, fetch the updated share URL for display
         const token = await getToken();
         if (token) {
-          const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
+          const response = await fetch(getApiUrl(`/api/shows/${showId}/crew/${crewMember.user_id}/share`), {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -135,7 +136,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
           throw new Error('Authentication token not available');
         }
 
-        const response = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share?force_refresh=true`, {
+        const response = await fetch(getApiUrl(`/api/shows/${showId}/crew/${crewMember.user_id}/share?force_refresh=true`), {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 // debug logging removed for production sweep
 import { useAuth } from '@clerk/clerk-react';
+import { getWsUrl } from '../config/api';
 
 interface ScriptUpdate {
   type: 'script_update' | 'connection_established' | 'update_confirmed' | 'error' | 'pong' | 'playback_command';
@@ -193,13 +194,9 @@ export const useScriptSync = (
     setConnectionError(null);
     
     try {
-      // Build WebSocket URL
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = process.env.NODE_ENV === 'development' 
-        ? `${window.location.hostname}:8000` 
-        : window.location.host;
-      let wsUrl = `${protocol}//${host}/ws/script/${scriptId}`;
-      
+      // Build WebSocket URL using centralized configuration
+      let wsUrl = getWsUrl(`/ws/script/${scriptId}`);
+
       // Add authentication parameters
       const urlParams = new URLSearchParams();
       

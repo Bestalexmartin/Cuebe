@@ -20,6 +20,7 @@ import { CrewBioModal } from '../../shows/components/modals/CrewBioModal';
 import { FloatingValidationErrorPanel } from '../../../components/base/FloatingValidationErrorPanel';
 import { EditPageFormField } from '../../../components/base/EditPageFormField';
 import { ResponsiveAssignmentList } from '../../../components/base/ResponsiveAssignmentList';
+import { getApiUrl } from '../../../config/api';
 
 // TypeScript interfaces
 interface DepartmentFormData {
@@ -179,7 +180,7 @@ export const EditDepartmentPage: React.FC = () => {
         setIsDeleting(true);
         try {
             const token = await getToken();
-            const response = await fetch(`/api/departments/${departmentId}`, {
+            const response = await fetch(getApiUrl(`/api/departments/${departmentId}`), {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -249,7 +250,7 @@ export const EditDepartmentPage: React.FC = () => {
             if (!token) return;
             
             // Force refresh the share token
-            const response = await fetch(`/api/shows/${selectedCrewMember.show_id}/crew/${selectedCrewMember.user_id}/share?force_refresh=true`, {
+            const response = await fetch(getApiUrl(`/api/shows/${selectedCrewMember.show_id}/crew/${selectedCrewMember.user_id}/share?force_refresh=true`), {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

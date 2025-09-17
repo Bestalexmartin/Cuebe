@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { getApiUrl } from '../../../config/api';
 
 export interface CrewMember {
     assignment_id: string;
@@ -48,7 +49,7 @@ export const useShowCrew = (showId: string): UseShowCrewReturn => {
                 throw new Error('Authentication required');
             }
 
-            const response = await fetch(`/api/shows/${showId}/crew`, {
+            const response = await fetch(getApiUrl(`/api/shows/${showId}/crew`), {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

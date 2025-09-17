@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { getApiUrl } from '../../../config/api';
 
 // TypeScript interfaces
 interface Venue {
@@ -49,7 +50,7 @@ export const useVenue = (venueId: string | undefined): UseVenueReturn => {
                 return;
             }
             
-            const response = await fetch(`/api/venues/${venueId}`, {
+            const response = await fetch(getApiUrl(`/api/venues/${venueId}`), {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 

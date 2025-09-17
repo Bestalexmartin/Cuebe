@@ -14,6 +14,7 @@ import { FormInput } from '../../../../components/form/FormField';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
 import { USER_ROLE_OPTIONS } from '../../../../constants/userRoles';
+import { getApiUrl } from '../../../../config/api';
 
 // TypeScript interfaces
 interface CrewFormData {
@@ -67,7 +68,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
         event.preventDefault();
 
         try {
-            const checkEmailResponse = await fetch(`/api/users/check-email?email=${encodeURIComponent(form.formData.email_address)}`, {
+            const checkEmailResponse = await fetch(getApiUrl(`/api/users/check-email?email=${encodeURIComponent(form.formData.email_address)}`), {
                 headers: {
                     'Authorization': `Bearer ${await getToken()}`
                 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { getApiUrl } from '../../../config/api';
 
 // TypeScript interfaces
 interface Script {
@@ -49,7 +50,7 @@ export const useScript = (scriptId: string | undefined, options?: UseScriptOptio
                 setIsLoading(false);
                 return;
             }
-            const response = await fetch(`/api/scripts/${scriptId}`, {
+            const response = await fetch(getApiUrl(`/api/scripts/${scriptId}`), {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             

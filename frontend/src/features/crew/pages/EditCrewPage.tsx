@@ -22,6 +22,7 @@ import { formatShowDateTime } from '../../../utils/timeUtils';
 import { FloatingValidationErrorPanel } from '../../../components/base/FloatingValidationErrorPanel';
 import { EditPageFormField } from '../../../components/base/EditPageFormField';
 import { ResponsiveAssignmentList } from '../../../components/base/ResponsiveAssignmentList';
+import { getApiUrl } from '../../../config/api';
 
 // TypeScript interfaces
 interface CrewFormData {
@@ -211,7 +212,7 @@ export const EditCrewPage: React.FC = () => {
             }
 
             // DELETE the crew relationship (not the user)
-            const response = await fetch(`/api/crew-relationships/${crewId}`, {
+            const response = await fetch(getApiUrl(`/api/crew-relationships/${crewId}`), {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -283,7 +284,7 @@ export const EditCrewPage: React.FC = () => {
             if (!token) return;
             
             // Force refresh the share token
-            const response = await fetch(`/api/shows/${selectedCrewMember.show_id}/crew/${crew.user_id}/share?force_refresh=true`, {
+            const response = await fetch(getApiUrl(`/api/shows/${selectedCrewMember.show_id}/crew/${crew.user_id}/share?force_refresh=true`), {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

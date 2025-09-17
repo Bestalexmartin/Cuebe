@@ -4,12 +4,13 @@ import { useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { useErrorHandler } from './useErrorHandler';
-import { 
-  FormValidationConfig, 
-  ValidationErrors, 
-  FieldError, 
+import { getApiUrl } from '../config/api';
+import {
+  FormValidationConfig,
+  ValidationErrors,
+  FieldError,
   FormValidationResult,
-  parseBackendValidationErrors 
+  parseBackendValidationErrors
 } from '../types/validation';
 
 export interface FormData {
@@ -209,7 +210,7 @@ export const useValidatedForm = <T extends FormData>(
 
       const dataToSubmit = customData || formData;
 
-      const response = await fetch(endpoint, {
+      const response = await fetch(getApiUrl(endpoint), {
         method,
         headers: {
           'Content-Type': 'application/json',
