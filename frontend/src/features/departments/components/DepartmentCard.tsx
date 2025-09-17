@@ -109,16 +109,12 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
         <VStack align="stretch" spacing="1" fontSize="sm" color="cardText">
             <HStack justify="space-between">
                 <Text>{department.shows_assigned_count || 0} Crew Assignment{(department.shows_assigned_count || 0) !== 1 ? 's' : ''}</Text>
-                <Text></Text>
-            </HStack>
-            <HStack justify="space-between">
-                <Text>{department.script_elements_count || 0} Script Element{(department.script_elements_count || 0) !== 1 ? 's' : ''}</Text>
                 <Text fontSize="xs">
                     Created: {formatDateTimeLocal(department.date_created || department.date_updated)}
                 </Text>
             </HStack>
             <HStack justify="space-between">
-                <Text isTruncated>{department.department_description || ''}</Text>
+                <Text>{department.script_elements_count || 0} Script Element{(department.script_elements_count || 0) !== 1 ? 's' : ''}</Text>
                 <Text fontSize="xs">
                     Updated: {formatDateTimeLocal(department.date_updated || department.date_created)}
                 </Text>
@@ -151,6 +147,15 @@ const DepartmentCardComponent: React.FC<DepartmentCardProps> = ({
                 </Box>
             )}
 
+            {/* Department Description */}
+            {department.department_description && (
+                <Box>
+                    <Text fontWeight="semibold" mb={2}>Department Description</Text>
+                    <Text fontSize="sm" color="cardText" pl="20px">
+                        {department.department_description}
+                    </Text>
+                </Box>
+            )}
         </>
     );
 
