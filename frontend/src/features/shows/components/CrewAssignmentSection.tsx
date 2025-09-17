@@ -23,6 +23,7 @@ import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfir
 import { ActionsMenu, ActionItem } from '../../../components/ActionsMenu';
 import { useEnhancedToast } from '../../../utils/toastUtils';
 import { formatRole, formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
+import { getApiUrl } from '../../../config/api';
 import { useAuth } from '@clerk/clerk-react';
 
 interface CrewAssignmentSectionProps {
@@ -81,7 +82,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
         await Promise.all(
           uniqueUserIds.map(async (userId) => {
             try {
-              const response = await fetch(`/api/shows/${showId}/crew/${userId}/share`, {
+              const response = await fetch(getApiUrl(`/api/shows/${showId}/crew/${userId}/share`), {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${token}`,
@@ -128,7 +129,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
         throw new Error('Authentication token not available');
       }
 
-      const response = await fetch(`/api/shows/${showId}/crew-assignments`, {
+      const response = await fetch(getApiUrl(`/api/shows/${showId}/crew-assignments`), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -162,7 +163,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       
       // Immediately fetch share token for the new assignment
       try {
-        const shareResponse = await fetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
+        const shareResponse = await fetch(getApiUrl(`/api/shows/${showId}/crew/${crewMember.user_id}/share`), {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -231,7 +232,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       }
 
       
-      const response = await fetch(`/api/crew-assignments/${assignmentId}`, {
+      const response = await fetch(getApiUrl(`/api/crew-assignments/${assignmentId}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -297,7 +298,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       }
 
       // Refresh the show-level share (generates new token)
-      const response = await fetch(`/api/shows/${showId}/crew/${userId}/share?force_refresh=true`, {
+      const response = await fetch(getApiUrl(`/api/shows/${showId}/crew/${userId}/share?force_refresh=true`), {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -389,7 +390,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       }
 
       
-      const response = await fetch(`/api/crew-assignments/${selectedAssignmentForEdit.id}`, {
+      const response = await fetch(getApiUrl(`/api/crew-assignments/${selectedAssignmentForEdit.id}`), {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,

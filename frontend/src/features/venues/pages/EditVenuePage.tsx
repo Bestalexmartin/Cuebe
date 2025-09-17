@@ -16,6 +16,7 @@ import { ErrorBoundary } from '../../../components/ErrorBoundary';
 import { useChangeDetection } from '../../../hooks/useChangeDetection';
 import { FloatingValidationErrorPanel } from '../../../components/base/FloatingValidationErrorPanel';
 import { EditPageFormField } from '../../../components/base/EditPageFormField';
+import { getApiUrl } from '../../../config/api';
 
 // TypeScript interfaces
 interface VenueFormData {
@@ -219,7 +220,7 @@ export const EditVenuePage: React.FC = () => {
         setIsDeleting(true);
         try {
             const token = await getToken();
-            const response = await fetch(`/api/venues/${venueId}`, {
+            const response = await fetch(getApiUrl(`/api/venues/${venueId}`), {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`

@@ -1,6 +1,7 @@
 // frontend/src/features/script/export/utils/csvExporter.ts
 
 import { formatTimeOffset } from '../../../../utils/timeUtils';
+import { getApiUrl } from '../../../../config/api';
 
 export interface ScriptExportData {
   script: {
@@ -202,7 +203,7 @@ export const exportScriptAsCSV = async (
 ): Promise<void> => {
   try {
     // Fetch script data
-    const scriptResponse = await fetch(`/api/scripts/${scriptId}`, {
+    const scriptResponse = await fetch(getApiUrl(`/api/scripts/${scriptId}`), {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     
@@ -213,7 +214,7 @@ export const exportScriptAsCSV = async (
     const script = await scriptResponse.json();
 
     // Fetch script elements
-    const elementsResponse = await fetch(`/api/scripts/${scriptId}/elements`, {
+    const elementsResponse = await fetch(getApiUrl(`/api/scripts/${scriptId}/elements`), {
       headers: { 'Authorization': `Bearer ${authToken}` }
     });
     

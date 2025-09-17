@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@clerk/clerk-react";
+import { getApiUrl } from '../../../config/api';
 
 
 // TypeScript interfaces
@@ -65,7 +66,7 @@ export const useCrew = (crewId: string | undefined, autoFetch: boolean = true): 
         return;
       }
 
-      const response = await fetch(`/api/crew/${crewId}/assignments`, {
+      const response = await fetch(getApiUrl(`/api/crew/${crewId}/assignments`), {
         headers: { Authorization: `Bearer ${token}` },
       });
 

@@ -16,6 +16,7 @@ import { MarkdownRenderer } from '../../components/shared/MarkdownRenderer';
 import { SCOPED_TUTORIAL_FILES, TutorialFile } from '../constants/tutorialData';
 import type { TutorialSearchResult } from '../hooks/useTutorialSearch';
 import { tutorialCache } from '../utils/tutorialCache';
+import { getApiUrl } from '../../config/api';
 
 // Scoped side tutorial implementation - independent from Auth side
 interface SharedTutorialsPageProps {
@@ -81,7 +82,7 @@ export const SharedTutorialsPage: React.FC<SharedTutorialsPageProps> = ({
       }
 
       // Fetch from server with caching headers
-      const response = await fetch(`/api/shared/${shareToken}/tutorials/${tutorial.path}`, {
+      const response = await fetch(getApiUrl(`/api/shared/${shareToken}/tutorials/${tutorial.path}`), {
         headers: {
           'Cache-Control': 'public, max-age=3600' // 1 hour browser cache
         }

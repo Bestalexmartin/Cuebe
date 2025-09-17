@@ -184,7 +184,7 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
-      const response = await fetch(`/api/docs/${doc.path}`, { headers });
+      const response = await fetch(getApiUrl(`/api/docs/${doc.path}`), { headers });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
