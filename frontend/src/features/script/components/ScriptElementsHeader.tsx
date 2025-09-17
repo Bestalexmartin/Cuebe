@@ -11,7 +11,8 @@ export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
     // When colorizeDepNames is true, most borders should be hidden for clean department color display
     return (
         <Box
-            bg="black"
+            bg="gray.600"
+            _dark={{ bg: "black" }}
             borderRadius="sm"
             position="sticky"
             top={0}
@@ -23,51 +24,52 @@ export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
                 <Box
                     w="10px"
                     h="28px"
-                    bg="black"
+                    bg="gray.600"
+                    _dark={{ bg: "black" }}
                     flexShrink={0}
                 />
 
                 {/* Time Offset Header */}
                 <Box w="123px" minW="100px" pl={5} pr={4} flexShrink={1}>
-                    <Text py={.5} fontSize="sm" color="#cccccc" fontWeight="bold" textAlign="center">
+                    <Text py={.5} fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="center">
                         TIME
                     </Text>
                 </Box>
 
                 {/* Duration Header - hidden third/last (< 768px), compressible */}
-                <Box 
-                    w="100px" 
+                <Box
+                    w="100px"
                     minW="60px"
                     height="28px"
                     borderLeft="1px solid"
-                    borderColor="#82919a"
+                    borderColor="white"
                     display={{ base: 'none', md: 'flex' }}
                     alignItems="center"
                     justifyContent="center"
                     flexShrink={2}
                 >
-                    <Text py={.5} fontSize="sm" color="#cccccc" fontWeight="bold" textAlign="center">
+                    <Text py={.5} fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="center">
                         DUR
                     </Text>
                 </Box>
 
                 {/* Department Header */}
-                <Box w="100px" minW="99px" height="28px" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft="1px solid" borderColor="#cccccc">
-                    <Text fontSize="sm" color="#cccccc" fontWeight="bold" textAlign="center" isTruncated width="100%">
+                <Box w="100px" minW="99px" height="28px" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft="1px solid" borderColor="white">
+                    <Text fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="center" isTruncated width="100%">
                         DEPT
                     </Text>
                 </Box>
 
                 {/* Cue ID Header */}
-                <Box w="80px" minW="80px" height="28px" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft="1px solid" borderColor="#cccccc">
-                    <Text py={.5} fontSize="sm" color="#cccccc" fontWeight="bold" textAlign="center">
+                <Box w="80px" minW="80px" height="28px" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft="1px solid" borderColor="white">
+                    <Text py={.5} fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="center">
                         ID
                     </Text>
                 </Box>
 
                 {/* Description Header */}
-                <Box flex={1} minW="120px" pl={3} pr={3} height="28px" display="flex" alignItems="center" flexShrink={1} borderLeft="1px solid" borderColor="#cccccc">
-                    <Text py={.5} fontSize="sm" color="#cccccc" fontWeight="bold" textAlign="left" isTruncated>
+                <Box flex={1} minW="120px" pl={3} pr={3} height="28px" display="flex" alignItems="center" flexShrink={1} borderLeft="1px solid" borderColor="white">
+                    <Text py={.5} fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="left" isTruncated>
                         CUE
                     </Text>
                 </Box>
@@ -82,9 +84,9 @@ export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
                     alignItems="center"
                     minW="150px"
                     borderLeft="1px solid"
-                    borderColor="#82919a"
+                    borderColor="white"
                 >
-                    <Text py={.5} fontSize="sm" color="#cccccc" fontWeight="bold" textAlign="left" isTruncated>
+                    <Text py={.5} fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="left" isTruncated>
                         NOTES
                     </Text>
                 </Box>
@@ -100,16 +102,16 @@ export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
                     alignItems="center"
                     flexShrink={0}
                     borderLeft="1px solid"
-                    borderColor="#82919a"
+                    borderColor="white"
                 >
-                    <Text py={.5} fontSize="sm" color="#cccccc" fontWeight="bold" textAlign="left" isTruncated>
+                    <Text py={.5} fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="left" isTruncated>
                         LOCATION
                     </Text>
                 </Box>
 
                 {/* Priority Header */}
-                <Box w="122px" minW="122px" height="28px" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft="1px solid" borderColor="#cccccc">
-                    <Text py={.5} fontSize="sm" color="#cccccc" fontWeight="bold" textAlign="center">
+                <Box w="122px" minW="122px" height="28px" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft="1px solid" borderColor="white">
+                    <Text py={.5} fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="center">
                         PRIORITY
                     </Text>
                 </Box>

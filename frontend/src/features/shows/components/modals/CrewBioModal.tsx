@@ -311,8 +311,8 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
                     transform="translate(-50%, -50%)"
                     bg="white"
                     borderRadius="0"
-                    width="64px"
-                    height="64px"
+                    width="44px"
+                    height="44px"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
@@ -321,8 +321,8 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
                       src="/cuebe-qr.svg"
                       alt="Cuebe"
                       style={{
-                        width: '64px',
-                        height: '64px',
+                        width: '44px',
+                        height: '44px',
                         display: 'block'
                       }}
                     />
