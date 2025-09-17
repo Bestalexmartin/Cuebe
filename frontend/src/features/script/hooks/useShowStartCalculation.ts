@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { getApiUrl } from '../../../config/api';
 
 interface UseShowStartCalculationReturn {
     isCalculating: boolean;
@@ -30,7 +31,7 @@ export const useShowStartCalculation = (
                 throw new Error('Authentication token not available');
             }
 
-            const response = await fetch(`/api/scripts/${scriptId}/calculate-show-start-duration`, {
+            const response = await fetch(getApiUrl(`/api/scripts/${scriptId}/calculate-show-start-duration`), {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,

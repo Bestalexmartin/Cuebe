@@ -198,7 +198,7 @@ export const EditShowPage: React.FC = () => {
             // Save crew assignments separately
             if (crewAssignmentsData.length > 0) {
                 const token = await getToken();
-                const response = await fetch(`/api/shows/${showId}/crew-assignments`, {
+                const response = await fetch(getApiUrl(`/api/shows/${showId}/crew-assignments`), {
                     method: 'PUT', // Use PUT to replace all assignments
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -275,7 +275,7 @@ export const EditShowPage: React.FC = () => {
                 throw new Error('Authentication token not available');
             }
 
-            const response = await fetch(`/api/shows/${showId}`, {
+            const response = await fetch(getApiUrl(`/api/shows/${showId}`), {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`,

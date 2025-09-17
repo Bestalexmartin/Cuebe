@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { getApiUrl } from '../../config/api';
 
 export interface TutorialSearchResult {
   title?: string;
@@ -30,7 +31,7 @@ export const useTutorialSearch = (shareToken?: string) => {
     setIsSearching(true);
 
     try {
-      const response = await fetch(`/api/shared/${shareToken}/tutorials/search?q=${encodeURIComponent(query)}`);
+      const response = await fetch(getApiUrl(`/api/shared/${shareToken}/tutorials/search?q=${encodeURIComponent(query)}`));
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }

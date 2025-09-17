@@ -4,6 +4,7 @@ import { IconButton, useColorMode } from '@chakra-ui/react';
 import { AppIcon } from '../../components/AppIcon';
 import { encodeShareToken } from '../../utils/tokenValidation';
 import { useEnhancedToast } from '../../utils/toastUtils';
+import { getApiUrl } from '../../config/api';
 
 export const GuestDarkModeSwitch: React.FC<{ shareToken?: string }> = ({ shareToken }) => {
   const [guestDarkMode, setGuestDarkMode] = useState<boolean>(false);
@@ -20,7 +21,7 @@ export const GuestDarkModeSwitch: React.FC<{ shareToken?: string }> = ({ shareTo
       }
 
       try {
-        const response = await fetch(`/api/shared/${encodeShareToken(shareToken)}/preferences`);
+        const response = await fetch(getApiUrl(`/api/shared/${encodeShareToken(shareToken)}/preferences`));
         if (response.ok) {
           const preferences = await response.json();
           const isDark = preferences.dark_mode || false;
@@ -50,7 +51,7 @@ export const GuestDarkModeSwitch: React.FC<{ shareToken?: string }> = ({ shareTo
     setColorMode(newDarkMode ? 'dark' : 'light');
 
     try {
-      const response = await fetch(`/api/shared/${encodeShareToken(shareToken)}/preferences`, {
+      const response = await fetch(getApiUrl(`/api/shared/${encodeShareToken(shareToken)}/preferences`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

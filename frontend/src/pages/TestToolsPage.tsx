@@ -15,6 +15,7 @@ import { BaseUtilityPage } from '../components/base/BaseUtilityPage';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { TestResultsDisplay, TestResult } from '../components/shared/TestResultsDisplay';
 import { TestCardWrapper } from '../components/shared/TestCardWrapper';
+import { getApiUrl } from '../config/api';
 
 
 interface TestToolsPageProps {
@@ -128,7 +129,7 @@ export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenu
         throw new Error('Authentication token not available');
       }
       
-      const response = await fetch(`/api/dev/run-tests?test_suite=${testSuite}`, {
+      const response = await fetch(getApiUrl(`/api/dev/run-tests?test_suite=${testSuite}`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

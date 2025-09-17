@@ -45,6 +45,7 @@ import { MobileSearchModal } from './components/modals/MobileSearchModal';
 import type { Script } from '../features/shows/types';
 import type { ScriptElement } from '../features/script/types/scriptElements';
 import { computeDisplayShowTime, formatShowTimer as formatShowTimerString } from '../utils/showTimeUtils';
+import { getApiUrl } from '../config/api';
 
 const SHOWS_SORT_OPTIONS: SortOption[] = [
   { value: 'show_name', label: 'Name' },
@@ -351,7 +352,7 @@ const SharedPageContent = React.memo(({ onScriptChange }: { onScriptChange?: (sc
       if (!shareToken) return;
 
       try {
-        const response = await fetch(`/api/shared/${encodeURIComponent(shareToken)}/preferences`);
+        const response = await fetch(getApiUrl(`/api/shared/${encodeURIComponent(shareToken)}/preferences`));
         if (response.ok) {
           const preferences = await response.json();
           const la = preferences.lookahead_seconds ?? 30;
@@ -401,7 +402,7 @@ const SharedPageContent = React.memo(({ onScriptChange }: { onScriptChange?: (sc
     if (!shareToken) return;
 
     try {
-      const response = await fetch(`/api/shared/${encodeURIComponent(shareToken)}/preferences`, {
+      const response = await fetch(getApiUrl(`/api/shared/${encodeURIComponent(shareToken)}/preferences`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
