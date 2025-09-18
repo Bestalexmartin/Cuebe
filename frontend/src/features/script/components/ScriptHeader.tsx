@@ -91,7 +91,7 @@ export const ScriptHeader: React.FC<ScriptHeaderProps> = ({
         >
             {/* Left: Script Title */}
             <HStack spacing={2} align="center">
-                <AppIcon name="script" boxSize="20px" color="white" display={{ base: 'none', lg: 'block' }} />
+                <AppIcon name="script" boxSize="20px" display={{ base: 'none', lg: 'block' }} />
                 <HStack spacing={3} align="center">
                     <Heading as="h2" size="md">{currentScript?.script_name || 'Script'}</Heading>
                     {(currentScript?.is_shared || isScriptShared) && (

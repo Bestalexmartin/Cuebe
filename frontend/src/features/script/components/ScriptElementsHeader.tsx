@@ -12,14 +12,16 @@ export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
     return (
         <Box
             bg="gray.600"
-            _dark={{ bg: "black" }}
+            border="3px solid"
+            borderColor="gray.600"
+            _dark={{ bg: "black", borderColor: "black" }}
             borderRadius="sm"
             position="sticky"
             top={0}
             zIndex={10}
             mb="1px"
         >
-            <HStack spacing={0} align="center" h="40px">
+            <HStack spacing={0} align="center" h="30px">
                 {/* Department Color Bar */}
                 <Box
                     w="10px"
@@ -30,8 +32,8 @@ export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
                 />
 
                 {/* Time Offset Header */}
-                <Box w="123px" minW="100px" pl={5} pr={4} flexShrink={1}>
-                    <Text py={.5} fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="center">
+                <Box w="120px" minW="100px" pl={5} pr={4} py={.5} flexShrink={1}>
+                    <Text fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="center">
                         TIME
                     </Text>
                 </Box>
@@ -54,7 +56,7 @@ export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
                 </Box>
 
                 {/* Department Header */}
-                <Box w="100px" minW="99px" height="28px" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft="1px solid" borderColor="white">
+                <Box w="100px" minW="99px" height="28px" display={{ base: 'none', sm: 'flex' }} alignItems="center" justifyContent="center" flexShrink={0} borderLeft="1px solid" borderColor="white">
                     <Text fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="center" isTruncated width="100%">
                         DEPT
                     </Text>
@@ -110,7 +112,7 @@ export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
                 </Box>
 
                 {/* Priority Header */}
-                <Box w="122px" minW="122px" height="28px" display="flex" alignItems="center" justifyContent="center" flexShrink={0} borderLeft="1px solid" borderColor="white">
+                <Box w="122px" minW="122px" height="28px" display={{ base: 'none', sm: 'flex' }} alignItems="center" justifyContent="center" flexShrink={0} borderLeft="1px solid" borderColor="white">
                     <Text py={.5} fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="center">
                         PRIORITY
                     </Text>
