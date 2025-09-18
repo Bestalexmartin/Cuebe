@@ -32,7 +32,7 @@ export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
                 />
 
                 {/* Time Offset Header */}
-                <Box w="120px" minW="100px" pl={5} pr={4} py={.5} flexShrink={1}>
+                <Box w="140px" minW="100px" pl={5} pr={4} py={.5} flexShrink={1}>
                     <Text fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="center">
                         TIME
                     </Text>
@@ -40,7 +40,7 @@ export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
 
                 {/* Duration Header - hidden third/last (< 768px), compressible */}
                 <Box
-                    w="100px"
+                    w="80px"
                     minW="60px"
                     height="28px"
                     borderLeft="1px solid"
@@ -70,7 +70,7 @@ export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
                 </Box>
 
                 {/* Description Header */}
-                <Box flex={1} minW="120px" pl={3} pr={3} height="28px" display="flex" alignItems="center" flexShrink={1} borderLeft="1px solid" borderColor="white">
+                <Box flex={1} minW="120px" maxW="300px" pl={3} pr={3} height="28px" display="flex" alignItems="center" flexShrink={2} borderLeft="1px solid" borderColor="white">
                     <Text py={.5} fontSize="sm" color="white" _dark={{ color: "#cccccc" }} fontWeight="bold" textAlign="left" isTruncated>
                         CUE
                     </Text>
@@ -85,6 +85,7 @@ export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
                     display={{ base: 'none', lg: 'flex' }}
                     alignItems="center"
                     minW="150px"
+                    flexShrink={3}
                     borderLeft="1px solid"
                     borderColor="white"
                 >
@@ -97,7 +98,7 @@ export const ScriptElementsHeader: React.FC<ScriptElementsHeaderProps> = () => {
                 <Box 
                     w="180px" 
                     minW="180px" 
-                    pl={6} 
+                    pl={3} 
                     pr={3} 
                     height="28px"
                     display={{ base: 'none', xl: 'flex' }}

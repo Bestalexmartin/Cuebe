@@ -445,7 +445,7 @@ const CueElementComponent: React.FC<CueElementProps> = (props: CueElementProps) 
 
                 {/* Time Offset */}
                 <Box 
-                    w="120px" 
+                    w="140px"
                     minW="100px" 
                     pl={5} 
                     pr={4} 
@@ -462,7 +462,7 @@ const CueElementComponent: React.FC<CueElementProps> = (props: CueElementProps) 
 
                 {/* Duration - hidden third/last (< 768px), compressible */}
                 <Box
-                    w="100px"
+                    w="80px"
                     px={3}
                     height="100%"
                     display={{ base: 'none', md: 'flex' }}
@@ -521,7 +521,7 @@ const CueElementComponent: React.FC<CueElementProps> = (props: CueElementProps) 
                 </Box>
 
                 {/* Cue Name/Description */}
-                <Box flex={1} minW="120px" pl={3} pr={3} height="100%" display="flex" alignItems="center" flexShrink={1} borderLeft="1px solid" borderColor={textColor}>
+                <Box flex={1} minW="120px" maxW="300px" pl={3} pr={3} height="100%" display="flex" alignItems="center" flexShrink={2} borderLeft="1px solid" borderColor={textColor}>
                     <Text fontSize="sm" color={textColor} textAlign="left" isTruncated fontWeight={fontWeight} marginTop="-1px">
                         {element.element_name}
                     </Text>
@@ -536,6 +536,7 @@ const CueElementComponent: React.FC<CueElementProps> = (props: CueElementProps) 
                     display={{ base: 'none', lg: 'flex' }}
                     alignItems="center"
                     minW="150px"
+                    flexShrink={3}
                     borderLeft="1px solid"
                     borderColor={textColor}
                 >
@@ -548,7 +549,7 @@ const CueElementComponent: React.FC<CueElementProps> = (props: CueElementProps) 
                 <Box
                     w="180px"
                     minW="180px"
-                    pl={6}
+                    pl={3}
                     pr={3}
                     height="100%"
                     display={{ base: 'none', xl: 'flex' }}
