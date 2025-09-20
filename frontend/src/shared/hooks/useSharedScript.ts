@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { ScriptElement } from '../../features/script/types/scriptElements';
 import { validateShareToken, encodeShareToken, INVALID_SHARE_TOKEN_ERROR } from '../../utils/tokenValidation';
 import { useSharedShowTimeEngine } from '../contexts/SharedShowTimeEngineProvider';
+import { getApiUrl } from '../../config/api';
 
 /**
  * Recalculate durations for all group elements based on their children
@@ -82,7 +83,7 @@ export const useSharedScript = (shareToken: string | undefined, updateSharedData
 
     try {
       const elementsResponse = await fetch(
-        `/api/shared/${encodeShareToken(shareToken!)}/scripts/${scriptId}`
+        getApiUrl(`/api/shared/${encodeShareToken(shareToken!)}/scripts/${scriptId}`)
       );
 
       if (!elementsResponse.ok) {

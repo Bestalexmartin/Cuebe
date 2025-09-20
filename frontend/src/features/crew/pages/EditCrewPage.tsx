@@ -115,6 +115,12 @@ export const EditCrewPage: React.FC = () => {
         form.updateField(field, value);
     };
 
+    // Helper function to get field error message
+    const getFieldError = (fieldName: string): string | undefined => {
+        const error = form.fieldErrors.find(err => err.field === fieldName);
+        return error?.message;
+    };
+
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -167,11 +173,19 @@ export const EditCrewPage: React.FC = () => {
     };
 
     const isFormValid = (): boolean => {
-        return form.fieldErrors.length === 0 && 
+        // Check if there are any validation errors
+        if (form.fieldErrors.length > 0) {
+            return false;
+        }
+
+        // Check required fields have minimum content
+        const requiredFieldsValid =
             form.formData.fullname_first.trim().length >= 4 &&
             form.formData.fullname_last.trim().length >= 4 &&
             form.formData.email_address.trim().length > 0 &&
             form.formData.user_role.trim().length > 0;
+
+        return requiredFieldsValid;
     };
 
     const canSave = (): boolean => {
@@ -399,24 +413,26 @@ export const EditCrewPage: React.FC = () => {
                                 label="First Name"
                                 value={form.formData.fullname_first}
                                 onChange={(value) => handleChange('fullname_first', value)}
-                                onBlur={() => form.validateField('fullname_first')}
+                                onBlur={() => form.touchField('fullname_first')}
                                 placeholder="Enter first name"
                                 isRequired={!(isVerifiedUser() && !isSelfEdit())}
                                 isDisabled={isVerifiedUser() && !isSelfEdit()}
                                 bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
                                 _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
+                                error={getFieldError('fullname_first')}
                             />
                             <EditPageFormField
                                 type="input"
                                 label="Last Name"
                                 value={form.formData.fullname_last}
                                 onChange={(value) => handleChange('fullname_last', value)}
-                                onBlur={() => form.validateField('fullname_last')}
+                                onBlur={() => form.touchField('fullname_last')}
                                 placeholder="Enter last name"
                                 isRequired={!(isVerifiedUser() && !isSelfEdit())}
                                 isDisabled={isVerifiedUser() && !isSelfEdit()}
                                 bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
                                 _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
+                                error={getFieldError('fullname_last')}
                             />
                         </HStack>
 
@@ -428,12 +444,13 @@ export const EditCrewPage: React.FC = () => {
                                 label="Email Address"
                                 value={form.formData.email_address}
                                 onChange={(value) => handleChange('email_address', value)}
-                                onBlur={() => form.validateField('email_address')}
+                                onBlur={() => form.touchField('email_address')}
                                 placeholder="crew@example.com"
                                 isRequired={!(isVerifiedUser() && !isSelfEdit())}
                                 isDisabled={isVerifiedUser() && !isSelfEdit()}
                                 bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
                                 _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
+                                error={getFieldError('email_address')}
                             />
                             <EditPageFormField
                                 type="input"
@@ -441,11 +458,12 @@ export const EditCrewPage: React.FC = () => {
                                 label="Phone Number"
                                 value={form.formData.phone_number}
                                 onChange={(value) => handleChange('phone_number', value)}
-                                onBlur={() => form.validateField('phone_number')}
+                                onBlur={() => form.touchField('phone_number')}
                                 placeholder="(555) 123-4567"
                                 isDisabled={isVerifiedUser() && !isSelfEdit()}
                                 bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
                                 _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
+                                error={getFieldError('phone_number')}
                             />
                         </HStack>
 
@@ -461,6 +479,7 @@ export const EditCrewPage: React.FC = () => {
                             isDisabled={isVerifiedUser() && !isSelfEdit()}
                             bg={isVerifiedUser() && !isSelfEdit() ? 'gray.100' : undefined}
                             _dark={{ bg: isVerifiedUser() && !isSelfEdit() ? 'gray.700' : undefined }}
+                            error={getFieldError('user_role')}
                         />
 
                         {/* Notes Section - Personal notes for self-edit, Manager notes for manager edit */}
@@ -469,9 +488,10 @@ export const EditCrewPage: React.FC = () => {
                             label={isSelfEdit() ? 'Personal Notes' : 'Manager Notes'}
                             value={form.formData.notes}
                             onChange={(value) => handleChange('notes', value)}
-                            onBlur={() => form.validateField('notes')}
+                            onBlur={() => form.touchField('notes')}
                             placeholder={isSelfEdit() ? "Your personal notes" : "Your private notes about this crew"}
                             minHeight="100px"
+                            error={getFieldError('notes')}
                         />
 
                         {/* Department Assignments */}

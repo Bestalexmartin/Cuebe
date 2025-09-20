@@ -147,6 +147,12 @@ export const EditShowPage: React.FC = () => {
         form.updateField(field, value);
     };
 
+    // Helper function to get field error message
+    const getFieldError = (fieldName: string): string | undefined => {
+        const error = form.fieldErrors.find(err => err.field === fieldName);
+        return error?.message;
+    };
+
     // Handle crew assignment changes
     const handleCrewAssignmentsChange = (assignments: CrewAssignmentRow[]) => {
         form.updateField('crew_assignments', assignments);
@@ -156,7 +162,7 @@ export const EditShowPage: React.FC = () => {
     const handlePaste = (field: keyof ShowFormData) => {
         // Use a small delay to ensure paste content is processed
         setTimeout(() => {
-            form.validateField(field as string);
+            form.touchField(field as string);
         }, 10);
     };
 
@@ -369,6 +375,7 @@ export const EditShowPage: React.FC = () => {
                                 onPaste={() => handlePaste('show_name')}
                                 placeholder="Enter show title"
                                 isRequired
+                                error={getFieldError('show_name')}
                             />
 
                             <EditPageFormField
@@ -413,9 +420,10 @@ export const EditShowPage: React.FC = () => {
                             label="Notes"
                             value={form.formData.show_notes}
                             onChange={(value) => handleChange('show_notes', value)}
-                            onBlur={() => form.validateField('show_notes')}
+                            onBlur={() => form.touchField('show_notes')}
                             placeholder="Additional show information, special requirements, etc."
                             rows={3}
+                            error={getFieldError('show_notes')}
                         />
 
                         {/* Crew Assignments Section */}
