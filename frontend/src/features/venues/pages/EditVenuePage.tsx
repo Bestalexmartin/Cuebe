@@ -149,6 +149,12 @@ export const EditVenuePage: React.FC = () => {
         form.updateField(field, value);
     };
 
+    // Helper function to get field error message
+    const getFieldError = (fieldName: string): string | undefined => {
+        const error = form.fieldErrors.find(err => err.field === fieldName);
+        return error?.message;
+    };
+
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -306,9 +312,10 @@ export const EditVenuePage: React.FC = () => {
                             label="Venue Name"
                             value={form.formData.venue_name}
                             onChange={(value) => handleChange('venue_name', value)}
-                            onBlur={() => form.validateField('venue_name')}
+                            onBlur={() => form.touchField('venue_name')}
                             placeholder="Enter venue name"
                             isRequired
+                            error={getFieldError('venue_name')}
                         />
 
                         <EditPageFormField
@@ -355,8 +362,9 @@ export const EditVenuePage: React.FC = () => {
                                 label="Capacity"
                                 value={form.formData.capacity}
                                 onChange={(value) => handleChange('capacity', value)}
-                                onBlur={() => form.validateField('capacity')}
+                                onBlur={() => form.touchField('capacity')}
                                 placeholder="Number of seats"
+                                error={getFieldError('capacity')}
                             />
                             <EditPageFormField
                                 type="input"
@@ -400,8 +408,9 @@ export const EditVenuePage: React.FC = () => {
                                 label="Contact Email"
                                 value={form.formData.contact_email}
                                 onChange={(value) => handleChange('contact_email', value)}
-                                onBlur={() => form.validateField('contact_email')}
+                                onBlur={() => form.touchField('contact_email')}
                                 placeholder="contact@venue.com"
+                                error={getFieldError('contact_email')}
                             />
                             <EditPageFormField
                                 type="input"
@@ -409,8 +418,9 @@ export const EditVenuePage: React.FC = () => {
                                 label="Contact Phone"
                                 value={form.formData.contact_phone}
                                 onChange={(value) => handleChange('contact_phone', value)}
-                                onBlur={() => form.validateField('contact_phone')}
+                                onBlur={() => form.touchField('contact_phone')}
                                 placeholder="(555) 123-4567"
+                                error={getFieldError('contact_phone')}
                             />
                         </HStack>
 
@@ -440,9 +450,10 @@ export const EditVenuePage: React.FC = () => {
                             label="Notes"
                             value={form.formData.venue_notes}
                             onChange={(value) => handleChange('venue_notes', value)}
-                            onBlur={() => form.validateField('venue_notes')}
+                            onBlur={() => form.touchField('venue_notes')}
                             placeholder="Additional venue information, equipment, special requirements, etc."
                             minHeight="120px"
+                            error={getFieldError('venue_notes')}
                         />
                     </VStack>
                 )}
