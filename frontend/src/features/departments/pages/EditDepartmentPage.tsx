@@ -118,6 +118,12 @@ export const EditDepartmentPage: React.FC = () => {
         form.updateField(field, value);
     };
 
+    // Helper function to get field error message
+    const getFieldError = (fieldName: string): string | undefined => {
+        const error = form.fieldErrors.find(err => err.field === fieldName);
+        return error?.message;
+    };
+
     // Handle form submission
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -335,10 +341,11 @@ export const EditDepartmentPage: React.FC = () => {
                                 label="Department Name"
                                 value={form.formData.department_name}
                                 onChange={(value) => handleChange('department_name', value)}
-                                onBlur={() => form.validateField('department_name')}
+                                onBlur={() => form.touchField('department_name')}
                                 placeholder="Enter department name"
                                 isRequired
                                 flex="2"
+                                error={getFieldError('department_name')}
                             />
                             
                             <EditPageFormField
@@ -346,10 +353,11 @@ export const EditDepartmentPage: React.FC = () => {
                                 label="Initials"
                                 value={form.formData.department_initials}
                                 onChange={(value) => handleChange('department_initials', value.toUpperCase())}
-                                onBlur={() => form.validateField('department_initials')}
+                                onBlur={() => form.touchField('department_initials')}
                                 placeholder="LX"
                                 maxLength={5}
                                 flex="1"
+                                error={getFieldError('department_initials')}
                             />
                         </HStack>
 
@@ -372,7 +380,7 @@ export const EditDepartmentPage: React.FC = () => {
                                 <Input
                                     value={form.formData.department_color}
                                     onChange={(e) => handleChange('department_color', e.target.value)}
-                                    onBlur={() => form.validateField('department_color')}
+                                    onBlur={() => form.touchField('department_color')}
                                     placeholder="#3182CE"
                                     width="120px"
                                     fontFamily="mono"
@@ -402,9 +410,10 @@ export const EditDepartmentPage: React.FC = () => {
                             label="Department Description"
                             value={form.formData.department_description}
                             onChange={(value) => handleChange('department_description', value)}
-                            onBlur={() => form.validateField('department_description')}
+                            onBlur={() => form.touchField('department_description')}
                             placeholder="Describe this department's role and responsibilities"
                             minHeight="120px"
+                            error={getFieldError('department_description')}
                         />
 
                         {/* Crew Assignments */}

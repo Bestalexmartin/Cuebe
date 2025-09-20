@@ -17,6 +17,7 @@ interface BaseEditPageFormFieldProps {
     isDisabled?: boolean;
     flexBasis?: string | number;
     flex?: string | number;
+    error?: string;
 }
 
 interface InputFieldProps extends BaseEditPageFormFieldProps {
@@ -61,11 +62,13 @@ export const EditPageFormField: React.FC<EditPageFormFieldProps> = (props) => {
         isRequired = false,
         isDisabled = false,
         flexBasis,
-        flex
+        flex,
+        error
     } = props;
 
     const formControlProps = {
         isRequired,
+        isInvalid: !!error,
         ...(flexBasis && { flexBasis }),
         ...(flex && { flex })
     };
