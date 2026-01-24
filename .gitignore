@@ -36,3 +36,10 @@ cuebe_backup.sql
 # Local SQLite/DB files (do not commit test/dev databases)
 backend/test.db
 backend/tests/test.db
+
+# Coverage reports
+.coverage
+*.coverage
+htmlcov/
+backend/.coverage
+backend/htmlcov/
