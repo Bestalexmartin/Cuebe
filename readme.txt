@@ -119,7 +119,7 @@ Major Achievements
 
 Script Elements API: Complete CRUD operations for theater script management
 
-rag-and-Drop System: Intuitive script element reordering with intelligent conflict
+Drag-and-Drop System: Intuitive script element reordering with intelligent conflict
 resolution
 
 Note Color Customization: Visual organization system with smart text
