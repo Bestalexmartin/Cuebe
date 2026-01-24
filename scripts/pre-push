@@ -1,0 +1,59 @@
+#!/bin/bash
+# Pre-push hook: Run linting and TypeScript checks before pushing
+
+set -e
+
+echo "Running pre-push checks..."
+echo ""
+
+# Get the root directory of the repo
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+
+# Frontend checks
+if [ -d "$ROOT_DIR/frontend" ]; then
+    echo "=== Frontend Checks ==="
+    cd "$ROOT_DIR/frontend"
+
+    # Check if node_modules exists
+    if [ ! -d "node_modules" ]; then
+        echo "Warning: node_modules not found. Run 'npm install' first."
+        exit 1
+    fi
+
+    echo "Running ESLint..."
+    npm run lint
+
+    echo ""
+    echo "Running TypeScript check..."
+    npm run typecheck
+
+    echo ""
+    echo "Frontend checks passed!"
+fi
+
+# Backend checks (when tests exist)
+if [ -d "$ROOT_DIR/backend" ]; then
+    echo ""
+    echo "=== Backend Checks ==="
+    cd "$ROOT_DIR/backend"
+
+    # Check if virtual environment exists
+    if [ -d "venv" ]; then
+        source venv/bin/activate
+
+        # Run tests if they exist
+        if [ -d "tests" ] && [ "$(ls -A tests/*.py 2>/dev/null)" ]; then
+            echo "Running pytest..."
+            pytest --tb=short -q
+            echo ""
+            echo "Backend tests passed!"
+        else
+            echo "No backend tests found (tests/ directory empty or missing)"
+        fi
+    else
+        echo "Warning: Backend venv not found. Skipping backend checks."
+    fi
+fi
+
+echo ""
+echo "All pre-push checks passed!"
