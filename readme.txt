@@ -5,13 +5,14 @@ production-ready framework and is released under the MIT license (see bottom of 
 
 Born of an unexpected "adventure" as show caller for "The Universe is Absurd" featuring
 William Shatner and Neil deGrasse Tyson (McCaw Hall, Seattle WA, June 18 2025),
-Cuebe represents my first return to software development since 2015 and is an exploration
+Cuebe represents my first return to software development since 2006 and is an exploration
 of how to design complex, real-time operational software with clarity and restraint.
 It focuses on explicit data models, predictable behavior, and user interfaces that make
 sequencing, timing, and responsibility visible rather than implicit.
 
-Your kind indulgence is appreciated, and credit to ChatGPT / Codex / Claude Code for
-making this work possible.
+It's amazing how much things have changed since the LAMP stack days coding in textedit and
+pushing via SFTP. Credit to ChatGPT, Codex and Claude Code for making this work possible
+and letting me focus on the architecture rather than the spelling and punctuation.
 
 - alex
 
