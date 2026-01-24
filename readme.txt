@@ -3,6 +3,19 @@
 Note: This repository is shared as a reference for approach and structure, not as a
 production-ready framework and is released under the MIT license (see bottom of page).
 
+Born of an unexpected "adventure" as show caller for "The Universe is Absurd" featuring
+William Shatner and Neil deGrasse Tyson (McCaw Hall, Seattle WA, June 18 2025),
+Cuebe represents my first return to software development since 2015 and is an exploration
+of how to design complex, real-time operational software with clarity and restraint.
+It focuses on explicit data models, predictable behavior, and user interfaces that make
+sequencing, timing, and responsibility visible rather than implicit.
+
+Your kind indulgence is appreciated, and credit to ChatGPT / Codex / Claude Code for
+making this work possible.
+
+- alex
+
+---
 
 Cuebe is a theater production management application designed around a modern
 container‑based architecture. The project uses React 19 with TypeScript and Chakra UI
@@ -123,8 +136,18 @@ authentication and enriched with performance optimizations and extensive documen
 
 Copyright 2026 by Alex Martin
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this
+software and associated documentation files (the “Software”), to deal in the Software
+without restriction, including without limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+persons to whom the Software is furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all copies or
+substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+OR OTHER DEALINGS IN THE SOFTWARE.
