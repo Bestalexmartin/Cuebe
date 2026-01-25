@@ -8,7 +8,7 @@ services:
     container_name: cuebe-backend
     build: ./backend  # Tells Docker Compose to look for a Dockerfile in the ./backend directory
     ports:
-      - "8000:8000"  # Maps port 8000 on your machine to port 8000 in the container
+      - "8004:8000"  # Maps port 8004 on your machine to port 8000 in the container
     volumes:
       - ./backend:/app # Mounts your local ./backend folder into the container's /app folder for live-reloading
       - ./docs:/docs # Mount docs directory for markdown serving
@@ -27,7 +27,7 @@ services:
     container_name: cuebe-frontend
     image: node:20-alpine
     ports:
-      - "5173:5173"
+      - "5177:5173"
     working_dir: /app
     volumes:
       - ./frontend:/app
@@ -46,7 +46,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     ports:
-      - "5432:5432" # Maps the standard Postgres port
+      - "5436:5432" # Maps port 5436 on host to standard Postgres port
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
