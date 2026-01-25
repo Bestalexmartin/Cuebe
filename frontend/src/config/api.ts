@@ -21,6 +21,6 @@ export const getWsUrl = (path: string): string => {
   } else {
     // In development, use local WebSocket
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${protocol}//${window.location.hostname}:8000/${cleanPath}`;
+    return `${protocol}//${window.location.hostname}:8004/${cleanPath}`;
   }
 };
