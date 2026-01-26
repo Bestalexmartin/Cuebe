@@ -22,7 +22,7 @@ except ImportError:
     RATE_LIMITING_ENABLED = False
 
 # Import routers
-from routers import users, crews, venues, departments, shows, webhooks, development, system_tests, script_elements, show_sharing, script_import, docs_search, script_sync
+from routers import users, crews, venues, departments, shows, webhooks, development, script_elements, show_sharing, script_import, docs_search, script_sync
 from routers.auth import get_current_user
 import models
 
@@ -123,8 +123,7 @@ app.include_router(docs_search.router)  # Documentation search at /api/docs/sear
 app.include_router(script_sync.router)  # WebSocket script synchronization at /ws/script/*
 if ENABLE_DEV_ROUTES:
     app.include_router(development.router)  # Development endpoints at /api/dev/*, /api/health
-    app.include_router(system_tests.router) # System testing endpoints at /api/system-tests/*
-    logger.info("Development and system test routes ENABLED")
+    logger.info("Development routes ENABLED")
 else:
     logger.info("Development and system test routes DISABLED")
 
