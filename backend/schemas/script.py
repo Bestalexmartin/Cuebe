@@ -5,6 +5,8 @@ from datetime import datetime
 from uuid import UUID
 from typing import Optional, List, TYPE_CHECKING
 
+from models import ScriptStatus
+
 if TYPE_CHECKING:
     from .script_element import ScriptElement
 
@@ -15,14 +17,14 @@ if TYPE_CHECKING:
 class ScriptCreate(BaseModel):
     script_name: Optional[str] = None
     script_notes: Optional[str] = None
-    script_status: Optional[str] = None
+    script_status: Optional[ScriptStatus] = None
     end_time: Optional[datetime] = None  # Planned end time
 
 class Script(BaseModel):
     script_id: UUID
     script_name: str
     script_notes: Optional[str] = None
-    script_status: str
+    script_status: ScriptStatus
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None  # Planned end time
     show_id: UUID
@@ -43,7 +45,7 @@ class Script(BaseModel):
 class ScriptUpdate(BaseModel):
     script_name: Optional[str] = None
     script_notes: Optional[str] = None
-    script_status: Optional[str] = None
+    script_status: Optional[ScriptStatus] = None
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None  # Planned end time
     is_shared: Optional[bool] = None

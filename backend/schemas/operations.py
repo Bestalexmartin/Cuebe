@@ -4,6 +4,8 @@ from pydantic import BaseModel
 from uuid import UUID
 from typing import List, Optional, Any
 
+from models import PriorityLevel
+
 # =============================================================================
 # BULK OPERATION SCHEMAS
 # =============================================================================
@@ -21,7 +23,7 @@ class ScriptElementBulkUpdate(BaseModel):
     """Schema for bulk updating script elements"""
     element_ids: List[UUID]
     department_id: Optional[UUID] = None
-    priority: Optional[str] = None
+    priority: Optional[PriorityLevel] = None
     custom_color: Optional[str] = None
 
 # Edit Queue Batch Operations

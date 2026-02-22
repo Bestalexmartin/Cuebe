@@ -472,7 +472,7 @@ def create_script_for_show(
         show_id=show_id,
         script_name=script.script_name or "New Script",
         script_notes=script.script_notes,  # Include script_notes from the request
-        script_status=models.ScriptStatus(script.script_status) if script.script_status is not None else models.ScriptStatus.DRAFT,
+        script_status=script.script_status if script.script_status is not None else models.ScriptStatus.DRAFT,
         start_time=show.show_date,
         end_time=show.show_end if show.show_end is not None else None,
         owner_id=user.user_id
@@ -514,7 +514,7 @@ def duplicate_script(
     new_script = models.Script(
         show_id=original_script.show_id,
         script_name=script.script_name or f"{original_script.script_name} copy",
-        script_status=models.ScriptStatus(script.script_status) if script.script_status is not None else models.ScriptStatus.COPY,
+        script_status=script.script_status if script.script_status is not None else models.ScriptStatus.COPY,
         start_time=original_script.start_time,
         end_time=original_script.end_time,
         script_notes=original_script.script_notes,

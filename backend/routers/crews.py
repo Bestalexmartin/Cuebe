@@ -67,9 +67,9 @@ def read_crew_members(
     for crew_member, relationship_notes in crew_with_relationships:
         crew_data = crew_member.__dict__.copy()
         crew_data['relationship_notes'] = relationship_notes
-        crew_data['user_status'] = crew_member.user_status.value if crew_member.user_status is not None else "guest"
+        crew_data['user_status'] = crew_member.user_status if crew_member.user_status is not None else models.UserStatus.GUEST
         crew_response.append(schemas.CrewMemberWithRelationship(**crew_data))
-    
+
     return crew_response
 
 
@@ -115,7 +115,7 @@ def get_crew_member(
         "user_name": crew_member.user_name,
         "profile_img_url": crew_member.profile_img_url,
         "phone_number": crew_member.phone_number,
-        "user_status": crew_member.user_status.value if crew_member.user_status is not None else "guest",
+        "user_status": crew_member.user_status if crew_member.user_status is not None else models.UserStatus.GUEST,
         "user_role": crew_member.user_role,
         "created_by": crew_member.created_by,
         "notes": crew_member.notes,  # Notes from User table
@@ -186,7 +186,7 @@ def get_crew_member_with_assignments(
     
     # Create base crew member response using Pydantic serialization
     crew_data = crew_member.__dict__.copy()
-    crew_data['user_status'] = crew_member.user_status.value if crew_member.user_status is not None else "guest"
+    crew_data['user_status'] = crew_member.user_status if crew_member.user_status is not None else models.UserStatus.GUEST
     crew_data['relationship_notes'] = relationship.notes if relationship else None
     crew_data['department_assignments'] = assignment_list
     
@@ -246,7 +246,7 @@ def update_crew_member(
         relationship_notes = update_data.pop('notes', None)
         
         # Don't allow changing certain fields for verified users when manager is editing
-        if str(crew_member.user_status) == str(models.UserStatus.VERIFIED):
+        if crew_member.user_status == models.UserStatus.VERIFIED:
             # Remove fields that shouldn't be changed for verified users (they own their contact info and role)
             protected_fields = ['email_address', 'phone_number', 'fullname_first', 'fullname_last', 'user_role']
             for field in protected_fields:
@@ -272,7 +272,7 @@ def update_crew_member(
                 logger.info(f"Updated relationship notes for crew member {crew_id}")
         
         # Clear user notes field for guest users (notes should be in relationship)
-        if str(crew_member.user_status) == str(models.UserStatus.GUEST):
+        if crew_member.user_status == models.UserStatus.GUEST:
             crew_member.notes = None
     
     # Update the date_updated timestamp

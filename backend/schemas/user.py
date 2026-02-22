@@ -5,6 +5,8 @@ from datetime import datetime
 from uuid import UUID
 from typing import Optional, List
 
+from models import UserStatus
+
 # =============================================================================
 # USER SCHEMAS
 # =============================================================================
@@ -18,7 +20,7 @@ class User(BaseModel):
     user_name: Optional[str] = None
     profile_img_url: Optional[str] = None
     phone_number: Optional[str] = None
-    user_status: str  # 'guest' or 'verified'
+    user_status: UserStatus
     user_role: str
     created_by: Optional[UUID] = None
     notes: Optional[str] = None
@@ -72,14 +74,14 @@ class CrewMemberWithRelationship(BaseModel):
     user_name: Optional[str] = None
     profile_img_url: Optional[str] = None
     phone_number: Optional[str] = None
-    user_status: str
+    user_status: UserStatus
     user_role: str
     created_by: Optional[UUID] = None
     notes: Optional[str] = None  # Notes from User table
     is_active: bool
     date_created: datetime
     date_updated: datetime
-    
+
     # Relationship fields
     relationship_notes: Optional[str] = None  # Notes from CrewRelationship
     
