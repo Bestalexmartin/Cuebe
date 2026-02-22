@@ -60,7 +60,7 @@ Users, Shows, Scripts, ScriptElements, Venues, Departments, Crews
 
 ### Backend
 - Database fields: `snake_case`
-- ENUMs: UPPERCASE (`UserRole.ADMIN`)
+- **ENUMs: `SCREAMING_SNAKE_CASE`** — Python members use uppercase names (e.g., `SUPER_ADMIN = "super_admin"`), inherit from `(str, Enum)`, always use native PostgreSQL ENUM via `SQLEnum(EnumClass)` — never `String` columns or `native_enum=False`. Database stores uppercase names (default SQLAlchemy behavior) — do not use `values_callable`
 - Create migrations, don't run them - ask user
 - Schema files: ~300-400 lines max, split by domain
 - API responses: Always use Pydantic schemas, never manual JSON construction
