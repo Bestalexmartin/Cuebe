@@ -93,6 +93,10 @@ Users, Shows, Scripts, ScriptElements, Venues, Departments, Crews
 - Follow Clerk auth patterns, never expose secrets
 - Never git push/pull without explicit user permission
 
+### Documentation
+- When writing planning documents, implementation plans, or architecture docs, use Mermaid diagrams wherever they would clarify the design (flowcharts, sequence diagrams, ER diagrams, state machines, etc.)
+- Mermaid blocks render as interactive SVG in the documentation viewer (Blok 03)
+
 ## Communication
 
 ### Forbidden
