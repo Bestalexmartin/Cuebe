@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 from database import get_db
 from routers.auth import get_current_user
-from models import User, Script, ScriptElement, Department, Show
+from models import User, Script, ScriptElement, Department, Show, ElementType, PriorityLevel, ScriptStatus
 from schemas.script_import import (
     CleanScriptImportRequest,
     ScriptImportValidationResponse,
@@ -18,9 +18,6 @@ from schemas.script_import import (
     ImportValidationError,
     ImportValidationWarning,
     DepartmentSuggestion,
-    ElementType,
-    PriorityLevel,
-    ScriptStatus
 )
 
 router = APIRouter(prefix="/api", tags=["script-import"])
@@ -179,7 +176,7 @@ def resolve_group_hierarchy(sorted_elements: List[Dict]) -> List[Dict]:
             element_data['parent_element_id'] = None
         
         # If this is a GROUP element, add it to the group stack
-        if element_data.get('element_type') == 'GROUP':
+        if element_data.get('element_type') == ElementType.GROUP:
             # Ensure group stack has the right length
             while len(group_stack) < current_level:
                 group_stack.append(None)  # Fill gaps if needed

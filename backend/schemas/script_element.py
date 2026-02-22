@@ -5,6 +5,8 @@ from datetime import datetime
 from uuid import UUID
 from typing import Optional, List, TYPE_CHECKING
 
+from models import ElementType, PriorityLevel
+
 if TYPE_CHECKING:
     from .script import Script
 
@@ -24,13 +26,13 @@ class ScriptElement(BaseModel):
     """Schema for script elements going TO the frontend"""
     element_id: UUID
     script_id: UUID
-    element_type: str
+    element_type: ElementType
     sequence: Optional[int] = None
-    
+
     # Timing fields
     offset_ms: int = 0  # Timing in milliseconds
     duration_ms: Optional[int] = None
-    priority: str = "normal"
+    priority: PriorityLevel = PriorityLevel.NORMAL
     
     # Content
     element_name: str = ""
@@ -82,7 +84,7 @@ class ScriptElement(BaseModel):
 
 class ScriptElementCreate(BaseModel):
     """Schema for creating new script elements"""
-    element_type: str  # 'CUE', 'NOTE'
+    element_type: ElementType
     sequence: Optional[int] = None  # Auto-calculated if not provided
     offset_ms: Optional[int] = 0  # Time offset in milliseconds
     element_name: str = ""
@@ -90,14 +92,14 @@ class ScriptElementCreate(BaseModel):
     department_id: Optional[UUID] = None
     location_details: Optional[str] = None
     duration_ms: Optional[int] = None  # Duration in milliseconds
-    priority: Optional[str] = "NORMAL"  # 'SAFETY', 'CRITICAL', 'HIGH', 'NORMAL', 'LOW', 'OPTIONAL'
+    priority: Optional[PriorityLevel] = PriorityLevel.NORMAL
     parent_element_id: Optional[UUID] = None  # For grouped elements
     group_level: Optional[int] = 0
     custom_color: Optional[str] = None  # Custom color for element
 
 class ScriptElementUpdate(BaseModel):
     """Schema for updating script elements"""
-    element_type: Optional[str] = None
+    element_type: Optional[ElementType] = None
     sequence: Optional[int] = None
     offset_ms: Optional[int] = None
     element_name: Optional[str] = None
@@ -105,7 +107,7 @@ class ScriptElementUpdate(BaseModel):
     department_id: Optional[UUID] = None
     location_details: Optional[str] = None
     duration_ms: Optional[int] = None
-    priority: Optional[str] = None
+    priority: Optional[PriorityLevel] = None
     parent_element_id: Optional[UUID] = None
     group_level: Optional[int] = None
     is_collapsed: Optional[bool] = None

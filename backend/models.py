@@ -14,13 +14,13 @@ Base = declarative_base()
 # ENUMS
 # =============================================================================
 
-class ElementType(enum.Enum):
+class ElementType(str, enum.Enum):
     """Types of script elements"""
     CUE = "CUE"
     NOTE = "NOTE"
     GROUP = "GROUP"
 
-class TriggerType(enum.Enum):
+class TriggerType(str, enum.Enum):
     """How script elements are triggered"""
     MANUAL = "MANUAL"
     TIME = "TIME"
@@ -29,7 +29,7 @@ class TriggerType(enum.Enum):
     GO = "GO"
     STANDBY = "STANDBY"
 
-class ExecutionStatus(enum.Enum):
+class ExecutionStatus(str, enum.Enum):
     """Current execution status of script elements"""
     PENDING = "PENDING"
     READY = "READY"
@@ -38,7 +38,7 @@ class ExecutionStatus(enum.Enum):
     SKIPPED = "SKIPPED"
     FAILED = "FAILED"
 
-class PriorityLevel(enum.Enum):
+class PriorityLevel(str, enum.Enum):
     """Priority levels for script elements"""
     SAFETY = "SAFETY"
     CRITICAL = "CRITICAL"
@@ -47,7 +47,7 @@ class PriorityLevel(enum.Enum):
     LOW = "LOW"
     OPTIONAL = "OPTIONAL"
 
-class UserRole(enum.Enum):
+class UserRole(str, enum.Enum):
     """User roles for crew members"""
     CREW = "CREW"
     ASSISTANT_DIRECTOR = "ASSISTANT_DIRECTOR"
@@ -70,7 +70,7 @@ class UserRole(enum.Enum):
     DIRECTOR = "DIRECTOR"
     OTHER = "OTHER"
 
-class LocationArea(enum.Enum):
+class LocationArea(str, enum.Enum):
     """Theater location areas"""
     STAGE_LEFT = "stage_left"
     STAGE_RIGHT = "stage_right"
@@ -95,12 +95,12 @@ class LocationArea(enum.Enum):
     OTHER = "other"
 
 
-class UserStatus(enum.Enum):
+class UserStatus(str, enum.Enum):
     """User authentication status"""
     GUEST = "guest"         # Created by someone else, no Clerk account
     VERIFIED = "verified"   # Has Clerk account and can log in
 
-class ScriptStatus(enum.Enum):
+class ScriptStatus(str, enum.Enum):
     """Script workflow status"""
     DRAFT = "DRAFT"
     COPY = "COPY"
