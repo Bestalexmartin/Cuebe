@@ -4,27 +4,8 @@ from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 from datetime import datetime
-from enum import Enum
 
-class ElementType(str, Enum):
-    CUE = "CUE"
-    NOTE = "NOTE"
-    GROUP = "GROUP"
-
-class PriorityLevel(str, Enum):
-    SAFETY = "SAFETY"
-    CRITICAL = "CRITICAL"
-    HIGH = "HIGH"
-    NORMAL = "NORMAL"
-    LOW = "LOW"
-    OPTIONAL = "OPTIONAL"
-
-class ScriptStatus(str, Enum):
-    DRAFT = "DRAFT"
-    COPY = "COPY"
-    WORKING = "WORKING"
-    FINAL = "FINAL"
-    IMPORTED = "IMPORTED"
+from models import ElementType, PriorityLevel, ScriptStatus
 
 # Import request schemas
 class ScriptMetadataImport(BaseModel):

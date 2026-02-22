@@ -6,6 +6,8 @@ from uuid import UUID
 from typing import Optional, List, TYPE_CHECKING
 from .venue import Venue
 
+from models import UserStatus
+
 if TYPE_CHECKING:
     from .script import Script
 
@@ -71,8 +73,8 @@ class CrewMemberWithDetails(BaseModel):
     fullname_first: str
     fullname_last: str
     email_address: str
-    user_status: str
-    
+    user_status: UserStatus
+
     # Department details
     department_name: str
     department_color: Optional[str] = None
