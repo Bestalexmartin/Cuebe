@@ -103,10 +103,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 # =============================================================================
 
 # Determine environment flags for gating dev/test routes
-ENABLE_DEV_ROUTES = (
-    os.getenv("ENABLE_DEV_ROUTES") in {"1", "true", "True"}
-    or os.getenv("APP_ENV", "development").lower() in {"dev", "development", "local"}
-)
+ENABLE_DEV_ROUTES = os.getenv("ENABLE_DEV_ROUTES") in {"1", "true", "True"}
 
 # Include all routers
 app.include_router(webhooks.router)     # Webhook endpoints at /api/webhooks/*

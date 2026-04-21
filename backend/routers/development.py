@@ -1,5 +1,6 @@
 # backend/routers/development.py
 
+import ipaddress
 import os
 import subprocess
 from fastapi import APIRouter, Depends, Request, HTTPException
@@ -32,6 +33,26 @@ def rate_limit(limit_config):
     return decorator
 
 
+def _require_local_dev_access(request: Request) -> None:
+    """Restrict command-capable dev routes to explicit opt-in and loopback clients."""
+    if os.getenv("ENABLE_DEV_ROUTES") not in {"1", "true", "True"}:
+        raise HTTPException(status_code=404, detail="Development routes are disabled")
+
+    client = request.client
+    if client is None or not client.host:
+        raise HTTPException(status_code=403, detail="Development routes require a local client")
+
+    try:
+        client_ip = ipaddress.ip_address(client.host)
+    except ValueError:
+        if client.host != "localhost":
+            raise HTTPException(status_code=403, detail="Development routes require a loopback client")
+        return
+
+    if not client_ip.is_loopback:
+        raise HTTPException(status_code=403, detail="Development routes require a loopback client")
+
+
 # =============================================================================
 # DEVELOPMENT ENDPOINTS
 # =============================================================================
@@ -45,6 +66,8 @@ def test_diagnostics(
     """
     Diagnostic endpoint to check the testing environment
     """
+    _require_local_dev_access(request)
+
     backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     # Check what's available
@@ -99,6 +122,7 @@ def run_tests(
     test_suite: str = "all",
     current_user: models.User = Depends(get_current_user)
 ):
+    _require_local_dev_access(request)
 
     backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
@@ -107,7 +131,6 @@ def run_tests(
         python_exec = "python3"
         
         test_commands = {
-            "setup": [python_exec, "-m", "pip", "install", "-r", "requirements.txt", "--no-warn-script-location", "--root-user-action=ignore"],
             "diagnostics": [python_exec, "-c", "import sys, pytest; print(f'Python: {sys.executable}'); print(f'Pytest: {pytest.__version__}')"],
             "all": [python_exec, "-m", "pytest", "tests/", "-v", "--tb=short"],
             "auth": [python_exec, "-m", "pytest", "tests/test_auth.py", "-v", "--tb=short"],  
@@ -168,6 +191,8 @@ def run_database_migrations(
     current_user: models.User = Depends(get_current_user)
 ):
     """Run database migrations using Alembic"""
+    _require_local_dev_access(request)
+
     try:
         logger.info("Starting database migration...")
         result = subprocess.run(
@@ -208,6 +233,8 @@ def reset_migration_state(
     current_user: models.User = Depends(get_current_user)
 ):
     """Reset migration state and recreate from scratch"""
+    _require_local_dev_access(request)
+
     try:
         logger.info("Resetting migration state...")
 
@@ -251,6 +278,8 @@ def create_all_tables(
     db: Session = Depends(get_db)
 ):
     """Create all tables using SQLAlchemy metadata (bypass migrations)"""
+    _require_local_dev_access(request)
+
     try:
         logger.info("Creating all tables from SQLAlchemy metadata...")
 
