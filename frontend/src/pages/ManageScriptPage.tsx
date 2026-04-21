@@ -372,23 +372,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     }, [isOptionsModalOpen, previewPreferences, darkMode, colorizeDepNames, showClockTimes, currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval, lookaheadSeconds, playHeartbeatIntervalSec]);
 
     // Debug: Check if activePreferences is changing frequently
-    const renderCountRef = useRef(0);
-    const prevValuesRef = useRef<{ activePreferences?: any }>({});
-
-    renderCountRef.current++;
-
-    if (prevValuesRef.current.activePreferences) {
-        const changed = JSON.stringify(prevValuesRef.current.activePreferences) !== JSON.stringify(activePreferences);
-        if (changed) {
-            console.log('🔄 activePreferences changed:', {
-                prev: prevValuesRef.current.activePreferences,
-                new: activePreferences,
-                renderCount: renderCountRef.current
-            });
-        }
-    }
-    prevValuesRef.current.activePreferences = activePreferences;
-
     const { activeMode, setActiveMode } = useScriptModes('view');
     
     const applyLocalChange = contextApplyLocalChange;

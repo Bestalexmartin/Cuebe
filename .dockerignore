@@ -1,0 +1,42 @@
+.git
+.gitignore
+.dockerignore
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+backend/.coverage
+backend/htmlcov/
+backend/test.db
+backend/tests/test.db
+
+# Node
+node_modules/
+dist/
+dist-ssr/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs / backups
+*.log
+devlog.txt
+cuebe_backup.sql
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+
+# AI assistant (local only)
+/.ai-instructions.md

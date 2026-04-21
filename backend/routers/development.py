@@ -3,9 +3,12 @@
 import ipaddress
 import os
 import subprocess
+from pathlib import Path
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
 import logging
+
+_BACKEND_DIR = str(Path(__file__).resolve().parent.parent)
 
 import models
 from database import get_db
@@ -175,15 +178,6 @@ def run_tests(
         raise HTTPException(status_code=500, detail=f"Command execution failed: {str(e)}")
 
 
-# =============================================================================
-# HEALTH CHECK
-# =============================================================================
-
-@router.get("/health")
-@rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
-def read_root(request: Request):
-    return {"status": "ok"}
-
 @router.post("/migrate")
 @rate_limit(RateLimitConfig.WEBHOOKS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 def run_database_migrations(
@@ -197,7 +191,7 @@ def run_database_migrations(
         logger.info("Starting database migration...")
         result = subprocess.run(
             ["alembic", "upgrade", "head"],
-            cwd="/opt/render/project/src/backend",
+            cwd=_BACKEND_DIR,
             capture_output=True,
             text=True,
             timeout=300  # 5 minute timeout
@@ -241,7 +235,7 @@ def reset_migration_state(
         # First, stamp the database to the latest revision without running migrations
         stamp_result = subprocess.run(
             ["alembic", "stamp", "head"],
-            cwd="/opt/render/project/src/backend",
+            cwd=_BACKEND_DIR,
             capture_output=True,
             text=True,
             timeout=60

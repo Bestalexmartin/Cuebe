@@ -146,8 +146,8 @@ async def access_shared_show(
     except HTTPException:
         raise  # Re-raise HTTP exceptions
     except Exception as e:
-        logger.error(f"Error processing share token {share_token}: {e}")
-        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+        logger.exception(f"Error processing share token {share_token}: {e}")
+        raise HTTPException(status_code=500, detail="Unable to process share token")
 
 
 @router.get("/shared/{share_token}/scripts/{script_id}", response_model=schemas.Script)

@@ -41,27 +41,19 @@ After services are created, you'll need to manually set these environment variab
 - `CLERK_PUBLISHABLE_KEY`: Your Clerk publishable key
 - `CLERK_SECRET_KEY`: Your Clerk secret key
 - `CLERK_PEM_PUBLIC_KEY`: Your Clerk PEM public key (multi-line)
-- `CLERK_WEBHOOK_SECRET`: Your Clerk webhook secret
 
 #### Frontend Service (cuebe-frontend):
 - `VITE_CLERK_PUBLISHABLE_KEY`: Your Clerk publishable key
 
-### 4. Current Environment Variables
+### 4. Environment Variable Template
 
-From your `.env` file, use these values:
+Populate each variable in the Render dashboard with values from the Clerk dashboard. Use `.env.example` (or your local `.env`) as the reference — never commit real values.
 
 ```
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_c3R1bm5pbmctYmFib29uLTQ2LmNsZXJrLmFjY291bnRzLmRldiQ
-CLERK_SECRET_KEY=***REMOVED_CLERK_SECRET***
-CLERK_WEBHOOK_SECRET=***REMOVED_CLERK_WEBHOOK_SECRET***
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
+CLERK_SECRET_KEY=sk_test_your_secret_key_here
 CLERK_PEM_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2vZwsbfA4N6VimGnOuLy
-9atrY0VnDUHp64UEhzio4RbvaRiZoHc/XrZWB67jwUmaiGmeCd/vCrqT8m3y2f8W
-Udg+1yM18ZOhtFenIzRJFTUKRQRKnRYkf189nBt88S+4ruK1XMzv/DzA7zAMcBUx
-eSitG3wdYeoV9x8iCeD1NNqrXfMaFtOUTIW6pa/mzXmJfGXzrWf//FBQ1A89cS8E
-dmMPXZZyL/BdI8arPDAGwDUA0/I77MJ4PdxjdJPkVO54q3q2d9NaYuyAAwgPtHiL
-f7bWYtPqonNnuFiRKUsHKQbRq2fDlUk/vFXc5TD75TfaOj+eWxJPImvyowbRXXXr
-jwIDAQAB
+<your Clerk JWT public key here>
 -----END PUBLIC KEY-----
 ```
 

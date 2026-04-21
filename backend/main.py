@@ -64,8 +64,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
 # =============================================================================
@@ -92,10 +92,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
     """Convert any unhandled exceptions to JSON responses"""
-    logger.error(f"Unhandled exception: {exc}")
+    logger.exception(f"Unhandled exception: {exc}")
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal server error", "error": str(exc)},
+        content={"detail": "Internal server error"},
     )
 
 # =============================================================================
@@ -119,10 +119,15 @@ app.include_router(show_sharing.router) # Show-level sharing at /api/shows/*/cre
 app.include_router(docs_search.router)  # Documentation search at /api/docs/search
 app.include_router(script_sync.router)  # WebSocket script synchronization at /ws/script/*
 if ENABLE_DEV_ROUTES:
-    app.include_router(development.router)  # Development endpoints at /api/dev/*, /api/health
+    app.include_router(development.router)  # Development endpoints at /api/dev/*
     logger.info("Development routes ENABLED")
 else:
     logger.info("Development and system test routes DISABLED")
+
+
+@app.get("/api/health")
+def health_check():
+    return {"status": "ok"}
 
 # =============================================================================
 # CLEAN LIGHT MODE DOCUMENTATION ENDPOINTS  

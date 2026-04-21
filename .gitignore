@@ -21,6 +21,8 @@ docker-compose.override.yml
 
 # Environment variables
 .env
+.env.*
+!.env.example
 
 # Personal logs
 devlog.txt
