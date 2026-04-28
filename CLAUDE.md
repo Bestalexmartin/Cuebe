@@ -166,3 +166,18 @@ When removing debug logging: one statement at a time, verify surrounding code in
 - Categories: Planning, Quick Start, Tutorial, User Interface, Component Architecture, Data Management, System Architecture, Testing, Archive
 - Restart backend after changing category mappings
 - Access: Options menu → Documentation
+
+
+## Writing style
+
+**Never use em-dash characters (the Unicode character U+2014, the long horizontal dash) anywhere.** This applies to: code (string literals, identifiers), code comments and docstrings, user-facing UI copy, markdown documentation, commit messages, PR descriptions, conversation responses, and any other text produced for or about this codebase.
+
+Use these alternatives based on context:
+- **Comma**: for parenthetical or appositive phrases
+- **Semicolon**: for connecting two independent clauses
+- **Colon**: for elaboration or list introduction
+- **Ellipsis**: for trailing thought, abbreviation, or pause
+- **Parentheses**: for tangential clarification
+- **Period + new sentence**: when none of the above feel right
+
+Hyphens (`-`) and en-dashes (`–`, used for ranges) remain fine; only the em-dash is forbidden.
