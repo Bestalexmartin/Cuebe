@@ -63,6 +63,6 @@ services:
         value: /dashboard
       - key: VITE_CLERK_AFTER_SIGN_UP_URL
         value: /dashboard
-      # optional — only if you created CNAME clerk.cuebe.app -> frontend-api.clerk.services
+      # optional, only if you created CNAME clerk.cuebe.app -> frontend-api.clerk.services
       - key: VITE_CLERK_FRONTEND_API
         value: clerk.cuebe.app

@@ -47,7 +47,7 @@ After services are created, you'll need to manually set these environment variab
 
 ### 4. Environment Variable Template
 
-Populate each variable in the Render dashboard with values from the Clerk dashboard. Use `.env.example` (or your local `.env`) as the reference — never commit real values.
+Populate each variable in the Render dashboard with values from the Clerk dashboard. Use `.env.example` (or your local `.env`) as the reference; never commit real values.
 
 ```
 VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
