@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 1
+    redis_url: str = "redis://redis:6379/0"
 
     @property
     def resolved_database_url(self) -> str:
