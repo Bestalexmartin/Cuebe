@@ -197,7 +197,7 @@ export const EditCrewPage: React.FC = () => {
     };
 
     const isVerifiedUser = (): boolean => {
-        return crew?.user_status === 'verified';
+        return crew?.user_status === 'VERIFIED';
     };
 
     const isSelfEdit = (): boolean => {
@@ -275,7 +275,7 @@ export const EditCrewPage: React.FC = () => {
             show_id: assignment.show_id, // Include show_id for QR code generation
             // Use actual user data from the crew
             user_role: crew?.user_role || 'crew',
-            user_status: crew?.user_status || 'verified',
+            user_status: crew?.user_status || 'VERIFIED',
             is_active: crew?.is_active ?? true,
             date_created: crew?.date_created || '',
             date_updated: crew?.date_updated || ''
@@ -339,7 +339,7 @@ export const EditCrewPage: React.FC = () => {
 
     const getUserStatusBadge = () => {
         if (!crew) return null;
-        const isVerified = crew.user_status === 'verified';
+        const isVerified = crew.user_status === 'VERIFIED';
         return (
             <Badge
                 variant={isVerified ? "solid" : "outline"}

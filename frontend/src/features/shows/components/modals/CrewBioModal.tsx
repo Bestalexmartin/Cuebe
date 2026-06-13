@@ -50,7 +50,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
 
   const getUserStatusBadge = () => {
     if (!crewMember) return null;
-    const isVerified = crewMember.user_status === 'verified';
+    const isVerified = crewMember.user_status === 'VERIFIED';
     return (
       <Badge
         variant={isVerified ? "solid" : "outline"}

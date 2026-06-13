@@ -233,7 +233,7 @@ export const EditDepartmentPage: React.FC = () => {
             show_id: assignment.show_id, // Include show_id for QR code generation
             // Use actual user data from the assignment
             user_role: assignment.user_role || 'crew',
-            user_status: assignment.user_status || 'verified',
+            user_status: assignment.user_status || 'VERIFIED',
             is_active: assignment.is_active ?? true,
             date_created: assignment.date_created || '',
             date_updated: assignment.date_updated || ''

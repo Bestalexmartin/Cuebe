@@ -24,8 +24,8 @@ Located in `backend/models.py:98-102`
 
 ```python
 class UserStatus(enum.Enum):
-    GUEST = "guest"         # Created by someone else, no Clerk account
-    VERIFIED = "verified"   # Has Clerk account and can log in
+    GUEST = "GUEST"         # Created by someone else, no Clerk account
+    VERIFIED = "VERIFIED"   # Has Clerk account and can log in
 ```
 
 #### Verified Users

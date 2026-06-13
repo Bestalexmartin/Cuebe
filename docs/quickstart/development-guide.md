@@ -315,7 +315,7 @@ setattr(user, 'dateUpdated', datetime.now(timezone.utc))
 is_same_user = bool(crew_member.userID == user.userID)
 
 # ✅ Good: Use explicit None checks for nullable columns
-user_status = user.userStatus.value if user.userStatus is not None else "guest"
+user_status = user.userStatus.value if user.userStatus is not None else "GUEST"
 
 # ❌ Avoid: Direct boolean checks on columns
 if user.isActive:  # This causes type errors

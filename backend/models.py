@@ -72,33 +72,33 @@ class UserRole(str, enum.Enum):
 
 class LocationArea(str, enum.Enum):
     """Theater location areas"""
-    STAGE_LEFT = "stage_left"
-    STAGE_RIGHT = "stage_right"
-    CENTER_STAGE = "center_stage"
-    UPSTAGE = "upstage"
-    DOWNSTAGE = "downstage"
-    STAGE_LEFT_UP = "stage_left_up"
-    STAGE_RIGHT_UP = "stage_right_up"
-    STAGE_LEFT_DOWN = "stage_left_down"
-    STAGE_RIGHT_DOWN = "stage_right_down"
-    FLY_GALLERY = "fly_gallery"
-    BOOTH = "booth"
-    HOUSE = "house"
-    BACKSTAGE = "backstage"
-    WINGS_LEFT = "wings_left"
-    WINGS_RIGHT = "wings_right"
-    GRID = "grid"
-    TRAP = "trap"
-    PIT = "pit"
-    LOBBY = "lobby"
-    DRESSING_ROOM = "dressing_room"
-    OTHER = "other"
+    STAGE_LEFT = "STAGE_LEFT"
+    STAGE_RIGHT = "STAGE_RIGHT"
+    CENTER_STAGE = "CENTER_STAGE"
+    UPSTAGE = "UPSTAGE"
+    DOWNSTAGE = "DOWNSTAGE"
+    STAGE_LEFT_UP = "STAGE_LEFT_UP"
+    STAGE_RIGHT_UP = "STAGE_RIGHT_UP"
+    STAGE_LEFT_DOWN = "STAGE_LEFT_DOWN"
+    STAGE_RIGHT_DOWN = "STAGE_RIGHT_DOWN"
+    FLY_GALLERY = "FLY_GALLERY"
+    BOOTH = "BOOTH"
+    HOUSE = "HOUSE"
+    BACKSTAGE = "BACKSTAGE"
+    WINGS_LEFT = "WINGS_LEFT"
+    WINGS_RIGHT = "WINGS_RIGHT"
+    GRID = "GRID"
+    TRAP = "TRAP"
+    PIT = "PIT"
+    LOBBY = "LOBBY"
+    DRESSING_ROOM = "DRESSING_ROOM"
+    OTHER = "OTHER"
 
 
 class UserStatus(str, enum.Enum):
     """User authentication status"""
-    GUEST = "guest"         # Created by someone else, no Clerk account
-    VERIFIED = "verified"   # Has Clerk account and can log in
+    GUEST = "GUEST"         # Created by someone else, no Clerk account
+    VERIFIED = "VERIFIED"   # Has Clerk account and can log in
 
 class ScriptStatus(str, enum.Enum):
     """Script workflow status"""

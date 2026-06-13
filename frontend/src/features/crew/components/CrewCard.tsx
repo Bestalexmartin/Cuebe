@@ -129,7 +129,7 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
     };
 
     const getUserStatusBadge = () => {
-        const isVerified = crewMember.user_status === 'verified';
+        const isVerified = crewMember.user_status === 'VERIFIED';
         return (
             <Badge
                 variant={isVerified ? "solid" : "outline"}
