@@ -45,3 +45,4 @@ backend/tests/test.db
 htmlcov/
 backend/.coverage
 backend/htmlcov/
+CLAUDE.md
