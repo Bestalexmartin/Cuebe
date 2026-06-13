@@ -36,7 +36,7 @@ def rate_limit(limit_config):
 
 @rate_limit(RateLimitConfig.READ_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 @router.get("/me/crews", response_model=list[schemas.CrewMemberWithRelationship])
-def read_crew_members(
+def list_crew_members(
     request: Request,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)

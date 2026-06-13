@@ -35,7 +35,7 @@ def rate_limit(limit_config):
 
 
 @router.get("/me/departments", response_model=list[schemas.DepartmentWithStats])
-def read_departments(
+def list_departments(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -127,7 +127,7 @@ def create_department(
 
 
 @router.get("/departments/{department_id}", response_model=schemas.Department)
-def read_department(
+def get_department(
     department_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)

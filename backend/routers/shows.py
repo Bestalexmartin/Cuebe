@@ -119,7 +119,7 @@ def create_show(
 
 @rate_limit(RateLimitConfig.READ_OPERATIONS if RATE_LIMITING_AVAILABLE and RateLimitConfig else None)
 @router.get("/me/shows", response_model=list[schemas.Show])
-def read_shows_for_current_user(
+def list_shows_for_current_user(
     request: Request,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db), 
@@ -136,7 +136,7 @@ def read_shows_for_current_user(
 
 
 @router.get("/shows/{show_id}", response_model=schemas.Show)
-def read_show(
+def get_show(
     show_id: UUID,
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)

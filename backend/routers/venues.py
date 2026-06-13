@@ -35,7 +35,7 @@ def rate_limit(limit_config):
 
 
 @router.get("/me/venues", response_model=list[schemas.Venue])
-def read_venues(
+def list_venues(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
