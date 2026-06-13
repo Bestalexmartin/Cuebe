@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     clerk_pem_public_key: Optional[str] = None
     clerk_webhook_secret: Optional[str] = None
 
+    resend_api_key: str = ""
+    email_from_address: str = "noreply@cuebe.app"
+    email_from_name: str = "Cuebe"
+    email_logo_url: str = ""
+    website_url: str = "http://localhost:5173"
+
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_db: int = 1
