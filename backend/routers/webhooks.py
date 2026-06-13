@@ -1,6 +1,5 @@
 # backend/routers/webhooks.py
 
-import os
 from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
 from svix.webhooks import Webhook, WebhookVerificationError
@@ -8,6 +7,7 @@ import logging
 
 import models
 import schemas
+from config import settings
 from database import get_db
 
 # Optional rate limiting import
@@ -45,7 +45,7 @@ async def handle_clerk_webhook(
     """Handle Clerk authentication webhooks for user lifecycle management."""
     headers = request.headers
     payload = await request.body()
-    webhook_secret = os.getenv("CLERK_WEBHOOK_SECRET")
+    webhook_secret = settings.clerk_webhook_secret
 
     if not webhook_secret:
         raise HTTPException(status_code=500, detail="Webhook secret not configured")

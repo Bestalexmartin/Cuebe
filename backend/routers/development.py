@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, Request, HTTPException
 from sqlalchemy.orm import Session
 import logging
 
+from config import settings
+
 _BACKEND_DIR = str(Path(__file__).resolve().parent.parent)
 
 import models
@@ -38,7 +40,7 @@ def rate_limit(limit_config):
 
 def _require_local_dev_access(request: Request) -> None:
     """Restrict command-capable dev routes to explicit opt-in and loopback clients."""
-    if os.getenv("ENABLE_DEV_ROUTES") not in {"1", "true", "True"}:
+    if not settings.dev_routes_enabled:
         raise HTTPException(status_code=404, detail="Development routes are disabled")
 
     client = request.client

@@ -1,11 +1,12 @@
 # backend/alembic/env.py
 
-import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool, create_engine
 
 from alembic import context
+
+from config import settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -18,18 +19,8 @@ if config.config_file_name is not None:
 
 # --- START OF CUSTOM CONFIGURATION ---
 
-# 2. Get DATABASE_URL (production) or construct from components (development)
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-# If no DATABASE_URL, construct it from individual components (for local development)
-if not DATABASE_URL:
-    DATABASE_URL = "postgresql://{user}:{password}@{host}:{port}/{db}".format(
-        user=os.getenv("POSTGRES_USER"),
-        password=os.getenv("POSTGRES_PASSWORD"),
-        host="db",
-        port="5432",
-        db=os.getenv("POSTGRES_DB"),
-    )
+# 2. Get DATABASE_URL (production) or construct from POSTGRES_* (development)
+DATABASE_URL = settings.resolved_database_url
 
 
 # 3. Add your model's MetaData object for 'autogenerate' support

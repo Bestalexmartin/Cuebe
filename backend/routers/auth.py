@@ -1,6 +1,5 @@
 # backend/routers/auth.py
 
-import os
 import time
 from typing import Dict, Optional
 
@@ -11,6 +10,7 @@ from jose import jwt
 import logging
 
 import models
+from config import settings
 from database import get_db
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ def get_current_user_claims(credentials: HTTPAuthorizationCredentials = Depends(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    pem_key_str = os.getenv("CLERK_PEM_PUBLIC_KEY")
+    pem_key_str = settings.clerk_pem_public_key
     if not pem_key_str:
         raise HTTPException(status_code=500, detail="Missing PEM Public Key")
 
@@ -100,7 +100,7 @@ async def get_current_user_from_token(token_string: str, db: Session) -> models.
     Validate JWT token and return user - for WebSocket authentication
     Raises HTTPException if token is invalid
     """
-    pem_key_str = os.getenv("CLERK_PEM_PUBLIC_KEY")
+    pem_key_str = settings.clerk_pem_public_key
     if not pem_key_str:
         raise HTTPException(status_code=500, detail="Missing PEM Public Key")
 

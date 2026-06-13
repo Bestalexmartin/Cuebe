@@ -1,12 +1,13 @@
 # backend/utils/rate_limiter.py
 
-import os
 import logging
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
+
+from config import settings
 
 # Optional Redis import
 try:
@@ -45,9 +46,9 @@ def create_redis_connection():
         return None
         
     try:
-        redis_host = os.getenv("REDIS_HOST", "localhost")
-        redis_port = int(os.getenv("REDIS_PORT", "6379"))
-        redis_db = int(os.getenv("REDIS_DB", "1"))  # Use DB 1 for rate limiting
+        redis_host = settings.redis_host
+        redis_port = settings.redis_port
+        redis_db = settings.redis_db  # Use DB 1 for rate limiting
         
         redis_client = redis.Redis(
             host=redis_host,
@@ -88,9 +89,9 @@ def create_limiter():
     
     if redis_client:
         # Use Redis for distributed rate limiting
-        redis_host = os.getenv("REDIS_HOST", "localhost")
-        redis_port = os.getenv("REDIS_PORT", "6379")
-        redis_db = os.getenv("REDIS_DB", "1")
+        redis_host = settings.redis_host
+        redis_port = settings.redis_port
+        redis_db = settings.redis_db
         storage_uri = f"redis://{redis_host}:{redis_port}/{redis_db}"
         
         limiter = Limiter(

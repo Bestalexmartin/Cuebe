@@ -1,7 +1,6 @@
 # backend/main.py
 
 import logging
-import os
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +8,8 @@ from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from config import settings
 
 # Optional slowapi import for rate limiting
 try:
@@ -56,7 +57,7 @@ else:
 allowed_origins = ["http://localhost:5173"]
 
 # Add production origin if specified
-production_origin = os.getenv("ALLOWED_ORIGINS")
+production_origin = settings.allowed_origins
 if production_origin:
     allowed_origins.extend([origin.strip() for origin in production_origin.split(",")])
 
@@ -103,7 +104,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 # =============================================================================
 
 # Determine environment flags for gating dev/test routes
-ENABLE_DEV_ROUTES = os.getenv("ENABLE_DEV_ROUTES") in {"1", "true", "True"}
+ENABLE_DEV_ROUTES = settings.dev_routes_enabled
 
 # Include all routers
 app.include_router(webhooks.router)     # Webhook endpoints at /api/webhooks/*
@@ -140,7 +141,7 @@ async def custom_swagger_ui_html():
     if not openapi_url.startswith('http'):
         # If relative URL, make it absolute using the current request context
         # In production this should be https://api.cuebe.app/openapi.json
-        base_url = os.getenv("API_BASE_URL", "")
+        base_url = settings.api_base_url
         if base_url:
             openapi_url = f"{base_url}{openapi_url}"
         else:
@@ -200,7 +201,7 @@ async def custom_redoc_html():
     if not openapi_url.startswith('http'):
         # If relative URL, make it absolute using the current request context
         # In production this should be https://api.cuebe.app/openapi.json
-        base_url = os.getenv("API_BASE_URL", "")
+        base_url = settings.api_base_url
         if base_url:
             openapi_url = f"{base_url}{openapi_url}"
         else:
