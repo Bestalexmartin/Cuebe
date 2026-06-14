@@ -6,7 +6,12 @@ from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
 from .base import Base
-from .enums import UserStatus
+from .enums import UserStatus, AccessRole
+
+
+# Null-object organization id. Single-tenant Cuebe assigns every user this
+# fixed UUID so Blok-style org-scoped hooks remain dormant but present.
+INDIVIDUAL_ORG_ID = uuid.UUID("00000000-0000-0000-0000-000000000000")
 
 
 class User(Base):
@@ -30,7 +35,16 @@ class User(Base):
 
     # User status and role
     user_status = Column(Enum(UserStatus), default=UserStatus.VERIFIED, nullable=False)
-    user_role = Column(String, default="admin")  # admin for verified users, crew for guests
+    user_role = Column(String, default="admin")  # legacy: admin for verified users, crew for guests
+
+    # Blok 017 auth (Layer 1: access tier). Kept alongside legacy columns during transition.
+    access_role = Column(Enum(AccessRole), default=AccessRole.USER, nullable=False)
+    org_id = Column(UUID(as_uuid=True), default=INDIVIDUAL_ORG_ID, nullable=False)
+    password_hash = Column(String(255), nullable=True)  # bcrypt; nullable until users set a password
+    password_changed_at = Column(DateTime(timezone=True), nullable=True)
+    email_verified = Column(Boolean, default=False, nullable=False)
+    failed_login_attempts = Column(Integer, default=0, nullable=False)
+    locked_until = Column(DateTime(timezone=True), nullable=True)
 
     # Guest user management - CHANGED TO UUID
     created_by = Column(UUID(as_uuid=True), ForeignKey("userTable.user_id"), nullable=True)  # Who created this guest user
@@ -59,6 +73,10 @@ class User(Base):
     # Crew relationship management
     managed_crew = relationship("CrewRelationship", foreign_keys="CrewRelationship.manager_user_id", back_populates="manager")
     managed_by = relationship("CrewRelationship", foreign_keys="CrewRelationship.crew_user_id", back_populates="crew_member")
+
+    # Blok 017 auth relationships
+    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
+    mfa = relationship("UserMfa", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 class CrewRelationship(Base):
     """Many-to-many relationship for crew management"""

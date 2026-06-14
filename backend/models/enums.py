@@ -36,8 +36,24 @@ class PriorityLevel(str, enum.Enum):
     LOW = "LOW"
     OPTIONAL = "OPTIONAL"
 
-class UserRole(str, enum.Enum):
-    """User roles for crew members"""
+class AccessRole(str, enum.Enum):
+    """Blok 5-tier access tier (Layer 1): can this account reach a program capability.
+
+    Ordered by privilege: SUPER_ADMIN > ADMIN > MANAGER > USER > GUEST.
+    ADMIN and MANAGER are reserved for future multi-tenant use.
+    """
+    SUPER_ADMIN = "SUPER_ADMIN"
+    ADMIN = "ADMIN"
+    MANAGER = "MANAGER"
+    USER = "USER"
+    GUEST = "GUEST"
+
+
+class ProductionRole(str, enum.Enum):
+    """Production role (Layer 3): what job a person does on a show.
+
+    Pure domain data; carries no access meaning. Formerly named UserRole.
+    """
     CREW = "CREW"
     ASSISTANT_DIRECTOR = "ASSISTANT_DIRECTOR"
     STAGE_MANAGER = "STAGE_MANAGER"

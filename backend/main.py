@@ -24,7 +24,9 @@ except ImportError:
 
 # Import routers
 from routers import users, crews, venues, departments, shows, webhooks, development, script_elements, show_sharing, script_import, docs_search, script_sync
+from routers import auth_blok, sessions as sessions_router, audit as audit_router
 from routers.auth import get_current_user
+from middleware.csrf import CsrfMiddleware
 import models
 
 logging.basicConfig(level=logging.INFO)
@@ -66,8 +68,11 @@ app.add_middleware(
     allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With", "X-CSRF-Token"],
 )
+
+# Blok 017 CSRF double-submit protection for cookie-authenticated requests.
+app.add_middleware(CsrfMiddleware)
 
 # =============================================================================
 # ERROR HANDLERS - Ensure all errors return JSON, not HTML
@@ -119,6 +124,9 @@ app.include_router(script_elements.router)  # Script elements CRUD at /api/scrip
 app.include_router(show_sharing.router) # Show-level sharing at /api/shows/*/crew/*/share, /shared/*
 app.include_router(docs_search.router)  # Documentation search at /api/docs/search
 app.include_router(script_sync.router)  # WebSocket script synchronization at /ws/script/*
+app.include_router(auth_blok.router)    # Blok 017 self-hosted auth at /api/auth/*
+app.include_router(sessions_router.router)  # Session management at /api/sessions/*
+app.include_router(audit_router.router)     # Auth audit log at /api/audit-log/*
 if ENABLE_DEV_ROUTES:
     app.include_router(development.router)  # Development endpoints at /api/dev/*
     logger.info("Development routes ENABLED")

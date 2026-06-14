@@ -8,16 +8,24 @@ from .enums import (
     TriggerType,
     ExecutionStatus,
     PriorityLevel,
-    UserRole,
+    AccessRole,
+    ProductionRole,
     LocationArea,
     UserStatus,
     ScriptStatus,
 )
-from .user import User, CrewRelationship
+from .user import User, CrewRelationship, INDIVIDUAL_ORG_ID
 from .venue import Venue
 from .department import Department
 from .show import Show, CrewAssignment
 from .script import Script, ScriptElement
+from .auth import (
+    UserSession,
+    UserMfa,
+    EmailVerificationToken,
+    PasswordResetToken,
+    AuthAuditLog,
+)
 
 __all__ = [
     "func",
@@ -26,16 +34,23 @@ __all__ = [
     "TriggerType",
     "ExecutionStatus",
     "PriorityLevel",
-    "UserRole",
+    "AccessRole",
+    "ProductionRole",
     "LocationArea",
     "UserStatus",
     "ScriptStatus",
     "User",
     "CrewRelationship",
+    "INDIVIDUAL_ORG_ID",
     "Venue",
     "Department",
     "Show",
     "CrewAssignment",
     "Script",
     "ScriptElement",
+    "UserSession",
+    "UserMfa",
+    "EmailVerificationToken",
+    "PasswordResetToken",
+    "AuthAuditLog",
 ]
