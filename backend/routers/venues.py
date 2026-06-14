@@ -1,15 +1,14 @@
 # backend/routers/venues.py
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import APIRouter, Depends, status, Response
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 from uuid import UUID
-from datetime import datetime
 import logging
 
 import models
 import schemas
 from database import get_db
+from services import venue_service
 from .auth import get_current_user
 
 # Optional rate limiting import
@@ -40,8 +39,7 @@ def list_venues(
     db: Session = Depends(get_db)
 ):
     """Get venues owned by the current user."""
-    venues = db.query(models.Venue).filter(models.Venue.owner_id == user.user_id).all()
-    return venues
+    return venue_service.list_venues(db, user)
 
 
 @router.post("/me/venues", response_model=schemas.Venue, status_code=status.HTTP_201_CREATED)
@@ -51,13 +49,7 @@ def create_venue(
     db: Session = Depends(get_db)
 ):
     """Create a new venue owned by the current user."""
-    venue_data = venue.model_dump()
-    venue_data['owner_id'] = user.user_id
-    new_venue = models.Venue(**venue_data)
-    db.add(new_venue)
-    db.commit()
-    db.refresh(new_venue)
-    return new_venue
+    return venue_service.create_venue(db, user, venue)
 
 
 @router.get("/venues/{venue_id}", response_model=schemas.Venue)
@@ -67,13 +59,7 @@ def get_venue(
     db: Session = Depends(get_db)
 ):
     """Get a single venue by ID (must be owned by current user)."""
-    venue = db.query(models.Venue).filter(
-        models.Venue.venue_id == venue_id,
-        models.Venue.owner_id == user.user_id
-    ).first()
-    if not venue:
-        raise HTTPException(status_code=404, detail="Venue not found")
-    return venue
+    return venue_service.get_venue(db, user, venue_id)
 
 
 @router.patch("/venues/{venue_id}", response_model=schemas.Venue)
@@ -84,23 +70,7 @@ def update_venue(
     db: Session = Depends(get_db)
 ):
     """Update a venue."""
-    venue_to_update = db.query(models.Venue).filter(
-        models.Venue.venue_id == venue_id,
-        models.Venue.owner_id == user.user_id
-    ).first()
-    if not venue_to_update:
-        raise HTTPException(status_code=404, detail="Venue not found")
-
-    update_data = venue_update.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(venue_to_update, key, value)
-    
-    # Update the date_updated timestamp
-    venue_to_update.date_updated = datetime.utcnow()
-    
-    db.commit()
-    db.refresh(venue_to_update)
-    return venue_to_update
+    return venue_service.update_venue(db, user, venue_id, venue_update)
 
 
 @router.delete("/venues/{venue_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -110,27 +80,5 @@ def delete_venue(
     db: Session = Depends(get_db)
 ):
     """Delete a venue and nullify venue references in shows."""
-    venue_to_delete = db.query(models.Venue).filter(
-        models.Venue.venue_id == venue_id,
-        models.Venue.owner_id == user.user_id
-    ).first()
-    if not venue_to_delete:
-        raise HTTPException(status_code=404, detail="Venue not found")
-
-    # First, nullify the venue_id in any shows that reference this venue (single statement)
-    affected = db.query(models.Show).filter(
-        models.Show.venue_id == venue_id,
-        models.Show.owner_id == user.user_id  # Only update user's own shows
-    ).update({
-        models.Show.venue_id: None,
-        models.Show.date_updated: func.now()
-    }, synchronize_session=False)
-
-    # Log the cleanup for debugging
-    if affected:
-        logger.info(f"Nullified venue reference for {affected} shows when deleting venue {venue_id}")
-    
-    # Now delete the venue
-    db.delete(venue_to_delete)
-    db.commit()
+    venue_service.delete_venue(db, user, venue_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
