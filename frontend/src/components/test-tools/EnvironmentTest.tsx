@@ -22,8 +22,7 @@ import {
   IconButton,
   useClipboard
 } from '@chakra-ui/react';
-import { useAuth } from '@clerk/clerk-react';
-import { getApiUrl } from '../../config/api';
+import { apiFetch } from '../../services/apiFetch';
 import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
@@ -438,7 +437,6 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
   const [isRunningExternalServices, setIsRunningExternalServices] = useState(false);
   const [isRunningMemoryAudit, setIsRunningMemoryAudit] = useState(false);
   const { showSuccess, showError, showInfo } = useEnhancedToast();
-  const { getToken } = useAuth();
 
   // Convert environment results to combined format when they change
   useEffect(() => {
@@ -460,16 +458,8 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
     try {
       showInfo('Testing Filesystem', 'Checking file and directory permissions...');
 
-      const authToken = await getToken();
-      if (!authToken) {
-        throw new Error('Authentication token not available');
-      }
-
-      const response = await fetch(getApiUrl('/api/system-tests/filesystem-permissions'), {
+      const response = await apiFetch('/api/system-tests/filesystem-permissions', {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
       });
 
       if (!response.ok) {
@@ -525,16 +515,8 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
     try {
       showInfo('Testing External Services', 'Checking connectivity to external services...');
 
-      const authToken = await getToken();
-      if (!authToken) {
-        throw new Error('Authentication token not available');
-      }
-
-      const response = await fetch(getApiUrl('/api/system-tests/external-services'), {
+      const response = await apiFetch('/api/system-tests/external-services', {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
       });
 
       if (!response.ok) {
@@ -753,7 +735,7 @@ export const EnvironmentTest: React.FC<EnvironmentTestProps> = ({
             {isRunningFilesystem
               ? 'Checking file and directory access permissions.'
               : isRunningExternalServices
-                ? 'Checking connectivity to Clerk authentication and CDN services.'
+                ? 'Checking connectivity to external services and CDN endpoints.'
                 : isRunningMemoryAudit
                   ? 'Analyzing memory usage patterns and potential leak sources.'
                   : 'This may take up to 2 minutes.'}

@@ -6,8 +6,7 @@
 // HttpOnly cookies (no localStorage). Reactive token refresh is handled by
 // apiFetch on 401; this provider adds proactive refresh while authenticated.
 //
-// Additive: this provider sits alongside the existing Cuebe contexts and the
-// transitional ClerkProvider. It does not replace any of them.
+// This is the sole auth provider; it replaced the former Clerk integration.
 
 import {
   createContext,

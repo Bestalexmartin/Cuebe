@@ -23,6 +23,7 @@ import { ScriptSyncProvider } from './contexts/ScriptSyncContext';
 import { useAuth } from './hooks/useAuth';
 import ProtectedRoute from './components/blok-017/ProtectedRoute';
 import RoleRoute from './components/blok-017/RoleRoute';
+import AuthModal from './components/blok-017/AuthModal';
 
 // Auth-aware catch-all: authenticated users land on the dashboard; everyone
 // else is sent to the sign-in route. Replaces the old Clerk SignedIn/SignedOut
@@ -60,6 +61,9 @@ const Shell: React.FC<{ isMenuOpen: boolean; onMenuOpen: () => void; onMenuClose
         <Route path="*" element={<CatchAllRedirect />} />
       </Routes>
     </Box>
+    {/* Blok 017 auth modal. Opened by ProtectedRoute and by in-form switches
+        (sign up, forgot password, reset password). */}
+    <AuthModal />
   </Box>
 );
 

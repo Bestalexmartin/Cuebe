@@ -6,7 +6,7 @@ import {
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useCrew } from "../hooks/useCrew";
-import { useUser } from '@clerk/clerk-react';
+import { useAuth } from '../../../hooks/useAuth';
 import { useApiFetch } from '../../../hooks/useApiFetch';
 import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm';
 import { BaseEditPage } from '../../../components/base/BaseEditPage';
@@ -50,7 +50,7 @@ export const EditCrewPage: React.FC = () => {
     const navigate = useNavigate();
     const { showSuccess, showError } = useEnhancedToast();
     const apiFetch = useApiFetch();
-    const { user: clerkUser } = useUser();
+    const { user: currentUser } = useAuth();
 
     // Delete state management
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -200,8 +200,8 @@ export const EditCrewPage: React.FC = () => {
     };
 
     const isSelfEdit = (): boolean => {
-        if (!clerkUser || !crew) return false;
-        return crew.clerk_user_id === clerkUser.id;
+        if (!currentUser || !crew) return false;
+        return crew.user_id === currentUser.id;
     };
 
     // Delete functionality

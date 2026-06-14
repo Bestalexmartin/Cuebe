@@ -1,7 +1,7 @@
 // frontend/src/contexts/PreferencesContext.tsx
 
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '../hooks/useAuth';
 import { useApiFetch } from '../hooks/useApiFetch';
 import { useEnhancedToast } from '../utils/toastUtils';
 
@@ -153,7 +153,7 @@ interface PreferencesProviderProps {
 }
 
 export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ children }) => {
-    const { isSignedIn } = useAuth();
+    const { isAuthenticated: isSignedIn } = useAuth();
     const apiFetch = useApiFetch();
     const { showError } = useEnhancedToast();
     

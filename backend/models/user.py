@@ -20,7 +20,8 @@ class User(Base):
 
     user_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
 
-    # Clerk integration (nullable for guest users)
+    # Legacy Clerk identifier. Retained for historical data only; Clerk has been
+    # removed (Blok 017 self-hosted auth). Not written by current auth flows.
     clerk_user_id = Column(String, unique=True, nullable=True, index=True)
 
     # Core user information

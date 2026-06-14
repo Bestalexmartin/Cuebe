@@ -11,7 +11,7 @@ This deployment uses three services on Render.com:
 
 1. Create a [Render.com](https://render.com) account
 2. Connect your GitHub repository to Render
-3. Have your Clerk API keys ready
+3. Generate the Blok 017 auth secrets (`JWT_SECRET_KEY`, `TOTP_ENCRYPTION_KEY`)
 
 ## Deployment Steps
 
@@ -38,23 +38,21 @@ git push
 After services are created, you'll need to manually set these environment variables in the Render dashboard:
 
 #### Backend Service (cuebe-backend):
-- `CLERK_PUBLISHABLE_KEY`: Your Clerk publishable key
-- `CLERK_SECRET_KEY`: Your Clerk secret key
-- `CLERK_PEM_PUBLIC_KEY`: Your Clerk PEM public key (multi-line)
+- `APP_ENV`: Set to `production`
+- `JWT_SECRET_KEY`: Secret used to sign Blok 017 HS256 access/refresh JWTs
+- `TOTP_ENCRYPTION_KEY`: Encryption key for stored MFA/TOTP secrets
 
 #### Frontend Service (cuebe-frontend):
-- `VITE_CLERK_PUBLISHABLE_KEY`: Your Clerk publishable key
+- `VITE_API_BASE_URL`: Backend service URL for API calls
 
 ### 4. Environment Variable Template
 
-Populate each variable in the Render dashboard with values from the Clerk dashboard. Use `.env.example` (or your local `.env`) as the reference; never commit real values.
+Populate each variable in the Render dashboard. Generate fresh secrets for this deployment. Use `.env.example` (or your local `.env`) as the reference; never commit real values.
 
 ```
-VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_publishable_key_here
-CLERK_SECRET_KEY=sk_test_your_secret_key_here
-CLERK_PEM_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----
-<your Clerk JWT public key here>
------END PUBLIC KEY-----
+APP_ENV=production
+JWT_SECRET_KEY=<generate a strong random secret>
+TOTP_ENCRYPTION_KEY=<generate a strong random key>
 ```
 
 ### 5. Verify Deployment
@@ -85,12 +83,12 @@ After deployment, your services will be available at:
 ### Backend Issues
 - Check environment variables are set correctly
 - Verify database connection in logs
-- Ensure Clerk keys are valid
+- Ensure `JWT_SECRET_KEY` is set (auth tokens fail to verify without it)
 
 ### Frontend Issues
 - Verify `VITE_API_BASE_URL` is set correctly
 - Check CORS configuration in backend
-- Ensure Clerk publishable key is set
+- Ensure auth cookies are accepted (check `COOKIE_DOMAIN` and CORS credentials)
 
 ### Database Issues
 - Verify DATABASE_URL is automatically provided by Render

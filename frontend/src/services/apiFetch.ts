@@ -11,17 +11,16 @@
 // refresh via /api/auth/refresh and retries the original request once.
 //
 // The call-site signature is unchanged: callers still pass an optional
-// getToken (a no-op during the cookie transition, retained so the 32 existing
-// call sites and the useStableAuth pattern keep compiling) and receive a raw
+// getToken (now a no-op under the cookie model, retained so existing call
+// sites and the useStableAuth pattern keep compiling) and receive a raw
 // Response.
 
 import { getApiUrl } from '../config/api';
 
 export interface ApiFetchOptions extends RequestInit {
-  // Retained for call-site compatibility during the Clerk -> Blok transition.
-  // The cookie model carries auth via HttpOnly cookies, so a resolved token is
-  // no longer required; if supplied and it resolves, it is still attached as a
-  // Bearer header (harmless fallback alongside the cookie).
+  // Retained for call-site compatibility. Auth rides entirely on HttpOnly
+  // cookies (Blok 017), so this is no longer consulted; getToken resolves
+  // null and no Bearer header is attached.
   getToken?: () => Promise<string | null>;
 }
 
@@ -86,20 +85,14 @@ function notifyAuthLost() {
 }
 
 export async function apiFetch(path: string, options: ApiFetchOptions = {}): Promise<Response> {
-  const { getToken, headers, body, ...rest } = options;
+  // getToken is accepted but intentionally ignored: auth rides on HttpOnly
+  // cookies (Blok 017), not a Bearer header.
+  const { getToken: _getToken, headers, body, ...rest } = options;
+  void _getToken;
 
   const method = (rest.method || 'GET').toUpperCase();
 
   const finalHeaders: Record<string, string> = { ...(headers as Record<string, string>) };
-
-  // Bearer fallback (transitional). The cookie carries auth; this is harmless
-  // when no token resolves.
-  if (getToken) {
-    const token = await getToken();
-    if (token) {
-      finalHeaders['Authorization'] = `Bearer ${token}`;
-    }
-  }
 
   // Default Content-Type for JSON bodies, but never override FormData (the
   // browser sets the multipart boundary itself).

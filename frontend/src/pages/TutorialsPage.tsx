@@ -19,7 +19,7 @@ import { DocumentSearchUI } from '../components/shared/DocumentSearchUI';
 import { SearchInput } from '../components/shared/SearchInput';
 import { MarkdownRenderer } from '../components/shared/MarkdownRenderer';
 import { useDocumentSearch } from '../hooks/useDocumentSearch';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '../hooks/useAuth';
 import { useApiFetch } from '../hooks/useApiFetch';
 import { authTutorialCache } from '../utils/tutorialCache';
 
@@ -103,7 +103,8 @@ export const TutorialsPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuC
   };
 
 
-  const { userId } = useAuth();
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const apiFetch = useApiFetch();
 
 

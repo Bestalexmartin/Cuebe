@@ -36,8 +36,8 @@ class RateLimitConfig:
     # System tests (restricted)
     SYSTEM_TESTS = "5/minute"  # System testing endpoints
     
-    # Webhooks (more permissive for external services)
-    WEBHOOKS = "500/minute"  # Clerk webhooks, health checks
+    # High-frequency internal endpoints (more permissive)
+    WEBHOOKS = "500/minute"  # Health checks and system status polling
 
 def create_redis_connection():
     """Create Redis connection for rate limiting storage"""

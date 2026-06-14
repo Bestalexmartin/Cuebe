@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 // debug logging removed for production sweep
-import { useAuth } from '@clerk/clerk-react';
 import { getWsUrl } from '../config/api';
 
 interface ScriptUpdate {
@@ -74,7 +73,6 @@ export const useScriptSync = (
   options: UseScriptSyncOptions & { autoConnect?: boolean } = {}
 ): UseScriptSyncReturn => {
   
-  const { getToken } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionCount, setConnectionCount] = useState(0);
@@ -93,10 +91,7 @@ export const useScriptSync = (
   // Use refs to capture latest callback values without triggering reconnections
   const optionsRef = useRef(options);
   optionsRef.current = options;
-  
-  const getTokenRef = useRef(getToken);
-  getTokenRef.current = getToken;
-  
+
 
   const handleMessage = useCallback((event: MessageEvent) => {
     try {
@@ -203,13 +198,10 @@ export const useScriptSync = (
       if (shareToken) {
         // Guest access with share token
         urlParams.append('share_token', shareToken);
-      } else {
-        // Authenticated user access
-        const authToken = await getTokenRef.current({});
-        if (authToken) {
-          urlParams.append('user_token', authToken);
-        }
       }
+      // Authenticated user access rides on the bk_access HttpOnly cookie, sent
+      // automatically with the WebSocket handshake (Blok 017). No token is
+      // attached to the URL.
       
       if (urlParams.toString()) {
         wsUrl += `?${urlParams.toString()}`;

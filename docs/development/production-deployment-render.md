@@ -183,14 +183,14 @@ All sensitive configuration values are marked with `sync: false` in the render.y
 #### Backend Service
 - `DATABASE_URL`: Automatically provided by Render's managed PostgreSQL
 - `ALLOWED_ORIGINS`: Frontend URL for CORS policy
-- `CLERK_PUBLISHABLE_KEY`: Clerk authentication public key
-- `CLERK_SECRET_KEY`: Clerk authentication private key
-- `CLERK_PEM_PUBLIC_KEY`: JWT verification public key (multi-line)
-- `CLERK_WEBHOOK_SECRET`: Webhook signature verification
+- `APP_ENV`: Set to `production`
+- `JWT_SECRET_KEY`: Secret used to sign Blok 017 HS256 access/refresh JWTs
+- `JWT_SECRET_KEYS`: Optional comma-separated list of signing keys for zero-downtime key rotation
+- `TOTP_ENCRYPTION_KEY`: Encryption key for stored MFA/TOTP secrets
+- `COOKIE_DOMAIN`: Cookie domain for split-domain deployments (e.g. `.cuebe.app`)
 
 #### Frontend Service
 - `VITE_API_BASE_URL`: Backend service URL for API calls
-- `VITE_CLERK_PUBLISHABLE_KEY`: Clerk authentication public key
 
 ### Environment Separation
 
@@ -202,19 +202,19 @@ The configuration maintains clear separation between development and production:
 
 ## Authentication Integration
 
-### Clerk Configuration
+### Blok 017 Auth Configuration
 
-Cuebe uses Clerk for authentication with specific requirements for production deployment:
+Cuebe uses self-hosted Blok 017 authentication with specific requirements for production deployment:
 
-1. **JWT Verification**: The backend validates JWTs using the PEM public key
-2. **Webhook Security**: Webhooks are verified using the webhook secret
-3. **Client Integration**: The frontend uses the publishable key for Clerk SDK
+1. **JWT Signing**: The backend signs and verifies HS256 access/refresh JWTs using `JWT_SECRET_KEY`
+2. **Session Cookies**: Tokens are delivered as HttpOnly cookies; tune `COOKIE_DOMAIN`/`COOKIE_SAMESITE` for split-domain deployments
+3. **MFA Secrets**: TOTP secrets are encrypted at rest with `TOTP_ENCRYPTION_KEY`
 
 ### Security Considerations
 
-- All Clerk keys are environment-specific (test keys for development, production keys for production)
+- Auth secrets are environment-specific; generate fresh values per deployment and never reuse the dev defaults
 - JWT tokens are verified server-side before processing requests
-- Webhook endpoints include signature verification to prevent forgery
+- `JWT_SECRET_KEYS` supports zero-downtime key rotation (comma-separated list)
 - CORS policies are strictly enforced to prevent unauthorized cross-origin requests
 
 ## Build Process
@@ -277,7 +277,7 @@ Cuebe uses Clerk for authentication with specific requirements for production de
 
 #### Authentication Issues
 - **Symptom**: Users cannot log in or JWT validation fails
-- **Solution**: Verify all Clerk environment variables are correctly set
+- **Solution**: Verify `JWT_SECRET_KEY` (and `TOTP_ENCRYPTION_KEY` for MFA) are correctly set
 - **Debug**: Check authentication service logs and JWT token format
 
 ### Performance Optimization

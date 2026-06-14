@@ -155,9 +155,9 @@ export const ApiDocsPage: React.FC<ApiDocsPageProps> = ({ isMenuOpen, onMenuClos
         <ApiCard
           title="Authentication & User Management"
           methods="GET, POST, PATCH"
-          description="User authentication, registration, and account management with Clerk integration"
-          endpoints="/api/users/*, /api/webhooks/clerk, /api/users/preferences"
-          longDescription="Handles user registration, authentication flows, and profile management. Integrates with Clerk for secure authentication and supports user preferences including display settings and operational preferences. Provides webhook endpoints for user lifecycle events and supports both authenticated and guest user workflows."
+          description="Self-hosted authentication, registration, and account management (Blok 017)"
+          endpoints="/api/auth/*, /api/users/*, /api/users/preferences"
+          longDescription="Handles user registration, login, email verification, password reset, MFA, and profile management via the self-hosted Blok 017 auth stack (email/password with HttpOnly cookie sessions). Supports user preferences including display settings and operational preferences, and both authenticated and guest user workflows."
           colorScheme="blue"
           isExpanded={expandedCard === 'auth'}
           onClick={() => handleCardClick('auth')}

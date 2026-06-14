@@ -10,7 +10,7 @@ import {
     Avatar,
     Spinner
 } from "@chakra-ui/react";
-import { useUser } from '@clerk/clerk-react';
+import { useAuth } from '../../../hooks/useAuth';
 import { BaseCard, BaseCardAction } from '../../../components/base/BaseCard';
 import { formatDateTimeLocal } from '../../../utils/timeUtils';
 import { formatRole } from '../../../constants/userRoles';
@@ -55,7 +55,7 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
     onSaveNavigationState,
     isLoading = false,
 }) => {
-    const { user: clerkUser } = useUser();
+    const { user: currentUser } = useAuth();
     const { crew: crewWithAssignments, isLoading: assignmentsLoading, fetchCrew, refetchCrew } = useCrew(crewMember.user_id, false);
 
     // Calculate assignment info
@@ -143,7 +143,7 @@ const CrewCardComponent: React.FC<CrewCardProps> = ({
 
     const getNotesToShow = (): string | undefined => {
         // If this is the current user viewing their own card, always show user notes
-        const isCurrentUser = clerkUser && crewMember.clerk_user_id === clerkUser.id;
+        const isCurrentUser = currentUser && crewMember.user_id === currentUser.id;
         if (isCurrentUser) {
             return crewMember.notes; // User table notes
         }

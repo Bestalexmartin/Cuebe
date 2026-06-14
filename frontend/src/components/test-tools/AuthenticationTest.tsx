@@ -23,7 +23,8 @@ import {
   useClipboard,
   Progress
 } from '@chakra-ui/react';
-import { useAuth, useUser } from '@clerk/clerk-react';
+import { useAuth } from '../../hooks/useAuth';
+import { useStableAuth } from '../../hooks/useStableAuth';
 import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
@@ -47,7 +48,7 @@ interface TestResults {
   summary: string;
   totalTime: number;
   userInfo?: {
-    clerk_user_id?: string;
+    user_id?: string;
     email?: string;
     status?: string;
     permissions?: string[];
@@ -113,7 +114,7 @@ const AuthResultsDisplay: React.FC<{ results: TestResults; onClear: () => void }
           <VStack spacing={1} align="start">
             <HStack>
               <Text fontSize="xs" color="gray.600">ID:</Text>
-              <Text fontSize="sm" fontFamily="mono">{results.userInfo.clerk_user_id || 'N/A'}</Text>
+              <Text fontSize="sm" fontFamily="mono">{results.userInfo.user_id || 'N/A'}</Text>
             </HStack>
             <HStack>
               <Text fontSize="xs" color="gray.600">Email:</Text>
@@ -209,8 +210,8 @@ export const AuthenticationTest: React.FC = () => {
   const [progress, setProgress] = useState<number>(0);
   const [testMode, setTestMode] = useState<'authenticated' | 'unauthenticated'>('authenticated');
   const { showSuccess, showError, showInfo } = useEnhancedToast();
-  const { getToken, isSignedIn } = useAuth();
-  const { user } = useUser();
+  const { isAuthenticated: isSignedIn, user } = useAuth();
+  const { getToken } = useStableAuth();
 
   const runAuthTest = async (forceMode?: 'authenticated' | 'unauthenticated') => {
     setIsRunning(true);
@@ -237,34 +238,23 @@ export const AuthenticationTest: React.FC = () => {
         { name: 'User Lookup', endpoint: '/api/me/crews' },
         { name: 'Session Validity', endpoint: '/api/health' },
         { name: 'Protected Endpoint Access', endpoint: '/api/me/venues' },
-        { name: 'Authorization Scope', endpoint: '/api/me/crews' },
-        { name: 'Webhook Configuration', endpoint: '/api/webhooks/clerk', method: 'POST' },
-        { name: 'Webhook Security', endpoint: '/api/webhooks/clerk', method: 'POST' }
+        { name: 'Authorization Scope', endpoint: '/api/me/crews' }
       ];
 
-      // Get authentication token based on test mode
-      let authToken: string | null = null;
-      
+      // Blok 017 carries auth on HttpOnly cookies; there is no JS-readable
+      // access token. getToken resolves null and is retained only for call-site
+      // compatibility. Requests authenticate via the session cookie sent with
+      // credentials: 'include'.
       if (currentTestMode === 'authenticated') {
-        showInfo('Checking Authentication', 'Getting authentication token from Clerk...');
-        
+        showInfo('Checking Authentication', 'Verifying the current session...');
+        await getToken();
+
         if (isSignedIn) {
-          try {
-            authToken = await getToken();
-            if (authToken) {
-              showInfo('Token Found', `Authentication token retrieved (${authToken.length} chars). Running authenticated tests...`);
-            } else {
-              showInfo('Token Issue', 'Signed in but could not retrieve token. May be a session issue.');
-            }
-          } catch (e) {
-            showInfo('Token Error', 'Failed to retrieve authentication token from Clerk.');
-          }
+          showInfo('Session Active', 'Signed in. Running authenticated tests via session cookie...');
         } else {
           showInfo('Not Signed In', 'User is not signed in. Will test as unauthenticated user.');
         }
       } else {
-        // Unauthenticated mode - explicitly don't use any token
-        authToken = null;
         showInfo('Unauthenticated Mode', 'Running tests without authentication to verify security measures...');
       }
       
@@ -279,53 +269,15 @@ export const AuthenticationTest: React.FC = () => {
           const headers: Record<string, string> = {
             'Content-Type': 'application/json'
           };
-          
-          if (authToken && test.name !== 'Session Validity' && !test.name.includes('Webhook')) {
-            headers['Authorization'] = `Bearer ${authToken}`;
-          }
-          
-          let response: Response;
-          let requestBody: string | undefined;
-          
-          // Handle webhook tests differently
-          if (test.name.includes('Webhook')) {
-            if (test.name === 'Webhook Configuration') {
-              // Test webhook endpoint exists and responds to malformed requests
-              response = await fetch(test.endpoint, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ test: 'malformed webhook payload' })
-              });
-            } else if (test.name === 'Webhook Security') {
-              // Test webhook security - should reject requests without proper SVIX headers
-              const mockWebhookPayload = {
-                type: 'user.created',
-                data: {
-                  id: 'test_user_123',
-                  email_addresses: [{ email_address: 'test@example.com' }],
-                  first_name: 'Test',
-                  last_name: 'User'
-                }
-              };
-              
-              response = await fetch(test.endpoint, {
-                method: 'POST',
-                headers: {
-                  ...headers,
-                  // Missing required SVIX webhook signature headers intentionally
-                },
-                body: JSON.stringify(mockWebhookPayload)
-              });
-            } else {
-              response = new Response('{}', { status: 200 });
-            }
-          } else {
-            response = await fetch(test.endpoint, {
-              method: test.method || 'GET',
-              headers,
-              body: requestBody
-            });
-          }
+
+          // Blok 017 authenticates via the session cookie. In authenticated mode
+          // we send credentials; in unauthenticated mode we omit them to verify
+          // that protected endpoints reject anonymous requests.
+          const response = await fetch(test.endpoint, {
+            method: 'GET',
+            headers,
+            credentials: currentTestMode === 'authenticated' ? 'include' : 'omit',
+          });
           
           const responseTime = Date.now() - testStart;
           
@@ -340,25 +292,25 @@ export const AuthenticationTest: React.FC = () => {
               break;
             case 'Token Validation':
               if (currentTestMode === 'authenticated') {
-                if (authToken) {
-                  // We have a token, so validate it works
+                if (isSignedIn) {
+                  // Session cookie should authenticate the request
                   if (response.status === 200) {
                     status = 'passed';
-                    error = 'Token valid and user authenticated';
+                    error = 'Session valid and user authenticated';
                   } else if (response.status === 404) {
                     status = 'failed';
-                    error = 'Token valid but user not found in database';
+                    error = 'Session valid but user not found in database';
                   } else if (response.status === 401 || response.status === 403) {
                     status = 'failed';
-                    error = 'Token invalid or expired';
+                    error = 'Session invalid or expired';
                   } else {
                     status = 'failed';
                     error = `Unexpected response: ${response.status}`;
                   }
                 } else {
-                  // No token available - this is a failure for authenticated tests
+                  // No active session - this is a failure for authenticated tests
                   status = 'failed';
-                  error = 'No authentication token found - user may not be logged in';
+                  error = 'No active session found - user may not be logged in';
                 }
               } else {
                 // Unauthenticated mode should be rejected
@@ -375,7 +327,7 @@ export const AuthenticationTest: React.FC = () => {
             case 'Protected Endpoint Access':
             case 'Authorization Scope':
               if (currentTestMode === 'authenticated') {
-                if (authToken) {
+                if (isSignedIn) {
                   if (response.status === 200) {
                     status = 'passed';
                     error = test.name === 'User Lookup' ? 'User successfully found and authenticated' :
@@ -383,21 +335,21 @@ export const AuthenticationTest: React.FC = () => {
                            'Successfully accessed user-scoped data';
                   } else if (response.status === 404) {
                     status = test.name === 'User Lookup' ? 'failed' : 'passed';
-                    error = test.name === 'User Lookup' ? 'User not found in database despite valid token' :
+                    error = test.name === 'User Lookup' ? 'User not found in database despite valid session' :
                            test.name === 'Protected Endpoint Access' ? 'Endpoint accessible but no data found (normal)' :
                            'No data found for user (normal for new accounts)';
                   } else if (response.status === 401 || response.status === 403) {
                     status = 'failed';
-                    error = test.name === 'User Lookup' ? 'Authentication failed - token may be invalid' :
-                           test.name === 'Protected Endpoint Access' ? 'Access denied despite having token - authentication issue' :
-                           'Authorization failed - token or permissions issue';
+                    error = test.name === 'User Lookup' ? 'Authentication failed - session may be invalid' :
+                           test.name === 'Protected Endpoint Access' ? 'Access denied despite active session - authentication issue' :
+                           'Authorization failed - session or permissions issue';
                   } else {
                     status = 'failed';
                     error = `Unexpected response: ${response.status}`;
                   }
                 } else {
                   status = 'failed';
-                  error = `Cannot test ${test.name.toLowerCase()} - no authentication token available`;
+                  error = `Cannot test ${test.name.toLowerCase()} - no active session`;
                 }
               } else {
                 // Unauthenticated mode - should be properly rejected
@@ -408,24 +360,6 @@ export const AuthenticationTest: React.FC = () => {
                   status = 'failed';
                   error = `Security issue: ${test.name.toLowerCase()} accessible without authentication`;
                 }
-              }
-              break;
-            case 'Webhook Configuration':
-              // Webhook endpoint should exist and return 400/500 for malformed requests
-              status = [400, 500].includes(response.status) ? 'passed' : 'failed';
-              if (response.status === 400) {
-                error = 'Webhook verification failed (expected - malformed payload)';
-              } else if (response.status === 500 && response.statusText.includes('secret')) {
-                error = 'Webhook secret not configured (expected in test env)';
-              }
-              break;
-            case 'Webhook Security':
-              // Should reject requests without proper SVIX headers (400/401)
-              status = [400, 401].includes(response.status) ? 'passed' : 'failed';
-              if (status === 'passed') {
-                error = 'Properly rejected unsigned webhook request';
-              } else {
-                error = 'Webhook security may be compromised - accepts unsigned requests';
               }
               break;
           }
@@ -441,9 +375,9 @@ export const AuthenticationTest: React.FC = () => {
             statusCode: response.status,
             error,
             details: {
-              tokenValid: authToken ? response.status !== 401 && response.status !== 403 : false,
+              tokenValid: isSignedIn ? response.status !== 401 && response.status !== 403 : false,
               userFound: response.status === 200,
-              sessionActive: authToken !== null
+              sessionActive: isSignedIn
             }
           };
           
@@ -468,19 +402,19 @@ export const AuthenticationTest: React.FC = () => {
       const totalTime = Date.now() - startTime;
       const passedCount = testResults.filter(r => r.status === 'passed').length;
       
-      // Get user info from Clerk
+      // Get user info from the current session
       let userInfo: TestResults['userInfo'] = undefined;
       if (user && isSignedIn) {
         userInfo = {
-          clerk_user_id: user.id,
-          email: user.emailAddresses[0]?.emailAddress || 'N/A',
-          status: 'VERIFIED', // Clerk users are verified by definition
+          user_id: user.id,
+          email: user.email || 'N/A',
+          status: user.email_verified ? 'VERIFIED' : 'UNVERIFIED',
           permissions: ['read', 'write'] // Placeholder - would need actual permission system
         };
       }
-      
+
       const modeText = currentTestMode === 'authenticated' ? 'Authenticated' : 'Unauthenticated';
-      const tokenText = currentTestMode === 'authenticated' ? (authToken ? 'Token found' : 'No token') : 'No token (by design)';
+      const tokenText = currentTestMode === 'authenticated' ? (isSignedIn ? 'Session active' : 'No session') : 'No session (by design)';
       const summary = `${passedCount}/${authTests.length} tests passed | ${modeText} mode | ${tokenText} | ${userInfo ? 'User verified' : 'User not found'}`;
       
       const finalResults: TestResults = {
@@ -517,13 +451,13 @@ export const AuthenticationTest: React.FC = () => {
         </HStack>
         <HStack spacing={2}>
           <Badge colorScheme={isSignedIn ? "green" : "red"} fontSize="xs" px={2} py={1}>
-            {isSignedIn ? `SIGNED IN${user?.emailAddresses[0]?.emailAddress ? ` (${user.emailAddresses[0].emailAddress})` : ''}` : 'NOT SIGNED IN'}
+            {isSignedIn ? `SIGNED IN${user?.email ? ` (${user.email})` : ''}` : 'NOT SIGNED IN'}
           </Badge>
         </HStack>
       </HStack>
 
       <Text color="cardText" mt={-2}>
-        Test authentication and authorization systems. Validates JWT tokens, user sessions, protected endpoint access, permission scopes, and Clerk webhook security.
+        Test authentication and authorization systems. Validates session cookies, user sessions, protected endpoint access, and permission scopes.
       </Text>
 
       <HStack spacing={3} mt={-2}>

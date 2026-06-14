@@ -225,8 +225,14 @@ async def script_websocket(
     db: Session = Depends(get_db)
 ):
     """WebSocket endpoint for real-time script synchronization"""
-    
+
     try:
+        # Blok 017 carries auth on the bk_access HttpOnly cookie, sent with the
+        # WebSocket handshake for same-origin / SameSite=Lax connections. Fall
+        # back to it when no explicit user_token query param is supplied.
+        if not user_token:
+            user_token = websocket.cookies.get("bk_access")
+
         # Validate access permissions
         access_info = await validate_script_access(script_id, share_token, user_token, db)
         

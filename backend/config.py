@@ -17,9 +17,6 @@ class Settings(BaseSettings):
     api_base_url: str = ""
     enable_dev_routes: str = ""
 
-    clerk_pem_public_key: Optional[str] = None
-    clerk_webhook_secret: Optional[str] = None
-
     resend_api_key: str = ""
     email_from_address: str = "noreply@cuebe.app"
     email_from_name: str = "Cuebe"

@@ -2,9 +2,8 @@
 //
 // Blok 017 auth context consumer hook, ported for Cuebe.
 //
-// Note: this is the local self-hosted auth hook. It is unrelated to Clerk's
-// useAuth (imported directly where still needed during the transition, e.g.
-// useStableAuth). Consume this one via the named export to avoid ambiguity.
+// This is the self-hosted auth hook backed by AuthContext. It is the single
+// source of current-user / authentication state across the app.
 
 import { useContext } from 'react';
 import { AuthContext, type AuthContextType } from '../contexts/AuthContext';

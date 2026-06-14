@@ -99,7 +99,7 @@ def create_guest_user_with_relationship(
         phone_number=guest_data.phone_number,
         notes=None,  # Notes belong in the relationship, not the user
         created_by=user.user_id,  # Track who created this guest user
-        clerk_user_id=None,  # Clerk user ID will be set when webhooks sync data
+        clerk_user_id=None,  # Legacy column retained; unused under Blok 017 auth
         user_name=None,
         profile_img_url=None,
         is_active=True

@@ -1,17 +1,13 @@
 # backend/routers/auth.py
 
-import time
-from typing import Dict, Optional
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from jose import jwt
 import jwt as pyjwt
 import logging
 
 import models
-from config import settings
 from database import get_db
 from middleware.auth import (
     get_current_user as _blok_get_current_user,
@@ -22,7 +18,6 @@ from services.auth_service import decode_token
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-bearer_scheme = HTTPBearer(auto_error=False)
 
 
 def get_current_user(
@@ -77,47 +72,3 @@ async def get_current_user_from_token(token_string: str, db: Session) -> models.
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account deactivated")
     return user
-
-
-# ---------------------------------------------------------------------------
-# Legacy Clerk verification helpers (RS256). No longer on the request path; the
-# current-user dependency now delegates to Blok 017. Retained until the Clerk
-# Teardown card removes them so any remaining references keep importing cleanly.
-# ---------------------------------------------------------------------------
-
-def get_current_user_claims(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)) -> Dict:
-    if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header missing",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    pem_key_str = settings.clerk_pem_public_key
-    if not pem_key_str:
-        raise HTTPException(status_code=500, detail="Missing PEM Public Key")
-
-    pem_key = pem_key_str.replace("\\n", "\n")
-    token = credentials.credentials
-
-    try:
-        decoded_claims = jwt.decode(
-            token,
-            pem_key,
-            algorithms=["RS256"],
-            options={"verify_signature": True}
-        )
-
-        current_time = time.time()
-        if decoded_claims.get("exp", 0) < current_time:
-            raise HTTPException(status_code=401, detail="Token has expired")
-        if decoded_claims.get("nbf", 0) > current_time:
-            raise HTTPException(status_code=401, detail="Token not yet valid")
-        return decoded_claims
-    except Exception as e:
-        logger.error(f"Token verification failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )

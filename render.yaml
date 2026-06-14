@@ -26,14 +26,6 @@ services:
         value: https://api.cuebe.app
       - key: ALLOWED_ORIGINS
         value: https://cuebe.app,https://www.cuebe.app,https://cuebe-frontend.onrender.com
-      - key: CLERK_PUBLISHABLE_KEY
-        sync: false
-      - key: CLERK_SECRET_KEY
-        sync: false
-      - key: CLERK_PEM_PUBLIC_KEY
-        sync: false
-      - key: CLERK_WEBHOOK_SECRET
-        sync: false
 
   # =========================
   # React Frontend (Static Site)
@@ -53,16 +45,3 @@ services:
     envVars:
       - key: VITE_API_BASE_URL
         value: https://api.cuebe.app
-      - key: VITE_CLERK_PUBLISHABLE_KEY
-        sync: false # set pk_live_xxx in dashboard
-      - key: VITE_CLERK_SIGN_IN_URL
-        value: /sign-in
-      - key: VITE_CLERK_SIGN_UP_URL
-        value: /sign-up
-      - key: VITE_CLERK_AFTER_SIGN_IN_URL
-        value: /dashboard
-      - key: VITE_CLERK_AFTER_SIGN_UP_URL
-        value: /dashboard
-      # optional, only if you created CNAME clerk.cuebe.app -> frontend-api.clerk.services
-      - key: VITE_CLERK_FRONTEND_API
-        value: clerk.cuebe.app

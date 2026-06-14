@@ -31,7 +31,7 @@ import { PlaybackOverlay } from '../features/script/components/PlaybackOverlay';
 import { ScriptHeader } from '../features/script/components/ScriptHeader';
 import { ScriptDataProvider, useScriptData } from '../contexts/ScriptDataContext';
 import { ModalProvider, useModalContext } from '../contexts/ModalContext';
-import { useAuth } from '@clerk/clerk-react';
+import { useStableAuth } from '../hooks/useStableAuth';
 
 import { ScriptToolbar } from '../features/script/components/ScriptToolbar';
 import { useAutoSave } from '../hooks/useAutoSave';
@@ -1425,14 +1425,10 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
 // Outer component that handles auth and passes getToken down
 export const ManageScriptPage: React.FC<ManageScriptPageProps> = React.memo(({ isMenuOpen, onMenuClose }) => {
-    const auth = useAuth();
-    const authRef = useRef(auth);
-    authRef.current = auth; // Keep ref up to date
-    
-    const getToken = useCallback(async () => {
-        return await authRef.current.getToken();
-    }, []); // Stable function reference
-    
+    // Blok 017 carries auth on HttpOnly cookies; getToken resolves null and is
+    // retained only to satisfy the inner component's prop contract.
+    const { getToken } = useStableAuth();
+
     const { scriptId } = useParams<{ scriptId: string }>();
     
     return (

@@ -1,13 +1,14 @@
 // frontend/src/components/layout/Header.tsx
 
 import React, { useRef, useEffect } from "react";
-import { SignedIn, UserButton } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
 import { Flex, Text, Heading, Image, IconButton, useColorModeValue } from "@chakra-ui/react";
 import { AppIcon } from '../AppIcon';
 import { useIntegratedColorMode } from '../../hooks/useIntegratedColorMode';
 import { BorderedContainer } from '../shared/BorderedContainer';
 import { ScriptSyncIcon, ScriptSyncIconRef } from '../shared/ScriptSyncIcon';
 import { useScriptSyncContextOptional } from '../../contexts/ScriptSyncContext';
+import { useAuth } from '../../hooks/useAuth';
 
 const DarkModeSwitch: React.FC = () => {
   const { colorMode, toggleColorMode } = useIntegratedColorMode();
@@ -41,6 +42,8 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
   const scriptSyncIconRef = useRef<ScriptSyncIconRef>(null);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   const handleMenuOpen = (): void => {
     onMenuOpen();
@@ -88,7 +91,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
         </Heading>
       </Flex>
 
-      <SignedIn>
+      {isAuthenticated && (
         <Flex align="center" gap="4">
 
           {/* This group is now ALWAYS visible */}
@@ -106,7 +109,15 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
               />
             </BorderedContainer>
             <BorderedContainer>
-              <UserButton />
+              <IconButton
+                aria-label="Account"
+                icon={<AppIcon name='user' boxSize="20px" />}
+                onClick={() => navigate('/user-profile')}
+                variant="ghost"
+                isRound={true}
+                _focus={{ boxShadow: 'none' }}
+                _hover={{ bg: 'transparent' }}
+              />
             </BorderedContainer>
           </Flex>
 
@@ -127,7 +138,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuOpen, isMenuOpen }) => {
           />
 
         </Flex>
-      </SignedIn>
+      )}
     </Flex>
   );
 };

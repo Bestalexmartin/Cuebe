@@ -24,8 +24,7 @@ import {
   Collapse,
   useDisclosure
 } from '@chakra-ui/react';
-import { useAuth } from '@clerk/clerk-react';
-import { getApiUrl } from '../../config/api';
+import { apiFetch } from '../../services/apiFetch';
 import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
 
@@ -80,7 +79,6 @@ export const PytestTest: React.FC = () => {
   const [isCheckingFixtures, setIsCheckingFixtures] = useState(false);
   const [isCreatingTestData, setIsCreatingTestData] = useState(false);
   const [currentTestSuite, setCurrentTestSuite] = useState<string>('');
-  const { getToken } = useAuth();
   const { showSuccess, showError, showWarning } = useEnhancedToast();
   const { hasCopied, onCopy } = useClipboard(testResults?.output || '');
   const { isOpen: isOutputOpen, onToggle: onToggleOutput } = useDisclosure();
@@ -101,17 +99,8 @@ export const PytestTest: React.FC = () => {
     setTestData(null);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication token not available');
-      }
-
-      const response = await fetch(getApiUrl('/api/system-tests/run-pytest-suite'), {
+      const response = await apiFetch('/api/system-tests/run-pytest-suite', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
         body: JSON.stringify({ test_suite: suiteId })
       });
 
@@ -149,16 +138,8 @@ export const PytestTest: React.FC = () => {
     setTestResults(null);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication token not available');
-      }
-
-      const response = await fetch(getApiUrl('/api/system-tests/test-fixtures-status'), {
+      const response = await apiFetch('/api/system-tests/test-fixtures-status', {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
       });
 
       if (!response.ok) {
@@ -190,17 +171,8 @@ export const PytestTest: React.FC = () => {
     setTestResults(null);
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication token not available');
-      }
-
-      const response = await fetch(getApiUrl('/api/system-tests/create-test-data'), {
+      const response = await apiFetch('/api/system-tests/create-test-data', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
         body: JSON.stringify({ data_type: dataType })
       });
 

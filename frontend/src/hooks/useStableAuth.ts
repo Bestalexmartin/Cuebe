@@ -1,18 +1,17 @@
-// Create a stable auth hook that doesn't re-render components
-import { useRef, useCallback } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+// Stable auth hook used by call sites that pass a getToken into apiFetch.
+//
+// Under Blok 017, auth rides on HttpOnly cookies (bk_access / bk_refresh) sent
+// automatically with credentials: 'include'. There is no JS-readable access
+// token, so getToken resolves null. The stable reference is preserved so the
+// existing call sites and effect dependency arrays keep working unchanged.
+import { useCallback } from 'react';
 
 export const useStableAuth = () => {
-  const auth = useAuth();
-  const authRef = useRef(auth);
-  
-  // Update the ref without causing re-renders
-  authRef.current = auth;
-  
-  // Return a stable getToken function that always uses the latest auth
+  // Stable, dependency-free reference. Resolves null because the cookie carries
+  // auth; apiFetch ignores the returned value.
   const getToken = useCallback(async (): Promise<string | null> => {
-    return await authRef.current.getToken();
-  }, []); // Empty deps = stable reference
-  
+    return null;
+  }, []);
+
   return { getToken };
 };

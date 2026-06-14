@@ -19,10 +19,9 @@ import {
   Badge,
   IconButton
 } from '@chakra-ui/react';
-import { useAuth } from '@clerk/clerk-react';
 import { AppIcon } from '../AppIcon';
 import { useEnhancedToast } from '../../utils/toastUtils';
-import { getApiUrl } from '../../config/api';
+import { apiFetch } from '../../services/apiFetch';
 
 // TypeScript interfaces
 interface DatabaseConnectionResult {
@@ -97,19 +96,6 @@ export const PerformanceTest: React.FC = () => {
   const [currentTest, setCurrentTest] = useState<string>('');
   const [progress, setProgress] = useState<number>(0);
   const { showSuccess, showError, showInfo } = useEnhancedToast();
-  const { getToken } = useAuth();
-
-  let cachedAuthToken: string | null = null;
-
-  const getAuthTokenOnce = async (forceRefresh = false): Promise<string> => {
-    if (!forceRefresh && cachedAuthToken) return cachedAuthToken;
-
-    const token = await getToken();
-    if (!token) throw new Error('Authentication token not available');
-
-    cachedAuthToken = token;
-    return token;
-  };
 
   const isAnyRunning = isRunningDatabase || isRunningAPI || isRunningSystem || isRunningNetwork;
 
@@ -198,17 +184,8 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Connecting to backend API...');
       setProgress(10);
 
-      const authToken = await getAuthTokenOnce();
-      if (!authToken) {
-        throw new Error('Authentication token not available');
-      }
-
-      const response = await fetch(getApiUrl('/api/system-tests/database-connectivity'), {
+      const response = await apiFetch('/api/system-tests/database-connectivity', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
       });
 
       if (!response.ok) {
@@ -253,17 +230,8 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Testing API endpoints...');
       setProgress(10);
 
-      const authToken = await getAuthTokenOnce();
-      if (!authToken) {
-        throw new Error('Authentication token not available');
-      }
-
-      const response = await fetch(getApiUrl('/api/system-tests/api-endpoints'), {
+      const response = await apiFetch('/api/system-tests/api-endpoints', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
       });
 
       if (!response.ok) {
@@ -307,14 +275,8 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Gathering system metrics...');
       setProgress(10);
 
-      const authToken = await getAuthTokenOnce();
-
-      const response = await fetch(getApiUrl('/api/system-tests/system-performance'), {
+      const response = await apiFetch('/api/system-tests/system-performance', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
       });
 
       if (!response.ok) {
@@ -347,19 +309,13 @@ export const PerformanceTest: React.FC = () => {
     setProgress(0);
 
     try {
-      const authToken = await getAuthTokenOnce();
-
       // Step 1: Check speedtest-cli availability and install if needed
       showInfo('Preparing Network Test', 'Checking speed test dependencies...');
       setCurrentTest('Checking for speedtest-cli on host system...');
       setProgress(5);
 
-      const prepResponse = await fetch(getApiUrl('/api/system-tests/prepare-speedtest'), {
+      const prepResponse = await apiFetch('/api/system-tests/prepare-speedtest', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
       });
 
       if (!prepResponse.ok) {
@@ -391,12 +347,8 @@ export const PerformanceTest: React.FC = () => {
       setCurrentTest('Running download speed test (this may take 20-30 seconds)...');
       setProgress(50);
 
-      const response = await fetch(getApiUrl('/api/system-tests/network-speed'), {
+      const response = await apiFetch('/api/system-tests/network-speed', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
       });
 
       if (!response.ok) {

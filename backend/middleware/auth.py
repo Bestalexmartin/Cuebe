@@ -7,9 +7,9 @@ FastAPI dependencies for protecting routes:
   is_active plus the password-change invalidation check.
 - require_role(*roles): access-tier (AccessRole) gate factory.
 
-This is the Blok-style dependency. It is intentionally NOT yet wired into the
-existing Clerk routers; that swap is a later card. New routers (auth, sessions,
-audit) import from here.
+This is the authentication dependency for the whole app. The current-user
+dependency in routers/auth.py delegates here, so every router (auth, sessions,
+audit, and the original Cuebe routers) authenticates through this middleware.
 """
 
 from datetime import datetime, timezone

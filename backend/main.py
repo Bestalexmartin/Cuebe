@@ -23,7 +23,7 @@ except ImportError:
     RATE_LIMITING_ENABLED = False
 
 # Import routers
-from routers import users, crews, venues, departments, shows, webhooks, development, script_elements, show_sharing, script_import, docs_search, script_sync
+from routers import users, crews, venues, departments, shows, development, script_elements, show_sharing, script_import, docs_search, script_sync
 from routers import auth_blok, sessions as sessions_router, audit as audit_router
 from routers.auth import get_current_user
 from middleware.csrf import CsrfMiddleware
@@ -112,7 +112,6 @@ async def general_exception_handler(request: Request, exc: Exception):
 ENABLE_DEV_ROUTES = settings.dev_routes_enabled
 
 # Include all routers
-app.include_router(webhooks.router)     # Webhook endpoints at /api/webhooks/*
 app.include_router(users.router)        # User management at /api/users/*
 app.include_router(crews.router)        # Crew management at /api/me/crews, /api/crew/*
 app.include_router(venues.router)       # Venue management at /api/me/venues, /api/venues/*

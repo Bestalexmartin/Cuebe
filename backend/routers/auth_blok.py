@@ -5,9 +5,9 @@ Local email/password auth with HttpOnly cookies (bk_access / bk_refresh /
 bk_csrf), email verification, password reset, password change, and TOTP MFA.
 Single-tenant: every user gets org_id = INDIVIDUAL_ORG_ID and an AccessRole.
 
-Mounted at /api/auth. This is the Blok-style router; the legacy Clerk router
-(routers/auth.py) is unchanged and still backs the existing app routers. The
-cutover is a later card.
+Mounted at /api/auth. routers/auth.py now only re-exports the current-user
+dependency, which delegates to middleware/auth; the legacy Clerk verification
+has been removed.
 """
 
 import logging

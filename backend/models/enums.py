@@ -102,8 +102,8 @@ class LocationArea(str, enum.Enum):
 
 class UserStatus(str, enum.Enum):
     """User authentication status"""
-    GUEST = "GUEST"         # Created by someone else, no Clerk account
-    VERIFIED = "VERIFIED"   # Has Clerk account and can log in
+    GUEST = "GUEST"         # Created by someone else, no login credentials
+    VERIFIED = "VERIFIED"   # Has an account and can log in
 
 class ScriptStatus(str, enum.Enum):
     """Script workflow status"""
