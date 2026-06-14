@@ -1,7 +1,6 @@
 // App.tsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { SignedIn, SignedOut } from "@clerk/clerk-react";
 import { useDisclosure, Box } from '@chakra-ui/react';
 import Header from './components/layout/Header';
 import DashboardPage from './pages/DashboardPage';
@@ -21,13 +20,18 @@ import { SharedPage } from './shared/SharedPage';
 import { ExpiredSharePage } from './shared/components/ExpiredSharePage';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ScriptSyncProvider } from './contexts/ScriptSyncContext';
+import { useAuth } from './hooks/useAuth';
+import ProtectedRoute from './components/blok-017/ProtectedRoute';
+import RoleRoute from './components/blok-017/RoleRoute';
 
-const ProtectedRoute: React.FC<React.PropsWithChildren> = ({ children }) => (
-  <>
-    <SignedIn>{children}</SignedIn>
-    <SignedOut><Navigate to="/sign-in" replace /></SignedOut>
-  </>
-);
+// Auth-aware catch-all: authenticated users land on the dashboard; everyone
+// else is sent to the sign-in route. Replaces the old Clerk SignedIn/SignedOut
+// guard pair with the Blok 017 auth state.
+const CatchAllRedirect: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null;
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/sign-in'} replace />;
+};
 
 // Layout used for “everything except shared/*”
 const Shell: React.FC<{ isMenuOpen: boolean; onMenuOpen: () => void; onMenuClose: () => void; }> = ({ isMenuOpen, onMenuOpen, onMenuClose }) => (
@@ -47,18 +51,13 @@ const Shell: React.FC<{ isMenuOpen: boolean; onMenuOpen: () => void; onMenuClose
         <Route path="/venues/:venueId/edit" element={<ProtectedRoute><EditVenuePage /></ProtectedRoute>} />
         <Route path="/departments/:departmentId/edit" element={<ProtectedRoute><EditDepartmentPage /></ProtectedRoute>} />
         <Route path="/crew/:crewId/edit" element={<ProtectedRoute><EditCrewPage /></ProtectedRoute>} />
-        <Route path="/test-tools" element={<ProtectedRoute><TestToolsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} /></ProtectedRoute>} />
+        <Route path="/test-tools" element={<RoleRoute allowedRoles={['SUPER_ADMIN', 'ADMIN']}><TestToolsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} /></RoleRoute>} />
         <Route path="/api-documentation" element={<ProtectedRoute><ApiDocsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} /></ProtectedRoute>} />
         <Route path="/documentation" element={<ProtectedRoute><DocumentationPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} /></ProtectedRoute>} />
         <Route path="/tutorials" element={<ProtectedRoute><TutorialsPage isMenuOpen={isMenuOpen} onMenuClose={onMenuClose} /></ProtectedRoute>} />
 
         {/* Catch-all inside shell */}
-        <Route path="*" element={
-          <>
-            <SignedIn><Navigate to="/dashboard" replace /></SignedIn>
-            <SignedOut><Navigate to="/sign-in" replace /></SignedOut>
-          </>
-        } />
+        <Route path="*" element={<CatchAllRedirect />} />
       </Routes>
     </Box>
   </Box>
