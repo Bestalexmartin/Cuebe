@@ -6,7 +6,7 @@ import {
     FormControl, FormLabel, Input, Button
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from '@clerk/clerk-react';
+import { useApiFetch } from '../../../hooks/useApiFetch';
 import { useDepartment } from "../hooks/useDepartment";
 import { formatRoleBadge } from '../../../constants/userRoles';
 import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm';
@@ -20,7 +20,6 @@ import { CrewBioModal } from '../../shows/components/modals/CrewBioModal';
 import { FloatingValidationErrorPanel } from '../../../components/base/FloatingValidationErrorPanel';
 import { EditPageFormField } from '../../../components/base/EditPageFormField';
 import { ResponsiveAssignmentList } from '../../../components/base/ResponsiveAssignmentList';
-import { getApiUrl } from '../../../config/api';
 
 // TypeScript interfaces
 interface DepartmentFormData {
@@ -58,7 +57,7 @@ const PRESET_COLORS: PresetColor[] = [
 export const EditDepartmentPage: React.FC = () => {
     const { departmentId } = useParams<{ departmentId: string }>();
     const navigate = useNavigate();
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
     const { showSuccess, showError } = useEnhancedToast();
 
     // Delete confirmation modal state
@@ -185,12 +184,8 @@ export const EditDepartmentPage: React.FC = () => {
 
         setIsDeleting(true);
         try {
-            const token = await getToken();
-            const response = await fetch(getApiUrl(`/api/departments/${departmentId}`), {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const response = await apiFetch(`/api/departments/${departmentId}`, {
+                method: 'DELETE'
             });
 
             if (!response.ok) {
@@ -252,16 +247,9 @@ export const EditDepartmentPage: React.FC = () => {
         if (!selectedCrewMember?.assignment_id || !selectedCrewMember?.show_id || !selectedCrewMember?.user_id) return;
         
         try {
-            const token = await getToken();
-            if (!token) return;
-            
             // Force refresh the share token
-            const response = await fetch(getApiUrl(`/api/shows/${selectedCrewMember.show_id}/crew/${selectedCrewMember.user_id}/share?force_refresh=true`), {
+            const response = await apiFetch(`/api/shows/${selectedCrewMember.show_id}/crew/${selectedCrewMember.user_id}/share?force_refresh=true`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
             });
 
             if (response.ok) {
@@ -281,7 +269,7 @@ export const EditDepartmentPage: React.FC = () => {
             console.error('Error refreshing link:', error);
             showError("Failed to refresh sharing link. Please try again.");
         }
-    }, [selectedCrewMember, getToken, showSuccess, showError]);
+    }, [selectedCrewMember, apiFetch, showSuccess, showError]);
 
     // Configure actions menu
     const actions: ActionItem[] = [

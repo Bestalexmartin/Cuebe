@@ -5,7 +5,7 @@ import {
     VStack, HStack, Text, Spinner, Flex
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from '@clerk/clerk-react';
+import { useApiFetch } from '../../../hooks/useApiFetch';
 import { useVenue } from "../hooks/useVenue";
 import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm';
 import { BaseEditPage } from '../../../components/base/BaseEditPage';
@@ -16,7 +16,6 @@ import { ErrorBoundary } from '../../../components/ErrorBoundary';
 import { useChangeDetection } from '../../../hooks/useChangeDetection';
 import { FloatingValidationErrorPanel } from '../../../components/base/FloatingValidationErrorPanel';
 import { EditPageFormField } from '../../../components/base/EditPageFormField';
-import { getApiUrl } from '../../../config/api';
 
 // TypeScript interfaces
 interface VenueFormData {
@@ -74,7 +73,7 @@ const VENUE_TYPE_OPTIONS: VenueTypeOption[] = [
 export const EditVenuePage: React.FC = () => {
     const { venueId } = useParams<{ venueId: string }>();
     const navigate = useNavigate();
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
     const { showSuccess, showError } = useEnhancedToast();
 
     // Delete confirmation modal state
@@ -225,12 +224,8 @@ export const EditVenuePage: React.FC = () => {
 
         setIsDeleting(true);
         try {
-            const token = await getToken();
-            const response = await fetch(getApiUrl(`/api/venues/${venueId}`), {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+            const response = await apiFetch(`/api/venues/${venueId}`, {
+                method: 'DELETE'
             });
 
             if (!response.ok) {

@@ -1,7 +1,7 @@
 // frontend/src/utils/saveScript.ts
 
 import { EditOperation } from '../features/script/types/editQueue';
-import { getApiUrl } from '../config/api';
+import { apiFetch } from '../services/apiFetch';
 
 export interface SaveScriptParams {
   scriptId: string;
@@ -19,11 +19,6 @@ export const saveScript = async ({
   onError
 }: SaveScriptParams): Promise<boolean> => {
   try {
-    const token = await getToken();
-    if (!token) {
-      throw new Error("Authentication token not available");
-    }
-
     const requestBody = {
       operations: operations.map(op => {
         return {
@@ -89,12 +84,9 @@ export const saveScript = async ({
       })
     };
     
-    const response = await fetch(getApiUrl(`api/scripts/${scriptId}`), {
+    const response = await apiFetch(`api/scripts/${scriptId}`, {
+      getToken,
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify(requestBody)
     });
 

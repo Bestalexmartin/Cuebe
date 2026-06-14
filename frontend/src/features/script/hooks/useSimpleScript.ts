@@ -1,8 +1,7 @@
 // frontend/src/features/script/hooks/useScript.ts
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from '@clerk/clerk-react';
-import { getApiUrl } from '../../../config/api';
+import { useApiFetch } from '../../../hooks/useApiFetch';
 
 // TypeScript interfaces
 interface Script {
@@ -32,7 +31,7 @@ interface UseScriptOptions {
 }
 
 export const useScript = (scriptId: string | undefined, options?: UseScriptOptions): UseScriptReturn => {
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
     const [script, setScript] = useState<Script | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -44,16 +43,8 @@ export const useScript = (scriptId: string | undefined, options?: UseScriptOptio
         setError(null);
         
         try {
-            // Use bearer token authentication
-            const token = await getToken();
-            if (!token) {
-                setIsLoading(false);
-                return;
-            }
-            const response = await fetch(getApiUrl(`/api/scripts/${scriptId}`), {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
+            const response = await apiFetch(`/api/scripts/${scriptId}`);
+
             if (!response.ok) {
                 throw new Error('Failed to fetch script data.');
             }
@@ -68,7 +59,7 @@ export const useScript = (scriptId: string | undefined, options?: UseScriptOptio
         } finally {
             setIsLoading(false);
         }
-    }, [scriptId, getToken]);
+    }, [scriptId, apiFetch]);
 
     useEffect(() => {
         fetchScript();

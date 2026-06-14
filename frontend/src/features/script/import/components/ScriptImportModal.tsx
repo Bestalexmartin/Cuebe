@@ -1,8 +1,7 @@
 // frontend/src/features/script/import/components/ScriptImportModal.tsx
 
 import React, { useState, useCallback, useRef } from 'react';
-import { useAuth } from '@clerk/clerk-react';
-import { getApiUrl } from '../../../../config/api';
+import { useApiFetch } from '../../../../hooks/useApiFetch';
 import {
   VStack,
   HStack,
@@ -66,7 +65,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
   initialScriptName
 }) => {
   const { showSuccess, showError } = useEnhancedToast();
-  const { getToken } = useAuth();
+  const apiFetch = useApiFetch();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useBreakpointValue({ base: true, md: false });
 
@@ -170,12 +169,7 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
     if (isOpen) {
       const fetchDepartments = async () => {
         try {
-          const token = await getToken();
-          const response = await fetch(getApiUrl('/api/me/departments'), {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
+          const response = await apiFetch('/api/me/departments');
           if (response.ok) {
             const departments = await response.json();
             setExistingDepartments(departments);
@@ -359,12 +353,8 @@ export const ScriptImportModal: React.FC<ScriptImportModalProps> = ({
 
       // Dev-only logs removed
 
-      const response = await fetch(getApiUrl('/api/scripts/import'), {
+      const response = await apiFetch('/api/scripts/import', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await getToken()}`
-        },
         body: JSON.stringify(importRequest)
       });
 

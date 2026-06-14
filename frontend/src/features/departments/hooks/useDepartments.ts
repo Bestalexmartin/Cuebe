@@ -1,8 +1,7 @@
 // frontend/src/features/departments/hooks/useDepartments.ts
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from '@clerk/clerk-react';
-import { getApiUrl } from '../../../config/api';
+import { useApiFetch } from '../../../hooks/useApiFetch';
 
 // TypeScript interfaces
 interface DepartmentCrewAssignment {
@@ -38,7 +37,7 @@ interface UseDepartmentsReturn {
 }
 
 export const useDepartments = (): UseDepartmentsReturn => {
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
     const [departments, setDepartments] = useState<Department[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -48,12 +47,7 @@ export const useDepartments = (): UseDepartmentsReturn => {
             setIsLoading(true);
             setError(null);
 
-            const token = await getToken();
-            const response = await fetch(getApiUrl('/api/me/departments'), {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const response = await apiFetch('/api/me/departments');
 
             if (!response.ok) {
                 if (response.status === 404) {
@@ -74,7 +68,7 @@ export const useDepartments = (): UseDepartmentsReturn => {
         } finally {
             setIsLoading(false);
         }
-    }, [getToken]);
+    }, [apiFetch]);
 
     const refetchDepartments = () => {
         fetchDepartments();

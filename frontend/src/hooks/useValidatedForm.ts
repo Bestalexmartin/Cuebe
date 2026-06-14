@@ -1,10 +1,9 @@
 // frontend/src/hooks/useValidatedForm.ts
 
 import { useState, useCallback, useMemo } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useApiFetch } from './useApiFetch';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { useErrorHandler } from './useErrorHandler';
-import { getApiUrl } from '../config/api';
 import {
   FormValidationConfig,
   ValidationErrors,
@@ -72,7 +71,7 @@ export const useValidatedForm = <T extends FormData>(
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
 
-  const { getToken } = useAuth();
+  const apiFetch = useApiFetch();
   const { showSuccess, showError } = useEnhancedToast();
   const { handleError } = useErrorHandler();
 
@@ -203,19 +202,10 @@ export const useValidatedForm = <T extends FormData>(
         throw new Error('Form validation failed');
       }
 
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication token not available');
-      }
-
       const dataToSubmit = customData || formData;
 
-      const response = await fetch(getApiUrl(endpoint), {
+      const response = await apiFetch(endpoint, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
         body: JSON.stringify(dataToSubmit)
       });
 
@@ -262,7 +252,7 @@ export const useValidatedForm = <T extends FormData>(
     } finally {
       setIsSubmitting(false);
     }
-  }, [formData, validate, getToken, showSuccess, showError, handleError, showFieldErrorsInToast]);
+  }, [formData, validate, apiFetch, showSuccess, showError, handleError, showFieldErrorsInToast]);
 
   // Reset form
   const resetForm = useCallback(() => {

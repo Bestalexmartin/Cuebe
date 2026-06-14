@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useApiFetch } from './useApiFetch';
 
 interface SearchResult {
   file_path: string;
@@ -27,7 +27,7 @@ export const useDocumentSearch = (contentType?: 'tutorial' | 'documentation'): U
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const { getToken } = useAuth();
+  const apiFetch = useApiFetch();
 
   const handleSearch = async (query: string, onClearState?: () => void) => {
     if (!query.trim()) {
@@ -44,19 +44,13 @@ export const useDocumentSearch = (contentType?: 'tutorial' | 'documentation'): U
     setIsSearching(true);
     
     try {
-      const headers: Record<string, string> = {};
-      const authToken = await getToken();
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-
       // Build API URL with content_type parameter if specified
       let apiUrl = `/api/docs/search?q=${encodeURIComponent(query)}`;
       if (contentType) {
         apiUrl += `&content_type=${contentType}`;
       }
-      
-      const response = await fetch(apiUrl, { headers });
+
+      const response = await apiFetch(apiUrl, {});
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }

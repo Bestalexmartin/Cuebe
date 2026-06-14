@@ -1,8 +1,7 @@
 // frontend/src/features/shows/hooks/useShow.ts
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from '@clerk/clerk-react';
-import { getApiUrl } from '../../../config/api';
+import { useApiFetch } from '../../../hooks/useApiFetch';
 
 // TypeScript interfaces
 interface Venue {
@@ -54,7 +53,7 @@ interface UseShowReturn {
 }
 
 export const useShow = (showId: string | undefined): UseShowReturn => {
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
     const [show, setShow] = useState<Show | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -64,15 +63,7 @@ export const useShow = (showId: string | undefined): UseShowReturn => {
         
         setIsLoading(true);
         try {
-            const token = await getToken();
-            if (!token) {
-                setIsLoading(false);
-                return;
-            }
-            
-            const response = await fetch(getApiUrl(`/api/shows/${showId}`), {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const response = await apiFetch(`/api/shows/${showId}`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch show data.');
@@ -85,7 +76,7 @@ export const useShow = (showId: string | undefined): UseShowReturn => {
         } finally {
             setIsLoading(false);
         }
-    }, [showId, getToken]);
+    }, [showId, apiFetch]);
 
     useEffect(() => {
         fetchShow();

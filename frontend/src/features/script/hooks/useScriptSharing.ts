@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { ScriptMode } from './useScriptModes';
-import { getApiUrl } from '../../../config/api';
+import { useApiFetch } from '../../../hooks/useApiFetch';
 
 interface UseScriptSharingProps {
     scriptId: string | undefined;
@@ -18,7 +18,6 @@ interface UseScriptSharingProps {
 
 export const useScriptSharing = ({
     scriptId,
-    getToken,
     modalState,
     modalNames,
     setActiveMode,
@@ -29,22 +28,16 @@ export const useScriptSharing = ({
     showSuccess,
     showError
 }: UseScriptSharingProps) => {
+    const apiFetch = useApiFetch();
 
     const handleShareConfirm = useCallback(async () => {
         if (!scriptId) return;
 
         setIsSharing(true);
         try {
-            const token = await getToken();
-            if (!token) throw new Error('Authentication required');
-
             // Update script to set is_shared = true
-            const response = await fetch(getApiUrl(`/api/scripts/${scriptId}`), {
+            const response = await apiFetch(`/api/scripts/${scriptId}`, {
                 method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({ is_shared: true }),
             });
 
@@ -62,7 +55,7 @@ export const useScriptSharing = ({
         } finally {
             setIsSharing(false);
         }
-    }, [scriptId, getToken, modalState, modalNames, setActiveMode, setIsSharing, setIsScriptShared, showSuccess, showError]);
+    }, [scriptId, apiFetch, modalState, modalNames, setActiveMode, setIsSharing, setIsScriptShared, showSuccess, showError]);
 
     const handleInitialHideConfirm = useCallback(() => {
         modalState.closeModal(modalNames.HIDE_SCRIPT);
@@ -74,16 +67,9 @@ export const useScriptSharing = ({
 
         setIsHiding(true);
         try {
-            const token = await getToken();
-            if (!token) throw new Error('Authentication required');
-
             // Update script to set is_shared = false
-            const response = await fetch(getApiUrl(`/api/scripts/${scriptId}`), {
+            const response = await apiFetch(`/api/scripts/${scriptId}`, {
                 method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify({ is_shared: false }),
             });
 
@@ -102,7 +88,7 @@ export const useScriptSharing = ({
         } finally {
             setIsHiding(false);
         }
-    }, [scriptId, getToken, modalState, modalNames, setActiveMode, setIsHiding, setIsScriptShared, setShareCount, showSuccess, showError]);
+    }, [scriptId, apiFetch, modalState, modalNames, setActiveMode, setIsHiding, setIsScriptShared, setShareCount, showSuccess, showError]);
 
     const handleHideCancel = useCallback(() => {
         modalState.closeModal(modalNames.HIDE_SCRIPT);

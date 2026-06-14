@@ -1,9 +1,8 @@
 // frontend/src/hooks/useUserOptions.ts
 
 import { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useApiFetch } from './useApiFetch';
 import { useEnhancedToast } from '../utils/toastUtils';
-import { getApiUrl } from '../config/api';
 
 export interface UserOptions {
     colorizeDepNames: boolean;
@@ -47,7 +46,7 @@ const loadOptionsFromStorage = (): UserOptions | null => {
 };
 
 export const useUserOptions = () => {
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
     const { showError } = useEnhancedToast();
     
     // Initialize with localStorage or defaults
@@ -61,15 +60,8 @@ export const useUserOptions = () => {
     useEffect(() => {
         const loadOptions = async () => {
             try {
-                const token = await getToken();
-                if (!token) {
-                    setIsLoading(false);
-                    return;
-                }
-
-                const response = await fetch(getApiUrl('/api/users/options'), {
+                const response = await apiFetch('/api/users/options', {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 });
@@ -102,7 +94,7 @@ export const useUserOptions = () => {
         };
 
         loadOptions();
-    }, [getToken]);
+    }, [apiFetch]);
 
     // Update specific option
     const updateOption = async <K extends keyof UserOptions>(
@@ -118,21 +110,11 @@ export const useUserOptions = () => {
         saveOptionsToStorage(updatedOptions);
         
         setIsSaving(true);
-        
-        try {
-            const token = await getToken();
-            if (!token) {
-                showError('Authentication required');
-                // Revert local changes on error
-                setOptions(previousOptions);
-                saveOptionsToStorage(previousOptions);
-                return false;
-            }
 
-            const response = await fetch(getApiUrl('/api/users/options'), {
+        try {
+            const response = await apiFetch('/api/users/options', {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ [key]: value })
@@ -175,21 +157,11 @@ export const useUserOptions = () => {
         saveOptionsToStorage(updatedOptions);
         
         setIsSaving(true);
-        
-        try {
-            const token = await getToken();
-            if (!token) {
-                showError('Authentication required');
-                // Revert local changes on error
-                setOptions(previousOptions);
-                saveOptionsToStorage(previousOptions);
-                return false;
-            }
 
-            const response = await fetch(getApiUrl('/api/users/options'), {
+        try {
+            const response = await apiFetch('/api/users/options', {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(newOptions)

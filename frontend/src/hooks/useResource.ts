@@ -1,8 +1,8 @@
 // frontend/src/hooks/useResource.ts
 
 import { useState, useEffect, useMemo } from 'react';
-import { useAuth } from '@clerk/clerk-react';
 import { useEnhancedToast } from '../utils/toastUtils';
+import { useApiFetch } from './useApiFetch';
 
 // TypeScript interfaces
 interface UseResourceOptions {
@@ -24,7 +24,7 @@ export const useResource = <T = any>(
     const [data, setData] = useState<T[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
     const { showError } = useEnhancedToast();
 
     const {
@@ -36,16 +36,7 @@ export const useResource = <T = any>(
         setError(null);
 
         try {
-            const token = await getToken();
-            if (!token) {
-                throw new Error('Authentication token not available');
-            }
-
-            const response = await fetch(endpoint, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const response = await apiFetch(endpoint);
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch ${endpoint}`);
@@ -64,17 +55,8 @@ export const useResource = <T = any>(
 
     const createResource = async (resourceData: Partial<T>): Promise<T> => {
         try {
-            const token = await getToken();
-            if (!token) {
-                throw new Error('Authentication token not available');
-            }
-            
-            const response = await fetch(endpoint, {
+            const response = await apiFetch(endpoint, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify(resourceData)
             });
 

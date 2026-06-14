@@ -19,9 +19,8 @@ import { BaseModal } from '../../../../components/base/BaseModal';
 import { CrewMember } from '../../types/crewAssignments';
 import { formatRole } from '../../../../constants/userRoles';
 import { AppIcon } from '../../../../components/AppIcon';
-import { useAuth } from '@clerk/clerk-react';
+import { useApiFetch } from '../../../../hooks/useApiFetch';
 import { useEnhancedToast } from '../../../../utils/toastUtils';
-import { getApiUrl } from '../../../../config/api';
 
 interface CrewBioModalProps {
   isOpen: boolean;
@@ -38,7 +37,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
   showId,
   onShareUrlRefresh
 }) => {
-  const { getToken } = useAuth();
+  const apiFetch = useApiFetch();
   const { showSuccess, showError } = useEnhancedToast();
 
   const getFullName = (): string => {
@@ -72,17 +71,8 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
       const getShareUrl = async () => {
         setIsLoadingShare(true);
         try {
-          const token = await getToken();
-          if (!token) {
-            return;
-          }
-
-          const response = await fetch(getApiUrl(`/api/shows/${showId}/crew/${crewMember.user_id}/share`), {
+          const response = await apiFetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
             method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
           });
 
           if (response.ok) {
@@ -99,7 +89,7 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
 
       getShareUrl();
     }
-  }, [isOpen, showId, crewMember, getToken]);
+  }, [isOpen, showId, crewMember, apiFetch]);
 
   const { onCopy, hasCopied } = useClipboard(shareUrl);
 
@@ -115,33 +105,17 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
       if (onShareUrlRefresh) {
         await onShareUrlRefresh();
         // After external refresh, fetch the updated share URL for display
-        const token = await getToken();
-        if (token) {
-          const response = await fetch(getApiUrl(`/api/shows/${showId}/crew/${crewMember.user_id}/share`), {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          if (response.ok) {
-            const shareData = await response.json();
-            setShareUrl(`${window.location.origin}${shareData.share_url}`);
-          }
+        const response = await apiFetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
+          method: 'POST',
+        });
+        if (response.ok) {
+          const shareData = await response.json();
+          setShareUrl(`${window.location.origin}${shareData.share_url}`);
         }
       } else {
         // Fallback: handle refresh internally (for Edit Department/Crew pages)
-        const token = await getToken();
-        if (!token) {
-          throw new Error('Authentication token not available');
-        }
-
-        const response = await fetch(getApiUrl(`/api/shows/${showId}/crew/${crewMember.user_id}/share?force_refresh=true`), {
+        const response = await apiFetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share?force_refresh=true`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
         });
 
         if (!response.ok) {

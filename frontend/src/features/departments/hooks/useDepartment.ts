@@ -1,8 +1,7 @@
 // frontend/src/features/departments/hooks/useDepartment.ts
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from '@clerk/clerk-react';
-import { getApiUrl } from '../../../config/api';
+import { useApiFetch } from '../../../hooks/useApiFetch';
 
 // TypeScript interfaces
 interface DepartmentCrewAssignment {
@@ -43,7 +42,7 @@ interface UseDepartmentReturn {
 }
 
 export const useDepartment = (departmentId: string | undefined): UseDepartmentReturn => {
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
     const [department, setDepartment] = useState<Department | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -53,16 +52,8 @@ export const useDepartment = (departmentId: string | undefined): UseDepartmentRe
         
         setIsLoading(true);
         try {
-            const token = await getToken();
-            if (!token) {
-                setIsLoading(false);
-                return;
-            }
-            
             // Use the enhanced departments endpoint that includes crew assignments
-            const response = await fetch(getApiUrl('/api/me/departments'), {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const response = await apiFetch('/api/me/departments');
 
             if (!response.ok) {
                 throw new Error('Failed to fetch department data.');
@@ -81,7 +72,7 @@ export const useDepartment = (departmentId: string | undefined): UseDepartmentRe
         } finally {
             setIsLoading(false);
         }
-    }, [departmentId, getToken]);
+    }, [departmentId, apiFetch]);
 
     useEffect(() => {
         fetchDepartment();

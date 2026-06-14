@@ -1,8 +1,7 @@
 // frontend/src/features/venues/hooks/useVenue.ts
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from '@clerk/clerk-react';
-import { getApiUrl } from '../../../config/api';
+import { useApiFetch } from '../../../hooks/useApiFetch';
 
 // TypeScript interfaces
 interface Venue {
@@ -34,7 +33,7 @@ interface UseVenueReturn {
 }
 
 export const useVenue = (venueId: string | undefined): UseVenueReturn => {
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
     const [venue, setVenue] = useState<Venue | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -44,15 +43,7 @@ export const useVenue = (venueId: string | undefined): UseVenueReturn => {
         
         setIsLoading(true);
         try {
-            const token = await getToken();
-            if (!token) {
-                setIsLoading(false);
-                return;
-            }
-            
-            const response = await fetch(getApiUrl(`/api/venues/${venueId}`), {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const response = await apiFetch(`/api/venues/${venueId}`);
 
             if (!response.ok) {
                 throw new Error('Failed to fetch venue data.');
@@ -65,7 +56,7 @@ export const useVenue = (venueId: string | undefined): UseVenueReturn => {
         } finally {
             setIsLoading(false);
         }
-    }, [venueId, getToken]);
+    }, [venueId, apiFetch]);
 
     useEffect(() => {
         fetchVenue();

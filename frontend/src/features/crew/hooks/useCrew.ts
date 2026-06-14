@@ -1,8 +1,7 @@
 // frontend/src/features/crew/hooks/useCrew.ts
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useAuth } from "@clerk/clerk-react";
-import { getApiUrl } from '../../../config/api';
+import { useApiFetch } from "../../../hooks/useApiFetch";
 
 
 // TypeScript interfaces
@@ -49,7 +48,7 @@ interface UseCrewReturn {
 }
 
 export const useCrew = (crewId: string | undefined, autoFetch: boolean = true): UseCrewReturn => {
-  const { getToken } = useAuth();
+  const apiFetch = useApiFetch();
   const [crew, setCrew] = useState<Crew | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(autoFetch);
   const [error, setError] = useState<string | null>(null);
@@ -60,15 +59,7 @@ export const useCrew = (crewId: string | undefined, autoFetch: boolean = true): 
     setIsLoading(true);
     setError(null);
     try {
-      const token = await getToken();
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-
-      const response = await fetch(getApiUrl(`/api/crew/${crewId}/assignments`), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiFetch(`/api/crew/${crewId}/assignments`);
 
       if (!response.ok) {
         throw new Error("Failed to fetch crew data.");
@@ -82,7 +73,7 @@ export const useCrew = (crewId: string | undefined, autoFetch: boolean = true): 
     } finally {
       setIsLoading(false);
     }
-  }, [crewId, getToken]);
+  }, [crewId, apiFetch]);
 
   useEffect(() => {
     if (autoFetch) {

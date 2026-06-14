@@ -1,7 +1,7 @@
 // frontend/src/pages/TestToolsPage.tsx
 
 import React, { useState } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useApiFetch } from '../hooks/useApiFetch';
 import { ToastTest } from '../components/test-tools/ToastTest';
 import { FormValidationTest } from '../components/test-tools/FormValidationTest';
 import { ErrorBoundaryTest } from '../components/test-tools/ErrorBoundaryTest';
@@ -15,7 +15,6 @@ import { BaseUtilityPage } from '../components/base/BaseUtilityPage';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { TestResultsDisplay, TestResult } from '../components/shared/TestResultsDisplay';
 import { TestCardWrapper } from '../components/shared/TestCardWrapper';
-import { getApiUrl } from '../config/api';
 
 
 interface TestToolsPageProps {
@@ -25,7 +24,7 @@ interface TestToolsPageProps {
 
 export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenuClose }) => {
   const { showSuccess, showError, showInfo } = useEnhancedToast();
-  const { getToken } = useAuth();
+  const apiFetch = useApiFetch();
 
   // Initialize with session storage or default to 'environment'
   const [selectedTest, setSelectedTest] = useState<string>(() => {
@@ -124,17 +123,8 @@ export const TestToolsPage: React.FC<TestToolsPageProps> = ({ isMenuOpen, onMenu
     try {
       showInfo('Running Tests', `Starting ${testSuite} test suite...`);
 
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication token not available');
-      }
-      
-      const response = await fetch(getApiUrl(`/api/dev/run-tests?test_suite=${testSuite}`), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await apiFetch(`/api/dev/run-tests?test_suite=${testSuite}`, {
+        method: 'POST'
       });
 
       if (!response.ok) {

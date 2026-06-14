@@ -23,8 +23,7 @@ import { DeleteConfirmationModal } from '../../../components/modals/DeleteConfir
 import { ActionsMenu, ActionItem } from '../../../components/ActionsMenu';
 import { useEnhancedToast } from '../../../utils/toastUtils';
 import { formatRole, formatRoleBadge, getShareUrlSuffix } from '../../../constants/userRoles';
-import { getApiUrl } from '../../../config/api';
-import { useAuth } from '@clerk/clerk-react';
+import { useApiFetch } from '../../../hooks/useApiFetch';
 
 interface CrewAssignmentSectionProps {
   showId: string;
@@ -38,7 +37,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
   onAssignmentsChange
 }) => {
   const { showSuccess, showError } = useEnhancedToast();
-  const { getToken } = useAuth();
+  const apiFetch = useApiFetch();
   const [selectedAssignments, setSelectedAssignments] = useState<Set<string>>(new Set());
   const [shareTokens, setShareTokens] = useState<Map<string, string>>(new Map()); // user_id -> share_token
   const [recentlyRefreshedTokens, setRecentlyRefreshedTokens] = useState<Set<string>>(new Set()); // user_ids that were recently refreshed
@@ -68,11 +67,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       }
       
       try {
-        const token = await getToken();
-        if (!token) {
-          return;
-        }
-        
         const tokenMap = new Map<string, string>();
         
         // Fetch share tokens for each unique crew member in saved assignments only
@@ -82,14 +76,10 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
         await Promise.all(
           uniqueUserIds.map(async (userId) => {
             try {
-              const response = await fetch(getApiUrl(`/api/shows/${showId}/crew/${userId}/share`), {
+              const response = await apiFetch(`/api/shows/${showId}/crew/${userId}/share`, {
                 method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
               });
-              
+
               if (response.ok) {
                 const shareData = await response.json();
                 tokenMap.set(userId, shareData.share_token);
@@ -118,23 +108,14 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
     };
     
     fetchShareTokens();
-  }, [assignments, crews, showId, getToken, recentlyRefreshedTokens]);
+  }, [assignments, crews, showId, apiFetch, recentlyRefreshedTokens]);
 
 
   // Handle crew assignment from modal - call API immediately
   const handleCrewAssignment = useCallback(async (department: Department, crewMember: CrewMember, role?: string) => {
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication token not available');
-      }
-
-      const response = await fetch(getApiUrl(`/api/shows/${showId}/crew-assignments`), {
+      const response = await apiFetch(`/api/shows/${showId}/crew-assignments`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           user_id: crewMember.user_id,
           department_id: department.department_id,
@@ -163,14 +144,10 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       
       // Immediately fetch share token for the new assignment
       try {
-        const shareResponse = await fetch(getApiUrl(`/api/shows/${showId}/crew/${crewMember.user_id}/share`), {
+        const shareResponse = await apiFetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
         });
-        
+
         if (shareResponse.ok) {
           const shareData = await shareResponse.json();
           setShareTokens(prev => new Map(prev).set(crewMember.user_id, shareData.share_token));
@@ -188,7 +165,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       console.error('Failed to create crew assignment:', error);
       showError(`Failed to assign crew member: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, [assignments, onAssignmentsChange, showId, getToken, showSuccess, showError, setShareTokens]);
+  }, [assignments, onAssignmentsChange, showId, apiFetch, showSuccess, showError, setShareTokens]);
 
   // Handle row selection (single select only)
   const handleRowSelect = useCallback((id: string) => {
@@ -226,17 +203,8 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
     }
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication token not available');
-      }
-
-      
-      const response = await fetch(getApiUrl(`/api/crew-assignments/${assignmentId}`), {
+      const response = await apiFetch(`/api/crew-assignments/${assignmentId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
 
       if (!response.ok) {
@@ -271,7 +239,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       showError(`Failed to delete assignment: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsDeleteModalOpen(false);
     }
-  }, [selectedAssignments, assignments, onAssignmentsChange, showSuccess, showError, getToken, setShareTokens]);
+  }, [selectedAssignments, assignments, onAssignmentsChange, showSuccess, showError, apiFetch, setShareTokens]);
 
   // Handle delete modal close
   const handleDeleteCancel = useCallback(() => {
@@ -292,18 +260,9 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
   // Unified refresh link method - can be called from menu or modal
   const handleRefreshLink = useCallback(async (userId: string) => {
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication token not available');
-      }
-
       // Refresh the show-level share (generates new token)
-      const response = await fetch(getApiUrl(`/api/shows/${showId}/crew/${userId}/share?force_refresh=true`), {
+      const response = await apiFetch(`/api/shows/${showId}/crew/${userId}/share?force_refresh=true`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
       });
 
       if (!response.ok) {
@@ -339,7 +298,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       console.error('Error refreshing link:', error);
       showError("Failed to refresh sharing link. Please try again.");
     }
-  }, [showId, getToken, showSuccess, showError]);
+  }, [showId, apiFetch, showSuccess, showError]);
 
   // Handle share URL refresh from CrewBioModal
   const handleShareUrlRefreshFromModal = useCallback(async () => {
@@ -384,18 +343,8 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
     }
 
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error('Authentication token not available');
-      }
-
-      
-      const response = await fetch(getApiUrl(`/api/crew-assignments/${selectedAssignmentForEdit.id}`), {
+      const response = await apiFetch(`/api/crew-assignments/${selectedAssignmentForEdit.id}`, {
         method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           show_role: newRole
         }),
@@ -424,7 +373,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       console.error('Failed to update role:', error);
       showError(`Failed to update role: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, [selectedAssignmentForEdit, assignments, onAssignmentsChange, showSuccess, showError, getToken]);
+  }, [selectedAssignmentForEdit, assignments, onAssignmentsChange, showSuccess, showError, apiFetch]);
 
   const hasExactlyOneSelection = selectedAssignments.size === 1;
 

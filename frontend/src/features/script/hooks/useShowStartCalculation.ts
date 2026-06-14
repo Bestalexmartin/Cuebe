@@ -1,8 +1,7 @@
 // frontend/src/features/script/hooks/useShowStartCalculation.ts
 
 import { useState, useCallback, useMemo } from 'react';
-import { useAuth } from '@clerk/clerk-react';
-import { getApiUrl } from '../../../config/api';
+import { useApiFetch } from '../../../hooks/useApiFetch';
 
 interface UseShowStartCalculationReturn {
     isCalculating: boolean;
@@ -15,7 +14,7 @@ export const useShowStartCalculation = (
 ): UseShowStartCalculationReturn => {
     const [isCalculating, setIsCalculating] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
 
     const calculateShowStartDuration = useCallback(async () => {
         if (!scriptId) {
@@ -26,17 +25,8 @@ export const useShowStartCalculation = (
         setError(null);
 
         try {
-            const token = await getToken();
-            if (!token) {
-                throw new Error('Authentication token not available');
-            }
-
-            const response = await fetch(getApiUrl(`/api/scripts/${scriptId}/calculate-show-start-duration`), {
+            const response = await apiFetch(`/api/scripts/${scriptId}/calculate-show-start-duration`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
             });
 
             if (!response.ok) {
@@ -50,7 +40,7 @@ export const useShowStartCalculation = (
         } finally {
             setIsCalculating(false);
         }
-    }, [scriptId, getToken]);
+    }, [scriptId, apiFetch]);
 
     return useMemo(() => ({
         isCalculating,

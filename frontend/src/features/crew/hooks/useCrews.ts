@@ -1,8 +1,7 @@
 // frontend/src/features/crew/hooks/useCrews.ts
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useAuth } from "@clerk/clerk-react";
-import { getApiUrl } from "../../../config/api";
+import { useApiFetch } from "../../../hooks/useApiFetch";
 
 // TypeScript interfaces
 interface CrewMember {
@@ -30,7 +29,7 @@ interface UseCrewsReturn {
 }
 
 export const useCrews = (): UseCrewsReturn => {
-  const { getToken } = useAuth();
+  const apiFetch = useApiFetch();
   const [crews, setCrews] = useState<CrewMember[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,12 +39,7 @@ export const useCrews = (): UseCrewsReturn => {
       setIsLoading(true);
       setError(null);
 
-      const token = await getToken();
-      const response = await fetch(getApiUrl("/api/me/crews"), {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await apiFetch("/api/me/crews");
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -67,7 +61,7 @@ export const useCrews = (): UseCrewsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [getToken]);
+  }, [apiFetch]);
 
   const refetchCrews = () => {
     fetchCrews();

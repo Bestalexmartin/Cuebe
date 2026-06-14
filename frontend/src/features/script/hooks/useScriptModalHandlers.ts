@@ -2,10 +2,9 @@
 
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@clerk/clerk-react";
 import { useEnhancedToast } from "../../../utils/toastUtils";
 import { useDashboardNavigation } from "../../../hooks/useDashboardNavigation";
-import { getApiUrl } from "../../../config/api";
+import { useApiFetch } from "../../../hooks/useApiFetch";
 
 interface UseScriptModalHandlersParams {
   scriptId: string | undefined;
@@ -62,7 +61,7 @@ export const useScriptModalHandlers = ({
   dangerMode = false,
 }: UseScriptModalHandlersParams) => {
   const navigate = useNavigate();
-  const { getToken } = useAuth();
+  const apiFetch = useApiFetch();
   const { showSuccess, showError } = useEnhancedToast();
   const { navigateWithCurrentContext } = useDashboardNavigation();
 
@@ -261,17 +260,8 @@ export const useScriptModalHandlers = ({
 
     setIsDeleting(true);
     try {
-      const token = await getToken();
-      if (!token) {
-        throw new Error("Authentication token not available");
-      }
-
-      const response = await fetch(getApiUrl(`/api/scripts/${scriptId}`), {
+      const response = await apiFetch(`/api/scripts/${scriptId}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
       });
 
       if (!response.ok) {
@@ -299,7 +289,7 @@ export const useScriptModalHandlers = ({
     }
   }, [
     scriptId,
-    getToken,
+    apiFetch,
     showSuccess,
     showError,
     modalState,

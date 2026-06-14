@@ -21,8 +21,7 @@ import { SearchInput } from '../components/shared/SearchInput';
 import { MarkdownRenderer } from '../components/shared/MarkdownRenderer';
 import { DocFile, groupAndSortDocuments, getDocumentsForCategory } from '../utils/documentSorting';
 import { useDocumentSearch } from '../hooks/useDocumentSearch';
-import { useAuth } from '@clerk/clerk-react';
-import { getApiUrl } from '../config/api';
+import { useApiFetch } from '../hooks/useApiFetch';
 
 interface DocumentationPageProps {
   isMenuOpen: boolean;
@@ -57,20 +56,14 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
     setContent('');
   };
 
-  const { getToken } = useAuth();
+  const apiFetch = useApiFetch();
 
   // Load documentation files on component mount
   React.useEffect(() => {
     const loadDocumentationFiles = async () => {
       try {
         setIsLoadingDocs(true);
-        const headers: Record<string, string> = {};
-        const authToken = await getToken();
-        if (authToken) {
-          headers['Authorization'] = `Bearer ${authToken}`;
-        }
-        
-        const response = await fetch(getApiUrl('/api/docs/index'), { headers });
+        const response = await apiFetch('/api/docs/index');
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -85,7 +78,7 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
     };
 
     loadDocumentationFiles();
-  }, [getToken]);
+  }, [apiFetch]);
 
   const loadCategory = (category: string) => {
     setSelectedCategory(category);
@@ -179,12 +172,7 @@ export const DocumentationPage: React.FC<DocumentationPageProps> = ({ isMenuOpen
     clearSearch();
 
     try {
-      const headers: Record<string, string> = {};
-      const authToken = await getToken();
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-      const response = await fetch(getApiUrl(`/api/docs/${doc.path}`), { headers });
+      const response = await apiFetch(`/api/docs/${doc.path}`);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }

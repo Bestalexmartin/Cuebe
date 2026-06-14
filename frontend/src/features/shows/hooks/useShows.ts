@@ -1,8 +1,7 @@
 // frontend/src/features/shows/hooks/useShows.ts
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useAuth } from "@clerk/clerk-react";
-import { getApiUrl } from "../../../config/api";
+import { useApiFetch } from "../../../hooks/useApiFetch";
 
 // TypeScript interfaces
 interface Venue {
@@ -41,7 +40,7 @@ interface UseShowsReturn {
 }
 
 export const useShows = (): UseShowsReturn => {
-  const { getToken } = useAuth();
+  const apiFetch = useApiFetch();
   const [shows, setShows] = useState<Show[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,14 +49,7 @@ export const useShows = (): UseShowsReturn => {
   const fetchShows = useCallback(async () => {
     setIsLoading(true);
     try {
-      const token = await getToken();
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-      const response = await fetch(getApiUrl("/api/me/shows"), {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiFetch("/api/me/shows");
       if (!response.ok) {
         if (response.status >= 500) {
           const errorMsg = `Database or server error (${response.status}). Please check if the database is running.`;
@@ -75,7 +67,7 @@ export const useShows = (): UseShowsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [getToken]);
+  }, [apiFetch]);
 
   useEffect(() => {
     fetchShows();

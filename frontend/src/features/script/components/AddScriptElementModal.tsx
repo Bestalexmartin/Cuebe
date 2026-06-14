@@ -23,7 +23,6 @@ import {
 import { AppIcon } from '../../../components/AppIcon';
 import { BaseModal } from '../../../components/base/BaseModal';
 import { useResource } from '../../../hooks/useResource';
-import { getApiUrl } from '../../../config/api';
 import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm';
 import { ScriptElementCreate, ElementType, PriorityLevel } from '../types/scriptElements';
 import { formatTimeOffset, parseTimeToMs } from '../../../utils/timeUtils';
@@ -104,7 +103,7 @@ export const AddScriptElementModal: React.FC<AddScriptElementModalProps> = ({
         data: departments,
         isLoading: isLoadingDepartments,
         refetch: refetchDepartments,
-    } = useResource<Department>(getApiUrl('/api/me/departments'), {
+    } = useResource<Department>('/api/me/departments', {
         fetchOnMount: false,
     });
 

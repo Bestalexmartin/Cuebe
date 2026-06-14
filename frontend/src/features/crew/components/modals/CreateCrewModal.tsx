@@ -8,13 +8,12 @@ import {
     VStack,
     HStack,
 } from '@chakra-ui/react';
-import { useAuth } from '@clerk/clerk-react';
+import { useApiFetch } from '../../../../hooks/useApiFetch';
 import { useValidatedFormSchema } from '../../../../components/forms/ValidatedForm';
 import { FormInput } from '../../../../components/form/FormField';
 import { BaseModal } from '../../../../components/base/BaseModal';
 import { useStandardFormValidation } from '../../../../hooks/useFormValidation';
 import { USER_ROLE_OPTIONS } from '../../../../constants/userRoles';
-import { getApiUrl } from '../../../../config/api';
 
 // TypeScript interfaces
 interface CrewFormData {
@@ -51,7 +50,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
     onClose,
     onCrewCreated
 }) => {
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
 
     const form = useValidatedFormSchema<CrewFormData>(
         INITIAL_FORM_STATE,
@@ -68,11 +67,7 @@ export const CreateCrewModal: React.FC<CreateCrewModalProps> = ({
         event.preventDefault();
 
         try {
-            const checkEmailResponse = await fetch(getApiUrl(`/api/users/check-email?email=${encodeURIComponent(form.formData.email_address)}`), {
-                headers: {
-                    'Authorization': `Bearer ${await getToken()}`
-                }
-            });
+            const checkEmailResponse = await apiFetch(`/api/users/check-email?email=${encodeURIComponent(form.formData.email_address)}`);
 
             if (checkEmailResponse.ok) {
                 const existingUser: ExistingUser | null = await checkEmailResponse.json();

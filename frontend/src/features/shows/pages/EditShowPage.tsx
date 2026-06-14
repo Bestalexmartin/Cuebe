@@ -5,10 +5,9 @@ import {
     Box, VStack, HStack, Text, Spinner, Flex
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from '@clerk/clerk-react';
 import { useShow } from "../hooks/useShow";
 import { useResource } from '../../../hooks/useResource';
-import { getApiUrl } from '../../../config/api';
+import { useApiFetch } from '../../../hooks/useApiFetch';
 import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm';
 import { BaseEditPage } from '../../../components/base/BaseEditPage';
 import { ActionItem } from '../../../components/ActionsMenu';
@@ -54,7 +53,7 @@ export const EditShowPage: React.FC = () => {
     const { showId } = useParams<{ showId: string }>();
     const navigate = useNavigate();
     const { showSuccess, showError } = useEnhancedToast();
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
 
     // Delete state management
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -70,7 +69,7 @@ export const EditShowPage: React.FC = () => {
     const {
         data: venues,
         isLoading: isLoadingVenues
-    } = useResource<Venue>(getApiUrl('/api/me/venues'));
+    } = useResource<Venue>('/api/me/venues');
 
     // Memoize venue options to prevent recreation on every render
     const venueOptions = useMemo(() => 
@@ -203,13 +202,8 @@ export const EditShowPage: React.FC = () => {
 
             // Save crew assignments separately
             if (crewAssignmentsData.length > 0) {
-                const token = await getToken();
-                const response = await fetch(getApiUrl(`/api/shows/${showId}/crew-assignments`), {
+                const response = await apiFetch(`/api/shows/${showId}/crew-assignments`, {
                     method: 'PUT', // Use PUT to replace all assignments
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
                     body: JSON.stringify({ assignments: crewAssignmentsData })
                 });
 
@@ -276,17 +270,8 @@ export const EditShowPage: React.FC = () => {
 
         setIsDeleting(true);
         try {
-            const token = await getToken();
-            if (!token) {
-                throw new Error('Authentication token not available');
-            }
-
-            const response = await fetch(getApiUrl(`/api/shows/${showId}`), {
+            const response = await apiFetch(`/api/shows/${showId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
             });
 
             if (!response.ok) {

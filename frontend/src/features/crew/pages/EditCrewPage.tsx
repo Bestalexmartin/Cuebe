@@ -5,9 +5,9 @@ import {
     Box, HStack, VStack, Text, Spinner, Flex, Badge
 } from "@chakra-ui/react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useAuth } from '@clerk/clerk-react';
 import { useCrew } from "../hooks/useCrew";
 import { useUser } from '@clerk/clerk-react';
+import { useApiFetch } from '../../../hooks/useApiFetch';
 import { useValidatedFormSchema } from '../../../components/forms/ValidatedForm';
 import { BaseEditPage } from '../../../components/base/BaseEditPage';
 import { ActionItem } from '../../../components/ActionsMenu';
@@ -22,7 +22,6 @@ import { formatShowDateTime } from '../../../utils/timeUtils';
 import { FloatingValidationErrorPanel } from '../../../components/base/FloatingValidationErrorPanel';
 import { EditPageFormField } from '../../../components/base/EditPageFormField';
 import { ResponsiveAssignmentList } from '../../../components/base/ResponsiveAssignmentList';
-import { getApiUrl } from '../../../config/api';
 
 // TypeScript interfaces
 interface CrewFormData {
@@ -50,7 +49,7 @@ export const EditCrewPage: React.FC = () => {
     const { crewId } = useParams<{ crewId: string }>();
     const navigate = useNavigate();
     const { showSuccess, showError } = useEnhancedToast();
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
     const { user: clerkUser } = useUser();
 
     // Delete state management
@@ -220,18 +219,9 @@ export const EditCrewPage: React.FC = () => {
 
         setIsDeleting(true);
         try {
-            const token = await getToken();
-            if (!token) {
-                throw new Error('Authentication token not available');
-            }
-
             // DELETE the crew relationship (not the user)
-            const response = await fetch(getApiUrl(`/api/crew-relationships/${crewId}`), {
+            const response = await apiFetch(`/api/crew-relationships/${crewId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
             });
 
             if (!response.ok) {
@@ -294,16 +284,9 @@ export const EditCrewPage: React.FC = () => {
         if (!selectedCrewMember?.show_id || !crew?.user_id) return;
         
         try {
-            const token = await getToken();
-            if (!token) return;
-            
             // Force refresh the share token
-            const response = await fetch(getApiUrl(`/api/shows/${selectedCrewMember.show_id}/crew/${crew.user_id}/share?force_refresh=true`), {
+            const response = await apiFetch(`/api/shows/${selectedCrewMember.show_id}/crew/${crew.user_id}/share?force_refresh=true`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
             });
 
             if (response.ok) {
@@ -323,7 +306,7 @@ export const EditCrewPage: React.FC = () => {
             console.error('Error refreshing link:', error);
             showError("Failed to refresh sharing link. Please try again.");
         }
-    }, [selectedCrewMember, crew, getToken, showSuccess, showError]);
+    }, [selectedCrewMember, crew, apiFetch, showSuccess, showError]);
 
     // Actions menu items
     const actionItems: ActionItem[] = [

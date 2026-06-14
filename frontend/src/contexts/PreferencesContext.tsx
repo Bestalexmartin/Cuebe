@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { useApiFetch } from '../hooks/useApiFetch';
 import { useEnhancedToast } from '../utils/toastUtils';
-import { getApiUrl } from '../config/api';
 
 // Field name mapping between frontend (camelCase) and backend (snake_case)
 const FIELD_MAPPING = {
@@ -153,7 +153,8 @@ interface PreferencesProviderProps {
 }
 
 export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ children }) => {
-    const { getToken, isSignedIn } = useAuth();
+    const { isSignedIn } = useAuth();
+    const apiFetch = useApiFetch();
     const { showError } = useEnhancedToast();
     
     // Initialize with localStorage or defaults
@@ -174,15 +175,8 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
 
         const loadPreferences = async () => {
             try {
-                const token = await getToken();
-                if (!token) {
-                    setIsLoading(false);
-                    return;
-                }
-
-                const response = await fetch(getApiUrl('/api/users/preferences'), {
+                const response = await apiFetch('/api/users/preferences', {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
                 });
@@ -219,7 +213,7 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
         };
 
         loadPreferences();
-    }, [getToken, isSignedIn, hasLoaded]);
+    }, [apiFetch, isSignedIn, hasLoaded]);
 
     // Update specific preference
     const updatePreference = async <K extends keyof UserPreferences>(
@@ -235,21 +229,11 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
         savePreferencesToStorage(updatedPreferences);
         
         setIsSaving(true);
-        
-        try {
-            const token = await getToken();
-            if (!token) {
-                showError('Authentication required');
-                // Revert local changes on error
-                setPreferences(previousPreferences);
-                savePreferencesToStorage(previousPreferences);
-                return false;
-            }
 
-            const response = await fetch(getApiUrl('/api/users/preferences'), {
+        try {
+            const response = await apiFetch('/api/users/preferences', {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 // Always save ALL preference keys for simplicity and correctness
@@ -294,21 +278,11 @@ export const PreferencesProvider: React.FC<PreferencesProviderProps> = ({ childr
         savePreferencesToStorage(updatedPreferences);
         
         setIsSaving(true);
-        
-        try {
-            const token = await getToken();
-            if (!token) {
-                showError('Authentication required');
-                // Revert local changes on error
-                setPreferences(previousPreferences);
-                savePreferencesToStorage(previousPreferences);
-                return false;
-            }
 
-            const response = await fetch(getApiUrl('/api/users/preferences'), {
+        try {
+            const response = await apiFetch('/api/users/preferences', {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
                 // Always save ALL preference keys for simplicity and correctness

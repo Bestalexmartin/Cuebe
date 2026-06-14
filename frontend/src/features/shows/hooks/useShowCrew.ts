@@ -1,8 +1,7 @@
 // frontend/src/features/shows/hooks/useShowCrew.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@clerk/clerk-react';
-import { getApiUrl } from '../../../config/api';
+import { useApiFetch } from '../../../hooks/useApiFetch';
 
 export interface CrewMember {
     assignment_id: string;
@@ -32,7 +31,7 @@ interface UseShowCrewReturn {
 }
 
 export const useShowCrew = (showId: string): UseShowCrewReturn => {
-    const { getToken } = useAuth();
+    const apiFetch = useApiFetch();
     const [crewMembers, setCrewMembers] = useState<CrewMember[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -44,16 +43,7 @@ export const useShowCrew = (showId: string): UseShowCrewReturn => {
             setIsLoading(true);
             setError(null);
 
-            const token = await getToken();
-            if (!token) {
-                throw new Error('Authentication required');
-            }
-
-            const response = await fetch(getApiUrl(`/api/shows/${showId}/crew`), {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const response = await apiFetch(`/api/shows/${showId}/crew`);
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch show crew: ${response.status}`);
@@ -67,7 +57,7 @@ export const useShowCrew = (showId: string): UseShowCrewReturn => {
         } finally {
             setIsLoading(false);
         }
-    }, [showId, getToken]);
+    }, [showId, apiFetch]);
 
     const refetch = useCallback(async () => {
         await fetchShowCrew();

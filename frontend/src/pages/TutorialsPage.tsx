@@ -20,8 +20,8 @@ import { SearchInput } from '../components/shared/SearchInput';
 import { MarkdownRenderer } from '../components/shared/MarkdownRenderer';
 import { useDocumentSearch } from '../hooks/useDocumentSearch';
 import { useAuth } from '@clerk/clerk-react';
+import { useApiFetch } from '../hooks/useApiFetch';
 import { authTutorialCache } from '../utils/tutorialCache';
-import { getApiUrl } from '../config/api';
 
 // Tutorial file structure - organized for theater professionals
 const TUTORIAL_FILES: TutorialFile[] = [
@@ -103,7 +103,8 @@ export const TutorialsPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuC
   };
 
 
-  const { getToken, userId } = useAuth();
+  const { userId } = useAuth();
+  const apiFetch = useApiFetch();
 
 
 
@@ -173,12 +174,8 @@ export const TutorialsPage: React.FC<TutorialPageProps> = ({ isMenuOpen, onMenuC
       const headers: Record<string, string> = {
         'Cache-Control': 'public, max-age=3600' // 1 hour browser cache
       };
-      const authToken = await getToken();
-      if (authToken) {
-        headers['Authorization'] = `Bearer ${authToken}`;
-      }
-      
-      const response = await fetch(getApiUrl(`/api/tutorials/${tutorial.path}`), { headers });
+
+      const response = await apiFetch(`/api/tutorials/${tutorial.path}`, { headers });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
