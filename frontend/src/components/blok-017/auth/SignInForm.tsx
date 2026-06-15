@@ -82,10 +82,6 @@ export default function SignInForm() {
 
   return (
     <>
-      <Text fontSize="2xl" fontWeight="bold" textAlign="center" mb={6}>
-        Sign In
-      </Text>
-
       <Box as="form" onSubmit={handleSubmit}>
         <FormControl mb={4} isRequired>
           <FormLabel textAlign="center">Email</FormLabel>
