@@ -264,7 +264,7 @@ export const EditCrewPage: React.FC = () => {
             profile_img_url: crew?.profile_img_url,
             show_id: assignment.show_id, // Include show_id for QR code generation
             // Use actual user data from the crew
-            user_role: crew?.user_role || 'crew',
+            user_role: crew?.user_role || 'CREW',
             user_status: crew?.user_status || 'VERIFIED',
             is_active: crew?.is_active ?? true,
             date_created: crew?.date_created || '',
