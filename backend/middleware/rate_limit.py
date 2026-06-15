@@ -2,9 +2,12 @@
 Blok 017 (Cuebe hybrid): per-identity rate limiting for auth endpoints.
 
 Redis-backed fixed-window limiter built on services/redis_service. Uses an
-atomic INCR + EXPIRE pipeline for distributed, restart-safe limiting. Fails
-closed (503) when Redis is unavailable: every limited endpoint has its limit
-for a security reason, so silently dropping it on infra failure is not safe.
+atomic INCR + EXPIRE pipeline for distributed, restart-safe limiting.
+
+When Redis is unavailable: fail CLOSED (503) in production (every limited
+endpoint has its limit for a security reason, so silently dropping it on infra
+failure is not safe), but fail OPEN in development/test so a local Redis blip
+does not block the auth flows. Gated on settings.app_env.
 """
 
 import hashlib
@@ -13,6 +16,8 @@ import time
 from typing import Optional
 
 from fastapi import HTTPException, Request, status
+
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +52,12 @@ class RateLimiter:
             allowed = current <= max_requests
             return allowed, current, remaining
         except Exception:
+            if settings.app_env in ("development", "test"):
+                logger.warning(
+                    "Redis unavailable for rate limiting; failing OPEN (app_env=%s)",
+                    settings.app_env,
+                )
+                return True, 0, max_requests
             logger.error("Redis unavailable for rate limiting, failing closed")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -127,6 +138,12 @@ def check_mfa_rate_limit(mfa_session_token: str):
     except HTTPException:
         raise
     except Exception:
+        if settings.app_env in ("development", "test"):
+            logger.warning(
+                "Redis unavailable for MFA rate limiting; failing OPEN (app_env=%s)",
+                settings.app_env,
+            )
+            return
         logger.error("Redis unavailable for MFA rate limiting, failing closed")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
