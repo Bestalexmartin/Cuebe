@@ -6,7 +6,8 @@
 // in the Blok 017 account settings flow.
 
 import React from 'react';
-import { Box, Button, Heading, Text, VStack, HStack, Divider, Badge } from '@chakra-ui/react';
+import { Box, Button, Heading, Text, VStack, HStack, Divider, Badge, CloseButton } from '@chakra-ui/react';
+import { useNavigate } from 'react-router-dom';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useAuth } from '../hooks/useAuth';
 
@@ -19,10 +20,18 @@ const Row: React.FC<{ label: string; value?: string | null }> = ({ label, value 
 
 const UserProfilePage: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <ErrorBoundary context="User Profile Page">
-      <Box maxW="480px" mx="auto" mt={10} p={6} borderWidth="1px" borderRadius="xl">
+      <Box position="relative" maxW="480px" mx="auto" mt={10} p={6} borderWidth="1px" borderRadius="xl">
+        <CloseButton
+          aria-label="Back to dashboard"
+          position="absolute"
+          top={3}
+          right={3}
+          onClick={() => navigate('/dashboard')}
+        />
         <Heading size="lg" mb={4} textAlign="center">Account</Heading>
         <VStack spacing={3} align="stretch">
           <Row label="Name" value={user?.display_name} />
