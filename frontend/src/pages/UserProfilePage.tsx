@@ -24,14 +24,35 @@ const UserProfilePage: React.FC = () => {
 
   return (
     <ErrorBoundary context="User Profile Page">
-      <Box position="relative" maxW="480px" mx="auto" mt={10} p={6} borderWidth="1px" borderRadius="xl">
-        <CloseButton
-          aria-label="Back to dashboard"
-          position="absolute"
-          top={3}
-          right={3}
-          onClick={() => navigate('/dashboard')}
-        />
+      <Box
+        position="fixed"
+        inset={0}
+        zIndex={1400}
+        bg="blackAlpha.500"
+        display="flex"
+        justifyContent="center"
+        alignItems="flex-start"
+        pt={16}
+        onClick={() => navigate('/dashboard')}
+      >
+        <Box
+          position="relative"
+          maxW="480px"
+          w="90%"
+          p={6}
+          borderWidth="1px"
+          borderRadius="xl"
+          bg="white"
+          _dark={{ bg: 'gray.800' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <CloseButton
+            aria-label="Back to dashboard"
+            position="absolute"
+            top={3}
+            right={3}
+            onClick={() => navigate('/dashboard')}
+          />
         <Heading size="lg" mb={4} textAlign="center">Account</Heading>
         <VStack spacing={3} align="stretch">
           <Row label="Name" value={user?.display_name} />
@@ -55,6 +76,7 @@ const UserProfilePage: React.FC = () => {
             Sign Out
           </Button>
         </VStack>
+        </Box>
       </Box>
     </ErrorBoundary>
   );
