@@ -86,7 +86,7 @@ def upgrade() -> None:
         "userTable",
         sa.Column(
             "access_role",
-            sa.Enum(*ACCESS_ROLE_VALUES, name="accessrole"),
+            sa.Enum(*ACCESS_ROLE_VALUES, name="accessrole", create_type=False),
             nullable=True,
         ),
     )
