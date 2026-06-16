@@ -72,6 +72,7 @@ import { FloatingValidationErrorPanel } from '../components/base/FloatingValidat
 import { exportScriptAsCSV } from '../features/script/export/utils/csvExporter';
 import { useEffectiveScriptPreferences } from '../features/script/hooks/useEffectiveScriptPreferences';
 import { useFilteredScriptElements } from '../features/script/hooks/useFilteredScriptElements';
+import { useScriptPreferenceActions } from '../features/script/hooks/useScriptPreferenceActions';
 
 
 
@@ -354,6 +355,33 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         darkMode
     });
 
+    // Debug: Check if activePreferences is changing frequently
+    const { activeMode, setActiveMode } = useScriptModes('view');
+    
+    const applyLocalChange = contextApplyLocalChange;
+
+    const {
+        handleAutoSortCheckboxChange,
+        handleClockTimesCheckboxChange,
+        handleOptionsModalSave,
+        handleViewModeActivation,
+    } = useScriptPreferenceActions({
+        activeAutoSortCues: activePreferences.autoSortCues,
+        activeMode,
+        activeShowClockTimes: activePreferences.showClockTimes,
+        applyLocalChange,
+        autoSortCues,
+        editQueueElements,
+        modalNames: MODAL_NAMES,
+        modalState,
+        scriptId,
+        setPreviewPreferences,
+        showError,
+        showSuccess,
+        updatePreference,
+        updatePreferences
+    });
+
     const editModeColorizeDepNames = activePreferences.colorizeDepNames;
     const editModeShowClockTimes = activePreferences.showClockTimes;
     const editModeAutoSortCues = activePreferences.autoSortCues;
@@ -363,11 +391,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     const viewModeAutoSortCues = activePreferences.autoSortCues;
     const viewModeUseMilitaryTime = activePreferences.useMilitaryTime;
     const viewModeLookaheadSeconds = activePreferences.lookaheadSeconds;
-
-    // Debug: Check if activePreferences is changing frequently
-    const { activeMode, setActiveMode } = useScriptModes('view');
-    
-    const applyLocalChange = contextApplyLocalChange;
 
     const { insertElement } = useElementActions(
         editQueueElements,
@@ -768,115 +791,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     }, [isPlaybackPlaying, isPlaybackPaused, isPlaybackSafety, modalState]);
 
 
-
-    // Auto-sort functionality
-
-    const handleAutoSortElements = useCallback(async () => {
-        if (!scriptId) return;
-
-        try {
-            const currentElements = [...editQueueElements];
-            const sortedElements = [...currentElements].sort((a, b) => a.offset_ms - b.offset_ms);
-
-            const needsReordering = currentElements.some((element, index) => {
-                return element.element_id !== sortedElements[index]?.element_id;
-            });
-
-            if (!needsReordering) {
-                showSuccess('Auto-Sort Complete', 'Elements are already in correct time order.');
-                return;
-            }
-
-            // Create resequenced elements array for the new format
-            const resequencedElements = sortedElements.map((element, index) => ({
-                element_id: element.element_id,
-                old_sequence: element.sequence,
-                new_sequence: index + 1
-            }));
-
-            const enableOperation = {
-                type: 'ENABLE_AUTO_SORT' as const,
-                element_id: 'auto-sort-preference',
-                old_preference_value: false,
-                new_preference_value: true,
-                element_moves: resequencedElements,
-                resequenced_elements: resequencedElements, // Keep both for backend compatibility
-                total_elements: currentElements.length
-            };
-
-            applyLocalChange(enableOperation);
-
-            showSuccess('Elements Auto-Sorted', `Reordered ${resequencedElements.length} elements by time offset. New elements will be automatically sorted.`);
-        } catch (error) {
-            showError(error instanceof Error ? error.message : 'Failed to enable auto-sort');
-        }
-    }, [scriptId, editQueueElements, applyLocalChange, showSuccess, showError]);
-
-    // Checkpoint revert functionality
-
-    const handleAutoSortToggle = useCallback(
-        async (value: boolean) => {
-            // Prevent disabling auto-sort while in view mode
-            if (!value && activeMode === 'view') {
-                return;
-            }
-            
-            if (value && !activePreferences.autoSortCues && scriptId) {
-                handleAutoSortElements();
-            } else if (!value && activePreferences.autoSortCues) {
-                // Disable auto-sort
-                const disableOperation = {
-                    type: 'DISABLE_AUTO_SORT' as const,
-                    element_id: 'auto-sort-preference',
-                    old_preference_value: true,
-                    new_preference_value: false
-                };
-                applyLocalChange(disableOperation);
-            }
-            await updatePreference('autoSortCues', value);
-        },
-        [updatePreference, scriptId, activePreferences.autoSortCues, handleAutoSortElements, applyLocalChange, editQueueElements, activeMode]
-    );
-
-    const handleAutoSortCheckboxChange = async (newAutoSortValue: boolean) => {
-        // Use the same logic as handleAutoSortToggle
-        await handleAutoSortToggle(newAutoSortValue);
-    };
-
-    const handleClockTimesCheckboxChange = async (newClockTimesValue: boolean) => {
-        await updatePreference('showClockTimes', newClockTimesValue);
-    };
-    
-    // Handle auto-sort and clock times activation when entering view mode
-    const handleViewModeActivation = useCallback(async () => {
-        const needsAutoSort = !activePreferences.autoSortCues;
-        const needsClockTimes = !activePreferences.showClockTimes;
-        
-        
-        if (needsAutoSort) {
-            await handleAutoSortToggle(true);
-        }
-        if (needsClockTimes) {
-            await updatePreference('showClockTimes', true);
-        }
-        
-        if (needsAutoSort || needsClockTimes) {
-            modalState.openModal(MODAL_NAMES.AUTO_SORT_ACTIVATED);
-            setTimeout(() => {
-                modalState.closeModal(MODAL_NAMES.AUTO_SORT_ACTIVATED);
-            }, 2000);
-        }
-    }, [activePreferences.autoSortCues, activePreferences.showClockTimes, handleAutoSortToggle, updatePreference, modalState]);
-
-    const handleOptionsModalSave = async (newPreferences: UserPreferences) => {
-        const ok = await updatePreferences(newPreferences);
-        setPreviewPreferences(null);
-        if (ok) {
-            showSuccess('Preferences Updated', 'Your settings have been saved successfully.');
-        } else {
-            showError('Failed to save preferences', { description: 'Your changes could not be saved. Please try again.' });
-        }
-    };
 
     // Load initial sharing status
     useEffect(() => {
