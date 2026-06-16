@@ -61,5 +61,20 @@ class Settings(BaseSettings):
         # Preserves the original `ENABLE_DEV_ROUTES in {"1","true","True"}` semantics
         return self.enable_dev_routes in {"1", "true", "True"}
 
+    @property
+    def is_development_like(self) -> bool:
+        return self.app_env.lower() in {"development", "test"}
+
+    def validate_runtime_config(self) -> None:
+        """Fail fast on insecure production-like configuration."""
+        if self.is_development_like:
+            return
+
+        if not self.jwt_secret_key or self.jwt_secret_key == "dev-insecure-jwt-secret-change-me":
+            raise ValueError("JWT_SECRET_KEY must be set to a non-default value outside development/test")
+
+        if not self.totp_encryption_key:
+            raise ValueError("TOTP_ENCRYPTION_KEY is required outside development/test")
+
 
 settings = Settings()

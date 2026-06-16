@@ -15,6 +15,7 @@ _BACKEND_DIR = str(Path(__file__).resolve().parent.parent)
 import models
 from database import get_db
 from routers.auth import get_current_user
+from models.enums import AccessRole
 
 # Optional rate limiting import
 try:
@@ -28,6 +29,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["development"])
+ADMIN_ROLES = (AccessRole.SUPER_ADMIN, AccessRole.ADMIN)
 
 def rate_limit(limit_config):
     """Decorator factory that conditionally applies rate limiting"""
@@ -58,6 +60,11 @@ def _require_local_dev_access(request: Request) -> None:
         raise HTTPException(status_code=403, detail="Development routes require a loopback client")
 
 
+def _require_dev_admin_access(current_user: models.User) -> None:
+    if current_user.access_role not in ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+
 # =============================================================================
 # DEVELOPMENT ENDPOINTS
 # =============================================================================
@@ -72,6 +79,7 @@ def test_diagnostics(
     Diagnostic endpoint to check the testing environment
     """
     _require_local_dev_access(request)
+    _require_dev_admin_access(current_user)
 
     backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
@@ -128,6 +136,7 @@ def run_tests(
     current_user: models.User = Depends(get_current_user)
 ):
     _require_local_dev_access(request)
+    _require_dev_admin_access(current_user)
 
     backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
@@ -138,9 +147,12 @@ def run_tests(
         test_commands = {
             "diagnostics": [python_exec, "-c", "import sys, pytest; print(f'Python: {sys.executable}'); print(f'Pytest: {pytest.__version__}')"],
             "all": [python_exec, "-m", "pytest", "tests/", "-v", "--tb=short"],
-            "auth": [python_exec, "-m", "pytest", "tests/test_auth.py", "-v", "--tb=short"],  
-            "critical": [python_exec, "-m", "pytest", "tests/test_api_critical.py", "-v", "--tb=short"],
-            "health": [python_exec, "-m", "pytest", "tests/test_api.py", "-v", "--tb=short"]
+            "health": [python_exec, "-m", "pytest", "tests/test_health.py", "-v", "--tb=short"],
+            "shows": [python_exec, "-m", "pytest", "tests/test_shows.py", "-v", "--tb=short"],
+            "users": [python_exec, "-m", "pytest", "tests/test_users.py", "-v", "--tb=short"],
+            "departments": [python_exec, "-m", "pytest", "tests/test_departments.py", "-v", "--tb=short"],
+            "venues": [python_exec, "-m", "pytest", "tests/test_venues.py", "-v", "--tb=short"],
+            "scripts": [python_exec, "-m", "pytest", "tests/test_scripts.py", "-v", "--tb=short"],
         }
         
         if test_suite not in test_commands:
@@ -188,6 +200,7 @@ def run_database_migrations(
 ):
     """Run database migrations using Alembic"""
     _require_local_dev_access(request)
+    _require_dev_admin_access(current_user)
 
     try:
         logger.info("Starting database migration...")

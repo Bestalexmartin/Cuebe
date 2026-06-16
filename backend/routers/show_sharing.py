@@ -39,7 +39,7 @@ async def create_or_get_show_share(
 ):
     """Create or retrieve a show-level sharing link for a crew member"""
     
-    logger.info(f"🔄 create_or_get_show_share called with force_refresh={force_refresh}")
+    logger.info("create_or_get_show_share called with force_refresh=%s", force_refresh)
     
     # Get the show and verify ownership
     show = db.query(models.Show).filter(models.Show.show_id == show_id).first()
@@ -72,7 +72,7 @@ async def create_or_get_show_share(
     db.commit()
     db.refresh(crew_assignment)
     
-    logger.info(f"{action.title()} show share token for user {user_id} on show {show_id}")
+    logger.info("%s show share token for user %s on show %s", action.title(), user_id, show_id)
     
     return schemas.ShareTokenResponse(
         assignment_id=crew_assignment.assignment_id,
@@ -89,7 +89,7 @@ async def access_shared_show(
 ):
     """Access a shared show via token (public endpoint, no auth required)"""
     
-    logger.info(f"🔍 Accessing shared show with token: {share_token[:8]}...")
+    logger.info("Accessing shared show")
     
     try:
         # Find the crew assignment by share token, eager load user
@@ -101,12 +101,12 @@ async def access_shared_show(
         ).first()
         
         if not crew_assignment:
-            logger.warning(f"Share token not found: {share_token}")
+            logger.warning("Share token not found")
             raise HTTPException(status_code=404, detail="Share not found or expired")
-        
-        logger.info(f"Found crew assignment for share token: {share_token[:8]}...")
+
+        logger.info("Found crew assignment for shared show access")
     except Exception as e:
-        logger.error(f"Database error finding share token {share_token}: {e}")
+        logger.error("Database error finding share token: %s", e)
         raise HTTPException(status_code=500, detail="Database error")
     
     try:
@@ -131,9 +131,8 @@ async def access_shared_show(
         crew_assignment.last_accessed_at = models.func.now()
         db.commit()
         
-        logger.info(f"Successfully processed share token access: {share_token[:8]}...")
-        
-        logger.info(f"🏢 Department filtering applied at DB level for: {crew_assignment.department_id}")
+        logger.info("Successfully processed shared show access")
+        logger.info("Department filtering applied at DB level for: %s", crew_assignment.department_id)
         
         # Return the show with department-filtered elements
         return schemas.SharedShowResponse(
@@ -146,7 +145,7 @@ async def access_shared_show(
     except HTTPException:
         raise  # Re-raise HTTP exceptions
     except Exception as e:
-        logger.exception(f"Error processing share token {share_token}: {e}")
+        logger.exception("Error processing shared show access: %s", e)
         raise HTTPException(status_code=500, detail="Unable to process share token")
 
 
@@ -228,7 +227,7 @@ async def get_guest_user_preferences(
         ).first()
         
         if not crew_assignment:
-            logger.warning(f"Share token not found for preferences: {share_token}")
+            logger.warning("Share token not found for preferences")
             raise HTTPException(status_code=404, detail="Share not found or expired")
         
         # Get the user associated with this share token
@@ -245,13 +244,13 @@ async def get_guest_user_preferences(
         if user.user_prefs_json:
             preferences.update(user.user_prefs_json)
         
-        logger.info(f"Retrieved guest preferences for share token: {share_token[:8]}...")
+        logger.info("Retrieved guest preferences for share token")
         return preferences
         
     except HTTPException:
         raise  # Re-raise HTTP exceptions
     except Exception as e:
-        logger.error(f"Error retrieving guest preferences for {share_token}: {e}")
+        logger.error("Error retrieving guest preferences: %s", e)
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
 
 
@@ -263,7 +262,7 @@ async def update_guest_user_preferences(
 ):
     """Update guest user preferences via share token (public endpoint, no auth required)"""
     
-    logger.info(f"🔧 Updating guest preferences for token {share_token[:8]}... with data: {preference_updates}")
+    logger.info("Updating guest preferences for share token")
     
     try:
         # Find the crew assignment by share token
@@ -273,7 +272,7 @@ async def update_guest_user_preferences(
         ).first()
         
         if not crew_assignment:
-            logger.warning(f"Share token not found for preferences update: {share_token}")
+            logger.warning("Share token not found for preferences update")
             raise HTTPException(status_code=404, detail="Share not found or expired")
         
         # Get the user associated with this share token
@@ -328,13 +327,13 @@ async def update_guest_user_preferences(
         if user.user_prefs_json:
             updated_preferences.update(user.user_prefs_json)
         
-        logger.info(f"Updated guest preferences for share token: {share_token[:8]}...")
+        logger.info("Updated guest preferences for share token")
         return updated_preferences
         
     except HTTPException:
         raise  # Re-raise HTTP exceptions
     except Exception as e:
-        logger.error(f"Error updating guest preferences for {share_token}: {e}")
+        logger.error("Error updating guest preferences: %s", e)
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
 
 
@@ -358,7 +357,7 @@ async def validate_share_token(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error validating share token {share_token}: {e}")
+        logger.error("Error validating share token: %s", e)
         raise HTTPException(status_code=500, detail="Validation error")
 
 
@@ -379,7 +378,7 @@ async def search_shared_tutorials(
         ).first()
         
         if not crew_assignment:
-            logger.warning(f"Invalid share token for tutorial search: {share_token}")
+            logger.warning("Invalid share token for tutorial search")
             raise HTTPException(status_code=404, detail="Share not found or expired")
         
         # Search only tutorial content
@@ -396,7 +395,7 @@ async def search_shared_tutorials(
     except HTTPException:
         raise  # Re-raise HTTP exceptions
     except Exception as e:
-        logger.error(f"Error searching tutorials via share token {share_token}: {e}")
+        logger.error("Error searching tutorials via share token: %s", e)
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
 
 
@@ -416,7 +415,7 @@ async def get_shared_tutorial(
         ).first()
         
         if not crew_assignment:
-            logger.warning(f"Invalid share token for tutorial access: {share_token}")
+            logger.warning("Invalid share token for tutorial access")
             raise HTTPException(status_code=404, detail="Share not found or expired")
         
         # Get tutorial content
@@ -445,5 +444,5 @@ async def get_shared_tutorial(
     except HTTPException:
         raise  # Re-raise HTTP exceptions
     except Exception as e:
-        logger.error(f"Error accessing tutorial via share token {share_token}: {e}")
+        logger.error("Error accessing tutorial via share token: %s", e)
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")

@@ -30,9 +30,13 @@ def validate_show_access(show_id: UUID, user: User, db: Session) -> Show:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Show not found"
         )
-    
-    # TODO: Add proper show access validation based on your auth model
-    # For now, assuming user has access if show exists
+
+    if show.owner_id != user.user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to access this show"
+        )
+
     return show
 
 def find_or_create_department(

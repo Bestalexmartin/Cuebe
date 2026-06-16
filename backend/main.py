@@ -32,6 +32,8 @@ import models
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+settings.validate_runtime_config()
+
 # =============================================================================
 # APP INITIALIZATION
 # =============================================================================
