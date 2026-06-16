@@ -18,7 +18,7 @@ import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useValidatedFormSchema } from '../components/forms/ValidatedForm';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { convertLocalToUTC } from '../utils/timeUtils';
-import { useUserPreferences, UserPreferences } from '../hooks/useUserPreferences';
+import { useUserPreferences } from '../hooks/useUserPreferences';
 import { useScriptSync } from '../hooks/useScriptSync';
 import { useScriptSyncContext } from '../contexts/ScriptSyncContext';
 import { ShowTimeEngineProvider, useShowTimeControls } from '../contexts/ShowTimeEngineProvider';
@@ -340,7 +340,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
     const {
         activePreferences,
-        previewPreferences,
         setPreviewPreferences
     } = useEffectiveScriptPreferences({
         autoSaveInterval,
@@ -362,6 +361,7 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
     const {
         handleAutoSortCheckboxChange,
+        handleAutoSortToggle,
         handleClockTimesCheckboxChange,
         handleOptionsModalSave,
         handleViewModeActivation,
@@ -370,7 +370,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
         activeMode,
         activeShowClockTimes: activePreferences.showClockTimes,
         applyLocalChange,
-        autoSortCues,
         editQueueElements,
         modalNames: MODAL_NAMES,
         modalState,

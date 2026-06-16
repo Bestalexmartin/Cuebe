@@ -8,7 +8,7 @@ interface UseEffectiveScriptPreferencesOptions {
     dangerMode: boolean;
     isOptionsModalOpen: boolean;
     lookaheadSeconds: number;
-    playHeartbeatIntervalSec: number;
+    playHeartbeatIntervalSec?: number;
     showClockTimes: boolean;
     useMilitaryTime: boolean;
     darkMode: boolean;

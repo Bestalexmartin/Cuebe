@@ -122,7 +122,7 @@ export const EditShowPage: React.FC = () => {
         show_end: convertUTCToLocal(show.show_end) || '',
         deadline: convertUTCToLocal(show.deadline),
         venue_id: show.venue?.venue_id || '',
-        crew_assignments: show.crew?.map(assignment => ({
+        crew_assignments: show.crew?.map((assignment): CrewAssignmentRow => ({
             id: assignment.assignment_id,
             department_id: assignment.department_id,
             crew_member_ids: [assignment.user_id],

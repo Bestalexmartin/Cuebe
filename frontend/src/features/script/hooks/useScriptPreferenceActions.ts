@@ -6,7 +6,6 @@ interface UseScriptPreferenceActionsOptions {
     activeMode: string;
     activeShowClockTimes: boolean;
     applyLocalChange: (operation: any) => void;
-    autoSortCues: boolean;
     editQueueElements: Array<{ element_id: string; offset_ms: number; sequence: number }>;
     modalNames: {
         AUTO_SORT_ACTIVATED: string;
@@ -19,7 +18,7 @@ interface UseScriptPreferenceActionsOptions {
     scriptId?: string;
     showError: (...args: any[]) => void;
     showSuccess: (...args: any[]) => void;
-    updatePreference: (key: keyof UserPreferences | string, value: any) => Promise<any>;
+    updatePreference: <K extends keyof UserPreferences>(key: K, value: UserPreferences[K]) => Promise<boolean>;
     updatePreferences: (preferences: UserPreferences) => Promise<boolean>;
 }
 
@@ -28,7 +27,6 @@ export const useScriptPreferenceActions = ({
     activeMode,
     activeShowClockTimes,
     applyLocalChange,
-    autoSortCues,
     editQueueElements,
     modalNames,
     modalState,
@@ -148,6 +146,7 @@ export const useScriptPreferenceActions = ({
 
     return {
         handleAutoSortCheckboxChange,
+        handleAutoSortToggle,
         handleClockTimesCheckboxChange,
         handleOptionsModalSave,
         handleViewModeActivation,

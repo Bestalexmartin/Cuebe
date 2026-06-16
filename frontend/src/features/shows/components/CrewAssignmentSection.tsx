@@ -216,7 +216,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
 
   // Handle share URL refresh from CrewBioModal
   const handleShareUrlRefreshFromModal = useCallback(async (): Promise<string | null> => {
-    if (!selectedCrewMember) return;
+    if (!selectedCrewMember) return null;
     return handleRefreshLink(selectedCrewMember.user_id);
   }, [selectedCrewMember, handleRefreshLink]);
 
