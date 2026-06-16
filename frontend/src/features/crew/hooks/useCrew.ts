@@ -18,6 +18,9 @@ interface UserDepartmentAssignment {
   venue_state?: string;
   show_date?: string;
   role?: string;
+  share_url?: string;
+  share_link_id?: string;
+  share_expires_at?: string;
 }
 
 interface Crew {

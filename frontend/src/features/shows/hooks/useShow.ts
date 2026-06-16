@@ -28,6 +28,8 @@ interface CrewAssignment {
   user_id: string;
   department_id: string;
   show_role?: string;
+  share_link_id?: string;
+  share_expires_at?: string;
   is_active: boolean;
   date_assigned: string;
 }

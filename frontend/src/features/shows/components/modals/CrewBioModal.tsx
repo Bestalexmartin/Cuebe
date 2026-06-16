@@ -27,7 +27,7 @@ interface CrewBioModalProps {
   onClose: () => void;
   crewMember: CrewMember | null;
   showId?: string;
-  onShareUrlRefresh?: () => Promise<void>; // Called to trigger external refresh
+  onShareUrlRefresh?: () => Promise<string | null | void>; // Called to trigger external refresh
 }
 
 export const CrewBioModal: React.FC<CrewBioModalProps> = ({
@@ -103,14 +103,9 @@ export const CrewBioModal: React.FC<CrewBioModalProps> = ({
     try {
       // If external refresh handler is provided, use it (for Edit Show page)
       if (onShareUrlRefresh) {
-        await onShareUrlRefresh();
-        // After external refresh, fetch the updated share URL for display
-        const response = await apiFetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
-          method: 'POST',
-        });
-        if (response.ok) {
-          const shareData = await response.json();
-          setShareUrl(`${window.location.origin}${shareData.share_url}`);
+        const refreshedShareUrl = await onShareUrlRefresh();
+        if (refreshedShareUrl) {
+          setShareUrl(`${window.location.origin}${refreshedShareUrl}`);
         }
       } else {
         // Fallback: handle refresh internally (for Edit Department/Crew pages)

@@ -20,6 +20,9 @@ interface DepartmentCrewAssignment {
   is_active?: boolean;
   date_created?: string;
   date_updated?: string;
+  share_url?: string;
+  share_link_id?: string;
+  share_expires_at?: string;
 }
 
 interface Department {

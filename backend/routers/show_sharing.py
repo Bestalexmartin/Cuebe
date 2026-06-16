@@ -4,8 +4,6 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 from uuid import UUID
-import secrets
-import string
 import logging
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -13,21 +11,23 @@ import models
 import schemas
 from database import get_db
 from .auth import get_current_user
+from services.share_token_service import (
+    build_share_url,
+    find_assignment_by_share_token,
+    get_share_link_id,
+    is_share_active,
+    issue_share_token,
+    returnable_share_token,
+)
 from utils.user_preferences import (
     bitmap_to_preferences,
     preferences_to_bitmap_updates,
-    validate_preferences,
 )
 from .docs_search import get_content_directory, search_documents, SearchResponse
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["show-sharing"])
-
-def generate_share_token(length: int = 32) -> str:
-    """Generate a secure random token for sharing"""
-    alphabet = string.ascii_letters + string.digits
-    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 @router.post("/shows/{show_id}/crew/{user_id}/share", response_model=schemas.ShareTokenResponse)
 async def create_or_get_show_share(
@@ -58,16 +58,20 @@ async def create_or_get_show_share(
     
     if not crew_assignment:
         raise HTTPException(status_code=404, detail="Crew assignment not found for this show and user")
-    
-    # Only generate new share token if one doesn't exist or if force_refresh is True
-    if not crew_assignment.share_token:
-        crew_assignment.share_token = generate_share_token()
-        action = "created"
-    elif force_refresh:
-        crew_assignment.share_token = generate_share_token()
-        action = "refreshed"
+
+    raw_token = None
+    expires_at = crew_assignment.share_expires_at
+
+    if force_refresh or not is_share_active(crew_assignment):
+        raw_token, expires_at = issue_share_token(crew_assignment)
+        action = "refreshed" if force_refresh else "created"
     else:
-        action = "retrieved"  # Token already exists, just return it
+        raw_token = returnable_share_token(crew_assignment)
+        if raw_token:
+            action = "retrieved"
+        else:
+            raw_token, expires_at = issue_share_token(crew_assignment)
+            action = "reissued"
     
     db.commit()
     db.refresh(crew_assignment)
@@ -76,8 +80,10 @@ async def create_or_get_show_share(
     
     return schemas.ShareTokenResponse(
         assignment_id=crew_assignment.assignment_id,
-        share_token=crew_assignment.share_token,
-        share_url=f"/shared/{crew_assignment.share_token}",
+        share_token=raw_token,
+        share_url=build_share_url(raw_token),
+        share_link_id=get_share_link_id(crew_assignment),
+        share_expires_at=expires_at,
         action=action
     )
 
@@ -92,19 +98,23 @@ async def access_shared_show(
     logger.info("Accessing shared show")
     
     try:
-        # Find the crew assignment by share token, eager load user
-        crew_assignment = db.query(models.CrewAssignment).options(
-            joinedload(models.CrewAssignment.user)
-        ).filter(
-            models.CrewAssignment.share_token == share_token,
-            models.CrewAssignment.is_active == True
-        ).first()
-        
-        if not crew_assignment:
+        matching_assignment = find_assignment_by_share_token(db, share_token)
+        if not matching_assignment:
             logger.warning("Share token not found")
             raise HTTPException(status_code=404, detail="Share not found or expired")
 
+        crew_assignment = (
+            db.query(models.CrewAssignment)
+            .options(joinedload(models.CrewAssignment.user))
+            .filter(models.CrewAssignment.assignment_id == matching_assignment.assignment_id)
+            .first()
+        )
+        if not crew_assignment:
+            raise HTTPException(status_code=404, detail="Share not found or expired")
+
         logger.info("Found crew assignment for shared show access")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Database error finding share token: %s", e)
         raise HTTPException(status_code=500, detail="Database error")
@@ -139,7 +149,7 @@ async def access_shared_show(
             shows=[show],
             user_name=f"{user.fullname_first} {user.fullname_last}".strip(),
             user_profile_image=user.profile_img_url,
-            share_expires=None  # TODO: Add expiration logic if needed
+            share_expires=crew_assignment.share_expires_at.isoformat() if crew_assignment.share_expires_at else None
         )
         
     except HTTPException:
@@ -158,13 +168,19 @@ async def get_shared_script_elements(
     """Get department-scoped elements for a script via share token, including NOTE elements."""
     try:
         # Validate share token and get assignment with user and department
-        crew_assignment = db.query(models.CrewAssignment).options(
-            joinedload(models.CrewAssignment.user),
-            joinedload(models.CrewAssignment.department)
-        ).filter(
-            models.CrewAssignment.share_token == share_token,
-            models.CrewAssignment.is_active == True
-        ).first()
+        matching_assignment = find_assignment_by_share_token(db, share_token)
+        if not matching_assignment:
+            raise HTTPException(status_code=404, detail="Share not found or expired")
+
+        crew_assignment = (
+            db.query(models.CrewAssignment)
+            .options(
+                joinedload(models.CrewAssignment.user),
+                joinedload(models.CrewAssignment.department)
+            )
+            .filter(models.CrewAssignment.assignment_id == matching_assignment.assignment_id)
+            .first()
+        )
 
         if not crew_assignment:
             raise HTTPException(status_code=404, detail="Share not found or expired")
@@ -221,10 +237,7 @@ async def get_guest_user_preferences(
     
     try:
         # Find the crew assignment by share token
-        crew_assignment = db.query(models.CrewAssignment).filter(
-            models.CrewAssignment.share_token == share_token,
-            models.CrewAssignment.is_active == True
-        ).first()
+        crew_assignment = find_assignment_by_share_token(db, share_token)
         
         if not crew_assignment:
             logger.warning("Share token not found for preferences")
@@ -266,10 +279,7 @@ async def update_guest_user_preferences(
     
     try:
         # Find the crew assignment by share token
-        crew_assignment = db.query(models.CrewAssignment).filter(
-            models.CrewAssignment.share_token == share_token,
-            models.CrewAssignment.is_active == True
-        ).first()
+        crew_assignment = find_assignment_by_share_token(db, share_token)
         
         if not crew_assignment:
             logger.warning("Share token not found for preferences update")
@@ -344,10 +354,7 @@ async def validate_share_token(
 ):
     """Lightweight token validation endpoint for periodic auth checks"""
     try:
-        crew_assignment = db.query(models.CrewAssignment).filter(
-            models.CrewAssignment.share_token == share_token,
-            models.CrewAssignment.is_active == True
-        ).first()
+        crew_assignment = find_assignment_by_share_token(db, share_token)
         
         if not crew_assignment:
             raise HTTPException(status_code=401, detail="Share token expired or revoked")
@@ -372,10 +379,7 @@ async def search_shared_tutorials(
     
     try:
         # Verify the share token is valid
-        crew_assignment = db.query(models.CrewAssignment).filter(
-            models.CrewAssignment.share_token == share_token,
-            models.CrewAssignment.is_active == True
-        ).first()
+        crew_assignment = find_assignment_by_share_token(db, share_token)
         
         if not crew_assignment:
             logger.warning("Invalid share token for tutorial search")
@@ -409,10 +413,7 @@ async def get_shared_tutorial(
     
     try:
         # Verify the share token is valid
-        crew_assignment = db.query(models.CrewAssignment).filter(
-            models.CrewAssignment.share_token == share_token,
-            models.CrewAssignment.is_active == True
-        ).first()
+        crew_assignment = find_assignment_by_share_token(db, share_token)
         
         if not crew_assignment:
             logger.warning("Invalid share token for tutorial access")

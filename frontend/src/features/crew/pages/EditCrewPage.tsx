@@ -280,8 +280,8 @@ export const EditCrewPage: React.FC = () => {
     }, []);
 
     // Handle share URL refresh - update the specific assignment's share_url
-    const handleShareUrlRefresh = useCallback(async () => {
-        if (!selectedCrewMember?.show_id || !crew?.user_id) return;
+    const handleShareUrlRefresh = useCallback(async (): Promise<string | null> => {
+        if (!selectedCrewMember?.show_id || !crew?.user_id) return null;
         
         try {
             // Force refresh the share token
@@ -301,11 +301,13 @@ export const EditCrewPage: React.FC = () => {
                     "Link Refreshed",
                     `A new sharing link has been ${shareData.action}`
                 );
+                return shareData.share_url;
             }
         } catch (error) {
             console.error('Error refreshing link:', error);
             showError("Failed to refresh sharing link. Please try again.");
         }
+        return null;
     }, [selectedCrewMember, crew, apiFetch, showSuccess, showError]);
 
     // Actions menu items
@@ -483,7 +485,7 @@ export const EditCrewPage: React.FC = () => {
                                 title="Department Assignments"
                                 assignments={crew.department_assignments.map(assignment => ({
                                     ...assignment,
-                                    share_url: shareUrlOverrides[assignment.show_id] || ''
+                                    share_url: shareUrlOverrides[assignment.show_id] || assignment.share_url || ''
                                 }))}
                                 onAssignmentClick={handleCrewBioClick}
                                 showDepartmentInfo={true}

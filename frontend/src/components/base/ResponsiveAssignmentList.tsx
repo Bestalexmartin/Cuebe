@@ -21,6 +21,7 @@ interface AssignmentData {
     profile_img_url?: string;
     role?: string;
     share_url?: string;
+    share_link_id?: string;
     user_id?: string;
     show_id?: string;
     // Show info
@@ -59,12 +60,14 @@ export const ResponsiveAssignmentList: React.FC<ResponsiveAssignmentListProps> =
         return null;
     }
 
-    // Helper function to extract last 12 characters from share URL for LinkID display
-    const getLinkId = (shareUrl?: string): string => {
+    // Helper function to render a stable LinkID from persisted metadata or a URL fallback
+    const getLinkId = (shareLinkId?: string, shareUrl?: string): string => {
+        if (shareLinkId) {
+            return `LinkID: ${shareLinkId.slice(-12)}`;
+        }
         if (!shareUrl) {
             return 'LinkID: Loading...';
         }
-        // Extract last 12 characters from URL path (after /share/)
         const urlParts = shareUrl.split('/');
         const token = urlParts[urlParts.length - 1];
         return `LinkID: ${token.slice(-12)}`;
@@ -253,7 +256,7 @@ export const ResponsiveAssignmentList: React.FC<ResponsiveAssignmentListProps> =
                                         isTruncated
                                         fontFamily="monospace"
                                     >
-                                        {getLinkId(assignment.share_url)}
+                                        {getLinkId(assignment.share_link_id, assignment.share_url)}
                                     </Text>
 
                                     {/* Role Badge */}
@@ -369,7 +372,7 @@ export const ResponsiveAssignmentList: React.FC<ResponsiveAssignmentListProps> =
                                                 </>
                                             )}
                                             <Text fontSize="xs" color="gray.600" _dark={{ color: "gray.300" }} fontFamily="monospace">
-                                                {getLinkId(assignment.share_url)}
+                                                {getLinkId(assignment.share_link_id, assignment.share_url)}
                                             </Text>
                                         </VStack>
                                     </HStack>

@@ -51,7 +51,10 @@ class CrewAssignment(Base):
     show_role = Column(String, nullable=True)  # e.g., "Head of Sound", "Assistant LD"
 
     # Sharing functionality
-    share_token = Column(String(255), unique=True, nullable=True, index=True)  # Secure sharing token
+    share_token = Column(String(255), unique=True, nullable=True, index=True)  # Legacy plaintext token
+    share_token_hash = Column(String(64), unique=True, nullable=True, index=True)
+    share_token_hint = Column(String(12), nullable=True)
+    share_expires_at = Column(DateTime(timezone=True), nullable=True)
     access_count = Column(Integer, default=0, nullable=False)  # Track usage
     last_accessed_at = Column(DateTime(timezone=True), nullable=True)  # Last access time
 
@@ -63,3 +66,11 @@ class CrewAssignment(Base):
     user = relationship("User", back_populates="crew_assignments")
     department = relationship("Department")
     show = relationship("Show", back_populates="crew")
+
+    @property
+    def share_link_id(self):
+        if self.share_token_hint:
+            return self.share_token_hint
+        if self.share_token:
+            return self.share_token[-12:]
+        return None

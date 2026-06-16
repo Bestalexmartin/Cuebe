@@ -103,6 +103,8 @@ class UserDepartmentAssignment(BaseModel):
     show_date: Optional[datetime] = None
     role: Optional[str] = None
     share_url: Optional[str] = None
+    share_link_id: Optional[str] = None
+    share_expires_at: Optional[datetime] = None
 
 class CrewMemberWithAssignments(CrewMemberWithRelationship):
     """Crew member with their department assignments"""

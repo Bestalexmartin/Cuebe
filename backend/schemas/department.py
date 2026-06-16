@@ -45,6 +45,8 @@ class DepartmentCrewAssignment(BaseModel):
     date_created: Optional[datetime] = None
     date_updated: Optional[datetime] = None
     share_url: Optional[str] = None
+    share_link_id: Optional[str] = None
+    share_expires_at: Optional[datetime] = None
 
 class DepartmentWithStats(Department):
     """Department with calculated statistics and crew assignments"""

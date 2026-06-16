@@ -1,6 +1,6 @@
 // frontend/src/features/shows/components/CrewAssignmentSection.tsx
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
   VStack,
@@ -39,8 +39,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
   const { showSuccess, showError } = useEnhancedToast();
   const apiFetch = useApiFetch();
   const [selectedAssignments, setSelectedAssignments] = useState<Set<string>>(new Set());
-  const [shareTokens, setShareTokens] = useState<Map<string, string>>(new Map()); // user_id -> share_token
-  const [recentlyRefreshedTokens, setRecentlyRefreshedTokens] = useState<Set<string>>(new Set()); // user_ids that were recently refreshed
 
   // Modal state
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -55,61 +53,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
   const { crews, isLoading: isLoadingCrews } = useCrews();
 
   const isLoading = isLoadingDepartments || isLoadingCrews;
-  
-  // Fetch share tokens for saved crew assignments only (not new/unsaved ones)
-  useEffect(() => {
-    const fetchShareTokens = async () => {
-      // Only fetch for saved assignments (not ones with isNew flag)
-      const savedAssignments = assignments.filter(a => !a.isNew);
-      
-      if (!savedAssignments.length || !crews.length) {
-        return;
-      }
-      
-      try {
-        const tokenMap = new Map<string, string>();
-        
-        // Fetch share tokens for each unique crew member in saved assignments only
-        const uniqueUserIds = [...new Set(savedAssignments.flatMap(a => a.crew_member_ids))];
-        
-        
-        await Promise.all(
-          uniqueUserIds.map(async (userId) => {
-            try {
-              const response = await apiFetch(`/api/shows/${showId}/crew/${userId}/share`, {
-                method: 'POST',
-              });
-
-              if (response.ok) {
-                const shareData = await response.json();
-                tokenMap.set(userId, shareData.share_token);
-              } else {
-              }
-            } catch (error) {
-              console.error(`💥 Error fetching share token for user ${userId}:`, error);
-            }
-          })
-        );
-        
-        // Merge with existing tokens, but respect recently refreshed ones
-        setShareTokens(prev => {
-          const mergedMap = new Map(prev);
-          tokenMap.forEach((token, userId) => {
-            // Only update if this token wasn't recently manually refreshed
-            if (!recentlyRefreshedTokens.has(userId)) {
-              mergedMap.set(userId, token);
-            }
-          });
-          return mergedMap;
-        });
-      } catch (error) {
-        console.error('💥 Error in fetchShareTokens:', error);
-      }
-    };
-    
-    fetchShareTokens();
-  }, [assignments, crews, showId, apiFetch, recentlyRefreshedTokens]);
-
 
   // Handle crew assignment from modal - call API immediately
   const handleCrewAssignment = useCallback(async (department: Department, crewMember: CrewMember, role?: string) => {
@@ -136,26 +79,14 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
         department_id: newAssignment.department_id,
         crew_member_ids: [newAssignment.user_id],
         role: newAssignment.show_role || '',
+        share_link_id: newAssignment.share_link_id,
+        share_expires_at: newAssignment.share_expires_at,
         isNew: false  // This is now saved
       };
 
       // Update local state
       onAssignmentsChange([...assignments, localAssignment]);
       
-      // Immediately fetch share token for the new assignment
-      try {
-        const shareResponse = await apiFetch(`/api/shows/${showId}/crew/${crewMember.user_id}/share`, {
-          method: 'POST',
-        });
-
-        if (shareResponse.ok) {
-          const shareData = await shareResponse.json();
-          setShareTokens(prev => new Map(prev).set(crewMember.user_id, shareData.share_token));
-        }
-      } catch (shareError) {
-        // Don't fail the whole operation for share token issues
-      }
-
       showSuccess(
         "Crew Assigned",
         `${crewMember.fullname_first} ${crewMember.fullname_last} assigned to ${department.department_name}`
@@ -165,7 +96,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       console.error('Failed to create crew assignment:', error);
       showError(`Failed to assign crew member: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  }, [assignments, onAssignmentsChange, showId, apiFetch, showSuccess, showError, setShareTokens]);
+  }, [assignments, onAssignmentsChange, showId, apiFetch, showSuccess, showError]);
 
   // Handle row selection (single select only)
   const handleRowSelect = useCallback((id: string) => {
@@ -216,16 +147,6 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       // Update local state
       const remainingAssignments = assignments.filter(a => a.id !== assignmentId);
       onAssignmentsChange(remainingAssignments);
-      
-      // Remove share token from local state
-      if (assignment.crew_member_ids.length > 0) {
-        setShareTokens(prev => {
-          const newMap = new Map(prev);
-          newMap.delete(assignment.crew_member_ids[0]);
-          return newMap;
-        });
-      }
-      
       setSelectedAssignments(new Set());
       setIsDeleteModalOpen(false);
 
@@ -239,7 +160,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       showError(`Failed to delete assignment: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsDeleteModalOpen(false);
     }
-  }, [selectedAssignments, assignments, onAssignmentsChange, showSuccess, showError, apiFetch, setShareTokens]);
+  }, [selectedAssignments, assignments, onAssignmentsChange, showSuccess, showError, apiFetch]);
 
   // Handle delete modal close
   const handleDeleteCancel = useCallback(() => {
@@ -258,7 +179,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
   }, []);
 
   // Unified refresh link method - can be called from menu or modal
-  const handleRefreshLink = useCallback(async (userId: string) => {
+  const handleRefreshLink = useCallback(async (userId: string): Promise<string | null> => {
     try {
       // Refresh the show-level share (generates new token)
       const response = await apiFetch(`/api/shows/${showId}/crew/${userId}/share?force_refresh=true`, {
@@ -270,40 +191,33 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
       }
 
       const shareData = await response.json();
-      
-      // Mark this user as recently refreshed to prevent the useEffect from overriding
-      setRecentlyRefreshedTokens(prev => new Set(prev).add(userId));
-      
-      // Update the local share token
-      setShareTokens(prev => {
-        const newMap = new Map(prev);
-        newMap.set(userId, shareData.share_token);
-        return newMap;
-      });
-      
-      // Clear the "recently refreshed" flag after 5 seconds to allow future useEffect updates
-      setTimeout(() => {
-        setRecentlyRefreshedTokens(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(userId);
-          return newSet;
-        });
-      }, 5000);
+
+      onAssignmentsChange(assignments.map((assignment) => (
+        assignment.crew_member_ids[0] === userId
+          ? {
+              ...assignment,
+              share_link_id: shareData.share_link_id,
+              share_expires_at: shareData.share_expires_at,
+            }
+          : assignment
+      )));
       
       showSuccess(
         "Link Refreshed", 
         `A new sharing link has been ${shareData.action} for this crew member`
       );
+      return shareData.share_url;
     } catch (error) {
       console.error('Error refreshing link:', error);
       showError("Failed to refresh sharing link. Please try again.");
+      return null;
     }
-  }, [showId, apiFetch, showSuccess, showError]);
+  }, [showId, apiFetch, showSuccess, showError, assignments, onAssignmentsChange]);
 
   // Handle share URL refresh from CrewBioModal
-  const handleShareUrlRefreshFromModal = useCallback(async () => {
+  const handleShareUrlRefreshFromModal = useCallback(async (): Promise<string | null> => {
     if (!selectedCrewMember) return;
-    await handleRefreshLink(selectedCrewMember.user_id);
+    return handleRefreshLink(selectedCrewMember.user_id);
   }, [selectedCrewMember, handleRefreshLink]);
 
   // Handle Edit Role action
@@ -579,7 +493,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                         isTruncated
                         fontFamily="monospace"
                       >
-                        {getShareUrlSuffix(shareTokens.get(crewMember.user_id))}
+                        {getShareUrlSuffix(assignment.share_link_id)}
                       </Text>
                     )}
 
@@ -707,7 +621,7 @@ export const CrewAssignmentSection: React.FC<CrewAssignmentSectionProps> = ({
                             _dark={{ color: "gray.300" }} 
                             fontFamily="monospace"
                               >
-                            {getShareUrlSuffix(shareTokens.get(crewMember.user_id))}
+                            {getShareUrlSuffix(assignment.share_link_id)}
                           </Text>
                         )}
                       </VStack>

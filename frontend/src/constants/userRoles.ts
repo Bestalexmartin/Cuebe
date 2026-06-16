@@ -54,11 +54,10 @@ export const formatRoleBadge = (roleValue: string): string => {
   return roleValue.replace(/_/g, ' ');
 };
 
-// Helper function to generate sharing URL suffix from share token
-export const getShareUrlSuffix = (shareToken?: string): string => {
-  if (!shareToken) {
+// Helper function to format the persisted link id or a token suffix for display
+export const getShareUrlSuffix = (shareLinkIdOrToken?: string): string => {
+  if (!shareLinkIdOrToken) {
     return 'LinkID: Loading...';
   }
-  // Return last 12 characters of the share token with prefix
-  return `LinkID: ${shareToken.slice(-12)}`;
+  return `LinkID: ${shareLinkIdOrToken.slice(-12)}`;
 };

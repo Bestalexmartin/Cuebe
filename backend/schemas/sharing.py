@@ -132,6 +132,8 @@ class ShareTokenResponse(BaseModel):
     assignment_id: UUID
     share_token: str
     share_url: str
+    share_link_id: str
+    share_expires_at: datetime
     action: str  # "created" or "retrieved"
     
     class Config:

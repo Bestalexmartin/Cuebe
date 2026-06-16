@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     redis_port: int = 6379
     redis_db: int = 1
     redis_url: str = "redis://redis:6379/0"
+    share_token_ttl_days: int = 30
 
     # Blok 017 self-hosted auth
     app_env: str = "development"

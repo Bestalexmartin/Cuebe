@@ -11,6 +11,7 @@ import models
 import schemas
 from database import get_db
 from .auth import get_current_user
+from services.share_token_service import build_share_url, get_share_link_id
 
 # Optional rate limiting import
 try:
@@ -181,7 +182,9 @@ def get_crew_member_with_assignments(
         assignment_data['venue_state'] = assignment.show.venue.state if assignment.show and assignment.show.venue else None
         assignment_data['show_date'] = assignment.show.show_date if assignment.show else None
         assignment_data['role'] = assignment.show_role
-        assignment_data['share_url'] = f"/share/{assignment.share_token}" if assignment.share_token else None
+        assignment_data['share_url'] = build_share_url(assignment.share_token) if assignment.share_token else None
+        assignment_data['share_link_id'] = get_share_link_id(assignment)
+        assignment_data['share_expires_at'] = assignment.share_expires_at
         assignment_list.append(schemas.UserDepartmentAssignment(**assignment_data))
     
     # Create base crew member response using Pydantic serialization

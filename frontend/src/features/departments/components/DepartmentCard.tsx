@@ -21,6 +21,7 @@ interface DepartmentCrewAssignment {
     email_address?: string;
     profile_img_url?: string;
     role?: string;
+    share_link_id?: string;
 }
 
 interface Department {

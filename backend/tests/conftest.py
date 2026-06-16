@@ -54,13 +54,18 @@ def mock_user(mock_user_id, mock_clerk_id, db_session):
 
     # Cleanup - delete test data created during test
     try:
-        from models import Show, Venue, Department
+        from models import Show, Venue, Department, CrewAssignment
+        show_ids = [show_id for (show_id,) in db_session.query(Show.show_id).filter(Show.owner_id == mock_user_id).all()]
+        if show_ids:
+            db_session.query(CrewAssignment).filter(CrewAssignment.show_id.in_(show_ids)).delete(synchronize_session=False)
         # Delete departments owned by this user first (may be referenced by script elements)
         db_session.query(Department).filter(Department.owner_id == mock_user_id).delete()
         # Delete venues owned by this user
         db_session.query(Venue).filter(Venue.owner_id == mock_user_id).delete()
         # Delete shows owned by this user (cascades to scripts and elements)
         db_session.query(Show).filter(Show.owner_id == mock_user_id).delete()
+        # Delete guest/crew users created for this manager during tests
+        db_session.query(User).filter(User.created_by == mock_user_id).delete()
         # Delete the user
         db_session.query(User).filter(User.user_id == mock_user_id).delete()
         db_session.commit()

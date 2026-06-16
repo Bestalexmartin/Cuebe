@@ -97,6 +97,8 @@ export const EditShowPage: React.FC = () => {
                 department_id: assignment.department_id,
                 crew_member_ids: [assignment.user_id],
                 role: assignment.show_role || '',
+                share_link_id: assignment.share_link_id,
+                share_expires_at: assignment.share_expires_at,
                 isNew: false as boolean
             })) || [];
 
@@ -125,6 +127,8 @@ export const EditShowPage: React.FC = () => {
             department_id: assignment.department_id,
             crew_member_ids: [assignment.user_id],
             role: assignment.show_role || '',
+            share_link_id: assignment.share_link_id,
+            share_expires_at: assignment.share_expires_at,
             isNew: false as boolean
         })) || []
     } : null;

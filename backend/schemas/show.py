@@ -30,6 +30,8 @@ class CrewAssignment(BaseModel):
     user_id: UUID
     department_id: UUID
     show_role: Optional[str] = None
+    share_link_id: Optional[str] = None
+    share_expires_at: Optional[datetime] = None
     is_active: bool
     date_assigned: datetime
 

@@ -62,6 +62,8 @@ export interface CrewAssignmentRow {
   department_id: string;
   crew_member_ids: string[]; // Multiple crew members can be assigned to same dept
   role: string;
+  share_link_id?: string;
+  share_expires_at?: string;
   isNew?: boolean; // True for unsaved assignments
 }
 

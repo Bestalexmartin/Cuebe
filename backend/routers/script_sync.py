@@ -13,6 +13,7 @@ import models
 import schemas.websocket as websocket_schemas
 from database import get_db
 from .auth import get_current_user_from_token, get_current_user
+from services.share_token_service import find_assignment_by_share_token
 
 logger = logging.getLogger(__name__)
 
@@ -188,10 +189,7 @@ async def validate_script_access(script_id: UUID, share_token: Optional[str], us
     
     # Try share token access
     if share_token:
-        crew_assignment = db.query(models.CrewAssignment).filter(
-            models.CrewAssignment.share_token == share_token,
-            models.CrewAssignment.is_active == True
-        ).first()
+        crew_assignment = find_assignment_by_share_token(db, share_token)
         
         if crew_assignment:
             # Get the script to verify it belongs to the shared show
