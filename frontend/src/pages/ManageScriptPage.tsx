@@ -70,6 +70,8 @@ import { useScriptModalConfig } from '../features/script/hooks/useScriptModalCon
 import { createActionMenuConfig } from '../features/script/config/actionMenuConfig';
 import { FloatingValidationErrorPanel } from '../components/base/FloatingValidationErrorPanel';
 import { exportScriptAsCSV } from '../features/script/export/utils/csvExporter';
+import { useEffectiveScriptPreferences } from '../features/script/hooks/useEffectiveScriptPreferences';
+import { useFilteredScriptElements } from '../features/script/hooks/useFilteredScriptElements';
 
 
 
@@ -225,8 +227,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
 
     // applyLocalChangeWithSync will be defined after editQueueHook
 
-    const [previewPreferences, setPreviewPreferences] = useState<UserPreferences | null>(null);
-    
     // Selection state (managed locally, used by elementActions)
     const [currentSelectedElementIds, setCurrentSelectedElementIds] = useState<string[]>([]);
     
@@ -337,39 +337,32 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     // Check options modal state for preferences
     const isOptionsModalOpen = modalState.isOpen(MODAL_NAMES.OPTIONS);
 
-    // Memoize individual preference values for stable EditMode props
-    const editModeColorizeDepNames = useMemo(() => {
-        return isOptionsModalOpen && previewPreferences ? previewPreferences.colorizeDepNames : colorizeDepNames;
-    }, [isOptionsModalOpen, previewPreferences, colorizeDepNames]);
+    const {
+        activePreferences,
+        previewPreferences,
+        setPreviewPreferences
+    } = useEffectiveScriptPreferences({
+        autoSaveInterval,
+        autoSortCues: currentAutoSortState,
+        colorizeDepNames,
+        dangerMode,
+        isOptionsModalOpen,
+        lookaheadSeconds,
+        playHeartbeatIntervalSec,
+        showClockTimes,
+        useMilitaryTime,
+        darkMode
+    });
 
-    const editModeShowClockTimes = useMemo(() => {
-        return isOptionsModalOpen && previewPreferences ? previewPreferences.showClockTimes : showClockTimes;
-    }, [isOptionsModalOpen, previewPreferences, showClockTimes]);
-
-    const editModeAutoSortCues = useMemo(() => {
-        return isOptionsModalOpen && previewPreferences ? previewPreferences.autoSortCues : currentAutoSortState;
-    }, [isOptionsModalOpen, previewPreferences, currentAutoSortState]);
-
-    const editModeUseMilitaryTime = useMemo(() => {
-        return isOptionsModalOpen && previewPreferences ? previewPreferences.useMilitaryTime : useMilitaryTime;
-    }, [isOptionsModalOpen, previewPreferences, useMilitaryTime]);
-
-    // Memoize ViewMode preference props for stability
-    const viewModeColorizeDepNames = editModeColorizeDepNames; // Same logic
-    const viewModeShowClockTimes = editModeShowClockTimes; // Same logic
-    const viewModeAutoSortCues = editModeAutoSortCues; // Same logic
-    const viewModeUseMilitaryTime = editModeUseMilitaryTime; // Same logic
-
-    const viewModeLookaheadSeconds = useMemo(() => {
-        return isOptionsModalOpen && previewPreferences ? previewPreferences.lookaheadSeconds : lookaheadSeconds;
-    }, [isOptionsModalOpen, previewPreferences, lookaheadSeconds]);
-
-    // Use preview preferences when options modal is open, otherwise use saved preferences
-    const activePreferences = useMemo(() => {
-        return isOptionsModalOpen && previewPreferences
-            ? previewPreferences
-            : { darkMode, colorizeDepNames, showClockTimes, autoSortCues: currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval, lookaheadSeconds, playHeartbeatIntervalSec };
-    }, [isOptionsModalOpen, previewPreferences, darkMode, colorizeDepNames, showClockTimes, currentAutoSortState, useMilitaryTime, dangerMode, autoSaveInterval, lookaheadSeconds, playHeartbeatIntervalSec]);
+    const editModeColorizeDepNames = activePreferences.colorizeDepNames;
+    const editModeShowClockTimes = activePreferences.showClockTimes;
+    const editModeAutoSortCues = activePreferences.autoSortCues;
+    const editModeUseMilitaryTime = activePreferences.useMilitaryTime;
+    const viewModeColorizeDepNames = activePreferences.colorizeDepNames;
+    const viewModeShowClockTimes = activePreferences.showClockTimes;
+    const viewModeAutoSortCues = activePreferences.autoSortCues;
+    const viewModeUseMilitaryTime = activePreferences.useMilitaryTime;
+    const viewModeLookaheadSeconds = activePreferences.lookaheadSeconds;
 
     // Debug: Check if activePreferences is changing frequently
     const { activeMode, setActiveMode } = useScriptModes('view');
@@ -929,47 +922,16 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     };
 
 
-    // Create filtered elements based on department selection
-    const departmentFilteredElements = useMemo(() => {
-
-        if (filteredDepartmentIds.length === 0) {
-            // If no departments selected, show only NOTEs and GROUPs
-            return editQueueElements?.filter(element =>
-                element.element_type === 'NOTE' || element.element_type === 'GROUP'
-            ) || [];
-        }
-
-        const filtered = editQueueElements?.filter(element => {
-            // Always show NOTEs and GROUPs regardless of department filter
-            if (element.element_type === 'NOTE' || element.element_type === 'GROUP') {
-                return true;
-            }
-
-            // Show elements that belong to selected departments
-            return element.department_id && filteredDepartmentIds.includes(element.department_id);
-        }) || [];
-
-        return filtered;
-    }, [editQueueElements, filteredDepartmentIds]);
-
-    const departmentFilteredAllElements = useMemo(() => {
-        if (filteredDepartmentIds.length === 0) {
-            // If no departments selected, show only NOTEs and GROUPs
-            return allEditQueueElements?.filter(element =>
-                element.element_type === 'NOTE' || element.element_type === 'GROUP'
-            ) || [];
-        }
-
-        return allEditQueueElements?.filter(element => {
-            // Always show NOTEs and GROUPs regardless of department filter
-            if (element.element_type === 'NOTE' || element.element_type === 'GROUP') {
-                return true;
-            }
-
-            // Show elements that belong to selected departments
-            return element.department_id && filteredDepartmentIds.includes(element.department_id);
-        }) || [];
-    }, [allEditQueueElements, filteredDepartmentIds]);
+    const {
+        departmentFilteredElements,
+        departmentFilteredAllElements
+    } = useFilteredScriptElements({
+        allElements: allEditQueueElements,
+        filteredDepartmentIds,
+        hasUserSetFilter,
+        setFilteredDepartmentIds,
+        visibleElements: editQueueElements
+    });
 
     // Set up timing boundaries when elements or lookahead changes
     useEffect(() => {
@@ -980,18 +942,6 @@ const ManageScriptPageInner: React.FC<ManageScriptPageProps & { getToken: () => 
     }, [departmentFilteredElements, lookaheadSeconds, setElementBoundaries]);
 
     // Timing boundaries are now handled by PlaybackTimingProvider
-
-    // Initialize department filter with all departments when elements first load (only if user hasn't set a filter)
-    useEffect(() => {
-        if (allEditQueueElements && filteredDepartmentIds.length === 0 && !hasUserSetFilter) {
-            const allDepartmentIds = Array.from(new Set(
-                allEditQueueElements
-                    .filter(el => el.department_id && el.element_type !== 'NOTE' && el.element_type !== 'GROUP')
-                    .map(el => el.department_id!)
-            ));
-            setFilteredDepartmentIds(allDepartmentIds);
-        }
-    }, [allEditQueueElements, filteredDepartmentIds.length, hasUserSetFilter]);
 
     // Configure actions menu using extracted config
     const actions = createActionMenuConfig({
