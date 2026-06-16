@@ -11,7 +11,7 @@ import models
 import schemas
 from database import get_db
 from .auth import get_current_user
-from services.share_token_service import build_share_url, get_share_link_id
+from services.share_token_service import get_share_link_id
 
 from utils.rate_limiter import RATE_LIMITING_AVAILABLE, RateLimitConfig, rate_limit
 
@@ -167,7 +167,8 @@ def get_crew_member_with_assignments(
         assignment_data['venue_state'] = assignment.show.venue.state if assignment.show and assignment.show.venue else None
         assignment_data['show_date'] = assignment.show.show_date if assignment.show else None
         assignment_data['role'] = assignment.show_role
-        assignment_data['share_url'] = build_share_url(assignment.share_token) if assignment.share_token else None
+        # Raw token is only available at issue time (stored hashed), so no URL here.
+        assignment_data['share_url'] = None
         assignment_data['share_link_id'] = get_share_link_id(assignment)
         assignment_data['share_expires_at'] = assignment.share_expires_at
         assignment_list.append(schemas.UserDepartmentAssignment(**assignment_data))

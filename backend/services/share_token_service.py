@@ -5,7 +5,6 @@ import string
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from config import settings
@@ -24,11 +23,7 @@ def build_share_url(raw_token: str) -> str:
 
 
 def get_share_link_id(assignment: CrewAssignment) -> Optional[str]:
-    if assignment.share_token_hint:
-        return assignment.share_token_hint
-    if assignment.share_token:
-        return assignment.share_token[-12:]
-    return None
+    return assignment.share_token_hint
 
 
 def get_share_expiry() -> datetime:
@@ -45,18 +40,10 @@ def is_share_active(assignment: CrewAssignment) -> bool:
 
 def issue_share_token(assignment: CrewAssignment) -> tuple[str, datetime]:
     raw_token = generate_share_token()
-    assignment.share_token = None
     assignment.share_token_hash = hash_token(raw_token)
     assignment.share_token_hint = raw_token[-12:]
     assignment.share_expires_at = get_share_expiry()
     return raw_token, assignment.share_expires_at
-
-
-def returnable_share_token(assignment: CrewAssignment) -> Optional[str]:
-    """Return the legacy plaintext token only while older links are still being migrated out."""
-    if assignment.share_token and is_share_active(assignment):
-        return assignment.share_token
-    return None
 
 
 def find_assignment_by_share_token(db: Session, raw_token: str) -> Optional[CrewAssignment]:
@@ -65,10 +52,7 @@ def find_assignment_by_share_token(db: Session, raw_token: str) -> Optional[Crew
         db.query(CrewAssignment)
         .filter(
             CrewAssignment.is_active.is_(True),
-            or_(
-                CrewAssignment.share_token_hash == token_hash,
-                CrewAssignment.share_token == raw_token,
-            ),
+            CrewAssignment.share_token_hash == token_hash,
         )
         .first()
     )

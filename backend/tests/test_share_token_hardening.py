@@ -51,7 +51,6 @@ def test_issue_share_token_sets_hash_hint_and_expiry(mock_user, db_session):
     raw_token, expires_at = issue_share_token(assignment)
 
     assert raw_token
-    assert assignment.share_token is None
     assert assignment.share_token_hash is not None
     assert assignment.share_token_hint == raw_token[-12:]
     assert assignment.share_expires_at == expires_at

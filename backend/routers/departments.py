@@ -11,7 +11,7 @@ import models
 import schemas
 from database import get_db
 from .auth import get_current_user
-from services.share_token_service import build_share_url, get_share_link_id
+from services.share_token_service import get_share_link_id
 
 from utils.rate_limiter import RATE_LIMITING_AVAILABLE, RateLimitConfig, rate_limit
 
@@ -74,7 +74,8 @@ def list_departments(
         assignment_dict['is_active'] = assignment.user.is_active if assignment.user else None
         assignment_dict['date_created'] = assignment.user.date_created if assignment.user else None
         assignment_dict['date_updated'] = assignment.user.date_updated if assignment.user else None
-        assignment_dict['share_url'] = build_share_url(assignment.share_token) if assignment.share_token else None
+        # Raw token is only available at issue time (stored hashed), so no URL here.
+        assignment_dict['share_url'] = None
         assignment_dict['share_link_id'] = get_share_link_id(assignment)
         assignment_dict['share_expires_at'] = assignment.share_expires_at
         

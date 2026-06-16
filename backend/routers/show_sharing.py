@@ -17,7 +17,6 @@ from services.share_token_service import (
     get_share_link_id,
     is_share_active,
     issue_share_token,
-    returnable_share_token,
 )
 from utils.user_preferences import (
     bitmap_to_preferences,
@@ -66,12 +65,10 @@ async def create_or_get_show_share(
         raw_token, expires_at = issue_share_token(crew_assignment)
         action = "refreshed" if force_refresh else "created"
     else:
-        raw_token = returnable_share_token(crew_assignment)
-        if raw_token:
-            action = "retrieved"
-        else:
-            raw_token, expires_at = issue_share_token(crew_assignment)
-            action = "reissued"
+        # Tokens are stored hashed, so an existing active link cannot be
+        # handed back verbatim; rotate it to a fresh raw token instead.
+        raw_token, expires_at = issue_share_token(crew_assignment)
+        action = "reissued"
     
     db.commit()
     db.refresh(crew_assignment)
