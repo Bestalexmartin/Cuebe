@@ -22,7 +22,6 @@ import { formatRoleBadge } from '../constants/userRoles';
 import { useSharedData } from '../hooks/useSharedData';
 import { useSharedScript } from './hooks/useSharedScript';
 import { useTokenValidation } from '../hooks/useTokenValidation';
-import { useEnhancedToast } from '../utils/toastUtils';
 import { useSorting } from '../hooks/useSorting';
 import { ScriptHeader } from '../components/shared/ScriptHeader';
 import { ShowsList } from '../components/shared/ShowsList';
@@ -45,7 +44,7 @@ import { MobileSearchModal } from './components/modals/MobileSearchModal';
 import type { Script } from '../features/shows/types';
 import type { ScriptElement } from '../features/script/types/scriptElements';
 import { computeDisplayShowTime, formatShowTimer as formatShowTimerString } from '../utils/showTimeUtils';
-import { getApiUrl } from '../config/api';
+import { useGuestSharedPreferences } from './hooks/useGuestSharedPreferences';
 
 const SHOWS_SORT_OPTIONS: SortOption[] = [
   { value: 'show_name', label: 'Name' },
@@ -161,12 +160,7 @@ const SharedPageContent = React.memo(({ onScriptChange }: { onScriptChange?: (sc
   const [showPreferences, setShowPreferences] = useState<boolean>(false);
   const [contentAreaBounds, setContentAreaBounds] = useState<DOMRect | null>(null);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
-  const [guestLookaheadSeconds, setGuestLookaheadSeconds] = useState(30);
-  const [guestUseMilitaryTime, setGuestUseMilitaryTime] = useState(false);
-  const savedLookaheadRef = useRef<number | null>(null);
-  const savedMilitaryRef = useRef<boolean | null>(null);
   const triggerRotationRef = useRef<(() => void) | null>(null);
-  const { showSuccess, showError } = useEnhancedToast();
   
   // Token validation - redirect to expired page if token is revoked
   const handleTokenExpired = useCallback(() => {
@@ -184,26 +178,24 @@ const SharedPageContent = React.memo(({ onScriptChange }: { onScriptChange?: (sc
     return null;
   }
   
-  // Track when preferences view is left to trigger optional auto-save
-  const prevShowPreferences = useRef(showPreferences);
   const contentAreaRef = useRef<HTMLDivElement>(null);
+  const {
+    guestLookaheadSeconds,
+    guestUseMilitaryTime,
+    setGuestLookaheadSeconds,
+    setGuestUseMilitaryTime,
+  } = useGuestSharedPreferences(shareToken, showPreferences);
 
   // Access show time engine context - minimize destructuring to reduce re-renders
   const syncContext = useSharedShowTimeEngine();
   const {
     playbackState,
-    setElementBoundaries: updateElementBoundaries,
     processBoundariesForTime,
-    currentShowTime,
     handlePlaybackCommand,
     resetAllPlaybackState,
     engine
   } = syncContext;
   // handlePlaybackCommand now comes from SharedShowTimeEngine context
-  
-  // Engine-driven show time
-  const currentTime = currentShowTime;
-
 
   // Tutorial search - extracted to custom hook
   const {
@@ -291,21 +283,6 @@ const SharedPageContent = React.memo(({ onScriptChange }: { onScriptChange?: (sc
   viewingScriptIdRef.current = viewingScriptId;
   updateSharedDataRef.current = updateSharedData;
 
-  // Debounced boundary updater to prevent redundant calls (shared page uses provider update)
-  const boundaryUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const debouncedUpdateBoundaries = useCallback((elements: ScriptElement[], lookaheadMs: number) => {
-    if (boundaryUpdateTimeoutRef.current) {
-      clearTimeout(boundaryUpdateTimeoutRef.current);
-    }
-    boundaryUpdateTimeoutRef.current = setTimeout(() => {
-      try {
-        updateElementBoundaries?.(elements, lookaheadMs);
-      } catch (_) {
-        // best-effort only
-      }
-    }, 50);
-  }, [updateElementBoundaries]);
-
   // Get current script from shared data (for script metadata) - preserve old functionality
   const currentScript = useMemo(() => {
     if (!viewingScriptId || !sharedData?.shows) return null;
@@ -326,49 +303,6 @@ const SharedPageContent = React.memo(({ onScriptChange }: { onScriptChange?: (sc
       }
     }
   }, [currentScript, onScriptChange]);
-
-
-  const currentTimeRef = useRef<number | null>(currentTime);
-  currentTimeRef.current = currentTime;
-
-  // Set up timing boundaries when elements or lookahead changes
-  const lastElementsRef = useRef<ScriptElement[]>([]);
-  const lastLookaheadRef = useRef<number>(0);
-  const lastElementsLengthRef = useRef<number>(0);
-  useEffect(() => {
-    if (scriptElements.length > 0 && 
-        (scriptElements !== lastElementsRef.current || guestLookaheadSeconds !== lastLookaheadRef.current)) {
-      const lookaheadMs = guestLookaheadSeconds * 1000;
-      debouncedUpdateBoundaries(scriptElements, lookaheadMs);
-      lastElementsRef.current = scriptElements;
-      lastElementsLengthRef.current = scriptElements.length;
-      lastLookaheadRef.current = guestLookaheadSeconds;
-    }
-  }, [scriptElements, guestLookaheadSeconds, debouncedUpdateBoundaries]);
-
-  // Load guest preferences
-  useEffect(() => {
-    const loadGuestPreferences = async () => {
-      if (!shareToken) return;
-
-      try {
-        const response = await fetch(getApiUrl(`/api/shared/${encodeURIComponent(shareToken)}/preferences`));
-        if (response.ok) {
-          const preferences = await response.json();
-          const la = preferences.lookahead_seconds ?? 30;
-          const mil = preferences.use_military_time ?? false;
-          setGuestLookaheadSeconds(la);
-          setGuestUseMilitaryTime(mil);
-          savedLookaheadRef.current = la;
-          savedMilitaryRef.current = mil;
-        }
-      } catch (error) {
-        console.error('Failed to load guest preferences:', error);
-      }
-    };
-
-    loadGuestPreferences();
-  }, [shareToken]);
 
   // Memoize the callbacks object with stable dependencies
   const updateHandlerCallbacks = useMemo(() => ({
@@ -397,53 +331,6 @@ const SharedPageContent = React.memo(({ onScriptChange }: { onScriptChange?: (sc
   }, [handlePlaybackCommand]);
 
   // Removed group collapse state/handler (unused in subscriber view)
-
-  const handleGuestOptionsSave = useCallback(async (lookaheadSeconds: number, useMilitaryTime: boolean) => {
-    if (!shareToken) return;
-
-    try {
-      const response = await fetch(getApiUrl(`/api/shared/${encodeURIComponent(shareToken)}/preferences`), {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          lookahead_seconds: lookaheadSeconds,
-          use_military_time: useMilitaryTime 
-        })
-      });
-
-      if (response.ok) {
-        const updatedPreferences = await response.json();
-        const la = updatedPreferences.lookahead_seconds ?? 30;
-        const mil = updatedPreferences.use_military_time ?? false;
-        setGuestLookaheadSeconds(la);
-        setGuestUseMilitaryTime(mil);
-        savedLookaheadRef.current = la;
-        savedMilitaryRef.current = mil;
-        showSuccess('Preferences Updated', 'Your preferences have been saved successfully.');
-      } else {
-        throw new Error('Failed to save preferences');
-      }
-    } catch (error) {
-      showError('Failed to save preferences');
-      throw error;
-    }
-  }, [shareToken]);
-
-  // Auto-save preferences when leaving preferences view, only if changed
-  useEffect(() => {
-    if (prevShowPreferences.current && !showPreferences) {
-      const changed =
-        savedLookaheadRef.current !== guestLookaheadSeconds ||
-        savedMilitaryRef.current !== guestUseMilitaryTime;
-      if (changed) {
-        handleGuestOptionsSave(guestLookaheadSeconds, guestUseMilitaryTime);
-      }
-    }
-    prevShowPreferences.current = showPreferences;
-  }, [showPreferences, guestLookaheadSeconds, guestUseMilitaryTime, handleGuestOptionsSave]);
-
   // Trigger rotation on data received (ping/pong and incoming updates)
   const onDataReceived = useCallback(() => {
     // Trigger a brief rotation on websocket activity
