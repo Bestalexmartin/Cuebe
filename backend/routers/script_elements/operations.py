@@ -1,17 +1,120 @@
 # backend/routers/script_elements/operations.py - STRIPPED FOR REBUILD
 
 from fastapi import HTTPException
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_
+from sqlalchemy.orm import Session
 import schemas
 from uuid import UUID
 from datetime import datetime, timezone
 import models
-from .helpers import _auto_populate_show_start_duration
-from utils.datetime_utils import parse_iso_datetime
 
 import logging
 logger = logging.getLogger(__name__)
+
+
+NUMERIC_OPERATION_FIELDS = {"offset_ms", "duration_ms", "sequence", "group_level"}
+
+
+class MockElement:
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+
+def _utc_now():
+    return datetime.now(timezone.utc)
+
+
+def _mark_updated(record, user):
+    record.updated_by = user.user_id
+    record.date_updated = _utc_now()
+
+
+def _coerce_operation_field_value(field: str, value):
+    if value is None:
+        return None
+
+    if field == "is_collapsed":
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            return lowered in ("true", "1", "yes", "y")
+        return bool(value)
+
+    if field in NUMERIC_OPERATION_FIELDS:
+        try:
+            return int(value)
+        except Exception:
+            return None
+
+    return value
+
+
+def _get_group_children(elements_by_id: dict, parent_element_id) -> list:
+    return [
+        element
+        for element in elements_by_id.values()
+        if element.parent_element_id == parent_element_id
+    ]
+
+
+def _recalculate_parent_group_timing(elements_by_id: dict, parent_element_id, user) -> bool:
+    parent_group = elements_by_id.get(str(parent_element_id))
+    if not parent_group or parent_group.element_type != models.ElementType.GROUP:
+        return False
+
+    child_elements = _get_group_children(elements_by_id, parent_element_id)
+    if not child_elements:
+        return False
+
+    child_offsets = [child.offset_ms for child in child_elements]
+    parent_group.offset_ms = min(child_offsets)
+    parent_group.duration_ms = max(child_offsets) - min(child_offsets)
+    _mark_updated(parent_group, user)
+    return True
+
+
+def _bump_sequences_from(elements_by_id: dict, min_sequence: int, user) -> int:
+    elements_shifted = 0
+    for element in elements_by_id.values():
+        if element.sequence >= min_sequence:
+            element.sequence += 1
+            _mark_updated(element, user)
+            elements_shifted += 1
+    return elements_shifted
+
+
+def _collapse_sequence_gap(elements_by_id: dict, deleted_sequence: int, user) -> int:
+    elements_resequenced = 0
+    for element in elements_by_id.values():
+        if element.sequence > deleted_sequence:
+            element.sequence -= 1
+            _mark_updated(element, user)
+            elements_resequenced += 1
+    return elements_resequenced
+
+
+def _resolve_temp_id(operation_data: dict) -> str | None:
+    return operation_data.get("element_id") or operation_data.get("element_data", {}).get("element_id")
+
+
+def _record_temp_id_mapping(temp_id_mapping: dict | None, operation_data: dict, persistent_id: str):
+    if temp_id_mapping is None:
+        return
+
+    temp_id = operation_data.get("element_id")
+    element_data_temp_id = operation_data.get("element_data", {}).get("element_id")
+
+    if temp_id:
+        temp_id_mapping[temp_id] = persistent_id
+
+    if element_data_temp_id and element_data_temp_id != temp_id:
+        temp_id_mapping[element_data_temp_id] = persistent_id
+
+    if temp_id and temp_id.startswith("group-"):
+        import re
+
+        timestamp_match = re.search(r"group-(\d+)-", temp_id)
+        if timestamp_match:
+            temp_id_mapping[f"group-{timestamp_match.group(1)}"] = persistent_id
 
 
 def _apply_operation_in_memory(elements_by_id: dict, script: models.Script, operation_data: dict, user: models.User, temp_id_mapping: dict):
@@ -143,8 +246,6 @@ def _apply_single_element_reorder_in_memory(elements_by_id: dict, moved_element,
 
 def _apply_ungroup_in_memory(elements_by_id: dict, operation_data: dict, user):
     """Apply UNGROUP_ELEMENTS operation in-memory using the same logic as frontend."""
-    from datetime import datetime, timezone
-    
     group_element_id = operation_data.get("group_element_id")
     
     # Find the group parent element
@@ -164,8 +265,7 @@ def _apply_ungroup_in_memory(elements_by_id: dict, operation_data: dict, user):
     for child in child_elements:
         child.parent_element_id = None
         child.group_level = 0
-        child.updated_by = user.user_id
-        child.date_updated = datetime.now(timezone.utc)
+        _mark_updated(child, user)
         updated_children += 1
     
     # Store the sequence of the group element before deletion for resequencing
@@ -175,13 +275,7 @@ def _apply_ungroup_in_memory(elements_by_id: dict, operation_data: dict, user):
     del elements_by_id[group_element_id]
     
     # Resequence elements: shift all elements with sequence > deleted_sequence down by 1
-    elements_resequenced = 0
-    for element in elements_by_id.values():
-        if element.sequence > deleted_sequence:
-            element.sequence = element.sequence - 1
-            element.updated_by = user.user_id
-            element.date_updated = datetime.now(timezone.utc)
-            elements_resequenced += 1
+    elements_resequenced = _collapse_sequence_gap(elements_by_id, deleted_sequence, user)
     
     return {
         "operation": "ungroup_elements",
@@ -195,8 +289,6 @@ def _apply_ungroup_in_memory(elements_by_id: dict, operation_data: dict, user):
 
 def _apply_update_element_in_memory(elements_by_id: dict, operation_data: dict, user):
     """Apply UPDATE_ELEMENT operation in-memory."""
-    from datetime import datetime, timezone
-    
     element_id = operation_data.get("element_id")
     changes = operation_data.get("changes", {})
     
@@ -209,52 +301,21 @@ def _apply_update_element_in_memory(elements_by_id: dict, operation_data: dict, 
     updated_fields = []
     offset_changed = False
     for field, change in changes.items():
-        new_value = change.get("new_value")
+        new_value = _coerce_operation_field_value(field, change.get("new_value"))
         # Skip None to avoid nulling non-null columns
         if new_value is None:
             continue
-        # Coerce known types
-        if field == 'is_collapsed':
-            if isinstance(new_value, str):
-                lowered = new_value.strip().lower()
-                new_value = lowered in ('true', '1', 'yes', 'y')
-            else:
-                new_value = bool(new_value)
-        elif field in ('offset_ms', 'duration_ms', 'sequence', 'group_level'):
-            try:
-                new_value = int(new_value)
-            except Exception:
-                continue
         setattr(element, field, new_value)
         updated_fields.append(field)
         if field == "offset_ms":
             offset_changed = True
     
     # Update metadata
-    element.updated_by = user.user_id
-    element.date_updated = datetime.now(timezone.utc)
+    _mark_updated(element, user)
     
     # If offset_ms was changed and this element has a parent group, recalculate group duration
     if offset_changed and element.parent_element_id:
-        parent_group = elements_by_id.get(str(element.parent_element_id))
-        if parent_group and parent_group.element_type == models.ElementType.GROUP:
-            # Find all children of this group
-            child_elements = [
-                el for el in elements_by_id.values() 
-                if el.parent_element_id == element.parent_element_id
-            ]
-            
-            if child_elements:
-                # Calculate new group duration from child time offsets
-                child_offsets = [el.offset_ms for el in child_elements]
-                min_offset = min(child_offsets)
-                max_offset = max(child_offsets)
-                group_duration_ms = max_offset - min_offset
-                
-                # Update parent group duration
-                parent_group.duration_ms = group_duration_ms
-                parent_group.updated_by = user.user_id
-                parent_group.date_updated = datetime.now(timezone.utc)
+        _recalculate_parent_group_timing(elements_by_id, element.parent_element_id, user)
     
     return {
         "operation": "update_element",
@@ -265,7 +326,6 @@ def _apply_update_element_in_memory(elements_by_id: dict, operation_data: dict, 
 
 def _apply_create_group_in_memory(elements_by_id: dict, script_id: UUID, operation_data: dict, user, temp_id_mapping: dict = None):
     """Apply CREATE_GROUP operation in-memory."""
-    from datetime import datetime, timezone
     import uuid
     
     group_name = operation_data.get("group_name", "Untitled Group")
@@ -285,22 +345,10 @@ def _apply_create_group_in_memory(elements_by_id: dict, script_id: UUID, operati
     group_duration = max_time - min_time
     
     # SEQUENCE MANAGEMENT: Shift existing elements up to make room for group parent
-    elements_shifted = 0
-    for element in elements_by_id.values():
-        if element.sequence >= min_sequence:
-            element.sequence = element.sequence + 1
-            element.updated_by = user.user_id
-            element.date_updated = datetime.now(timezone.utc)
-            elements_shifted += 1
+    elements_shifted = _bump_sequences_from(elements_by_id, min_sequence, user)
     
     # Create group parent element (simulate database object)
     group_id = str(uuid.uuid4())
-    
-    # Create a mock element object (this would normally be a SQLAlchemy model)
-    class MockElement:
-        def __init__(self, **kwargs):
-            for key, value in kwargs.items():
-                setattr(self, key, value)
     
     group_element = MockElement(
         element_id=group_id,
@@ -316,33 +364,14 @@ def _apply_create_group_in_memory(elements_by_id: dict, script_id: UUID, operati
         parent_element_id=None,
         created_by=user.user_id,
         updated_by=user.user_id,
-        date_created=datetime.now(timezone.utc),
-        date_updated=datetime.now(timezone.utc)
+        date_created=_utc_now(),
+        date_updated=_utc_now()
     )
     
     # Add group to elements dict
     elements_by_id[group_id] = group_element
     
-    # Store temp ID mapping if provided - handle multiple temp ID formats
-    temp_id = operation_data.get("element_id")
-    element_data_temp_id = operation_data.get("element_data", {}).get("element_id")
-    
-    if temp_id and temp_id_mapping is not None:
-        temp_id_mapping[temp_id] = group_id
-        
-    # Also map element_data temp ID if different (frontend sometimes sends both)
-    if element_data_temp_id and element_data_temp_id != temp_id and temp_id_mapping is not None:
-        temp_id_mapping[element_data_temp_id] = group_id
-        
-    # Store timestamp-based mapping for related operations (frontend inconsistency fix)
-    # Extract timestamp pattern from temp ID like "group-1756502143188-..."
-    if temp_id and "group-" in temp_id and temp_id_mapping is not None:
-        import re
-        timestamp_match = re.search(r'group-(\d+)-', temp_id)
-        if timestamp_match:
-            timestamp = timestamp_match.group(1)
-            # Map any other temp IDs with the same timestamp to this group
-            temp_id_mapping[f"group-{timestamp}"] = group_id
+    _record_temp_id_mapping(temp_id_mapping, operation_data, group_id)
     
     # DON'T update child elements here - defer until after parent is inserted
     return {
@@ -365,7 +394,6 @@ def _apply_create_group_in_memory(elements_by_id: dict, script_id: UUID, operati
 
 def _apply_toggle_group_collapse_in_memory(elements_by_id: dict, operation_data: dict, user):
     """Apply TOGGLE_GROUP_COLLAPSE operation in-memory."""
-    from datetime import datetime, timezone
 
     element_id = operation_data.get("element_id")
     target_collapsed_state = operation_data.get("target_collapsed_state")
@@ -383,8 +411,7 @@ def _apply_toggle_group_collapse_in_memory(elements_by_id: dict, operation_data:
 
     # Update collapse state
     element.is_collapsed = target_collapsed_state
-    element.updated_by = user.user_id
-    element.date_updated = datetime.now(timezone.utc)
+    _mark_updated(element, user)
 
     return {
         "operation": "toggle_group_collapse",
@@ -395,11 +422,9 @@ def _apply_toggle_group_collapse_in_memory(elements_by_id: dict, operation_data:
 
 def _apply_update_field_in_memory(elements_by_id: dict, operation_data: dict, user):
     """Apply UPDATE_FIELD operation in-memory."""
-    from datetime import datetime, timezone
-    
     element_id = operation_data.get("element_id")
     field = operation_data.get("field")
-    new_value = operation_data.get("new_value")
+    new_value = _coerce_operation_field_value(field, operation_data.get("new_value"))
     
     element = elements_by_id.get(element_id)
     if not element:
@@ -413,23 +438,13 @@ def _apply_update_field_in_memory(elements_by_id: dict, operation_data: dict, us
             "field": field,
             "skipped": True
         }
-    # Coerce known types
-    if field == 'is_collapsed':
-        if isinstance(new_value, str):
-            lowered = new_value.strip().lower()
-            new_value = lowered in ('true', '1', 'yes', 'y')
-        else:
-            new_value = bool(new_value)
-    elif field in ('offset_ms', 'duration_ms', 'sequence', 'group_level'):
-        try:
-            new_value = int(new_value)
-        except Exception:
-            return {
-                "operation": "update_field",
-                "element_id": element_id,
-                "field": field,
-                "invalid": True
-            }
+    if field in NUMERIC_OPERATION_FIELDS and new_value is None:
+        return {
+            "operation": "update_field",
+            "element_id": element_id,
+            "field": field,
+            "invalid": True
+        }
     # Debug logging for department changes
     if field == "department_id":
         old_value = getattr(element, field, None)
@@ -437,8 +452,7 @@ def _apply_update_field_in_memory(elements_by_id: dict, operation_data: dict, us
     
     # Set the field value
     setattr(element, field, new_value)
-    element.updated_by = user.user_id
-    element.date_updated = datetime.now(timezone.utc)
+    _mark_updated(element, user)
     
     return {
         "operation": "update_field",
@@ -450,19 +464,12 @@ def _apply_update_field_in_memory(elements_by_id: dict, operation_data: dict, us
 
 def _apply_create_element_in_memory(elements_by_id: dict, script_id: UUID, operation_data: dict, user, temp_id_mapping: dict):
     """Apply CREATE_ELEMENT operation in-memory."""
-    from datetime import datetime, timezone
     import uuid
     
     element_data = operation_data.get("element_data", {})
     insert_index = operation_data.get("insert_index")
     
     new_element_id = str(uuid.uuid4())
-    
-    # Create a mock element object
-    class MockElement:
-        def __init__(self, **kwargs):
-            for key, value in kwargs.items():
-                setattr(self, key, value)
     
     # Calculate sequence based on insert_index, incoming sequence, or append to end
     incoming_sequence = element_data.get('sequence')
@@ -490,15 +497,15 @@ def _apply_create_element_in_memory(elements_by_id: dict, script_id: UUID, opera
         sequence=new_sequence,
         created_by=user.user_id,
         updated_by=user.user_id,
-        date_created=datetime.now(timezone.utc),
-        date_updated=datetime.now(timezone.utc),
+        date_created=_utc_now(),
+        date_updated=_utc_now(),
         **element_data_clean
     )
     
     elements_by_id[new_element_id] = new_element
     
     # Store temp ID mapping if provided
-    temp_id = operation_data.get("element_id")
+    temp_id = _resolve_temp_id(operation_data)
     if temp_id:
         temp_id_mapping[temp_id] = new_element_id
     
@@ -511,8 +518,6 @@ def _apply_create_element_in_memory(elements_by_id: dict, script_id: UUID, opera
 
 def _apply_delete_element_in_memory(elements_by_id: dict, operation_data: dict, user):
     """Apply DELETE_ELEMENT operation in-memory."""
-    from datetime import datetime, timezone
-    
     element_id = operation_data.get("element_id")
     
     element = elements_by_id.get(element_id)
@@ -528,8 +533,7 @@ def _apply_delete_element_in_memory(elements_by_id: dict, operation_data: dict, 
     for remaining_element in elements_by_id.values():
         if remaining_element.sequence > deleted_sequence:
             remaining_element.sequence -= 1
-            remaining_element.updated_by = user.user_id
-            remaining_element.date_updated = datetime.now(timezone.utc)
+            _mark_updated(remaining_element, user)
     
     return {
         "operation": "delete_element",
@@ -541,8 +545,6 @@ def _apply_delete_element_in_memory(elements_by_id: dict, operation_data: dict, 
 
 def _apply_update_time_offset_in_memory(elements_by_id: dict, operation_data: dict, user):
     """Apply UPDATE_TIME_OFFSET operation in-memory."""
-    from datetime import datetime, timezone
-    
     element_id = operation_data.get("element_id")
     new_offset_ms = operation_data.get("new_offset_ms")
     
@@ -551,30 +553,11 @@ def _apply_update_time_offset_in_memory(elements_by_id: dict, operation_data: di
         raise ValueError(f"Element {element_id} not found")
     
     element.offset_ms = new_offset_ms
-    element.updated_by = user.user_id
-    element.date_updated = datetime.now(timezone.utc)
+    _mark_updated(element, user)
     
     # If this element has a parent group, recalculate the group's duration
     if element.parent_element_id:
-        parent_group = elements_by_id.get(str(element.parent_element_id))
-        if parent_group and parent_group.element_type == models.ElementType.GROUP:
-            # Find all children of this group
-            child_elements = [
-                el for el in elements_by_id.values() 
-                if el.parent_element_id == element.parent_element_id
-            ]
-            
-            if child_elements:
-                # Calculate new group duration from child time offsets
-                child_offsets = [el.offset_ms for el in child_elements]
-                min_offset = min(child_offsets)
-                max_offset = max(child_offsets)
-                group_duration_ms = max_offset - min_offset
-                
-                # Update parent group duration
-                parent_group.duration_ms = group_duration_ms
-                parent_group.updated_by = user.user_id
-                parent_group.date_updated = datetime.now(timezone.utc)
+        _recalculate_parent_group_timing(elements_by_id, element.parent_element_id, user)
     
     return {
         "operation": "update_time_offset",
@@ -604,8 +587,6 @@ def _apply_bulk_reorder_in_memory(elements_by_id: dict, operation_data: dict):
 
 def _apply_bulk_offset_adjustment_in_memory(elements_by_id: dict, operation_data: dict, user):
     """Apply BULK_OFFSET_ADJUSTMENT to a specific set of element IDs only."""
-    from datetime import datetime, timezone
-    
     affected_ids = set(operation_data.get("affected_element_ids", []) or [])
     delay_ms = int(operation_data.get("delay_ms", 0) or 0)
     if not affected_ids or delay_ms == 0:
@@ -619,8 +600,7 @@ def _apply_bulk_offset_adjustment_in_memory(elements_by_id: dict, operation_data
         if el_id in affected_ids:
             try:
                 element.offset_ms = int(element.offset_ms) + delay_ms
-                element.updated_by = user.user_id
-                element.date_updated = datetime.now(timezone.utc)
+                _mark_updated(element, user)
                 updated_count += 1
             except Exception:
                 # Skip elements with invalid offset_ms
@@ -635,8 +615,6 @@ def _apply_bulk_offset_adjustment_in_memory(elements_by_id: dict, operation_data
 
 def _apply_enable_auto_sort_in_memory(elements_by_id: dict, operation_data: dict, user):
     """Apply ENABLE_AUTO_SORT operation in-memory - full resequencing by time."""
-    from datetime import datetime, timezone
-    
     resequenced_elements = operation_data.get("resequenced_elements", [])
     total_elements = operation_data.get("total_elements", 0)
     
@@ -650,8 +628,7 @@ def _apply_enable_auto_sort_in_memory(elements_by_id: dict, operation_data: dict
         element = elements_by_id.get(element_id)
         if element:
             element.sequence = new_sequence
-            element.updated_by = user.user_id
-            element.date_updated = datetime.now(timezone.utc)
+            _mark_updated(element, user)
             updated_count += 1
     
     return {
@@ -673,8 +650,6 @@ def _apply_disable_auto_sort_in_memory(elements_by_id: dict, operation_data: dic
 
 def _apply_batch_collapse_groups_in_memory(elements_by_id: dict, operation_data: dict, user):
     """Apply BATCH_COLLAPSE_GROUPS operation in-memory."""
-    from datetime import datetime, timezone
-    
     group_element_ids = operation_data.get("group_element_ids", [])
     target_collapsed_state = operation_data.get("target_collapsed_state")
     
@@ -683,8 +658,7 @@ def _apply_batch_collapse_groups_in_memory(elements_by_id: dict, operation_data:
         element = elements_by_id.get(group_id)
         if element:
             element.is_collapsed = target_collapsed_state
-            element.updated_by = user.user_id
-            element.date_updated = datetime.now(timezone.utc)
+            _mark_updated(element, user)
             updated_count += 1
     
     return {
@@ -696,8 +670,6 @@ def _apply_batch_collapse_groups_in_memory(elements_by_id: dict, operation_data:
 
 def _apply_update_group_with_propagation_in_memory(elements_by_id: dict, operation_data: dict, user):
     """Apply UPDATE_GROUP_WITH_PROPAGATION operation in-memory."""
-    from datetime import datetime, timezone
-    
     element_id = operation_data.get("element_id")
     field_updates = operation_data.get("field_updates", {})
     offset_delta_ms = operation_data.get("offset_delta_ms", 0)
@@ -709,25 +681,12 @@ def _apply_update_group_with_propagation_in_memory(elements_by_id: dict, operati
         # Defensive: do not overwrite non-nullable fields with None from the client
         for field, value in field_updates.items():
             # Skip None values to avoid unintentionally nulling columns
+            value = _coerce_operation_field_value(field, value)
             if value is None:
                 # Special-case: keep existing is_collapsed when client sends null/undefined
                 continue
-            # Coerce types for known fields
-            if field == 'is_collapsed':
-                # Accept truthy strings/ints and coerce to bool
-                if isinstance(value, str):
-                    lowered = value.strip().lower()
-                    value = lowered in ('true', '1', 'yes', 'y')
-                else:
-                    value = bool(value)
-            elif field in ('offset_ms', 'duration_ms', 'sequence'):
-                try:
-                    value = int(value)
-                except Exception:
-                    continue  # Skip invalid numeric values
             setattr(element, field, value)
-        element.updated_by = user.user_id
-        element.date_updated = datetime.now(timezone.utc)
+        _mark_updated(element, user)
     
     # Propagate offset changes to children
     if offset_delta_ms != 0:
@@ -735,8 +694,7 @@ def _apply_update_group_with_propagation_in_memory(elements_by_id: dict, operati
             child = elements_by_id.get(child_id)
             if child:
                 child.offset_ms += offset_delta_ms
-                child.updated_by = user.user_id
-                child.date_updated = datetime.now(timezone.utc)
+                _mark_updated(child, user)
     
     return {
         "operation": "update_group_with_propagation",
@@ -747,19 +705,15 @@ def _apply_update_group_with_propagation_in_memory(elements_by_id: dict, operati
 
 def _apply_update_script_info_in_memory(script: models.Script, operation_data: dict, user: models.User):
     """Apply UPDATE_SCRIPT_INFO operation to in-memory script object."""
-    from datetime import datetime, timezone
-    
     changes = operation_data.get("changes", {})
     
     # Apply changes with proper type conversion
     for field, change_data in changes.items():
         new_value = change_data.get("new_value")
         
-        old_value = getattr(script, field, None)
         setattr(script, field, new_value)
     
-    script.updated_by = user.user_id
-    script.date_updated = datetime.now(timezone.utc)
+    _mark_updated(script, user)
     
     
     return {
@@ -894,8 +848,7 @@ def batch_update_from_edit_queue(
                 element = elements_by_id[element_id]
                 element.parent_element_id = child_update["parent_element_id"]
                 element.group_level = child_update["group_level"]
-                element.updated_by = user.user_id
-                element.date_updated = datetime.now(timezone.utc)
+                _mark_updated(element, user)
         
         # Handle element deletions (e.g., from UNGROUP operations)
         for element_id_to_delete in deleted_element_ids:
@@ -956,8 +909,7 @@ def batch_update_from_edit_queue(
                 new_sequence = index + 1
                 if element.sequence != new_sequence:
                     element.sequence = new_sequence
-                    element.updated_by = user.user_id
-                    element.date_updated = datetime.now(timezone.utc)
+                    _mark_updated(element, user)
         
         # Check if any operations failed BEFORE committing
         failed_operations = [r for r in operation_results if r.get("status") == "error"]
