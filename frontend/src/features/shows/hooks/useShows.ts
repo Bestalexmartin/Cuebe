@@ -1,7 +1,7 @@
 // frontend/src/features/shows/hooks/useShows.ts
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useApiFetch } from "../../../hooks/useApiFetch";
+import { useMemo } from "react";
+import { useResource } from "../../../hooks/useResource";
 
 // TypeScript interfaces
 interface Venue {
@@ -40,41 +40,18 @@ interface UseShowsReturn {
 }
 
 export const useShows = (): UseShowsReturn => {
-  const apiFetch = useApiFetch();
-  const [shows, setShows] = useState<Show[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // We wrap fetchShows in useCallback so it doesn't get recreated on every render
-  const fetchShows = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const response = await apiFetch("/api/me/shows");
-      if (!response.ok) {
-        if (response.status >= 500) {
-          const errorMsg = `Database or server error (${response.status}). Please check if the database is running.`;
-          throw new Error(errorMsg);
-        }
-        const errorMsg = `Failed to fetch shows: ${response.status}`;
-        throw new Error(errorMsg);
+  const { data, isLoading, error, refetch } = useResource<Show>("/api/me/shows", {
+    showErrorToast: false,
+    getErrorMessage: (response) => {
+      if (response.status >= 500) {
+        return `Database or server error (${response.status}). Please check if the database is running.`;
       }
-      const data: Show[] = await response.json();
-      setShows(data);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to load shows";
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [apiFetch]);
-
-  useEffect(() => {
-    fetchShows();
-  }, [fetchShows]);
+      return `Failed to fetch shows: ${response.status}`;
+    },
+  });
 
   return useMemo(
-    () => ({ shows, isLoading, error, refetchShows: fetchShows }),
-    [shows, isLoading, error, fetchShows],
+    () => ({ shows: data, isLoading, error, refetchShows: refetch }),
+    [data, isLoading, error, refetch],
   );
 };

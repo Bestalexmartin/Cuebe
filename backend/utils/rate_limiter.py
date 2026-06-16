@@ -1,13 +1,24 @@
 # backend/utils/rate_limiter.py
 
 import logging
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
 from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 
 from config import settings
+
+try:
+    from slowapi import Limiter
+    from slowapi.util import get_remote_address
+    from slowapi.errors import RateLimitExceeded
+    HAS_SLOWAPI = True
+except ImportError:
+    Limiter = None
+    RateLimitExceeded = Exception
+    HAS_SLOWAPI = False
+
+    def get_remote_address(request: Request):
+        client = request.client
+        return client.host if client and client.host else "unknown"
 
 # Optional Redis import
 try:
@@ -18,6 +29,7 @@ except ImportError:
     HAS_REDIS = False
 
 logger = logging.getLogger(__name__)
+RATE_LIMITING_AVAILABLE = HAS_SLOWAPI
 
 # Rate limiting configuration
 class RateLimitConfig:
@@ -85,6 +97,10 @@ def get_rate_limit_key(request: Request):
 
 def create_limiter():
     """Create and configure the rate limiter"""
+    if not HAS_SLOWAPI or Limiter is None:
+        logger.warning("Rate limiting disabled - slowapi package not available")
+        return None
+
     redis_client = create_redis_connection()
     
     if redis_client:
@@ -107,6 +123,15 @@ def create_limiter():
         logger.info("Rate limiter configured with in-memory backend")
     
     return limiter
+
+
+def rate_limit(limit_config):
+    """Conditionally apply a slowapi rate limit decorator when available."""
+    def decorator(func):
+        if RATE_LIMITING_AVAILABLE and limiter and limit_config:
+            return limiter.limit(limit_config)(func)
+        return func
+    return decorator
 
 async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
     """Custom handler for rate limit exceeded responses"""

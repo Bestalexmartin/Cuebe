@@ -1,12 +1,15 @@
 // frontend/src/hooks/useResource.ts
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useEnhancedToast } from '../utils/toastUtils';
 import { useApiFetch } from './useApiFetch';
 
 // TypeScript interfaces
-interface UseResourceOptions {
+interface UseResourceOptions<T> {
   fetchOnMount?: boolean;
+  showErrorToast?: boolean;
+  notFoundValue?: T[];
+  getErrorMessage?: (response: Response, endpoint: string) => string;
 }
 
 interface UseResourceReturn<T> {
@@ -19,7 +22,7 @@ interface UseResourceReturn<T> {
 
 export const useResource = <T = any>(
   endpoint: string,
-  options: UseResourceOptions = {}
+  options: UseResourceOptions<T> = {}
 ): UseResourceReturn<T> => {
     const [data, setData] = useState<T[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -29,9 +32,12 @@ export const useResource = <T = any>(
 
     const {
         fetchOnMount = true,
+        showErrorToast = true,
+        notFoundValue,
+        getErrorMessage,
     } = options;
 
-    const fetchData = async (): Promise<void> => {
+    const fetchData = useCallback(async (): Promise<void> => {
         setIsLoading(true);
         setError(null);
 
@@ -39,7 +45,15 @@ export const useResource = <T = any>(
             const response = await apiFetch(endpoint);
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch ${endpoint}`);
+                if (response.status === 404 && notFoundValue) {
+                    setData(notFoundValue);
+                    return;
+                }
+
+                const message = getErrorMessage
+                    ? getErrorMessage(response, endpoint)
+                    : `Failed to fetch ${endpoint}`;
+                throw new Error(message);
             }
 
             const result: T[] = await response.json();
@@ -47,13 +61,15 @@ export const useResource = <T = any>(
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
             setError(errorMessage);
-            showError(errorMessage);
+            if (showErrorToast) {
+                showError(errorMessage);
+            }
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [apiFetch, endpoint, getErrorMessage, notFoundValue, showError, showErrorToast]);
 
-    const createResource = async (resourceData: Partial<T>): Promise<T> => {
+    const createResource = useCallback(async (resourceData: Partial<T>): Promise<T> => {
         try {
             const response = await apiFetch(endpoint, {
                 method: 'POST',
@@ -70,13 +86,13 @@ export const useResource = <T = any>(
         } catch (err) {
             throw err;
         }
-    };
+    }, [apiFetch, endpoint]);
 
     useEffect(() => {
         if (fetchOnMount) {
             fetchData();
         }
-    }, [endpoint, fetchOnMount]);
+    }, [fetchData, fetchOnMount]);
 
     return useMemo(() => ({
         data,

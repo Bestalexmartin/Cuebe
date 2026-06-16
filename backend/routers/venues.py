@@ -11,26 +11,11 @@ from database import get_db
 from services import venue_service
 from .auth import get_current_user
 
-# Optional rate limiting import
-try:
-    from utils.rate_limiter import limiter, RateLimitConfig
-    RATE_LIMITING_AVAILABLE = True
-except ImportError:
-    limiter = None
-    RateLimitConfig = None
-    RATE_LIMITING_AVAILABLE = False
+from utils.rate_limiter import RATE_LIMITING_AVAILABLE, RateLimitConfig, rate_limit
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["venues"])
-
-def rate_limit(limit_config):
-    """Decorator factory that conditionally applies rate limiting"""
-    def decorator(func):
-        if RATE_LIMITING_AVAILABLE and limiter and limit_config:
-            return limiter.limit(limit_config)(func)
-        return func
-    return decorator
 
 
 @router.get("/me/venues", response_model=list[schemas.Venue])

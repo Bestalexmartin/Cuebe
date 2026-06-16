@@ -1,7 +1,7 @@
 // frontend/src/features/venues/hooks/useVenues.ts
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useApiFetch } from '../../../hooks/useApiFetch';
+import { useMemo } from 'react';
+import { useResource } from '../../../hooks/useResource';
 
 // TypeScript interfaces
 interface Venue {
@@ -34,41 +34,16 @@ interface UseVenuesReturn {
 }
 
 export const useVenues = (): UseVenuesReturn => {
-  const apiFetch = useApiFetch();
-  const [venues, setVenues] = useState<Venue[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchVenues = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await apiFetch('/api/me/venues');
-      if (!response.ok) {
-        if (response.status === 404) {
-          setVenues([]);
-          return;
-        }
-        if (response.status >= 500) {
-          const errorMsg = `Database or server error (${response.status}). Please check if the database is running.`;
-          throw new Error(errorMsg);
-        }
-        const errorMsg = `Failed to fetch venues: ${response.status}`;
-        throw new Error(errorMsg);
+  const { data, isLoading, error, refetch } = useResource<Venue>('/api/me/venues', {
+    showErrorToast: false,
+    notFoundValue: [],
+    getErrorMessage: (response) => {
+      if (response.status >= 500) {
+        return `Database or server error (${response.status}). Please check if the database is running.`;
       }
-      const data: Venue[] = await response.json();
-      setVenues(data);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load venues';
-      setError(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [apiFetch]);
+      return `Failed to fetch venues: ${response.status}`;
+    },
+  });
 
-  useEffect(() => {
-    fetchVenues();
-  }, [fetchVenues]);
-
-  return useMemo(() => ({ venues, isLoading, error, refetchVenues: fetchVenues }), [venues, isLoading, error, fetchVenues]);
+  return useMemo(() => ({ venues: data, isLoading, error, refetchVenues: refetch }), [data, isLoading, error, refetch]);
 };

@@ -12,15 +12,7 @@ import schemas
 from database import get_db
 from .auth import get_current_user
 
-# Optional rate limiting import
-try:
-    from utils.rate_limiter import limiter, RateLimitConfig, rate_limit
-    RATE_LIMITING_AVAILABLE = True
-except ImportError:
-    limiter = None
-    RateLimitConfig = None
-    rate_limit = lambda x: lambda f: f  # No-op decorator when not available
-    RATE_LIMITING_AVAILABLE = False
+from utils.rate_limiter import RATE_LIMITING_AVAILABLE, RateLimitConfig, rate_limit
 
 logger = logging.getLogger(__name__)
 
@@ -62,15 +54,6 @@ def _create_default_script_elements(script: models.Script, show: models.Show, us
             # department_id intentionally left out (None/NULL)
         )
         db.add(show_end_cue)
-
-def rate_limit(limit_config):
-    """Decorator factory that conditionally applies rate limiting"""
-    def decorator(func):
-        if RATE_LIMITING_AVAILABLE and limiter and limit_config:
-            return limiter.limit(limit_config)(func)
-        return func
-    return decorator
-
 
 # =============================================================================
 # SHOW ENDPOINTS

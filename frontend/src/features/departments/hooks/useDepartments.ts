@@ -1,7 +1,7 @@
 // frontend/src/features/departments/hooks/useDepartments.ts
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useApiFetch } from '../../../hooks/useApiFetch';
+import { useMemo } from 'react';
+import { useResource } from '../../../hooks/useResource';
 
 // TypeScript interfaces
 interface DepartmentCrewAssignment {
@@ -36,55 +36,25 @@ interface UseDepartmentsReturn {
     departments: Department[];
     isLoading: boolean;
     error: string | null;
-    refetchDepartments: () => void;
+    refetchDepartments: () => Promise<void>;
 }
 
 export const useDepartments = (): UseDepartmentsReturn => {
-    const apiFetch = useApiFetch();
-    const [departments, setDepartments] = useState<Department[]>([]);
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const fetchDepartments = useCallback(async () => {
-        try {
-            setIsLoading(true);
-            setError(null);
-
-            const response = await apiFetch('/api/me/departments');
-
-            if (!response.ok) {
-                if (response.status === 404) {
-                    setDepartments([]);
-                    return;
-                }
-                if (response.status >= 500) {
-                    throw new Error(`Database or server error (${response.status}). Please check if the database is running.`);
-                }
-                throw new Error(`Failed to fetch departments: ${response.status}`);
+    const { data, isLoading, error, refetch } = useResource<Department>('/api/me/departments', {
+        showErrorToast: false,
+        notFoundValue: [],
+        getErrorMessage: (response) => {
+            if (response.status >= 500) {
+                return `Database or server error (${response.status}). Please check if the database is running.`;
             }
-
-            const departmentsData: Department[] = await response.json();
-            setDepartments(departmentsData);
-        } catch (err) {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to load departments';
-            setError(errorMessage);
-        } finally {
-            setIsLoading(false);
-        }
-    }, [apiFetch]);
-
-    const refetchDepartments = () => {
-        fetchDepartments();
-    };
-
-    useEffect(() => {
-        fetchDepartments();
-    }, [fetchDepartments]);
+            return `Failed to fetch departments: ${response.status}`;
+        },
+    });
 
     return useMemo(() => ({
-        departments,
+        departments: data,
         isLoading,
         error,
-        refetchDepartments
-    }), [departments, isLoading, error, refetchDepartments]);
+        refetchDepartments: refetch
+    }), [data, isLoading, error, refetch]);
 };
